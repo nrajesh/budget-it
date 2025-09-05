@@ -263,12 +263,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code); // First 3 currencies (e.g., USD, EUR, GBP)
 
     const demoData: Transaction[] = [];
-    // Generate data for current month
-    demoData.push(...generateTransactions(0, 15, accountsToUse, currenciesToUse));
-    // Generate data for previous month
-    demoData.push(...generateTransactions(-1, 15, accountsToUse, currenciesToUse));
-    // Generate data for two months ago
-    demoData.push(...generateTransactions(-2, 10, accountsToUse, currenciesToUse));
+    // Generate data for current month, previous month, and two months ago
+    // Aim for ~300 base transactions per month to get over 1000 total transactions (considering transfers)
+    demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse));
+    demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse));
+    demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse));
 
     setTransactions(demoData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [availableCurrencies]);
