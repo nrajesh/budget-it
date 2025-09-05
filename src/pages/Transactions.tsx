@@ -25,7 +25,6 @@ import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { RotateCcw } from "lucide-react"; // Import reset icon
 
 const ITEMS_PER_PAGE = 10;
 
@@ -91,10 +90,7 @@ const TransactionsPage = () => {
       const toDate = dateRange.to || new Date(); // If 'to' is not set, assume today
       filtered = filtered.filter((t) => {
         const transactionDate = new Date(t.date);
-        // Set hours to 00:00:00 for fromDate and 23:59:59 for toDate to include full days
-        const startOfDayFrom = new Date(fromDate.setHours(0, 0, 0, 0));
-        const endOfDayTo = new Date(toDate.setHours(23, 59, 59, 999));
-        return transactionDate >= startOfDayFrom && transactionDate <= endOfDayTo;
+        return transactionDate >= fromDate && transactionDate <= toDate;
       });
     }
 
@@ -111,13 +107,6 @@ const TransactionsPage = () => {
     setIsDialogOpen(true);
   };
 
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-    setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-    setDateRange(undefined);
-  };
-
   // Reset pagination when filters change
   React.useEffect(() => {
     setCurrentPage(1);
@@ -130,12 +119,12 @@ const TransactionsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Transactions</CardTitle>
-            <div className="flex flex-wrap items-end gap-4 mt-4"> {/* Use flex-wrap for responsiveness */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
               <Input
                 placeholder="Search vendor or remarks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm flex-grow" // Allow input to grow
+                className="max-w-sm"
               />
               <MultiSelectDropdown
                 options={availableAccountOptions}
@@ -150,10 +139,6 @@ const TransactionsPage = () => {
                 placeholder="Filter by Category"
               />
               <DateRangePicker dateRange={dateRange} onDateChange={setDateRange} />
-              <Button variant="outline" onClick={handleResetFilters} className="flex-shrink-0"> {/* Reset button */}
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset Filters
-              </Button>
             </div>
           </CardHeader>
           <CardContent>
