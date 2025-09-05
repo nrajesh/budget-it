@@ -27,7 +27,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return sortedTransactions.map(t => {
-      if (t.category !== 'Transfer') { // Transfers don't affect overall balance
+      if (t.category !== 'Transfer') {
         currentBalance += t.amount;
       }
       return { ...t, runningBalance: currentBalance };
@@ -41,11 +41,6 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
   const totalPages = Math.ceil(transactionsWithRunningBalance.length / transactionsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  // Reset pagination when filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [transactions]);
 
   return (
     <Card>
@@ -67,7 +62,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
             {currentTransactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                  No transactions found for the selected filters.
+                  No transactions found for the selected accounts.
                 </TableCell>
               </TableRow>
             ) : (

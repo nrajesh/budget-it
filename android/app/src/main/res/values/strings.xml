@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">budget-it</string>
-    <string name="title_activity_main">budget-it</string>
-    <string name="package_name">com.example.budgetit</string>
-    <string name="custom_url_scheme">com.example.budgetit</string>
-</resources>
