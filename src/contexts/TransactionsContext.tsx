@@ -121,22 +121,24 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
+  const addTransaction = React.useCallback(async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
-    const baseTransactionData = {
+    const newDateISO = new Date(transaction.date).toISOString();
+    const baseRemarks = transaction.remarks || "";
+
+    const commonTransactionFields = {
       ...transaction,
       currency: 'USD', // Default to USD for new manual transactions
-      date: new Date(transaction.date).toISOString(),
+      date: newDateISO,
     };
 
     try {
       if (isTransfer) {
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(transaction.amount);
-        const baseRemarks = transaction.remarks || "";
 
         const debitTransaction = {
-          ...baseTransactionData,
+          ...commonTransactionFields,
           transfer_id: transfer_id,
           amount: -newAmount,
           category: 'Transfer',
@@ -144,30 +146,33 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
 
         const creditTransaction = {
-          ...baseTransactionData,
+          ...commonTransactionFields,
           transfer_id: transfer_id,
           account: transaction.vendor,
           vendor: transaction.account,
           amount: newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${transaction.vendor})`, `(From ${transaction.account})`)}` : `Transfer from ${transaction.account}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${transaction.account})` : `Transfer from ${transaction.account}`,
         };
 
         const { error } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
         if (error) throw error;
         showSuccess("Transfer added successfully!");
       } else {
-        const { error } = await supabase.from('transactions').insert(baseTransactionData);
+        const { error } = await supabase.from('transactions').insert({
+          ...commonTransactionFields,
+          transfer_id: null, // Ensure transfer_id is null for regular transactions
+        });
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
-      fetchTransactions(); // Re-fetch to update local state with new data from DB
+      fetchTransactions();
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
     }
-  };
+  }, [fetchTransactions]);
 
-  const updateTransaction = async (updatedTransaction: Transaction) => {
+  const updateTransaction = React.useCallback(async (updatedTransaction: Transaction) => {
     const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
     if (!originalTransaction) {
       showError("Original transaction not found.");
@@ -177,16 +182,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const wasTransfer = !!originalTransaction.transfer_id;
     const isNowTransfer = accounts.includes(updatedTransaction.vendor);
     const newAmount = Math.abs(updatedTransaction.amount);
+    const newDateISO = new Date(updatedTransaction.date).toISOString();
     const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
 
     try {
       // Case 1: Editing a regular transaction to become a transfer
       if (!wasTransfer && isNowTransfer) {
-        // Delete original transaction
         const { error: deleteError } = await supabase.from('transactions').delete().eq('id', originalTransaction.id);
         if (deleteError) throw deleteError;
 
-        // Insert new transfer transactions
         const transfer_id = `transfer_${Date.now()}`;
         const debitTransaction = {
           ...updatedTransaction,
@@ -194,7 +198,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
-          date: new Date(updatedTransaction.date).toISOString(),
+          date: newDateISO,
         };
         const creditTransaction = {
           ...updatedTransaction,
@@ -204,7 +208,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           amount: newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
-          date: new Date(updatedTransaction.date).toISOString(),
+          date: newDateISO,
         };
         const { error: insertError } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
         if (insertError) throw insertError;
@@ -212,16 +216,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       // Case 2: Editing a transfer to become a regular transaction
       else if (wasTransfer && !isNowTransfer) {
-        // Delete both transfer transactions
         const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transfer_id);
         if (deleteError) throw deleteError;
 
-        // Insert new regular transaction
         const newSingleTransaction = {
           ...updatedTransaction,
-          transfer_id: null, // Ensure transfer_id is null
+          transfer_id: null,
           amount: -newAmount, // Assuming regular transactions are expenses by default when converting from transfer
-          date: new Date(updatedTransaction.date).toISOString(),
+          date: newDateISO,
         };
         const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
         if (insertError) throw insertError;
@@ -237,12 +239,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const oldDebitId = originalTransaction.amount < 0 ? originalTransaction.id : sibling.id;
         const oldCreditId = originalTransaction.amount < 0 ? sibling.id : originalTransaction.id;
 
-        const newDate = new Date(updatedTransaction.date).toISOString();
         const newDebitAccount = updatedTransaction.account;
         const newCreditAccount = updatedTransaction.vendor;
 
         const newDebitData = {
-          date: newDate,
+          date: newDateISO,
           account: newDebitAccount,
           vendor: newCreditAccount,
           amount: -newAmount,
@@ -251,7 +252,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
 
         const newCreditData = {
-          date: newDate,
+          date: newDateISO,
           account: newCreditAccount,
           vendor: newDebitAccount,
           amount: newAmount,
@@ -269,8 +270,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       else {
         const { error } = await supabase.from('transactions').update({
           ...updatedTransaction,
-          date: new Date(updatedTransaction.date).toISOString(),
-          transfer_id: null, // Ensure transfer_id is null for regular transactions
+          date: newDateISO,
+          transfer_id: null,
         }).eq('id', updatedTransaction.id);
         if (error) throw error;
         showSuccess("Transaction updated successfully!");
@@ -279,9 +280,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
-  };
+  }, [transactions, fetchTransactions]);
 
-  const deleteTransaction = async (transactionId: string, transfer_id?: string) => {
+  const deleteTransaction = React.useCallback(async (transactionId: string, transfer_id?: string) => {
     try {
       if (transfer_id) {
         const { error } = await supabase.from('transactions').delete().eq('transfer_id', transfer_id);
@@ -296,7 +297,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
     }
-  };
+  }, [fetchTransactions]);
 
   const clearAllTransactions = React.useCallback(async () => {
     try {
@@ -311,7 +312,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const generateDiverseDemoData = React.useCallback(async () => {
     try {
-      // Clear existing data first
       await clearAllTransactions();
 
       const accountsToUse = accounts;
