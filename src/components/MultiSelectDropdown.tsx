@@ -57,25 +57,12 @@ export function MultiSelectDropdown({
     }
   };
 
-  const displayedBadges = React.useMemo(() => {
-    if (isAllSelected && options.length > 0) {
-      return [{ value: 'all', label: `${allOption.label} (${options.length})` }];
-    }
-    return selectedValues.map(value => options.find(o => o.value === value)).filter(Boolean) as Option[];
-  }, [selectedValues, options, isAllSelected]);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-[200px] justify-between">
-          {displayedBadges.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {displayedBadges.map((option) => (
-                <Badge key={option.value} variant="secondary">
-                  {option.label}
-                </Badge>
-              ))}
-            </div>
+          {isAllSelected && options.length > 0 ? (
+            <span>{allOption.label} ({options.length})</span>
           ) : (
             <span>{placeholder}</span>
           )}

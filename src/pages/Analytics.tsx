@@ -25,8 +25,6 @@ const chartConfigForAccounts = {
 
 const Analytics = () => {
   const { transactions } = useTransactions();
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
 
   const availableAccounts = React.useMemo(() => {
     const accounts = new Set<string>();
@@ -46,6 +44,37 @@ const Analytics = () => {
     }));
   }, [transactions]);
 
+  // Initialize selectedAccounts and selectedCategories to include all available options by default
+  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(
+    availableAccounts.map(acc => acc.value)
+  );
+  const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
+    availableCategories.map(cat => cat.value)
+  );
+
+  // Update selectedAccounts/Categories if available options change (e.g., new transactions added)
+  React.useEffect(() => {
+    setSelectedAccounts(prev => {
+      const currentAccountValues = availableAccounts.map(acc => acc.value);
+      // If all were selected, keep all selected. Otherwise, maintain current selections if they still exist.
+      if (prev.length === 0 || prev.length === currentAccountValues.length) {
+        return currentAccountValues;
+      }
+      return prev.filter(val => currentAccountValues.includes(val));
+    });
+  }, [availableAccounts]);
+
+  React.useEffect(() => {
+    setSelectedCategories(prev => {
+      const currentCategoryValues = availableCategories.map(cat => cat.value);
+      if (prev.length === 0 || prev.length === currentCategoryValues.length) {
+        return currentCategoryValues;
+      }
+      return prev.filter(val => currentCategoryValues.includes(val));
+    });
+  }, [availableCategories]);
+
+
   const filteredTransactions = React.useMemo(() => {
     let filtered = transactions;
 
@@ -57,10 +86,6 @@ const Analytics = () => {
     // This `filtered` list is primarily for charts that need pre-filtered data.
     return filtered;
   }, [transactions, selectedAccounts]);
-
-  // Prepare data for SpendingCategoriesChart (it now takes transactions directly)
-  // const spendingData = React.useMemo(() => { /* ... logic moved inside SpendingCategoriesChart ... */ }, [filteredTransactions]);
-  // const spendingConfig = React.useMemo(() => { /* ... logic moved inside SpendingCategoriesChart ... */ }, []);
 
   return (
     <div className="space-y-4">
@@ -78,11 +103,11 @@ const Analytics = () => {
           placeholder="Filter by Category"
         />
       </div>
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3"> {/* Changed to grid-cols-3 */}
-        <div className="lg:col-span-2"> {/* Balance Over Time takes 2 columns */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <BalanceOverTimeChart transactions={filteredTransactions} />
         </div>
-        <div className="lg:col-span-1"> {/* Spending by Category takes 1 column */}
+        <div className="lg:col-span-1">
           <SpendingCategoriesChart transactions={filteredTransactions} />
         </div>
       </div>
