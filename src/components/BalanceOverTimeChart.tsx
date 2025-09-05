@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type Transaction, accounts as allDefinedAccounts } from "@/data/finance-data"; // Import allDefinedAccounts
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label"; // Keep Label if needed elsewhere, but Checkbox is removed
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { MultiSelectDropdown } from "@/components/MultiSelectDropdown"; // New import
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -34,11 +34,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
   const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(allDefinedAccounts); // Initialize with all defined accounts
 
-  const toggleAccount = (account: string) => {
-    setSelectedAccounts(prev =>
-      prev.includes(account) ? prev.filter(a => a !== account) : [...prev, account]
-    );
-  };
+  const accountOptions = React.useMemo(() => {
+    return allDefinedAccounts.map(account => ({ value: account, label: account }));
+  }, []);
 
   const chartData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -99,16 +97,12 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </CardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
-          {allDefinedAccounts.map(account => ( // Use allDefinedAccounts for checkboxes
-            <div key={account} className="flex items-center space-x-2">
-              <Checkbox
-                id={`account-${account}`}
-                checked={selectedAccounts.includes(account)}
-                onCheckedChange={() => toggleAccount(account)}
-              />
-              <Label htmlFor={`account-${account}`}>{account}</Label>
-            </div>
-          ))}
+          <MultiSelectDropdown
+            options={accountOptions}
+            selectedValues={selectedAccounts}
+            onSelectChange={setSelectedAccounts}
+            placeholder="Select Accounts"
+          />
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">

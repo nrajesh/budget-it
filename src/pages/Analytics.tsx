@@ -78,9 +78,13 @@ const Analytics = () => {
           placeholder="Filter by Category"
         />
       </div>
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <BalanceOverTimeChart transactions={filteredTransactions} /> {/* Removed selectedAccounts and chartConfig props */}
-        <SpendingCategoriesChart transactions={filteredTransactions} /> {/* Updated prop */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3"> {/* Changed to grid-cols-3 */}
+        <div className="lg:col-span-2"> {/* Balance Over Time takes 2 columns */}
+          <BalanceOverTimeChart transactions={filteredTransactions} />
+        </div>
+        <div className="lg:col-span-1"> {/* Spending by Category takes 1 column */}
+          <SpendingCategoriesChart transactions={filteredTransactions} />
+        </div>
       </div>
       <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories.map(slugify)} />
     </div>
