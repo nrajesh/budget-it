@@ -48,6 +48,7 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
+  transferId?: string;
   date: string;
   account: string;
   currency: string;
@@ -68,6 +69,6 @@ export const transactionsData: Transaction[] = Array.from({ length: 25 }, (_, i)
   currency: "USD",
   vendor: vendors[i % vendors.length],
   amount: (Math.random() > 0.4 ? 1 : -1) * parseFloat((Math.random() * 200).toFixed(2)),
-  remarks: `Remark for transaction ${i + 1}`,
+  remarks: i % 3 === 0 ? `Remark for transaction ${i + 1}` : undefined,
   category: categories[i % categories.length],
 })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

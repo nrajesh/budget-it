@@ -27,7 +27,7 @@ const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
-  const { transactions, updateTransaction } = useTransactions();
+  const { transactions } = useTransactions();
 
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -39,85 +39,81 @@ const TransactionsPage = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveTransaction = (updatedTransaction: Transaction) => {
-    updateTransaction(updatedTransaction);
-    setIsDialogOpen(false);
-  };
-
   return (
     <Layout pageTitle="Transactions">
-      <Card>
-        <CardHeader>
-          <CardTitle>All Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Remarks</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
-                    <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{transaction.account}</TableCell>
-                    <TableCell>{transaction.vendor}</TableCell>
-                    <TableCell>{transaction.category}</TableCell>
-                    <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                      {transaction.amount.toLocaleString('en-US', { style: 'currency', currency: transaction.currency })}
-                    </TableCell>
-                    <TableCell>{transaction.remarks}</TableCell>
+      <div className="p-4 md:p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>All Transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Remarks</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(endIndex, transactions.length)} of {transactions.length} transactions
-          </span>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-              </PaginationItem>
-              <PaginationItem>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardFooter>
-      </Card>
-      {selectedTransaction && (
-        <EditTransactionDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          transaction={selectedTransaction}
-          onSave={handleSaveTransaction}
-        />
-      )}
+                </TableHeader>
+                <TableBody>
+                  {currentTransactions.map((transaction) => (
+                    <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
+                      <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{transaction.account}</TableCell>
+                      <TableCell>{transaction.vendor}</TableCell>
+                      <TableCell>{transaction.category}</TableCell>
+                      <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                        {transaction.amount.toLocaleString('en-US', { style: 'currency', currency: transaction.currency })}
+                      </TableCell>
+                      <TableCell>{transaction.remarks}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(endIndex, transactions.length)} of {transactions.length} transactions
+            </span>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                </PaginationItem>
+                <PaginationItem>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </CardFooter>
+        </Card>
+        {selectedTransaction && (
+          <EditTransactionDialog
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            transaction={selectedTransaction}
+          />
+        )}
+      </div>
     </Layout>
   );
 };
