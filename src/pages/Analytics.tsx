@@ -154,7 +154,7 @@ const AnalyticsPage = () => {
         <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
       </div>
       <div className="grid gap-4">
-        <RecentTransactions />
+        <RecentTransactions transactions={filteredTransactions} />
       </div>
     </div>
   );
