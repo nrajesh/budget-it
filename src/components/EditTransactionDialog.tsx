@@ -71,7 +71,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
-  const isTransfer = accounts.includes(vendorValue) || accounts.includes(accountValue); // Check if it's a transfer based on either field
+  const isTransfer = accounts.includes(vendorValue);
 
   React.useEffect(() => {
     form.reset({
@@ -79,6 +79,12 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       date: new Date(transaction.date).toISOString().split("T")[0],
     });
   }, [transaction, form]);
+
+  React.useEffect(() => {
+    if (isTransfer) {
+      form.setValue("category", "Transfer");
+    }
+  }, [isTransfer, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     updateTransaction({

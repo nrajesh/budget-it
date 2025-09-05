@@ -56,21 +56,73 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const updateTransaction = (updatedTransaction: Transaction) => {
     setTransactions(prev => {
-      if (updatedTransaction.transferId) {
+      const originalTransaction = prev.find(t => t.id === updatedTransaction.id);
+      if (!originalTransaction) {
+        return prev; // Should not happen
+      }
+
+      const wasTransfer = !!originalTransaction.transferId;
+      const isNowTransfer = accounts.includes(updatedTransaction.vendor);
+
+      // Case 1: Editing a regular transaction to become a transfer
+      if (!wasTransfer && isNowTransfer) {
+        const filteredTransactions = prev.filter(t => t.id !== originalTransaction.id);
+        const transferId = `transfer_${Date.now()}`;
+        const baseRemarks = updatedTransaction.remarks || "";
+        const newAmount = Math.abs(updatedTransaction.amount);
+
+        const debitTransaction: Transaction = {
+          ...updatedTransaction,
+          id: `txn_${Date.now()}_d`,
+          transferId,
+          amount: -newAmount,
+          category: 'Transfer',
+          remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
+        };
+
+        const creditTransaction: Transaction = {
+          ...updatedTransaction,
+          id: `txn_${Date.now()}_c`,
+          transferId,
+          account: updatedTransaction.vendor,
+          vendor: updatedTransaction.account,
+          amount: newAmount,
+          category: 'Transfer',
+          remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
+        };
+        
+        return [debitTransaction, creditTransaction, ...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+
+      // Case 2: Editing a transfer to become a regular transaction
+      if (wasTransfer && !isNowTransfer) {
+        const filteredTransactions = prev.filter(t => t.transferId !== originalTransaction.transferId);
+        const newSingleTransaction: Transaction = {
+          ...updatedTransaction,
+          id: `txn_${Date.now()}`,
+          transferId: undefined,
+          amount: -Math.abs(updatedTransaction.amount),
+        };
+        
+        return [newSingleTransaction, ...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+
+      // Case 3: Editing a transfer (remains a transfer)
+      if (wasTransfer && isNowTransfer) {
         const sibling = prev.find(t => t.transferId === updatedTransaction.transferId && t.id !== updatedTransaction.id);
         if (!sibling) {
           return prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t));
         }
 
-        const oldDebit = updatedTransaction.amount < 0 ? updatedTransaction : sibling;
-        const oldCredit = updatedTransaction.amount < 0 ? sibling : updatedTransaction;
+        const oldDebit = originalTransaction.amount < 0 ? originalTransaction : sibling;
+        const oldCredit = originalTransaction.amount < 0 ? sibling : originalTransaction;
 
         const newDate = updatedTransaction.date;
         const newAmount = Math.abs(updatedTransaction.amount);
         const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
 
-        const newDebitAccount = updatedTransaction.amount < 0 ? updatedTransaction.account : updatedTransaction.vendor;
-        const newCreditAccount = updatedTransaction.amount < 0 ? updatedTransaction.vendor : updatedTransaction.account;
+        const newDebitAccount = updatedTransaction.account;
+        const newCreditAccount = updatedTransaction.vendor;
 
         const newDebit: Transaction = {
           ...oldDebit,
@@ -91,14 +143,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
         
         return prev.map(t => {
-          if (t.id === newDebit.id) return newDebit;
-          if (t.id === newCredit.id) return newCredit;
+          if (t.id === oldDebit.id) return newDebit;
+          if (t.id === oldCredit.id) return newCredit;
           return t;
         });
-
-      } else {
-        return prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t));
       }
+
+      // Case 4: Editing a regular transaction (remains regular)
+      return prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t));
     });
   };
 
