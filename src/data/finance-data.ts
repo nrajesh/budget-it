@@ -54,14 +54,20 @@ export type Transaction = {
   vendor: string;
   amount: number;
   remarks: string;
+  category: string;
 };
+
+export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out"];
+export const accounts = ["Checking Account", "Savings Account", "Credit Card"];
+export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
 export const transactionsData: Transaction[] = Array.from({ length: 25 }, (_, i) => ({
   id: `txn_${i + 1}`,
   date: new Date(2024, 4, 28 - i).toISOString(),
-  account: i % 3 === 0 ? "Checking" : "Savings",
+  account: accounts[i % accounts.length],
   currency: "USD",
-  vendor: `Vendor ${i + 1}`,
+  vendor: vendors[i % vendors.length],
   amount: (Math.random() > 0.4 ? 1 : -1) * parseFloat((Math.random() * 200).toFixed(2)),
   remarks: `Remark for transaction ${i + 1}`,
-}));
+  category: categories[i % categories.length],
+})).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

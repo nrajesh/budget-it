@@ -15,10 +15,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import Layout from "@/components/Layout";
-import { transactionsData, Transaction } from "@/data/finance-data";
+import { Transaction } from "@/data/finance-data";
 import EditTransactionDialog from "@/components/EditTransactionDialog";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,7 +27,7 @@ const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
-  const [transactions, setTransactions] = React.useState(transactionsData);
+  const { transactions, updateTransaction } = useTransactions();
 
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -39,9 +40,7 @@ const TransactionsPage = () => {
   };
 
   const handleSaveTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
-    );
+    updateTransaction(updatedTransaction);
     setIsDialogOpen(false);
   };
 
@@ -59,6 +58,7 @@ const TransactionsPage = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Vendor</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Remarks</TableHead>
                 </TableRow>
@@ -69,6 +69,7 @@ const TransactionsPage = () => {
                     <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
                     <TableCell>{transaction.account}</TableCell>
                     <TableCell>{transaction.vendor}</TableCell>
+                    <TableCell>{transaction.category}</TableCell>
                     <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
                       {transaction.amount.toLocaleString('en-US', { style: 'currency', currency: transaction.currency })}
                     </TableCell>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -19,61 +20,71 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Transaction } from "@/data/finance-data";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTransactions } from "@/contexts/TransactionsContext";
 import { accounts, vendors, categories } from "@/data/finance-data";
+import { Combobox } from "@/components/ui/combobox";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   account: z.string().min(1, "Account is required"),
   vendor: z.string().min(1, "Vendor is required"),
-  amount: z.coerce.number(),
-  remarks: z.string(),
   category: z.string().min(1, "Category is required"),
+  amount: z.coerce.number(),
+  remarks: z.string().optional(),
 });
 
-interface EditTransactionDialogProps {
+interface AddTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  transaction: Transaction;
-  onSave: (data: Transaction) => void;
 }
 
-const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
+const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
-  transaction,
-  onSave,
 }) => {
+  const { addTransaction } = useTransactions();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      ...transaction,
-      date: new Date(transaction.date).toISOString().split("T")[0],
+      date: new Date().toISOString().split("T")[0],
+      account: "",
+      vendor: "",
+      category: "",
+      amount: 0,
+      remarks: "",
     },
   });
 
   React.useEffect(() => {
-    form.reset({
-      ...transaction,
-      date: new Date(transaction.date).toISOString().split("T")[0],
-    });
-  }, [transaction, form]);
+    if (isOpen) {
+      form.reset({
+        date: new Date().toISOString().split("T")[0],
+        account: "",
+        vendor: "",
+        category: "",
+        amount: 0,
+        remarks: "",
+      });
+    }
+  }, [isOpen, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    onSave({
-      ...transaction,
-      ...values,
-      date: new Date(values.date).toISOString(),
-    });
+    addTransaction(values);
     onOpenChange(false);
   };
+
+  const accountOptions = accounts.map(acc => ({ value: acc, label: acc }));
+  const vendorOptions = vendors.map(v => ({ value: v, label: v }));
+  const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Transaction</DialogTitle>
+          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogDescription>
+            Quickly add a new transaction to your records.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -96,16 +107,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Account</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an account" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {accounts.map(acc => <SelectItem key={acc} value={acc}>{acc}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={accountOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select an account..."
+                    searchPlaceholder="Search accounts..."
+                    emptyPlaceholder="No account found."
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -116,16 +125,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vendor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a vendor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {vendors.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                   <Combobox
+                    options={vendorOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select a vendor..."
+                    searchPlaceholder="Search vendors..."
+                    emptyPlaceholder="No vendor found."
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -136,16 +143,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                   <Combobox
+                    options={categoryOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select a category..."
+                    searchPlaceholder="Search categories..."
+                    emptyPlaceholder="No category found."
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -177,7 +182,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               )}
             />
             <DialogFooter>
-              <Button type="submit">Save changes</Button>
+              <Button type="submit">Add Transaction</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -186,4 +191,4 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   );
 };
 
-export default EditTransactionDialog;
+export default AddTransactionDialog;

@@ -14,6 +14,7 @@ import {
   Newspaper,
   Notebook,
   Phone,
+  Plus,
   ShoppingCart,
   User,
   Users,
@@ -50,10 +51,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import AddTransactionDialog from "./AddTransactionDialog";
 
 const Layout = ({ children, pageTitle }: { children: React.ReactNode, pageTitle: string }) => {
   const { setTheme, theme } = useTheme();
   const location = useLocation();
+  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   return (
     <SidebarProvider>
@@ -238,6 +241,11 @@ const Layout = ({ children, pageTitle }: { children: React.ReactNode, pageTitle:
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 sm:p-6">
           {children}
         </main>
+        <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg">
+          <Plus className="h-6 w-6" />
+          <span className="sr-only">Add Transaction</span>
+        </Button>
+        <AddTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
       </SidebarInset>
     </SidebarProvider>
   );
