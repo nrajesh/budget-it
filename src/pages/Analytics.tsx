@@ -6,16 +6,49 @@ import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { type ChartConfig } from "@/components/ui/chart";
+import { accounts as allAccounts, type Transaction } from "@/data/finance-data";
+import { AccountFilter } from "@/components/AccountFilter";
+
+const slugify = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
 
 const AnalyticsPage = () => {
   const { transactions } = useTransactions();
+  const accountSlugs = React.useMemo(() => allAccounts.map(slugify), []);
+  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(accountSlugs);
+
+  const chartConfigForAccounts = React.useMemo(() => {
+    const config: ChartConfig = {};
+    allAccounts.forEach((account, index) => {
+      const slug = slugify(account);
+      config[slug] = {
+        label: account,
+        color: `hsl(var(--chart-${index + 1}))`,
+      };
+    });
+    return config;
+  }, []);
+
+  const handleAccountToggle = (accountSlug: string) => {
+    setSelectedAccounts(prev =>
+      prev.includes(accountSlug)
+        ? prev.filter(a => a !== accountSlug)
+        : [...prev, accountSlug]
+    );
+  };
+
+  const filteredTransactions = React.useMemo(() => {
+    if (selectedAccounts.length === accountSlugs.length) {
+      return transactions;
+    }
+    return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
+  }, [transactions, selectedAccounts, accountSlugs]);
 
   const { totalIncome, totalExpenses, netBalance } = React.useMemo(() => {
-    const income = transactions
+    const income = filteredTransactions
       .filter(t => t.amount > 0 && t.category !== 'Transfer')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = transactions
+    const expenses = filteredTransactions
       .filter(t => t.amount < 0 && t.category !== 'Transfer')
       .reduce((sum, t) => sum + t.amount, 0);
 
@@ -24,10 +57,10 @@ const AnalyticsPage = () => {
       totalExpenses: expenses,
       netBalance: income + expenses,
     };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const { spendingData, spendingConfig } = React.useMemo(() => {
-    const spendingByCategory = transactions
+    const spendingByCategory = filteredTransactions
       .filter(t => t.amount < 0 && t.category !== 'Transfer')
       .reduce((acc, t) => {
         const category = t.category;
@@ -53,7 +86,7 @@ const AnalyticsPage = () => {
     }, {} as ChartConfig);
 
     return { spendingData: data, spendingConfig: config };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -99,14 +132,26 @@ const AnalyticsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {transactions.filter(t => t.category !== 'Transfer').length}
+              {filteredTransactions.filter(t => t.category !== 'Transfer').length}
             </div>
           </CardContent>
         </Card>
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <BalanceOverTimeChart />
+        <BalanceOverTimeChart 
+          transactions={filteredTransactions} 
+          selectedAccounts={selectedAccounts}
+          chartConfig={chartConfigForAccounts}
+        />
         <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
+      </div>
+      <div className="grid gap-4">
+        <AccountFilter
+          allAccounts={allAccounts}
+          selectedAccounts={selectedAccounts}
+          onAccountToggle={handleAccountToggle}
+          chartConfig={chartConfigForAccounts}
+        />
       </div>
       <div className="grid gap-4">
         <RecentTransactions />

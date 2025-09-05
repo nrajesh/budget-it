@@ -2,36 +2,26 @@
 
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig
 } from "@/components/ui/chart";
-import { useTransactions } from "@/contexts/TransactionsContext";
+import { type Transaction } from "@/data/finance-data";
 import { accounts as allAccounts } from "@/data/finance-data";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 const slugify = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
 
-export function BalanceOverTimeChart() {
-  const accountSlugs = React.useMemo(() => allAccounts.map(slugify), []);
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(accountSlugs);
-  const { transactions } = useTransactions();
+interface BalanceOverTimeChartProps {
+  transactions: Transaction[];
+  selectedAccounts: string[];
+  chartConfig: ChartConfig;
+}
 
-  const chartConfig = React.useMemo(() => {
-    const config: ChartConfig = {};
-    allAccounts.forEach((account, index) => {
-      const slug = slugify(account);
-      config[slug] = {
-        label: account,
-        color: `hsl(var(--chart-${index + 1}))`,
-      };
-    });
-    return config;
-  }, []);
+export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConfig }: BalanceOverTimeChartProps) {
+  const accountSlugs = React.useMemo(() => allAccounts.map(slugify), []);
 
   const chartData = React.useMemo(() => {
     if (transactions.length === 0) return [];
@@ -41,7 +31,6 @@ export function BalanceOverTimeChart() {
         const date = new Date(t.date).toISOString().split('T')[0];
         const accountSlug = slugify(t.account);
         if (!dailyChanges[date]) dailyChanges[date] = {};
-        // Ensure amount is a number, default to 0 if not
         const amount = typeof t.amount === 'number' ? t.amount : 0;
         if (!dailyChanges[date][accountSlug]) dailyChanges[date][accountSlug] = 0;
         dailyChanges[date][accountSlug] += amount;
@@ -55,23 +44,13 @@ export function BalanceOverTimeChart() {
         const changes = dailyChanges[date];
         const record: { [key: string]: any } = { date };
         accountSlugs.forEach(slug => {
-            // Ensure changes[slug] is a number before adding
             const changeAmount = typeof changes[slug] === 'number' ? changes[slug] : 0;
             cumulativeBalances[slug] += changeAmount;
-            // Ensure cumulative balance is non-negative for percentage chart
             record[slug] = Math.max(0, cumulativeBalances[slug]);
         });
         return record;
     });
   }, [transactions, accountSlugs]);
-
-  const handleAccountToggle = (accountSlug: string) => {
-    setSelectedAccounts(prev =>
-      prev.includes(accountSlug)
-        ? prev.filter(a => a !== accountSlug)
-        : [...prev, accountSlug]
-    );
-  };
 
   return (
     <Card>
@@ -105,7 +84,6 @@ export function BalanceOverTimeChart() {
                 formatter={(value, name, item) => {
                     const payload = item.payload;
                     const accountLabel = chartConfig[name as keyof typeof chartConfig]?.label;
-                    // Ensure originalValue is a number
                     const originalValue = typeof payload[name] === 'number' ? payload[name] : 0; 
                     const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (typeof payload[slug] === 'number' ? payload[slug] : 0), 0);
                     const percentage = totalForVisible > 0 ? (originalValue / totalForVisible) * 100 : 0;
@@ -140,24 +118,6 @@ export function BalanceOverTimeChart() {
           </AreaChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-4">
-        {allAccounts.map(account => {
-          const slug = slugify(account);
-          return (
-            <div key={slug} className="flex items-center space-x-2">
-              <Checkbox
-                id={slug}
-                checked={selectedAccounts.includes(slug)}
-                onCheckedChange={() => handleAccountToggle(slug)}
-              />
-              <Label htmlFor={slug} className="text-sm font-medium leading-none flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: chartConfig[slug]?.color }} />
-                {account}
-              </Label>
-            </div>
-          )
-        })}
-      </CardFooter>
     </Card>
   );
 }
