@@ -272,13 +272,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setTransactions(demoData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   }, [availableCurrencies]);
 
-  // Initial data generation when the component mounts for the first time
-  React.useEffect(() => {
-    if (transactions.length === 0) { // Only generate if no transactions exist
-      generateDiverseDemoData();
-    }
-  }, [generateDiverseDemoData, transactions.length]);
-
+  // Removed the useEffect that automatically generated data when transactions.length === 0
+  // Now, data will only be generated when the 'Generate Data' button is explicitly clicked.
 
   const value = React.useMemo(() => ({
     transactions,
