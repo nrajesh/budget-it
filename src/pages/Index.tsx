@@ -79,48 +79,48 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-const salesProfitData = [
-  { month: "Aug", profit: 30000, expenses: 20000 },
-  { month: "Sep", profit: 28000, expenses: 22000 },
-  { month: "Oct", profit: 25000, expenses: 28000 },
-  { month: "Nov", profit: 28000, expenses: 30000 },
-  { month: "Dec", profit: 45000, expenses: 35000 },
-  { month: "Jan", profit: 60000, expenses: 40000 },
-  { month: "Feb", profit: 75000, expenses: 50000 },
-  { month: "Mar", profit: 65000, expenses: 55000 },
-  { month: "Apr", profit: 50000, expenses: 60000 },
+const incomeVsExpensesData = [
+  { month: "Aug", income: 4000, expenses: 2500 },
+  { month: "Sep", income: 4200, expenses: 2800 },
+  { month: "Oct", income: 4100, expenses: 2900 },
+  { month: "Nov", income: 4500, expenses: 3000 },
+  { month: "Dec", income: 4800, expenses: 3200 },
+  { month: "Jan", income: 5000, expenses: 3400 },
+  { month: "Feb", income: 5200, expenses: 3500 },
+  { month: "Mar", income: 5100, expenses: 3600 },
+  { month: "Apr", income: 5300, expenses: 3700 },
 ];
 
-const productSalesData = [
-  { name: "modernize", value: 36, fill: "var(--color-modernize)" },
-  { name: "spike", value: 17, fill: "var(--color-spike)" },
-  { name: "ample", value: 22, fill: "var(--color-ample)" },
-  { name: "materialm", value: 31, fill: "var(--color-materialm)" },
+const spendingCategoriesData = [
+  { name: "groceries", value: 45, fill: "var(--color-groceries)" },
+  { name: "utilities", value: 20, fill: "var(--color-utilities)" },
+  { name: "transport", value: 15, fill: "var(--color-transport)" },
+  { name: "entertainment", value: 20, fill: "var(--color-entertainment)" },
 ];
 
 const chartConfig = {
-  profit: {
-    label: "Profit",
+  income: {
+    label: "Income",
     color: "hsl(var(--chart-1))",
   },
   expenses: {
     label: "Expenses",
     color: "hsl(var(--chart-2))",
   },
-  modernize: {
-    label: "Modernize",
+  groceries: {
+    label: "Groceries",
     color: "hsl(var(--chart-1))",
   },
-  spike: {
-    label: "Spike",
+  utilities: {
+    label: "Utilities",
     color: "hsl(var(--chart-2))",
   },
-  ample: {
-    label: "Ample",
+  transport: {
+    label: "Transport",
     color: "hsl(var(--chart-3))",
   },
-  materialm: {
-    label: "MaterialM",
+  entertainment: {
+    label: "Entertainment",
     color: "hsl(var(--chart-4))",
   },
 } satisfies ChartConfig;
@@ -136,7 +136,7 @@ const Index = () => {
             <Button variant="ghost" size="icon" className="size-9 shrink-0">
               <Mountain className="size-5 text-primary" />
             </Button>
-            <span className="text-lg font-semibold">Finance</span>
+            <span className="text-lg font-semibold">Budgeting</span>
           </div>
         </SidebarHeader>
         <SidebarContent className="p-0">
@@ -158,7 +158,7 @@ const Index = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Users />
-                  CRM
+                  Transactions
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -169,25 +169,25 @@ const Index = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Phone />
-                  Contacts
+                  Payees
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <ShoppingCart />
-                  Ecommerce
+                  Bills
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Newspaper />
-                  Blogs
+                  Reports
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <MessageSquare />
-                  Chats
+                  Alerts
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <Collapsible asChild>
@@ -214,7 +214,7 @@ const Index = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <FileText />
-                  Invoice
+                  Budgets
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -226,7 +226,7 @@ const Index = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Mail />
-                  Email
+                  Notifications
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -308,22 +308,22 @@ const Index = () => {
               <CardHeader>
                 <CardTitle>Welcome Jonathan Deo</CardTitle>
                 <CardDescription className="text-primary-foreground/80">
-                  Check all the statistics
+                  Check your financial overview
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-start gap-4 sm:flex-row">
                 <div className="grid flex-1 grid-cols-2 gap-4">
                   <div className="rounded-lg bg-primary/80 p-4">
                     <p className="text-sm text-primary-foreground/80">
-                      New Leads
+                      Income
                     </p>
-                    <p className="text-2xl font-bold">573</p>
+                    <p className="text-2xl font-bold">$5,400</p>
                   </div>
                   <div className="rounded-lg bg-primary/80 p-4">
                     <p className="text-sm text-primary-foreground/80">
-                      Conversion
+                      Savings Rate
                     </p>
-                    <p className="text-2xl font-bold">87%</p>
+                    <p className="text-2xl font-bold">25%</p>
                   </div>
                 </div>
                 <div className="hidden sm:block">
@@ -338,47 +338,51 @@ const Index = () => {
             <div className="grid gap-6 md:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Sales</CardTitle>
-                  <TrendingUp className="size-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">2,358</div>
-                  <p className="text-xs text-green-500">+23% from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Refunds
-                  </CardTitle>
-                  <TrendingDown className="size-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">434</div>
-                  <p className="text-xs text-red-500">-12% from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Earnings
+                    Monthly Spending
                   </CardTitle>
                   <DollarSign className="size-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$245k</div>
-                  <p className="text-xs text-green-500">+8% from last month</p>
+                  <div className="text-2xl font-bold">$1,890</div>
+                  <p className="text-xs text-red-500">+10% from last month</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Bills Due
+                  </CardTitle>
+                  <FileText className="size-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">5</div>
+                  <p className="text-xs text-muted-foreground">
+                    2 due this week
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Net Worth
+                  </CardTitle>
+                  <DollarSign className="size-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">$120k</div>
+                  <p className="text-xs text-green-500">+2% from last month</p>
                 </CardContent>
               </Card>
             </div>
             <div className="grid gap-6 lg:grid-cols-5">
               <Card className="lg:col-span-3">
                 <CardHeader>
-                  <CardTitle>Sales Profit</CardTitle>
+                  <CardTitle>Income vs Expenses</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ChartContainer config={chartConfig} className="h-64 w-full">
-                    <LineChart data={salesProfitData}>
+                    <LineChart data={incomeVsExpensesData}>
                       <RechartsTooltip
                         content={<ChartTooltipContent indicator="dot" />}
                       />
@@ -389,7 +393,7 @@ const Index = () => {
                       />
                       <Line
                         type="monotone"
-                        dataKey="profit"
+                        dataKey="income"
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         dot={false}
@@ -408,7 +412,7 @@ const Index = () => {
               </Card>
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle>Product Sales</CardTitle>
+                  <CardTitle>Spending Categories</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4">
                   <ChartContainer
@@ -416,7 +420,7 @@ const Index = () => {
                     className="mx-auto aspect-square h-48"
                   >
                     <RadialBarChart
-                      data={productSalesData}
+                      data={spendingCategoriesData}
                       startAngle={90}
                       endAngle={-270}
                       innerRadius="70%"
@@ -438,7 +442,7 @@ const Index = () => {
                     {Object.entries(chartConfig)
                       .slice(2)
                       .map(([key, config]) => {
-                        const item = productSalesData.find(
+                        const item = spendingCategoriesData.find(
                           (d) => d.name === key,
                         );
                         if (!item) return null;
