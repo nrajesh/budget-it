@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { DollarSign, TrendingUp, TrendingDown, Scale } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Scale, Hash } from "lucide-react"; // Import Hash icon
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
@@ -128,7 +128,7 @@ const AnalyticsPage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Hash className="h-4 w-4 text-muted-foreground" /> {/* Changed icon to Hash */}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
