@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTheme } from "next-themes";
 import {
   BarChart3,
@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/sidebar";
 import AddTransactionDialog from "./AddTransactionDialog";
 
-const Layout = ({ children }: { children?: React.ReactNode }) => {
+const Layout = () => {
   const { setTheme, theme } = useTheme();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -254,7 +254,7 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 sm:p-6">
-          {children}
+          <Outlet />
         </main>
         <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg">
           <Plus className="h-6 w-6" />
