@@ -25,6 +25,7 @@ import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
+import { RotateCcw } from "lucide-react"; // Import the reset icon
 
 const ITEMS_PER_PAGE = 10;
 
@@ -107,6 +108,13 @@ const TransactionsPage = () => {
     setIsDialogOpen(true);
   };
 
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
+    setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
+    setDateRange(undefined);
+  };
+
   // Reset pagination when filters change
   React.useEffect(() => {
     setCurrentPage(1);
@@ -119,7 +127,7 @@ const TransactionsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Transactions</CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end"> {/* Added items-end for alignment */}
               <Input
                 placeholder="Search vendor or remarks..."
                 value={searchTerm}
@@ -139,6 +147,10 @@ const TransactionsPage = () => {
                 placeholder="Filter by Category"
               />
               <DateRangePicker dateRange={dateRange} onDateChange={setDateRange} />
+              <Button variant="outline" size="icon" onClick={handleResetFilters} className="shrink-0">
+                <RotateCcw className="h-4 w-4" />
+                <span className="sr-only">Reset Filters</span>
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
