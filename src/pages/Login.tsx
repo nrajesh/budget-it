@@ -1,5 +1,7 @@
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '@/integrations/supabase/client'; // Import the supabase client
+
 function Login() {
   // Other code here
   return (
@@ -13,3 +15,5 @@ function Login() {
     />
   );
 }
+
+export default Login;
