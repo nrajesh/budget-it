@@ -13,6 +13,7 @@ import {
 import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { slugify } from "@/lib/utils"; // Import slugify
 
 interface RecentTransactionsProps {
   transactions: Transaction[]; // These are transactions filtered by account
@@ -51,7 +52,11 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
 
   // Filter transactions for display based on selected categories
   const displayTransactions = React.useMemo(() => {
-    return transactionsWithCorrectBalance.filter(t => selectedCategories.includes(t.category));
+    if (selectedCategories.length === 0) {
+      // If no categories are selected, show all transactions
+      return transactionsWithCorrectBalance;
+    }
+    return transactionsWithCorrectBalance.filter(t => selectedCategories.includes(slugify(t.category)));
   }, [transactionsWithCorrectBalance, selectedCategories]);
 
   const indexOfLastTransaction = currentPage * transactionsPerPage;
