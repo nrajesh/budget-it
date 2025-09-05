@@ -1,15 +1,14 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { DollarSign, TrendingUp, TrendingDown, Scale, Hash } from "lucide-react"; // Import Hash icon
+import { DollarSign, TrendingUp, TrendingDown, Scale, Hash } from "lucide-react";
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { type ChartConfig } from "@/components/ui/chart";
 import { accounts as allAccounts, type Transaction } from "@/data/finance-data";
 import { AccountFilter } from "@/components/AccountFilter";
-
-const slugify = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
+import { slugify } from "@/lib/utils"; // Import slugify from utils
 
 const AnalyticsPage = () => {
   const { transactions } = useTransactions();
@@ -43,13 +42,18 @@ const AnalyticsPage = () => {
     return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
   }, [transactions, selectedAccounts, accountSlugs]);
 
+  // Memoize non-transfer transactions to avoid repeated filtering
+  const nonTransferFilteredTransactions = React.useMemo(() => {
+    return filteredTransactions.filter(t => t.category !== 'Transfer');
+  }, [filteredTransactions]);
+
   const { totalIncome, totalExpenses, netBalance } = React.useMemo(() => {
-    const income = filteredTransactions
-      .filter(t => t.amount > 0 && t.category !== 'Transfer')
+    const income = nonTransferFilteredTransactions
+      .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = filteredTransactions
-      .filter(t => t.amount < 0 && t.category !== 'Transfer')
+    const expenses = nonTransferFilteredTransactions
+      .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + t.amount, 0);
 
     return {
@@ -57,11 +61,11 @@ const AnalyticsPage = () => {
       totalExpenses: expenses,
       netBalance: income + expenses,
     };
-  }, [filteredTransactions]);
+  }, [nonTransferFilteredTransactions]);
 
   const { spendingData, spendingConfig } = React.useMemo(() => {
-    const spendingByCategory = filteredTransactions
-      .filter(t => t.amount < 0 && t.category !== 'Transfer')
+    const spendingByCategory = nonTransferFilteredTransactions
+      .filter(t => t.amount < 0)
       .reduce((acc, t) => {
         const category = t.category;
         if (!acc[category]) {
@@ -86,7 +90,7 @@ const AnalyticsPage = () => {
     }, {} as ChartConfig);
 
     return { spendingData: data, spendingConfig: config };
-  }, [filteredTransactions]);
+  }, [nonTransferFilteredTransactions]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -128,11 +132,11 @@ const AnalyticsPage = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
-            <Hash className="h-4 w-4 text-muted-foreground" /> {/* Changed icon to Hash */}
+            <Hash className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredTransactions.filter(t => t.category !== 'Transfer').length}
+              {nonTransferFilteredTransactions.length}
             </div>
           </CardContent>
         </Card>
