@@ -4,8 +4,8 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
   CommandList,
+  CommandItem, // Added CommandItem here
 } from "@/components/ui/command";
 import {
   Popover,
@@ -60,7 +60,7 @@ export function MultiSelectDropdown({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-[200px] justify-between">
+        <Button variant="outline" className="w-full sm:w-[200px] justify-between"> {/* Adjusted width */}
           {isAllSelected && options.length > 0 ? (
             <span>{allOption.label} ({options.length})</span>
           ) : (
@@ -69,7 +69,7 @@ export function MultiSelectDropdown({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-full sm:w-[200px] p-0"> {/* Adjusted width */}
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>

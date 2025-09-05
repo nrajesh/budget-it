@@ -79,43 +79,45 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
         <CardDescription>Your most recent transactions, filtered by selected accounts and categories.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vendor / Account</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentTransactions.length === 0 ? (
+        <div className="overflow-x-auto"> {/* Added overflow-x-auto here */}
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                  No transactions found for the selected filters.
-                </TableCell>
+                <TableHead>Vendor / Account</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
               </TableRow>
-            ) : (
-              currentTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    <div className="font-medium">{transaction.vendor}</div>
-                    <div className="text-sm text-muted-foreground">{transaction.account}</div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{transaction.category}</Badge>
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(transaction.amount)} {/* Convert and format amount */}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(transaction.runningBalance)} {/* Convert and format running balance */}
+            </TableHeader>
+            <TableBody>
+              {currentTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    No transactions found for the selected filters.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                currentTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>
+                      <div className="font-medium">{transaction.vendor}</div>
+                      <div className="text-sm text-muted-foreground">{transaction.account}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{transaction.category}</Badge>
+                    </TableCell>
+                    <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(transaction.amount)} {/* Convert and format amount */}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(transaction.runningBalance)} {/* Convert and format running balance */}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
       {totalPages > 1 && (
         <CardFooter className="flex justify-center">

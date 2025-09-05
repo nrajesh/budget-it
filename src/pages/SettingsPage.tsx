@@ -45,7 +45,7 @@ const SettingsPage = () => {
           </CardHeader>
           <CardContent>
             <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]"> {/* Adjusted width */}
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>

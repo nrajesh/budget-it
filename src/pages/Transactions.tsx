@@ -132,7 +132,7 @@ const TransactionsPage = () => {
                 placeholder="Search vendor or remarks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
+                className="max-w-sm w-full"
               />
               <MultiSelectDropdown
                 options={availableAccountOptions}
@@ -154,7 +154,7 @@ const TransactionsPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="border rounded-md">
+            <div className="border rounded-md overflow-x-auto"> {/* Added overflow-x-auto here */}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -197,26 +197,22 @@ const TransactionsPage = () => {
             </span>
             <Pagination>
               <PaginationContent>
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                </PaginationItem>
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </PaginationItem>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
               </PaginationContent>
             </Pagination>
           </CardFooter>
