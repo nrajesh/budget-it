@@ -10,16 +10,16 @@ interface TransactionsContextType {
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
-// Helper function to generate sample transactions for the last month
-const generateSampleTransactions = (count: number): Transaction[] => {
+// Helper function to generate sample transactions for a given month
+const generateTransactionsForMonth = (monthOffset: number, count: number): Transaction[] => {
   const sampleTransactions: Transaction[] = [];
   const now = new Date();
-  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Start of last month
-  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0); // End of last month
+  const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const endOfTargetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 0);
 
   for (let i = 0; i < count; i++) {
-    const randomDay = Math.floor(Math.random() * (endOfLastMonth.getDate() - lastMonth.getDate() + 1)) + lastMonth.getDate();
-    const date = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), randomDay);
+    const randomDay = Math.floor(Math.random() * (endOfTargetMonth.getDate() - targetMonth.getDate() + 1)) + targetMonth.getDate();
+    const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
 
     const isTransfer = Math.random() < 0.2; // 20% chance of being a transfer
     let vendorName = vendors[Math.floor(Math.random() * vendors.length)];
@@ -29,20 +29,18 @@ const generateSampleTransactions = (count: number): Transaction[] => {
     const accountName = accounts[Math.floor(Math.random() * accounts.length)];
 
     if (isTransfer) {
-      // Ensure vendor is an account and not the same as the source account
       let destAccount = accounts[Math.floor(Math.random() * accounts.length)];
       while (destAccount === accountName) {
         destAccount = accounts[Math.floor(Math.random() * accounts.length)];
       }
-      vendorName = destAccount; // Vendor becomes the destination account
+      vendorName = destAccount;
       categoryName = 'Transfer';
-      amountValue = Math.abs(amountValue); // Transfers are always positive in the credit entry
+      amountValue = Math.abs(amountValue);
     } else {
-      // For non-transfers, 60% chance of being an expense, 40% income
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
-        amountValue = -amountValue; // Make it an expense
+        amountValue = -amountValue;
       } else if (categoryName === 'Salary') {
-        amountValue = Math.abs(amountValue) * 5; // Make salary larger
+        amountValue = Math.abs(amountValue) * 5;
       }
     }
 
@@ -57,12 +55,12 @@ const generateSampleTransactions = (count: number): Transaction[] => {
     };
 
     if (isTransfer) {
-      const transferId = `transfer_${Date.now()}_${i}`;
+      const transferId = `transfer_${Date.now()}_${i}_${monthOffset}`;
       const debitTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_d`,
+        id: `txn_${Date.now()}_${i}_d_${monthOffset}`,
         transferId,
-        amount: -Math.abs(baseTransactionDetails.amount), // Debit from source account
+        amount: -Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
       };
@@ -70,11 +68,11 @@ const generateSampleTransactions = (count: number): Transaction[] => {
 
       const creditTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_c`,
+        id: `txn_${Date.now()}_${i}_c_${monthOffset}`,
         transferId,
-        account: baseTransactionDetails.vendor, // Destination account
-        vendor: baseTransactionDetails.account, // Source account
-        amount: Math.abs(baseTransactionDetails.amount), // Credit to destination account
+        account: baseTransactionDetails.vendor,
+        vendor: baseTransactionDetails.account,
+        amount: Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
       };
@@ -82,17 +80,20 @@ const generateSampleTransactions = (count: number): Transaction[] => {
     } else {
       const singleTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}`,
+        id: `txn_${Date.now()}_${i}_${monthOffset}`,
       };
       sampleTransactions.push(singleTransaction);
     }
   }
-  return sampleTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return sampleTransactions;
 };
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with 20 sample transactions for the last month
-  const [transactions, setTransactions] = React.useState<Transaction[]>(() => generateSampleTransactions(20));
+  const [transactions, setTransactions] = React.useState<Transaction[]>(() => {
+    const currentMonthTransactions = generateTransactionsForMonth(0, 10); // 10 for current month
+    const previousMonthTransactions = generateTransactionsForMonth(-1, 10); // 10 for previous month
+    return [...currentMonthTransactions, ...previousMonthTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  });
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
@@ -211,7 +212,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           account: newDebitAccount,
           vendor: newCreditAccount,
           amount: -newAmount,
-          category: 'Transfer', // Ensure category is 'Transfer' for transfers
+          category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${newCreditAccount})` : `Transfer to ${newCreditAccount}`,
         };
 
@@ -221,7 +222,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           account: newCreditAccount,
           vendor: newDebitAccount,
           amount: newAmount,
-          category: 'Transfer', // Ensure category is 'Transfer' for transfers
+          category: 'Transfer',
           remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${newCreditAccount})`, `(From ${newDebitAccount})`)}` : `Transfer from ${newDebitAccount}`,
         };
         
