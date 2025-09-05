@@ -15,9 +15,10 @@ import { type Transaction } from "@/data/finance-data";
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
+  selectedCategories: string[]; // New prop for category filtering
 }
 
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
@@ -27,26 +28,36 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return sortedTransactions.map(t => {
-      if (t.category !== 'Transfer') {
+      if (t.category !== 'Transfer') { // Transfers don't affect overall balance
         currentBalance += t.amount;
       }
       return { ...t, runningBalance: currentBalance };
     }).reverse(); // Reverse back to descending order for display
   }, [transactions]);
 
+  // Filter transactions for display based on selected categories
+  const displayTransactions = React.useMemo(() => {
+    return transactionsWithRunningBalance.filter(t => selectedCategories.includes(t.category));
+  }, [transactionsWithRunningBalance, selectedCategories]);
+
   const indexOfLastTransaction = currentPage * transactionsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
-  const currentTransactions = transactionsWithRunningBalance.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const currentTransactions = displayTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
 
-  const totalPages = Math.ceil(transactionsWithRunningBalance.length / transactionsPerPage);
+  const totalPages = Math.ceil(displayTransactions.length / transactionsPerPage);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  // Reset pagination when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [displayTransactions]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
-        <CardDescription>Your most recent transactions, filtered by selected accounts.</CardDescription>
+        <CardDescription>Your most recent transactions, filtered by selected accounts and categories.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -62,7 +73,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
             {currentTransactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                  No transactions found for the selected accounts.
+                  No transactions found for the selected filters.
                 </TableCell>
               </TableRow>
             ) : (

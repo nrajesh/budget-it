@@ -19,14 +19,13 @@ const AnalyticsPage = () => {
 
   // Category State
   const allCategoryNames = React.useMemo(() => {
-    const categories = new Set(transactions
-      .filter(t => t.amount < 0 && t.category !== 'Transfer')
-      .map(t => t.category));
+    const categories = new Set(transactions.map(t => t.category)); // Include all categories
     return Array.from(categories).sort();
   }, [transactions]);
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>(allCategoryNames);
 
   React.useEffect(() => {
+    // Reset selected categories when allCategoryNames changes (e.g., on initial load or transaction update)
     setSelectedCategories(allCategoryNames);
   }, [allCategoryNames]);
 
@@ -59,12 +58,13 @@ const AnalyticsPage = () => {
     return config;
   }, []);
 
-  // Filtered Transactions
+  // Filtered Transactions (by account)
   const filteredTransactions = React.useMemo(() => {
     const selectedAccountSlugs = selectedAccounts.map(slugify);
     return transactions.filter(t => selectedAccountSlugs.includes(slugify(t.account)));
   }, [transactions, selectedAccounts]);
 
+  // Non-transfer filtered transactions (for metrics and spending chart)
   const nonTransferFilteredTransactions = React.useMemo(() => {
     return filteredTransactions.filter(t => t.category !== 'Transfer');
   }, [filteredTransactions]);
@@ -76,7 +76,7 @@ const AnalyticsPage = () => {
     return { totalIncome: income, totalExpenses: expenses, netBalance: income + expenses };
   }, [nonTransferFilteredTransactions]);
 
-  // Spending Chart Data
+  // Spending Chart Data (filtered by selected categories and excluding transfers)
   const { spendingData, spendingConfig } = React.useMemo(() => {
     const spendingByCategory = nonTransferFilteredTransactions
       .filter(t => t.amount < 0 && selectedCategories.includes(t.category))
@@ -146,7 +146,7 @@ const AnalyticsPage = () => {
         <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
       </div>
       <div className="grid gap-4">
-        <RecentTransactions transactions={filteredTransactions} />
+        <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories} />
       </div>
     </div>
   );
