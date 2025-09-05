@@ -61,7 +61,7 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 220 13% 15%; /* Updated to a dark blue-grey */
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
