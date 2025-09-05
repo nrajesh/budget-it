@@ -34,7 +34,7 @@ const Index = () => {
       <div className="grid gap-6">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
-            <CardTitle>Welcome Jonathan Deo</CardTitle>
+            <CardTitle>Welcome</CardTitle>
             <CardDescription className="text-primary-foreground/80">
               Check your financial overview
             </CardDescription>
