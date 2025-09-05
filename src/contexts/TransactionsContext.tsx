@@ -1,14 +1,17 @@
 import * as React from 'react';
 import { Transaction, accounts, vendors, categories } from '@/data/finance-data';
-import { useCurrency } from './CurrencyContext'; // Import useCurrency to get available currencies
+import { useCurrency } from './CurrencyContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useSession } from './SessionContext'; // Import useSession
+import { showError, showSuccess } from '@/utils/toast';
 
 interface TransactionsContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'user_id' | 'created_at' | 'transferId'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transferId?: string) => void;
-  clearAllTransactions: () => void; // New function
-  generateDiverseDemoData: () => void; // New function
+  clearAllTransactions: () => void;
+  generateDiverseDemoData: () => void;
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -18,9 +21,10 @@ const generateTransactions = (
   monthOffset: number,
   count: number,
   accountNames: string[],
-  currencyCodes: string[]
-): Transaction[] => {
-  const sampleTransactions: Transaction[] = [];
+  currencyCodes: string[],
+  userId: string
+): Omit<Transaction, 'id' | 'created_at'>[] => {
+  const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
   const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const endOfTargetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 0);
@@ -29,13 +33,13 @@ const generateTransactions = (
     const randomDay = Math.floor(Math.random() * (endOfTargetMonth.getDate() - targetMonth.getDate() + 1)) + targetMonth.getDate();
     const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
 
-    const isTransfer = Math.random() < 0.2; // 20% chance of being a transfer
+    const isTransfer = Math.random() < 0.2;
     const accountName = accountNames[Math.floor(Math.random() * accountNames.length)];
     const currencyCode = currencyCodes[Math.floor(Math.random() * currencyCodes.length)];
 
     let vendorName = vendors[Math.floor(Math.random() * vendors.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
-    let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2)); // Amount between 10 and 210
+    let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
     if (isTransfer) {
       let destAccount = accountNames[Math.floor(Math.random() * accountNames.length)];
@@ -53,7 +57,8 @@ const generateTransactions = (
       }
     }
 
-    const baseTransactionDetails: Omit<Transaction, 'id' | 'transferId'> = {
+    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transferId'> = {
+      user_id: userId,
       date: date.toISOString(),
       account: accountName,
       currency: currencyCode,
@@ -65,9 +70,8 @@ const generateTransactions = (
 
     if (isTransfer) {
       const transferId = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
-      const debitTransaction: Transaction = {
+      const debitTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_d_${monthOffset}_${accountName.replace(/\s/g, '')}`,
         transferId,
         amount: -Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
@@ -75,9 +79,8 @@ const generateTransactions = (
       };
       sampleTransactions.push(debitTransaction);
 
-      const creditTransaction: Transaction = {
+      const creditTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_c_${monthOffset}_${accountName.replace(/\s/g, '')}`,
         transferId,
         account: baseTransactionDetails.vendor,
         vendor: baseTransactionDetails.account,
@@ -87,9 +90,8 @@ const generateTransactions = (
       };
       sampleTransactions.push(creditTransaction);
     } else {
-      const singleTransaction: Transaction = {
+      const singleTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`,
       };
       sampleTransactions.push(singleTransaction);
     }
@@ -98,123 +100,174 @@ const generateTransactions = (
 };
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { availableCurrencies } = useCurrency(); // Get available currencies from context
+  const { availableCurrencies } = useCurrency();
+  const { user, isLoading: isSessionLoading } = useSession(); // Get user from session context
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]); // Start with empty transactions
+  const fetchTransactions = React.useCallback(async () => {
+    if (!user) {
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false });
 
-  const addTransaction = (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => {
-    const isTransfer = accounts.includes(transaction.vendor);
-
-    if (isTransfer) {
-      const transferId = `transfer_${Date.now()}`;
-      const debitTransaction: Transaction = {
-        ...transaction,
-        id: `txn_${Date.now()}_d`,
-        transferId,
-        amount: -Math.abs(transaction.amount),
-        category: 'Transfer',
-        remarks: transaction.remarks ? `${transaction.remarks} (To ${transaction.vendor})` : `Transfer to ${transaction.vendor}`,
-        currency: 'USD', // Default to USD for new manual transactions
-        date: new Date(transaction.date).toISOString(),
-      };
-
-      const creditTransaction: Transaction = {
-        ...transaction,
-        id: `txn_${Date.now()}_c`,
-        transferId,
-        account: transaction.vendor,
-        vendor: transaction.account,
-        amount: Math.abs(transaction.amount),
-        category: 'Transfer',
-        remarks: transaction.remarks ? `${(transaction.remarks as string).replace(`(To ${transaction.vendor})`, `(From ${transaction.account})`)}` : `Transfer from ${transaction.account}`,
-        currency: 'USD', // Default to USD for new manual transactions
-        date: new Date(transaction.date).toISOString(),
-      };
-      
-      setTransactions(prev => [debitTransaction, creditTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    if (error) {
+      showError(`Failed to fetch transactions: ${error.message}`);
+      setTransactions([]);
     } else {
-      const newTransaction: Transaction = {
-        ...transaction,
-        id: `txn_${Date.now()}`,
-        currency: 'USD', // Default to USD for new manual transactions
-        date: new Date(transaction.date).toISOString(),
-      };
-      setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      setTransactions(data as Transaction[]);
+    }
+    setIsLoading(false);
+  }, [user]);
+
+  React.useEffect(() => {
+    if (!isSessionLoading) {
+      fetchTransactions();
+    }
+  }, [isSessionLoading, fetchTransactions]);
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'user_id' | 'created_at' | 'transferId'> & { date: string }) => {
+    if (!user) {
+      showError("You must be logged in to add transactions.");
+      return;
+    }
+
+    const isTransfer = accounts.includes(transaction.vendor);
+    const baseTransactionData = {
+      ...transaction,
+      user_id: user.id,
+      currency: 'USD', // Default to USD for new manual transactions
+      date: new Date(transaction.date).toISOString(),
+    };
+
+    try {
+      if (isTransfer) {
+        const transferId = `transfer_${Date.now()}`;
+        const newAmount = Math.abs(transaction.amount);
+        const baseRemarks = transaction.remarks || "";
+
+        const debitTransaction = {
+          ...baseTransactionData,
+          transfer_id: transferId,
+          amount: -newAmount,
+          category: 'Transfer',
+          remarks: baseRemarks ? `${baseRemarks} (To ${transaction.vendor})` : `Transfer to ${transaction.vendor}`,
+        };
+
+        const creditTransaction = {
+          ...baseTransactionData,
+          transfer_id: transferId,
+          account: transaction.vendor,
+          vendor: transaction.account,
+          amount: newAmount,
+          category: 'Transfer',
+          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${transaction.vendor})`, `(From ${transaction.account})`)}` : `Transfer from ${transaction.account}`,
+        };
+
+        const { error } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
+        if (error) throw error;
+        showSuccess("Transfer added successfully!");
+      } else {
+        const { error } = await supabase.from('transactions').insert(baseTransactionData);
+        if (error) throw error;
+        showSuccess("Transaction added successfully!");
+      }
+      fetchTransactions(); // Re-fetch to update local state with new data from DB
+    } catch (error: any) {
+      showError(`Failed to add transaction: ${error.message}`);
     }
   };
 
-  const updateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(prev => {
-      const originalTransaction = prev.find(t => t.id === updatedTransaction.id);
-      if (!originalTransaction) {
-        return prev; // Should not happen
-      }
+  const updateTransaction = async (updatedTransaction: Transaction) => {
+    if (!user) {
+      showError("You must be logged in to update transactions.");
+      return;
+    }
 
-      const wasTransfer = !!originalTransaction.transferId;
-      const isNowTransfer = accounts.includes(updatedTransaction.vendor);
+    const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
+    if (!originalTransaction) {
+      showError("Original transaction not found.");
+      return;
+    }
 
+    const wasTransfer = !!originalTransaction.transferId;
+    const isNowTransfer = accounts.includes(updatedTransaction.vendor);
+    const newAmount = Math.abs(updatedTransaction.amount);
+    const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
+
+    try {
       // Case 1: Editing a regular transaction to become a transfer
       if (!wasTransfer && isNowTransfer) {
-        const filteredTransactions = prev.filter(t => t.id !== originalTransaction.id);
-        const transferId = `transfer_${Date.now()}`;
-        const baseRemarks = updatedTransaction.remarks || "";
-        const newAmount = Math.abs(updatedTransaction.amount);
+        // Delete original transaction
+        const { error: deleteError } = await supabase.from('transactions').delete().eq('id', originalTransaction.id);
+        if (deleteError) throw deleteError;
 
-        const debitTransaction: Transaction = {
+        // Insert new transfer transactions
+        const transferId = `transfer_${Date.now()}`;
+        const debitTransaction = {
           ...updatedTransaction,
-          id: `txn_${Date.now()}_d`,
-          transferId,
+          user_id: user.id,
+          transfer_id: transferId,
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
+          date: new Date(updatedTransaction.date).toISOString(),
         };
-
-        const creditTransaction: Transaction = {
+        const creditTransaction = {
           ...updatedTransaction,
-          id: `txn_${Date.now()}_c`,
-          transferId,
+          user_id: user.id,
+          transfer_id: transferId,
           account: updatedTransaction.vendor,
           vendor: updatedTransaction.account,
           amount: newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${updatedTransaction.vendor})`, `(From ${updatedTransaction.account})`)}` : `Transfer from ${updatedTransaction.account}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
+          date: new Date(updatedTransaction.date).toISOString(),
         };
-        
-        return [debitTransaction, creditTransaction, ...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const { error: insertError } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
+        if (insertError) throw insertError;
+        showSuccess("Transaction converted to transfer and updated successfully!");
       }
-
       // Case 2: Editing a transfer to become a regular transaction
-      if (wasTransfer && !isNowTransfer) {
-        const filteredTransactions = prev.filter(t => t.transferId !== originalTransaction.transferId);
-        const newSingleTransaction: Transaction = {
-          ...updatedTransaction,
-          id: `txn_${Date.now()}`,
-          transferId: undefined,
-          amount: -Math.abs(updatedTransaction.amount),
-        };
-        
-        return [newSingleTransaction, ...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      }
+      else if (wasTransfer && !isNowTransfer) {
+        // Delete both transfer transactions
+        const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transferId);
+        if (deleteError) throw deleteError;
 
+        // Insert new regular transaction
+        const newSingleTransaction = {
+          ...updatedTransaction,
+          user_id: user.id,
+          transfer_id: null, // Ensure transfer_id is null
+          amount: -newAmount, // Assuming regular transactions are expenses by default when converting from transfer
+          date: new Date(updatedTransaction.date).toISOString(),
+        };
+        const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
+        if (insertError) throw insertError;
+        showSuccess("Transfer converted to transaction and updated successfully!");
+      }
       // Case 3: Editing a transfer (remains a transfer)
-      if (wasTransfer && isNowTransfer) {
-        const sibling = prev.find(t => t.transferId === updatedTransaction.transferId && t.id !== updatedTransaction.id);
+      else if (wasTransfer && isNowTransfer) {
+        const sibling = transactions.find(t => t.transferId === originalTransaction.transferId && t.id !== originalTransaction.id);
         if (!sibling) {
-          return prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t));
+          throw new Error("Sibling transfer transaction not found.");
         }
 
-        const oldDebit = originalTransaction.amount < 0 ? originalTransaction : sibling;
-        const oldCredit = originalTransaction.amount < 0 ? sibling : originalTransaction;
+        const oldDebitId = originalTransaction.amount < 0 ? originalTransaction.id : sibling.id;
+        const oldCreditId = originalTransaction.amount < 0 ? sibling.id : originalTransaction.id;
 
-        const newDate = updatedTransaction.date;
-        const newAmount = Math.abs(updatedTransaction.amount);
-        const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
-
+        const newDate = new Date(updatedTransaction.date).toISOString();
         const newDebitAccount = updatedTransaction.account;
         const newCreditAccount = updatedTransaction.vendor;
 
-        const newDebit: Transaction = {
-          ...oldDebit,
+        const newDebitData = {
           date: newDate,
           account: newDebitAccount,
           vendor: newCreditAccount,
@@ -223,57 +276,100 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           remarks: baseRemarks ? `${baseRemarks} (To ${newCreditAccount})` : `Transfer to ${newCreditAccount}`,
         };
 
-        const newCredit: Transaction = {
-          ...oldCredit,
+        const newCreditData = {
           date: newDate,
           account: newCreditAccount,
           vendor: newDebitAccount,
           amount: newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${newCreditAccount})`, `(From ${newDebitAccount})`)}` : `Transfer from ${newDebitAccount}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
         };
-        
-        return prev.map(t => {
-          if (t.id === oldDebit.id) return newDebit;
-          if (t.id === oldCredit.id) return newCredit;
-          return t;
-        });
-      }
 
+        const { error: debitError } = await supabase.from('transactions').update(newDebitData).eq('id', oldDebitId);
+        if (debitError) throw debitError;
+        const { error: creditError } = await supabase.from('transactions').update(newCreditData).eq('id', oldCreditId);
+        if (creditError) throw creditError;
+        showSuccess("Transfer updated successfully!");
+      }
       // Case 4: Editing a regular transaction (remains regular)
-      return prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t));
-    });
-  };
-
-  const deleteTransaction = (transactionId: string, transferId?: string) => {
-    setTransactions(prev => {
-      if (transferId) {
-        return prev.filter(t => t.transferId !== transferId);
+      else {
+        const { error } = await supabase.from('transactions').update({
+          ...updatedTransaction,
+          date: new Date(updatedTransaction.date).toISOString(),
+          transfer_id: null, // Ensure transfer_id is null for regular transactions
+        }).eq('id', updatedTransaction.id);
+        if (error) throw error;
+        showSuccess("Transaction updated successfully!");
       }
-      return prev.filter(t => t.id !== transactionId);
-    });
+      fetchTransactions();
+    } catch (error: any) {
+      showError(`Failed to update transaction: ${error.message}`);
+    }
   };
 
-  const clearAllTransactions = React.useCallback(() => {
-    setTransactions([]);
-  }, []);
+  const deleteTransaction = async (transactionId: string, transferId?: string) => {
+    if (!user) {
+      showError("You must be logged in to delete transactions.");
+      return;
+    }
 
-  const generateDiverseDemoData = React.useCallback(() => {
-    const accountsToUse = accounts; // All 6 accounts
-    const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code); // First 3 currencies (e.g., USD, EUR, GBP)
+    try {
+      if (transferId) {
+        const { error } = await supabase.from('transactions').delete().eq('transfer_id', transferId);
+        if (error) throw error;
+        showSuccess("Transfer deleted successfully!");
+      } else {
+        const { error } = await supabase.from('transactions').delete().eq('id', transactionId);
+        if (error) throw error;
+        showSuccess("Transaction deleted successfully!");
+      }
+      fetchTransactions();
+    } catch (error: any) {
+      showError(`Failed to delete transaction: ${error.message}`);
+    }
+  };
 
-    const demoData: Transaction[] = [];
-    // Generate data for current month, previous month, and two months ago
-    // Aim for ~300 base transactions per month to get over 1000 total transactions (considering transfers)
-    demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse));
-    demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse));
-    demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse));
+  const clearAllTransactions = React.useCallback(async () => {
+    if (!user) {
+      showError("You must be logged in to clear transactions.");
+      return;
+    }
+    try {
+      const { error } = await supabase.from('transactions').delete().eq('user_id', user.id);
+      if (error) throw error;
+      setTransactions([]);
+      showSuccess("All transactions cleared successfully!");
+    } catch (error: any) {
+      showError(`Failed to clear transactions: ${error.message}`);
+    }
+  }, [user]);
 
-    setTransactions(demoData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  }, [availableCurrencies]);
+  const generateDiverseDemoData = React.useCallback(async () => {
+    if (!user) {
+      showError("You must be logged in to generate demo data.");
+      return;
+    }
 
-  // Removed the useEffect that automatically generated data when transactions.length === 0
-  // Now, data will only be generated when the 'Generate Data' button is explicitly clicked.
+    try {
+      // Clear existing data first
+      await clearAllTransactions();
+
+      const accountsToUse = accounts;
+      const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
+
+      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
+      demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse, user.id));
+      demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse, user.id));
+      demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse, user.id));
+
+      const { error } = await supabase.from('transactions').insert(demoData);
+      if (error) throw error;
+      showSuccess("Diverse demo data generated successfully!");
+      fetchTransactions();
+    } catch (error: any) {
+      showError(`Failed to generate demo data: ${error.message}`);
+    }
+  }, [user, availableCurrencies, clearAllTransactions, fetchTransactions]);
 
   const value = React.useMemo(() => ({
     transactions,
@@ -283,6 +379,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     clearAllTransactions,
     generateDiverseDemoData,
   }), [transactions, addTransaction, updateTransaction, deleteTransaction, clearAllTransactions, generateDiverseDemoData]);
+
+  if (isSessionLoading || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading transactions...</div>;
+  }
 
   return (
     <TransactionsContext.Provider value={value}>

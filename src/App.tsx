@@ -4,7 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
-import LoadingSpinner from "@/components/LoadingSpinner"; // Import the new LoadingSpinner
+import { SessionContextProvider } from "./contexts/SessionContext"; // Import SessionContextProvider
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Lazy load page components
 const Index = lazy(() => import("@/pages/Index"));
@@ -16,21 +17,23 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <TransactionsProvider>
-        <Router>
-          <Suspense fallback={<LoadingSpinner />}> {/* Add Suspense for lazy loading */}
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Index />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="transactions" element={<Transactions />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </Router>
-      </TransactionsProvider>
+      <SessionContextProvider> {/* Wrap with SessionContextProvider */}
+        <TransactionsProvider>
+          <Router>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Index />} />
+                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="transactions" element={<Transactions />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </Router>
+        </TransactionsProvider>
+      </SessionContextProvider>
       <Toaster />
     </ThemeProvider>
   );

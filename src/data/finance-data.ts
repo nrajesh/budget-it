@@ -48,27 +48,20 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
+  user_id: string; // Added for Supabase RLS
   transferId?: string;
   date: string;
   account: string;
   currency: string;
   vendor: string;
   amount: number;
-  remarks?: string; // Made optional
+  remarks?: string;
   category: string;
+  created_at: string; // Added for Supabase
 };
 
 export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
-export const accounts = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"]; // Added 3 more accounts
+export const accounts = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
-export const transactionsData: Transaction[] = Array.from({ length: 25 }, (_, i) => ({
-  id: `txn_${i + 1}`,
-  date: new Date(2024, 4, 28 - i).toISOString(),
-  account: accounts[i % accounts.length],
-  currency: "USD",
-  vendor: vendors[i % vendors.length],
-  amount: (Math.random() > 0.4 ? 1 : -1) * parseFloat((Math.random() * 200).toFixed(2)),
-  remarks: i % 3 === 0 ? `Remark for transaction ${i + 1}` : undefined,
-  category: categories[i % categories.length],
-})).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+// Removed transactionsData as it will now be fetched from Supabase
