@@ -67,6 +67,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     },
   });
 
+  const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const isTransfer = accounts.includes(vendorValue);
 
@@ -94,10 +95,25 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     onOpenChange(false);
   };
 
-  const accountOptions = accounts.map(acc => ({ value: acc, label: acc }));
-  const vendorOptions = vendors.map(v => ({ value: v, label: v }));
+  const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
+  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
+
+  // Filter account options: disable if it's the selected vendor (and vendor is an account)
+  const filteredAccountOptions = baseAccountOptions.map(option => ({
+    ...option,
+    disabled: option.value === vendorValue && accounts.includes(vendorValue),
+  }));
+
+  // Combine vendor and account options for the vendor dropdown
+  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
+
+  // Filter combined vendor options: disable if it's the selected account
+  const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
+    ...option,
+    disabled: option.value === accountValue,
+  }));
+
   const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
-  const combinedVendorOptions = [...accountOptions, ...vendorOptions];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -130,7 +146,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 <FormItem>
                   <FormLabel>Account</FormLabel>
                   <Combobox
-                    options={accountOptions}
+                    options={filteredAccountOptions}
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Select an account..."
@@ -148,7 +164,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 <FormItem>
                   <FormLabel>Vendor / Destination Account</FormLabel>
                    <Combobox
-                    options={combinedVendorOptions}
+                    options={filteredCombinedVendorOptions}
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Select a vendor or account..."
