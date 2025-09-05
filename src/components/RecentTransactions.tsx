@@ -9,36 +9,48 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-  PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { type Transaction } from "@/data/finance-data";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface RecentTransactionsProps {
-  transactions: Transaction[];
-  selectedCategories: string[]; // New prop for category filtering
+  transactions: Transaction[]; // These are transactions filtered by account
+  selectedCategories: string[];
 }
 
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
+  const { transactions: allTransactions } = useTransactions(); // Get all transactions for balance calculation
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
-  const transactionsWithRunningBalance = React.useMemo(() => {
-    let currentBalance = 0;
-    // Sort transactions by date in ascending order to calculate running balance correctly
-    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const transactionsWithCorrectBalance = React.useMemo(() => {
+    let runningBalance = 0;
+    const balanceMap = new Map<string, number>();
 
-    return sortedTransactions.map(t => {
-      if (t.category !== 'Transfer') { // Transfers don't affect overall balance
-        currentBalance += t.amount;
-      }
-      return { ...t, runningBalance: currentBalance };
-    }).reverse(); // Reverse back to descending order for display
-  }, [transactions]);
+    // Calculate running balance for ALL transactions to get a historical truth
+    [...allTransactions]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .forEach(t => {
+        if (t.category !== 'Transfer') {
+          runningBalance += t.amount;
+        }
+        balanceMap.set(t.id, runningBalance);
+      });
+
+    // Attach the correct historical balance to the filtered transactions passed via props
+    return transactions
+      .map(t => ({
+        ...t,
+        runningBalance: balanceMap.get(t.id) ?? 0,
+      }))
+      // Sort for display, most recent first
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [allTransactions, transactions]);
 
   // Filter transactions for display based on selected categories
   const displayTransactions = React.useMemo(() => {
-    return transactionsWithRunningBalance.filter(t => selectedCategories.includes(t.category));
-  }, [transactionsWithRunningBalance, selectedCategories]);
+    return transactionsWithCorrectBalance.filter(t => selectedCategories.includes(t.category));
+  }, [transactionsWithCorrectBalance, selectedCategories]);
 
   const indexOfLastTransaction = currentPage * transactionsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
