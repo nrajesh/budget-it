@@ -20,6 +20,7 @@ import EditTransactionDialog from "@/components/EditTransactionDialog";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,6 +29,7 @@ const TransactionsPage = () => {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
   const { transactions } = useTransactions();
+  const { formatCurrency } = useCurrency();
 
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -68,7 +70,7 @@ const TransactionsPage = () => {
                       <TableCell>{transaction.vendor}</TableCell>
                       <TableCell>{transaction.category}</TableCell>
                       <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                        {transaction.amount.toLocaleString('en-US', { style: 'currency', currency: transaction.currency })}
+                        {formatCurrency(transaction.amount)}
                       </TableCell>
                       <TableCell>{transaction.remarks}</TableCell>
                     </TableRow>

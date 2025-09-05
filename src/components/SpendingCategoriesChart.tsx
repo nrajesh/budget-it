@@ -1,8 +1,9 @@
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pie, PieChart } from "recharts";
 import { type ChartConfig } from "@/components/ui/chart";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface SpendingCategoriesChartProps {
   data: { name: string; value: number; fill: string }[];
@@ -10,9 +11,25 @@ interface SpendingCategoriesChartProps {
 }
 
 export function SpendingCategoriesChart({ data, config }: SpendingCategoriesChartProps) {
+  const { formatCurrency } = useCurrency();
   const totalValue = React.useMemo(() => {
     return data.reduce((sum, item) => sum + item.value, 0);
   }, [data]);
+
+  const tooltipFormatter = (value: any, name: any, item: any) => {
+    const percentage = totalValue > 0 ? (Number(value) / totalValue) * 100 : 0;
+    return (
+      <div className="grid grid-cols-[1fr,auto] items-center gap-x-4 w-full">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
+          <span className="text-muted-foreground">{name}</span>
+        </div>
+        <span className="font-bold text-right">
+          {formatCurrency(Number(value))} ({percentage.toFixed(1)}%)
+        </span>
+      </div>
+    )
+  };
 
   return (
     <Card className="flex flex-col h-full">
@@ -31,21 +48,7 @@ export function SpendingCategoriesChart({ data, config }: SpendingCategoriesChar
                 cursor={false}
                 content={<ChartTooltipContent
                   hideLabel
-                  formatter={(value, name, item) => {
-                    const percentage = totalValue > 0 ? (Number(value) / totalValue) * 100 : 0;
-                    const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-                    return (
-                      <div className="grid grid-cols-[1fr,auto] items-center gap-x-4 w-full">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
-                          <span className="text-muted-foreground">{name}</span>
-                        </div>
-                        <span className="font-bold text-right">
-                          {currencyFormatter.format(Number(value))} ({percentage.toFixed(1)}%)
-                        </span>
-                      </div>
-                    )
-                  }}
+                  formatter={tooltipFormatter}
                 />}
               />
               <Pie
@@ -55,7 +58,6 @@ export function SpendingCategoriesChart({ data, config }: SpendingCategoriesChar
                 innerRadius={60}
                 strokeWidth={5}
               />
-              <ChartLegend content={<ChartLegendContent nameKey="name" />} className="-mx-2 flex-wrap justify-center" />
             </PieChart>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">

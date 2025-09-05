@@ -6,8 +6,6 @@ import {
 import {
   Line,
   LineChart,
-  RadialBar,
-  RadialBarChart,
   Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
@@ -25,10 +23,56 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import Layout from "@/components/Layout";
-import { incomeVsExpensesData, spendingCategoriesData, chartConfig } from "@/data/finance-data";
+import { incomeVsExpensesData, chartConfig as staticChartConfig } from "@/data/finance-data";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
+import { slugify } from "@/lib/utils";
+import { type ChartConfig } from "@/components/ui/chart";
 
 const Index = () => {
+  const { transactions } = useTransactions();
+  const { formatCurrency, convertCurrency, currency } = useCurrency();
+
+  const { netWorth, monthlySpending } = React.useMemo(() => {
+    const nonTransfer = transactions.filter(t => t.category !== 'Transfer');
+    const worth = nonTransfer.reduce((sum, t) => sum + t.amount, 0);
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const monthly = nonTransfer
+      .filter(t => new Date(t.date) > thirtyDaysAgo && t.amount < 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return { netWorth: worth, monthlySpending: monthly };
+  }, [transactions]);
+
+  const { spendingData, spendingConfig } = React.useMemo(() => {
+    const spendingByCategory = transactions
+      .filter(t => t.amount < 0 && t.category !== 'Transfer')
+      .reduce((acc, t) => {
+        if (!acc[t.category]) acc[t.category] = 0;
+        acc[t.category] += Math.abs(t.amount);
+        return acc;
+      }, {} as Record<string, number>);
+
+    const data = Object.entries(spendingByCategory).map(([name, value], index) => ({
+      name, value, fill: `hsl(var(--chart-${index + 1}))`,
+    })).sort((a, b) => b.value - a.value);
+
+    const config = data.reduce((acc, item) => {
+      acc[slugify(item.name)] = { label: item.name, color: item.fill };
+      return acc;
+    }, {} as ChartConfig);
+
+    return { spendingData: data, spendingConfig: config };
+  }, [transactions]);
+
+  const yAxisFormatter = (value: number) => {
+    const converted = convertCurrency(value);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, notation: 'compact', compactDisplay: 'short' }).format(converted);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -44,15 +88,15 @@ const Index = () => {
             <div className="grid flex-1 grid-cols-2 gap-4">
               <div className="rounded-lg bg-primary/80 p-4">
                 <p className="text-sm text-primary-foreground/80">
-                  Income
+                  Net Worth
                 </p>
-                <p className="text-2xl font-bold">$5,400</p>
+                <p className="text-2xl font-bold">{formatCurrency(netWorth)}</p>
               </div>
               <div className="rounded-lg bg-primary/80 p-4">
                 <p className="text-sm text-primary-foreground/80">
-                  Savings Rate
+                  Monthly Spending
                 </p>
-                <p className="text-2xl font-bold">25%</p>
+                <p className="text-2xl font-bold">{formatCurrency(monthlySpending)}</p>
               </div>
             </div>
             <div className="hidden sm:block">
@@ -73,8 +117,7 @@ const Index = () => {
               <DollarSign className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$1,890</div>
-              <p className="text-xs text-red-500">+10% from last month</p>
+              <div className="text-2xl font-bold">{formatCurrency(monthlySpending)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -99,8 +142,7 @@ const Index = () => {
               <DollarSign className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$120k</div>
-              <p className="text-xs text-green-500">+2% from last month</p>
+              <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
             </CardContent>
           </Card>
         </div>
@@ -110,14 +152,14 @@ const Index = () => {
               <CardTitle>Income vs Expenses</CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-64 w-full">
+              <ChartContainer config={staticChartConfig} className="h-64 w-full">
                 <LineChart data={incomeVsExpensesData}>
                   <RechartsTooltip
-                    content={<ChartTooltipContent indicator="dot" />}
+                    content={<ChartTooltipContent indicator="dot" formatter={(value) => formatCurrency(Number(value))} />}
                   />
                   <XAxis dataKey="month" />
                   <YAxis
-                    tickFormatter={(value) => `$${value / 1000}k`}
+                    tickFormatter={yAxisFormatter}
                     stroke="hsl(var(--muted-foreground))"
                   />
                   <Line
@@ -139,58 +181,9 @@ const Index = () => {
               </ChartContainer>
             </CardContent>
           </Card>
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Spending Categories</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center gap-4">
-              <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-48"
-              >
-                <RadialBarChart
-                  data={spendingCategoriesData}
-                  startAngle={90}
-                  endAngle={-270}
-                  innerRadius="70%"
-                  outerRadius="100%"
-                >
-                  <RechartsTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        hideLabel
-                        formatter={(value) => `${value}%`}
-                      />
-                    }
-                  />
-                  <RadialBar dataKey="value" background />
-                </RadialBarChart>
-              </ChartContainer>
-              <div className="grid w-full grid-cols-2 gap-2 text-sm">
-                {Object.entries(chartConfig)
-                  .slice(2)
-                  .map(([key, config]: [string, { label: string; color: string }]) => {
-                    const item = spendingCategoriesData.find(
-                      (d) => d.name === key,
-                    );
-                    if (!item) return null;
-                    return (
-                      <div key={config.label} className="flex items-center gap-2">
-                        <div
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: config.color }}
-                        />
-                        <span>{config.label}</span>
-                        <span className="ml-auto font-medium">
-                          {item.value}%
-                        </span>
-                      </div>
-                    );
-                  })}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="lg:col-span-2">
+            <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
+          </div>
         </div>
       </div>
     </div>

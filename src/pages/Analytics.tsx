@@ -9,9 +9,11 @@ import { type ChartConfig } from "@/components/ui/chart";
 import { accounts as allAccounts } from "@/data/finance-data";
 import { slugify } from "@/lib/utils";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const AnalyticsPage = () => {
   const { transactions } = useTransactions();
+  const { formatCurrency } = useCurrency();
 
   // Account State
   const allAccountNames = React.useMemo(() => allAccounts, []);
@@ -105,15 +107,15 @@ const AnalyticsPage = () => {
         {/* Metric Cards */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Income</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-green-600">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalIncome)}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Expenses</CardTitle><TrendingDown className="h-4 w-4 text-muted-foreground" /></CardHeader>
-          <CardContent><div className="text-2xl font-bold text-red-600">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalExpenses)}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Net Balance</CardTitle><Scale className="h-4 w-4 text-muted-foreground" /></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(netBalance)}</div></CardContent>
+          <CardContent><div className="text-2xl font-bold">{formatCurrency(netBalance)}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Transactions</CardTitle><Hash className="h-4 w-4 text-muted-foreground" /></CardHeader>

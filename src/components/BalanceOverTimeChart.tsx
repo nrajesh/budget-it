@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/chart";
 import { type Transaction } from "@/data/finance-data";
 import { accounts as allAccounts } from "@/data/finance-data";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const slugify = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
 
@@ -21,6 +22,7 @@ interface BalanceOverTimeChartProps {
 }
 
 export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConfig }: BalanceOverTimeChartProps) {
+  const { currency, convertCurrency } = useCurrency();
   const accountSlugs = React.useMemo(() => allAccounts.map(slugify), []);
 
   const chartData = React.useMemo(() => {
@@ -55,6 +57,29 @@ export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConf
     });
   }, [transactions, accountSlugs]);
 
+  const tooltipFormatter = (value: any, name: any, item: any) => {
+    const payload = item.payload;
+    const accountLabel = chartConfig[name as keyof typeof chartConfig]?.label;
+    const originalValue = typeof payload[name] === 'number' ? payload[name] : 0; 
+    const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (typeof payload[slug] === 'number' ? payload[slug] : 0), 0);
+    const percentage = totalForVisible > 0 ? (originalValue / totalForVisible) * 100 : 0;
+    
+    const convertedValue = convertCurrency(originalValue);
+    const formattedValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(convertedValue);
+
+    return (
+        <div className="w-full flex justify-between items-center">
+            <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
+                <span className="text-muted-foreground">{accountLabel}</span>
+            </div>
+            <span className="font-bold text-foreground">
+                {formattedValue} ({percentage.toFixed(1)}%)
+            </span>
+        </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -83,28 +108,7 @@ export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConf
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent 
-                formatter={(value, name, item) => {
-                    const payload = item.payload;
-                    const accountLabel = chartConfig[name as keyof typeof chartConfig]?.label;
-                    const originalValue = typeof payload[name] === 'number' ? payload[name] : 0; 
-                    const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (typeof payload[slug] === 'number' ? payload[slug] : 0), 0);
-                    const percentage = totalForVisible > 0 ? (originalValue / totalForVisible) * 100 : 0;
-                    const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-
-                    return (
-                        <div className="w-full flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
-                                <span className="text-muted-foreground">{accountLabel}</span>
-                            </div>
-                            <span className="font-bold text-foreground">
-                                {currencyFormatter.format(originalValue)} ({percentage.toFixed(1)}%)
-                            </span>
-                        </div>
-                    );
-                }}
-              />}
+              content={<ChartTooltipContent formatter={tooltipFormatter} />}
             />
             {selectedAccounts.map((accountSlug) => (
               <Area

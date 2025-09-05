@@ -52,6 +52,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import AddTransactionDialog from "./AddTransactionDialog";
+import { CurrencySwitcher } from "./CurrencySwitcher";
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();
@@ -221,6 +222,7 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <CurrencySwitcher />
             <Button
               variant="ghost"
               size="icon"
