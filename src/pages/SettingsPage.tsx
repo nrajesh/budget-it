@@ -84,7 +84,7 @@ const SettingsPage = () => {
           <CardContent>
             <Button onClick={() => setIsGenerateConfirmOpen(true)}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Generate Demo Data
+              Generate Data
             </Button>
           </CardContent>
         </Card>
