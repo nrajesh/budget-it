@@ -74,7 +74,7 @@ const Layout = () => {
   const pageTitle = getPageTitle(location.pathname);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="min-h-screen">
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
