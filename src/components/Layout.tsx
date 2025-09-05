@@ -180,9 +180,9 @@ const Layout = ({ children, pageTitle }: { children: React.ReactNode, pageTitle:
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <div className="text-left">
-                  <p className="text-sm font-medium">Jonathan Deo</p>
+                  <p className="text-sm font-medium">User Name</p>
                   <p className="text-xs text-muted-foreground">
-                    j.deo@example.com
+                    user@example.com
                   </p>
                 </div>
               </Button>
