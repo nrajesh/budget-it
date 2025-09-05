@@ -75,6 +75,8 @@ const Layout = () => {
         return "Transactions";
       case "/analytics":
         return "Analytics";
+      case "/settings":
+        return "Settings";
       default:
         return "Page Not Found";
     }
@@ -153,7 +155,7 @@ const Layout = () => {
               <Collapsible asChild>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton isActive={location.pathname.startsWith("/settings")}>
                       <User />
                       User Profile
                       <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
@@ -165,7 +167,11 @@ const Layout = () => {
                         <SidebarMenuSubButton>Profile</SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton>Settings</SidebarMenuSubButton>
+                        <Link to="/settings" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/settings"}>
+                            Settings
+                          </SidebarMenuSubButton>
+                        </Link>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>

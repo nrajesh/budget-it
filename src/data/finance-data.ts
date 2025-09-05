@@ -59,7 +59,7 @@ export type Transaction = {
 };
 
 export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
-export const accounts = ["Checking Account", "Savings Account", "Credit Card"];
+export const accounts = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"]; // Added 3 more accounts
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
 export const transactionsData: Transaction[] = Array.from({ length: 25 }, (_, i) => ({

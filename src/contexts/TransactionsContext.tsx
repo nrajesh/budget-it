@@ -1,17 +1,25 @@
 import * as React from 'react';
 import { Transaction, accounts, vendors, categories } from '@/data/finance-data';
+import { useCurrency } from './CurrencyContext'; // Import useCurrency to get available currencies
 
 interface TransactionsContextType {
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transferId?: string) => void;
+  clearAllTransactions: () => void; // New function
+  generateDiverseDemoData: () => void; // New function
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
-// Helper function to generate sample transactions for a given month
-const generateTransactionsForMonth = (monthOffset: number, count: number): Transaction[] => {
+// Helper function to generate sample transactions for a given month, account, and currency
+const generateTransactions = (
+  monthOffset: number,
+  count: number,
+  accountNames: string[],
+  currencyCodes: string[]
+): Transaction[] => {
   const sampleTransactions: Transaction[] = [];
   const now = new Date();
   const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
@@ -22,16 +30,17 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
     const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
 
     const isTransfer = Math.random() < 0.2; // 20% chance of being a transfer
+    const accountName = accountNames[Math.floor(Math.random() * accountNames.length)];
+    const currencyCode = currencyCodes[Math.floor(Math.random() * currencyCodes.length)];
+
     let vendorName = vendors[Math.floor(Math.random() * vendors.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2)); // Amount between 10 and 210
 
-    const accountName = accounts[Math.floor(Math.random() * accounts.length)];
-
     if (isTransfer) {
-      let destAccount = accounts[Math.floor(Math.random() * accounts.length)];
+      let destAccount = accountNames[Math.floor(Math.random() * accountNames.length)];
       while (destAccount === accountName) {
-        destAccount = accounts[Math.floor(Math.random() * accounts.length)];
+        destAccount = accountNames[Math.floor(Math.random() * accountNames.length)];
       }
       vendorName = destAccount;
       categoryName = 'Transfer';
@@ -47,7 +56,7 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
     const baseTransactionDetails: Omit<Transaction, 'id' | 'transferId'> = {
       date: date.toISOString(),
       account: accountName,
-      currency: "USD",
+      currency: currencyCode,
       vendor: vendorName,
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
@@ -55,10 +64,10 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
     };
 
     if (isTransfer) {
-      const transferId = `transfer_${Date.now()}_${i}_${monthOffset}`;
+      const transferId = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
       const debitTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_d_${monthOffset}`,
+        id: `txn_${Date.now()}_${i}_d_${monthOffset}_${accountName.replace(/\s/g, '')}`,
         transferId,
         amount: -Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
@@ -68,7 +77,7 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
 
       const creditTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_c_${monthOffset}`,
+        id: `txn_${Date.now()}_${i}_c_${monthOffset}_${accountName.replace(/\s/g, '')}`,
         transferId,
         account: baseTransactionDetails.vendor,
         vendor: baseTransactionDetails.account,
@@ -80,7 +89,7 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
     } else {
       const singleTransaction: Transaction = {
         ...baseTransactionDetails,
-        id: `txn_${Date.now()}_${i}_${monthOffset}`,
+        id: `txn_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`,
       };
       sampleTransactions.push(singleTransaction);
     }
@@ -89,11 +98,9 @@ const generateTransactionsForMonth = (monthOffset: number, count: number): Trans
 };
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [transactions, setTransactions] = React.useState<Transaction[]>(() => {
-    const currentMonthTransactions = generateTransactionsForMonth(0, 10); // 10 for current month
-    const previousMonthTransactions = generateTransactionsForMonth(-1, 10); // 10 for previous month
-    return [...currentMonthTransactions, ...previousMonthTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  });
+  const { availableCurrencies } = useCurrency(); // Get available currencies from context
+
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]); // Start with empty transactions
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
@@ -107,7 +114,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         amount: -Math.abs(transaction.amount),
         category: 'Transfer',
         remarks: transaction.remarks ? `${transaction.remarks} (To ${transaction.vendor})` : `Transfer to ${transaction.vendor}`,
-        currency: 'USD',
+        currency: 'USD', // Default to USD for new manual transactions
         date: new Date(transaction.date).toISOString(),
       };
 
@@ -120,7 +127,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         amount: Math.abs(transaction.amount),
         category: 'Transfer',
         remarks: transaction.remarks ? `${(transaction.remarks as string).replace(`(To ${transaction.vendor})`, `(From ${transaction.account})`)}` : `Transfer from ${transaction.account}`,
-        currency: 'USD',
+        currency: 'USD', // Default to USD for new manual transactions
         date: new Date(transaction.date).toISOString(),
       };
       
@@ -129,7 +136,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const newTransaction: Transaction = {
         ...transaction,
         id: `txn_${Date.now()}`,
-        currency: 'USD',
+        currency: 'USD', // Default to USD for new manual transactions
         date: new Date(transaction.date).toISOString(),
       };
       setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -247,8 +254,44 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
+  const clearAllTransactions = React.useCallback(() => {
+    setTransactions([]);
+  }, []);
+
+  const generateDiverseDemoData = React.useCallback(() => {
+    const accountsToUse = accounts; // All 6 accounts
+    const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code); // First 3 currencies (e.g., USD, EUR, GBP)
+
+    const demoData: Transaction[] = [];
+    // Generate data for current month
+    demoData.push(...generateTransactions(0, 15, accountsToUse, currenciesToUse));
+    // Generate data for previous month
+    demoData.push(...generateTransactions(-1, 15, accountsToUse, currenciesToUse));
+    // Generate data for two months ago
+    demoData.push(...generateTransactions(-2, 10, accountsToUse, currenciesToUse));
+
+    setTransactions(demoData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  }, [availableCurrencies]);
+
+  // Initial data generation when the component mounts for the first time
+  React.useEffect(() => {
+    if (transactions.length === 0) { // Only generate if no transactions exist
+      generateDiverseDemoData();
+    }
+  }, [generateDiverseDemoData, transactions.length]);
+
+
+  const value = React.useMemo(() => ({
+    transactions,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    clearAllTransactions,
+    generateDiverseDemoData,
+  }), [transactions, addTransaction, updateTransaction, deleteTransaction, clearAllTransactions, generateDiverseDemoData]);
+
   return (
-    <TransactionsContext.Provider value={{ transactions, addTransaction, updateTransaction, deleteTransaction }}>
+    <TransactionsContext.Provider value={value}>
       {children}
     </TransactionsContext.Provider>
   );

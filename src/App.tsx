@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import Index from "@/pages/Index";
 import Analytics from "@/pages/Analytics";
 import Transactions from "@/pages/Transactions";
+import SettingsPage from "@/pages/SettingsPage"; // Import the new SettingsPage
 import NotFound from "@/pages/NotFound";
 import { Toaster } from "@/components/ui/sonner";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
@@ -20,6 +21,7 @@ function App() {
                 <Route index element={<Index />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="transactions" element={<Transactions />} />
+                <Route path="settings" element={<SettingsPage />} /> {/* Add route for SettingsPage */}
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
