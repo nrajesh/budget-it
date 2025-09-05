@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/data/finance-data";
 import {
-  Select,
+  Select, // Keep Select for category if not using Combobox there
   SelectContent,
   SelectGroup,
   SelectItem,
@@ -33,14 +33,18 @@ import { accounts, vendors, categories } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox"; // Import Combobox
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   account: z.string().min(1, "Account is required"),
   vendor: z.string().min(1, "Vendor is required"),
   amount: z.coerce.number(),
-  remarks: z.string().optional(), // Made optional
+  remarks: z.string().optional(),
   category: z.string().min(1, "Category is required"),
+}).refine(data => data.account !== data.vendor, {
+  message: "Source and destination accounts cannot be the same.",
+  path: ["vendor"],
 });
 
 interface EditTransactionDialogProps {
@@ -65,6 +69,10 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     },
   });
 
+  const accountValue = form.watch("account");
+  const vendorValue = form.watch("vendor");
+  const isTransfer = accounts.includes(vendorValue) || accounts.includes(accountValue); // Check if it's a transfer based on either field
+
   React.useEffect(() => {
     form.reset({
       ...transaction,
@@ -85,6 +93,26 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     deleteTransaction(transaction.id, transaction.transferId);
     onOpenChange(false);
   };
+
+  const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
+  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
+
+  // Filter account options: disable if it's the selected vendor (and vendor is an account)
+  const filteredAccountOptions = baseAccountOptions.map(option => ({
+    ...option,
+    disabled: option.value === vendorValue && accounts.includes(vendorValue),
+  }));
+
+  // Combine vendor and account options for the vendor dropdown
+  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
+
+  // Filter combined vendor options: disable if it's the selected account
+  const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
+    ...option,
+    disabled: option.value === accountValue,
+  }));
+
+  const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
 
   return (
     <>
@@ -114,16 +142,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Account</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an account" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {accounts.map(acc => <SelectItem key={acc} value={acc}>{acc}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={filteredAccountOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select an account"
+                      searchPlaceholder="Search accounts..."
+                      emptyPlaceholder="No account found."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -134,23 +160,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vendor</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a vendor or account" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Accounts</SelectLabel>
-                          {accounts.map(acc => <SelectItem key={acc} value={acc}>{acc}</SelectItem>)}
-                        </SelectGroup>
-                        <SelectGroup>
-                          <SelectLabel>Vendors</SelectLabel>
-                          {vendors.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={filteredCombinedVendorOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a vendor or account"
+                      searchPlaceholder="Search..."
+                      emptyPlaceholder="No results found."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -161,14 +178,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isTransfer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {categories.filter(c => c !== 'Transfer').map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
