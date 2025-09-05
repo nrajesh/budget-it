@@ -53,10 +53,25 @@ import {
 } from "@/components/ui/sidebar";
 import AddTransactionDialog from "./AddTransactionDialog";
 
-const Layout = ({ children, pageTitle }: { children: React.ReactNode, pageTitle: string }) => {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   const { setTheme, theme } = useTheme();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
+  const getPageTitle = (pathname: string) => {
+    switch (pathname) {
+      case "/":
+        return "Dashboard";
+      case "/transactions":
+        return "Transactions";
+      case "/analytics":
+        return "Analytics";
+      default:
+        return "Page Not Found";
+    }
+  };
+
+  const pageTitle = getPageTitle(location.pathname);
 
   return (
     <SidebarProvider>
