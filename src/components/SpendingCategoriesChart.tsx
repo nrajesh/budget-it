@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"; // Added CardFooter
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Label } from "@/components/ui/label";
 import { Pie, PieChart } from "recharts";
@@ -21,27 +21,39 @@ const chartConfig = {
     label: "Utilities",
     color: "hsl(var(--chart-2))",
   },
-  Rent: {
-    label: "Rent",
-    color: "hsl(var(--chart-3))",
-  },
   Transport: {
     label: "Transport",
-    color: "hsl(var(--chart-4))",
+    color: "hsl(var(--chart-3))",
   },
   Entertainment: {
     label: "Entertainment",
-    color: "hsl(var(--chart-5))",
+    color: "hsl(var(--chart-4))",
   },
   Salary: {
     label: "Salary",
+    color: "hsl(var(--chart-5))",
+  },
+  Shopping: { // Added missing category
+    label: "Shopping",
     color: "hsl(var(--chart-6))",
   },
-  Investments: {
-    label: "Investments",
+  Health: { // Added missing category
+    label: "Health",
     color: "hsl(var(--chart-7))",
   },
-  Other: {
+  "Dining Out": { // Added missing category
+    label: "Dining Out",
+    color: "hsl(var(--chart-8))",
+  },
+  Rent: { // Retained existing category, reusing color
+    label: "Rent",
+    color: "hsl(var(--chart-1))",
+  },
+  Investments: { // Retained existing category, reusing color
+    label: "Investments",
+    color: "hsl(var(--chart-2))",
+  },
+  Other: { // Fallback category
     label: "Other",
     color: "hsl(var(--chart-8))",
   },
