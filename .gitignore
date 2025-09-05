@@ -25,3 +25,4 @@ dist-ssr
 
 # Dyad-specific files
 AI_RULES.md
+.env
