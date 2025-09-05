@@ -34,11 +34,11 @@ export function SpendingCategoriesChart({ data, config }: SpendingCategoriesChar
               strokeWidth={5}
             >
             </Pie>
+            <ChartLegend content={<ChartLegendContent nameKey="name" />} className="-mx-2 flex-wrap justify-center" />
           </PieChart>
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <ChartLegend content={<ChartLegendContent nameKey="name" />} className="-mx-2 flex-wrap justify-center" />
       </CardFooter>
     </Card>
   );
