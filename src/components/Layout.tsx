@@ -92,7 +92,7 @@ const Layout = () => {
             <Button variant="ghost" size="icon" className="size-9 shrink-0">
               <Mountain className="size-5 text-primary" />
             </Button>
-            <span className="text-lg font-semibold">Budgeting</span>
+            <span className="text-lg font-semibold">Budget It!</span>
           </div>
         </SidebarHeader>
         <SidebarContent className="p-0">
