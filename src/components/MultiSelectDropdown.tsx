@@ -24,8 +24,8 @@ interface Option {
 }
 
 interface MultiSelectDropdownProps {
-  options: Option[]; // Corrected type to accept an array of Option objects
-  selectedValues: string[];
+  options: Option[]; // These are the actual data options, without an 'All' option
+  selectedValues: string[]; // These are the actual selected data values
   onSelectChange: (values: string[]) => void;
   placeholder?: string;
 }
@@ -38,27 +38,43 @@ export function MultiSelectDropdown({
 }: MultiSelectDropdownProps) {
   const [open, setOpen] = React.useState(false);
 
+  const allOption: Option = { value: 'all', label: 'All' };
+  const allActualValues = React.useMemo(() => options.map(o => o.value), [options]);
+  const isAllSelected = selectedValues.length === allActualValues.length && options.length > 0;
+
   const handleSelect = (value: string) => {
-    const newSelectedValues = selectedValues.includes(value)
-      ? selectedValues.filter((v) => v !== value)
-      : [...selectedValues, value];
-    onSelectChange(newSelectedValues);
+    if (value === allOption.value) {
+      if (isAllSelected) {
+        onSelectChange([]); // Deselect all
+      } else {
+        onSelectChange(allActualValues); // Select all
+      }
+    } else {
+      const newSelectedValues = selectedValues.includes(value)
+        ? selectedValues.filter((v) => v !== value)
+        : [...selectedValues, value];
+      onSelectChange(newSelectedValues);
+    }
   };
+
+  const displayedBadges = React.useMemo(() => {
+    if (isAllSelected && options.length > 0) {
+      return [{ value: 'all', label: `${allOption.label} (${options.length})` }];
+    }
+    return selectedValues.map(value => options.find(o => o.value === value)).filter(Boolean) as Option[];
+  }, [selectedValues, options, isAllSelected]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-[200px] justify-between">
-          {selectedValues.length > 0 ? (
+          {displayedBadges.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {selectedValues.map((value) => {
-                const option = options.find(o => o.value === value);
-                return option ? (
-                  <Badge key={value} variant="secondary">
-                    {option.label}
-                  </Badge>
-                ) : null;
-              })}
+              {displayedBadges.map((option) => (
+                <Badge key={option.value} variant="secondary">
+                  {option.label}
+                </Badge>
+              ))}
             </div>
           ) : (
             <span>{placeholder}</span>
@@ -72,6 +88,20 @@ export function MultiSelectDropdown({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
+              {options.length > 0 && ( // Only show 'All' if there are actual options
+                <CommandItem
+                  key={allOption.value}
+                  onSelect={() => handleSelect(allOption.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      isAllSelected ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {allOption.label}
+                </CommandItem>
+              )}
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
@@ -80,9 +110,7 @@ export function MultiSelectDropdown({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValues.includes(option.value)
-                        ? "opacity-100"
-                        : "opacity-0"
+                      selectedValues.includes(option.value) ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}

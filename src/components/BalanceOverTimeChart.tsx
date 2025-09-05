@@ -3,9 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type Transaction, accounts as allDefinedAccounts } from "@/data/finance-data"; // Import allDefinedAccounts
-import { Label } from "@/components/ui/label"; // Keep Label if needed elsewhere, but Checkbox is removed
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
-import { MultiSelectDropdown } from "@/components/MultiSelectDropdown"; // New import
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -32,19 +30,21 @@ const chartConfig = {
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(allDefinedAccounts); // Initialize with all defined accounts
 
-  const accountOptions = React.useMemo(() => {
-    return allDefinedAccounts.map(account => ({ value: account, label: account }));
-  }, []);
+  // Dynamically determine which accounts have transactions in the filtered data
+  const accountsToDisplay = React.useMemo(() => {
+    const uniqueAccounts = new Set<string>();
+    transactions.forEach(t => uniqueAccounts.add(t.account));
+    return Array.from(uniqueAccounts);
+  }, [transactions]);
 
   const chartData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
 
-    // Initialize balances for all accounts to 0
-    allDefinedAccounts.forEach(account => { // Use allDefinedAccounts for initialization
+    // Initialize balances for all *possible* accounts to 0 for consistent tracking
+    allDefinedAccounts.forEach(account => {
       dailyBalances['initial'] = { ...dailyBalances['initial'], [account]: 0 };
     });
 
@@ -57,7 +57,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       }
 
       // Apply transaction amount to the specific account
-      // The transaction.amount is already signed correctly for the transaction.account
       if (dailyBalances[date][transaction.account] !== undefined) {
         dailyBalances[date][transaction.account] += transaction.amount;
       }
@@ -69,23 +68,24 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
       .map(([date, balances]) => {
         const obj: { date: string; [key: string]: number | string } = { date };
-        Object.entries(balances).forEach(([account, balance]) => {
-          obj[account] = convertAmount(balance); // Convert balance
+        // Only include balances for accounts that are actually being displayed
+        accountsToDisplay.forEach(account => {
+          obj[account] = convertAmount(balances[account] || 0); // Convert balance
         });
         return obj;
       });
 
     return formattedData;
-  }, [transactions, convertAmount]);
+  }, [transactions, convertAmount, accountsToDisplay]);
 
   const totalBalance = React.useMemo(() => {
     if (chartData.length === 0) return 0;
     const lastDayBalances = chartData[chartData.length - 1];
-    return selectedAccounts.reduce((sum, account) => {
+    return accountsToDisplay.reduce((sum, account) => {
       const balance = lastDayBalances[account];
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
-  }, [chartData, selectedAccounts]);
+  }, [chartData, accountsToDisplay]);
 
   return (
     <Card>
@@ -96,14 +96,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             Total balance: {formatCurrency(totalBalance)}
           </CardDescription>
         </div>
-        <div className="flex items-center gap-1 p-6">
-          <MultiSelectDropdown
-            options={accountOptions}
-            selectedValues={selectedAccounts}
-            onSelectChange={setSelectedAccounts}
-            placeholder="Select Accounts"
-          />
-        </div>
+        {/* Removed MultiSelectDropdown for account selection */}
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
@@ -145,7 +138,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 />
               }
             />
-            {selectedAccounts.map(account => (
+            {accountsToDisplay.map(account => (
               <Line
                 key={account}
                 dataKey={account}
