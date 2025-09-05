@@ -62,4 +62,13 @@ export const categories = ["Groceries", "Utilities", "Transport", "Entertainment
 export const accounts = ["Checking Account", "Savings Account", "Credit Card"];
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
-// transactionsData has been removed to make the data ephemeral.
+export const transactionsData: Transaction[] = Array.from({ length: 25 }, (_, i) => ({
+  id: `txn_${i + 1}`,
+  date: new Date(2024, 4, 28 - i).toISOString(),
+  account: accounts[i % accounts.length],
+  currency: "USD",
+  vendor: vendors[i % vendors.length],
+  amount: (Math.random() > 0.4 ? 1 : -1) * parseFloat((Math.random() * 200).toFixed(2)),
+  remarks: i % 3 === 0 ? `Remark for transaction ${i + 1}` : undefined,
+  category: categories[i % categories.length],
+})).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

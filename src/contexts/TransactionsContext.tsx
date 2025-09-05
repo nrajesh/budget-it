@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Transaction, accounts } from '@/data/finance-data'; // Removed transactionsData import
+import { transactionsData, Transaction, accounts } from '@/data/finance-data';
 
 interface TransactionsContextType {
   transactions: Transaction[];
@@ -11,8 +11,7 @@ interface TransactionsContextType {
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with an empty array to make data ephemeral
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [transactions, setTransactions] = React.useState<Transaction[]>(transactionsData);
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'currency' | 'date' | 'transferId'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
