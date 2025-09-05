@@ -48,7 +48,7 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
-  transferId?: string;
+  transfer_id?: string; // Changed from transferId to transfer_id
   date: string;
   account: string;
   currency: string;

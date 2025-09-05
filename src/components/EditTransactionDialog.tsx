@@ -96,7 +96,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   };
 
   const handleDelete = () => {
-    deleteTransaction(transaction.id, transaction.transferId);
+    deleteTransaction(transaction.id, transaction.transfer_id); // Changed to transfer_id
     onOpenChange(false);
   };
 
@@ -245,7 +245,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         onConfirm={handleDelete}
         title="Are you sure you want to delete this transaction?"
         description={
-          transaction.transferId
+          transaction.transfer_id // Changed to transfer_id
             ? "This is a transfer. Deleting it will remove both the debit and credit entries. This action cannot be undone."
             : "This action cannot be undone. This will permanently delete the transaction."
         }

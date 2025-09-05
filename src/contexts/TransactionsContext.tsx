@@ -6,9 +6,9 @@ import { showError, showSuccess } from '@/utils/toast';
 
 interface TransactionsContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transferId'> & { date: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
-  deleteTransaction: (transactionId: string, transferId?: string) => void;
+  deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   clearAllTransactions: () => void;
   generateDiverseDemoData: () => void;
 }
@@ -55,7 +55,7 @@ const generateTransactions = (
       }
     }
 
-    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transferId'> = {
+    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
       date: date.toISOString(),
       account: accountName,
       currency: currencyCode,
@@ -66,10 +66,10 @@ const generateTransactions = (
     };
 
     if (isTransfer) {
-      const transferId = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
+      const transfer_id = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
       const debitTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
-        transferId,
+        transfer_id,
         amount: -Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
@@ -78,7 +78,7 @@ const generateTransactions = (
 
       const creditTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
-        transferId,
+        transfer_id,
         account: baseTransactionDetails.vendor,
         vendor: baseTransactionDetails.account,
         amount: Math.abs(baseTransactionDetails.amount),
@@ -121,7 +121,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transferId'> & { date: string }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
     const baseTransactionData = {
       ...transaction,
@@ -131,13 +131,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       if (isTransfer) {
-        const transferId = `transfer_${Date.now()}`;
+        const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(transaction.amount);
         const baseRemarks = transaction.remarks || "";
 
         const debitTransaction = {
           ...baseTransactionData,
-          transfer_id: transferId,
+          transfer_id: transfer_id,
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${transaction.vendor})` : `Transfer to ${transaction.vendor}`,
@@ -145,7 +145,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const creditTransaction = {
           ...baseTransactionData,
-          transfer_id: transferId,
+          transfer_id: transfer_id,
           account: transaction.vendor,
           vendor: transaction.account,
           amount: newAmount,
@@ -174,7 +174,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    const wasTransfer = !!originalTransaction.transferId;
+    const wasTransfer = !!originalTransaction.transfer_id;
     const isNowTransfer = accounts.includes(updatedTransaction.vendor);
     const newAmount = Math.abs(updatedTransaction.amount);
     const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
@@ -187,10 +187,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (deleteError) throw deleteError;
 
         // Insert new transfer transactions
-        const transferId = `transfer_${Date.now()}`;
+        const transfer_id = `transfer_${Date.now()}`;
         const debitTransaction = {
           ...updatedTransaction,
-          transfer_id: transferId,
+          transfer_id: transfer_id,
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
@@ -198,7 +198,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
         const creditTransaction = {
           ...updatedTransaction,
-          transfer_id: transferId,
+          transfer_id: transfer_id,
           account: updatedTransaction.vendor,
           vendor: updatedTransaction.account,
           amount: newAmount,
@@ -213,7 +213,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Case 2: Editing a transfer to become a regular transaction
       else if (wasTransfer && !isNowTransfer) {
         // Delete both transfer transactions
-        const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transferId);
+        const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transfer_id);
         if (deleteError) throw deleteError;
 
         // Insert new regular transaction
@@ -229,7 +229,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       // Case 3: Editing a transfer (remains a transfer)
       else if (wasTransfer && isNowTransfer) {
-        const sibling = transactions.find(t => t.transferId === originalTransaction.transferId && t.id !== originalTransaction.id);
+        const sibling = transactions.find(t => t.transfer_id === originalTransaction.transfer_id && t.id !== originalTransaction.id);
         if (!sibling) {
           throw new Error("Sibling transfer transaction not found.");
         }
@@ -281,10 +281,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const deleteTransaction = async (transactionId: string, transferId?: string) => {
+  const deleteTransaction = async (transactionId: string, transfer_id?: string) => {
     try {
-      if (transferId) {
-        const { error } = await supabase.from('transactions').delete().eq('transfer_id', transferId);
+      if (transfer_id) {
+        const { error } = await supabase.from('transactions').delete().eq('transfer_id', transfer_id);
         if (error) throw error;
         showSuccess("Transfer deleted successfully!");
       } else {
