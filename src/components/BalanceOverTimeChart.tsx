@@ -2,7 +2,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
-import { type Transaction } from "@/data/finance-data";
+import { type Transaction, accounts as allDefinedAccounts } from "@/data/finance-data"; // Import allDefinedAccounts
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
@@ -16,23 +16,23 @@ const chartConfig = {
     label: "Balance",
     color: "hsl(var(--chart-1))",
   },
-  Checking: {
-    label: "Checking",
+  "Checking Account": { // Updated to full name
+    label: "Checking Account",
     color: "hsl(var(--chart-2))",
   },
-  Savings: {
-    label: "Savings",
+  "Savings Account": { // Updated to full name
+    label: "Savings Account",
     color: "hsl(var(--chart-3))",
   },
-  Credit: {
-    label: "Credit",
+  "Credit Card": { // Updated to full name
+    label: "Credit Card",
     color: "hsl(var(--chart-4))",
   },
 } satisfies ChartConfig;
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(['Checking', 'Savings', 'Credit']);
+  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(allDefinedAccounts); // Initialize with all defined accounts
 
   const toggleAccount = (account: string) => {
     setSelectedAccounts(prev =>
@@ -46,8 +46,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
 
     // Initialize balances for all accounts to 0
-    const allAccounts = Array.from(new Set(transactions.map(t => t.account)));
-    allAccounts.forEach(account => {
+    allDefinedAccounts.forEach(account => { // Use allDefinedAccounts for initialization
       dailyBalances['initial'] = { ...dailyBalances['initial'], [account]: 0 };
     });
 
@@ -59,8 +58,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         dailyBalances[date] = previousDate ? { ...dailyBalances[previousDate] } : { ...dailyBalances['initial'] };
       }
 
-      // Apply transaction amount to the specific account, regardless of category for simplicity
-      // A more complex transfer model would require 'fromAccount' and 'toAccount' fields in Transaction type
+      // Apply transaction amount to the specific account
+      // The transaction.amount is already signed correctly for the transaction.account
       if (dailyBalances[date][transaction.account] !== undefined) {
         dailyBalances[date][transaction.account] += transaction.amount;
       }
@@ -100,7 +99,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </CardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
-          {Object.keys(chartConfig).filter(key => key !== 'balance').map(account => (
+          {allDefinedAccounts.map(account => ( // Use allDefinedAccounts for checkboxes
             <div key={account} className="flex items-center space-x-2">
               <Checkbox
                 id={`account-${account}`}

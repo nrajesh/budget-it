@@ -2,8 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
+import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart"; // Removed BalanceOverTimeChart import
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
@@ -229,9 +228,7 @@ const Index = () => {
       <div className="lg:col-span-2">
         <SpendingCategoriesChart transactions={transactions} /> {/* Updated prop */}
       </div>
-      <div className="lg:col-span-2">
-        <BalanceOverTimeChart transactions={transactions} />
-      </div>
+      {/* Removed BalanceOverTimeChart */}
       <div className="lg:col-span-2">
         <RecentTransactions transactions={transactions} selectedCategories={[]} />
       </div>
