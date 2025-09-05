@@ -41,8 +41,10 @@ export function BalanceOverTimeChart() {
         const date = new Date(t.date).toISOString().split('T')[0];
         const accountSlug = slugify(t.account);
         if (!dailyChanges[date]) dailyChanges[date] = {};
+        // Ensure amount is a number, default to 0 if not
+        const amount = typeof t.amount === 'number' ? t.amount : 0;
         if (!dailyChanges[date][accountSlug]) dailyChanges[date][accountSlug] = 0;
-        dailyChanges[date][accountSlug] += t.amount;
+        dailyChanges[date][accountSlug] += amount;
     }
 
     const sortedDates = Object.keys(dailyChanges).sort();
@@ -51,13 +53,13 @@ export function BalanceOverTimeChart() {
 
     return sortedDates.map(date => {
         const changes = dailyChanges[date];
-        Object.keys(changes).forEach(slug => {
-            cumulativeBalances[slug] += changes[slug];
-        });
-
         const record: { [key: string]: any } = { date };
         accountSlugs.forEach(slug => {
-            record[slug] = cumulativeBalances[slug] > 0 ? cumulativeBalances[slug] : 0;
+            // Ensure changes[slug] is a number before adding
+            const changeAmount = typeof changes[slug] === 'number' ? changes[slug] : 0;
+            cumulativeBalances[slug] += changeAmount;
+            // Ensure cumulative balance is non-negative for percentage chart
+            record[slug] = Math.max(0, cumulativeBalances[slug]);
         });
         return record;
     });
@@ -103,8 +105,9 @@ export function BalanceOverTimeChart() {
                 formatter={(value, name, item) => {
                     const payload = item.payload;
                     const accountLabel = chartConfig[name as keyof typeof chartConfig]?.label;
-                    const originalValue = payload[name];
-                    const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (payload[slug] || 0), 0);
+                    // Ensure originalValue is a number
+                    const originalValue = typeof payload[name] === 'number' ? payload[name] : 0; 
+                    const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (typeof payload[slug] === 'number' ? payload[slug] : 0), 0);
                     const percentage = totalForVisible > 0 ? (originalValue / totalForVisible) * 100 : 0;
                     const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
