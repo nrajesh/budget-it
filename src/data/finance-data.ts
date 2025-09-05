@@ -53,7 +53,7 @@ export type Transaction = {
   currency: string;
   vendor: string;
   amount: number;
-  remarks: string;
+  remarks?: string; // Made optional
   category: string;
 };
 

@@ -24,6 +24,17 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { accounts, vendors, categories } from "@/data/finance-data";
 import { Combobox } from "@/components/ui/combobox";
 
+// Define the interface for the form values
+interface AddTransactionFormValues {
+  date: string;
+  account: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  remarks?: string; // Optional
+}
+
+// Let Zod infer the type of formSchema
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   account: z.string().min(1, "Account is required"),
@@ -43,7 +54,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   onOpenChange,
 }) => {
   const { addTransaction } = useTransactions();
-  const form = useForm<z.infer<typeof formSchema>>({
+  // Use AddTransactionFormValues for useForm generic type
+  const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date().toISOString().split("T")[0],
@@ -68,7 +80,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     }
   }, [isOpen, form]);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  // The values here will now be of type AddTransactionFormValues
+  const onSubmit = (values: AddTransactionFormValues) => {
     addTransaction(values);
     onOpenChange(false);
   };

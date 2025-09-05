@@ -28,7 +28,7 @@ const formSchema = z.object({
   account: z.string().min(1, "Account is required"),
   vendor: z.string().min(1, "Vendor is required"),
   amount: z.coerce.number(),
-  remarks: z.string(),
+  remarks: z.string().optional(), // Made optional
   category: z.string().min(1, "Category is required"),
 });
 
