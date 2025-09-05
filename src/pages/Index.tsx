@@ -30,7 +30,8 @@ import { incomeVsExpensesData, spendingCategoriesData, chartConfig } from "@/dat
 
 const Index = () => {
   return (
-    <Layout pageTitle="Dashboard">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
       <div className="grid gap-6">
         <Card className="bg-primary text-primary-foreground">
           <CardHeader>
@@ -192,7 +193,7 @@ const Index = () => {
           </Card>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/sidebar";
 import AddTransactionDialog from "./AddTransactionDialog";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const Layout = ({ children }: { children?: React.ReactNode }) => {
   const { setTheme, theme } = useTheme();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
