@@ -137,14 +137,6 @@ const AnalyticsPage = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <BalanceOverTimeChart 
-          transactions={filteredTransactions} 
-          selectedAccounts={selectedAccounts}
-          chartConfig={chartConfigForAccounts}
-        />
-        <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
-      </div>
       <div className="grid gap-4">
         <AccountFilter
           allAccounts={allAccounts}
@@ -152,6 +144,14 @@ const AnalyticsPage = () => {
           onAccountToggle={handleAccountToggle}
           chartConfig={chartConfigForAccounts}
         />
+      </div>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <BalanceOverTimeChart 
+          transactions={filteredTransactions} 
+          selectedAccounts={selectedAccounts}
+          chartConfig={chartConfigForAccounts}
+        />
+        <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
       </div>
       <div className="grid gap-4">
         <RecentTransactions />

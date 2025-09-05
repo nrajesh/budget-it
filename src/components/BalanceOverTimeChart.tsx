@@ -27,7 +27,10 @@ export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConf
     if (transactions.length === 0) return [];
 
     const dailyChanges: { [date: string]: { [accountSlug: string]: number } } = {};
-    for (const t of transactions) {
+    // Filter out 'Transfer' transactions before processing
+    const nonTransferTransactions = transactions.filter(t => t.category !== 'Transfer');
+
+    for (const t of nonTransferTransactions) {
         const date = new Date(t.date).toISOString().split('T')[0];
         const accountSlug = slugify(t.account);
         if (!dailyChanges[date]) dailyChanges[date] = {};
