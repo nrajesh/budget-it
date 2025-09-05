@@ -134,6 +134,7 @@ export function BalanceOverTimeChart() {
                 fill={`var(--color-${accountSlug})`}
                 stroke={`var(--color-${accountSlug})`}
                 stackId="a"
+                strokeWidth={2}
               />
             ))}
           </AreaChart>
