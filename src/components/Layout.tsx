@@ -18,7 +18,6 @@ import {
   ShoppingCart,
   User,
   Users,
-  LogOut, // Import LogOut icon
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -61,15 +60,11 @@ import {
 } from "@/components/ui/select";
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { showError, showSuccess } from '@/utils/toast'; // Import toast utilities
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const location = useLocation();
-  const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   const getPageTitle = (pathname: string) => {
@@ -88,16 +83,6 @@ const Layout = () => {
   };
 
   const pageTitle = getPageTitle(location.pathname);
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      showError(`Logout failed: ${error.message}`);
-    } else {
-      showSuccess("Logged out successfully!");
-      navigate('/login');
-    }
-  };
 
   return (
     <SidebarProvider className="min-h-screen">
@@ -238,11 +223,6 @@ const Layout = () => {
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Log out
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
@@ -294,8 +274,6 @@ const Layout = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuItem>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

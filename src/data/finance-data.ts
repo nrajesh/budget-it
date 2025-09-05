@@ -48,7 +48,6 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
-  user_id: string; // Added for Supabase RLS
   transferId?: string;
   date: string;
   account: string;

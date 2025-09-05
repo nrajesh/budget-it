@@ -2,12 +2,11 @@ import * as React from 'react';
 import { Transaction, accounts, vendors, categories } from '@/data/finance-data';
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useSession } from './SessionContext'; // Import useSession
 import { showError, showSuccess } from '@/utils/toast';
 
 interface TransactionsContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'user_id' | 'created_at' | 'transferId'> & { date: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transferId'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transferId?: string) => void;
   clearAllTransactions: () => void;
@@ -22,7 +21,6 @@ const generateTransactions = (
   count: number,
   accountNames: string[],
   currencyCodes: string[],
-  userId: string
 ): Omit<Transaction, 'id' | 'created_at'>[] => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -58,7 +56,6 @@ const generateTransactions = (
     }
 
     const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transferId'> = {
-      user_id: userId,
       date: date.toISOString(),
       account: accountName,
       currency: currencyCode,
@@ -101,21 +98,14 @@ const generateTransactions = (
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { availableCurrencies } = useCurrency();
-  const { user, isLoading: isSessionLoading } = useSession(); // Get user from session context
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTransactions = React.useCallback(async () => {
-    if (!user) {
-      setTransactions([]);
-      setIsLoading(false);
-      return;
-    }
     setIsLoading(true);
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
-      .eq('user_id', user.id)
       .order('date', { ascending: false });
 
     if (error) {
@@ -125,24 +115,16 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setTransactions(data as Transaction[]);
     }
     setIsLoading(false);
-  }, [user]);
+  }, []);
 
   React.useEffect(() => {
-    if (!isSessionLoading) {
-      fetchTransactions();
-    }
-  }, [isSessionLoading, fetchTransactions]);
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'user_id' | 'created_at' | 'transferId'> & { date: string }) => {
-    if (!user) {
-      showError("You must be logged in to add transactions.");
-      return;
-    }
-
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transferId'> & { date: string }) => {
     const isTransfer = accounts.includes(transaction.vendor);
     const baseTransactionData = {
       ...transaction,
-      user_id: user.id,
       currency: 'USD', // Default to USD for new manual transactions
       date: new Date(transaction.date).toISOString(),
     };
@@ -186,11 +168,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const updateTransaction = async (updatedTransaction: Transaction) => {
-    if (!user) {
-      showError("You must be logged in to update transactions.");
-      return;
-    }
-
     const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
     if (!originalTransaction) {
       showError("Original transaction not found.");
@@ -213,7 +190,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const transferId = `transfer_${Date.now()}`;
         const debitTransaction = {
           ...updatedTransaction,
-          user_id: user.id,
           transfer_id: transferId,
           amount: -newAmount,
           category: 'Transfer',
@@ -222,7 +198,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
         const creditTransaction = {
           ...updatedTransaction,
-          user_id: user.id,
           transfer_id: transferId,
           account: updatedTransaction.vendor,
           vendor: updatedTransaction.account,
@@ -244,7 +219,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Insert new regular transaction
         const newSingleTransaction = {
           ...updatedTransaction,
-          user_id: user.id,
           transfer_id: null, // Ensure transfer_id is null
           amount: -newAmount, // Assuming regular transactions are expenses by default when converting from transfer
           date: new Date(updatedTransaction.date).toISOString(),
@@ -308,11 +282,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const deleteTransaction = async (transactionId: string, transferId?: string) => {
-    if (!user) {
-      showError("You must be logged in to delete transactions.");
-      return;
-    }
-
     try {
       if (transferId) {
         const { error } = await supabase.from('transactions').delete().eq('transfer_id', transferId);
@@ -330,26 +299,17 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const clearAllTransactions = React.useCallback(async () => {
-    if (!user) {
-      showError("You must be logged in to clear transactions.");
-      return;
-    }
     try {
-      const { error } = await supabase.from('transactions').delete().eq('user_id', user.id);
+      const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
       if (error) throw error;
       setTransactions([]);
       showSuccess("All transactions cleared successfully!");
     } catch (error: any) {
       showError(`Failed to clear transactions: ${error.message}`);
     }
-  }, [user]);
+  }, []);
 
   const generateDiverseDemoData = React.useCallback(async () => {
-    if (!user) {
-      showError("You must be logged in to generate demo data.");
-      return;
-    }
-
     try {
       // Clear existing data first
       await clearAllTransactions();
@@ -358,9 +318,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
 
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse, user.id));
-      demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse, user.id));
-      demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse, user.id));
+      demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse));
+      demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse));
+      demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse));
 
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;
@@ -369,7 +329,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     }
-  }, [user, availableCurrencies, clearAllTransactions, fetchTransactions]);
+  }, [availableCurrencies, clearAllTransactions, fetchTransactions]);
 
   const value = React.useMemo(() => ({
     transactions,
@@ -380,7 +340,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     generateDiverseDemoData,
   }), [transactions, addTransaction, updateTransaction, deleteTransaction, clearAllTransactions, generateDiverseDemoData]);
 
-  if (isSessionLoading || isLoading) {
+  if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading transactions...</div>;
   }
 
