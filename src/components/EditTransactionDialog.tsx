@@ -20,7 +20,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/data/finance-data";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { accounts, vendors, categories } from "@/data/finance-data";
 
 const formSchema = z.object({
@@ -119,11 +127,18 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a vendor" />
+                        <SelectValue placeholder="Select a vendor or account" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {vendors.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                      <SelectGroup>
+                        <SelectLabel>Accounts</SelectLabel>
+                        {accounts.map(acc => <SelectItem key={acc} value={acc}>{acc}</SelectItem>)}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>Vendors</SelectLabel>
+                        {vendors.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -24,24 +24,25 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { accounts, vendors, categories } from "@/data/finance-data";
 import { Combobox } from "@/components/ui/combobox";
 
-// Define the interface for the form values
 interface AddTransactionFormValues {
   date: string;
   account: string;
   vendor: string;
   category: string;
   amount: number;
-  remarks?: string; // Optional
+  remarks?: string;
 }
 
-// Let Zod infer the type of formSchema
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   account: z.string().min(1, "Account is required"),
   vendor: z.string().min(1, "Vendor is required"),
   category: z.string().min(1, "Category is required"),
-  amount: z.coerce.number(),
+  amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   remarks: z.string().optional(),
+}).refine(data => data.account !== data.vendor, {
+  message: "Source and destination accounts cannot be the same.",
+  path: ["vendor"],
 });
 
 interface AddTransactionDialogProps {
@@ -54,7 +55,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   onOpenChange,
 }) => {
   const { addTransaction } = useTransactions();
-  // Use AddTransactionFormValues for useForm generic type
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -66,6 +66,15 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       remarks: "",
     },
   });
+
+  const vendorValue = form.watch("vendor");
+  const isTransfer = accounts.includes(vendorValue);
+
+  React.useEffect(() => {
+    if (isTransfer) {
+      form.setValue("category", "Transfer");
+    }
+  }, [isTransfer, form]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -80,7 +89,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     }
   }, [isOpen, form]);
 
-  // The values here will now be of type AddTransactionFormValues
   const onSubmit = (values: AddTransactionFormValues) => {
     addTransaction(values);
     onOpenChange(false);
@@ -88,7 +96,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   const accountOptions = accounts.map(acc => ({ value: acc, label: acc }));
   const vendorOptions = vendors.map(v => ({ value: v, label: v }));
-  const categoryOptions = categories.map(cat => ({ value: cat, label: cat }));
+  const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
+  const combinedVendorOptions = [...accountOptions, ...vendorOptions];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -137,14 +146,14 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               name="vendor"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendor</FormLabel>
+                  <FormLabel>Vendor / Destination Account</FormLabel>
                    <Combobox
-                    options={vendorOptions}
+                    options={combinedVendorOptions}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Select a vendor..."
-                    searchPlaceholder="Search vendors..."
-                    emptyPlaceholder="No vendor found."
+                    placeholder="Select a vendor or account..."
+                    searchPlaceholder="Search..."
+                    emptyPlaceholder="No results found."
                   />
                   <FormMessage />
                 </FormItem>
@@ -163,6 +172,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                     placeholder="Select a category..."
                     searchPlaceholder="Search categories..."
                     emptyPlaceholder="No category found."
+                    disabled={isTransfer}
                   />
                   <FormMessage />
                 </FormItem>
@@ -175,7 +185,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" {...field} />
+                    <Input type="number" step="0.01" {...field} placeholder="0.00" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

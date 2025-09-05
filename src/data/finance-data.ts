@@ -57,7 +57,7 @@ export type Transaction = {
   category: string;
 };
 
-export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out"];
+export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
 export const accounts = ["Checking Account", "Savings Account", "Credit Card"];
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
