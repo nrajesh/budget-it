@@ -1,6 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Label } from "@/components/ui/label";
 import { Pie, PieChart } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
@@ -80,7 +79,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
   const totalSpending = chartData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
         <CardTitle>Spending by Category</CardTitle>
         <CardDescription>Total spending: {formatCurrency(totalSpending)}</CardDescription>
@@ -93,7 +92,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel formatter={(value) => formatCurrency(Number(value))} />}
+              content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
             />
             <Pie
               data={chartData}
@@ -106,22 +105,6 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
         </ChartContainer>
       </CardContent>
       {/* Removed ChartLegend */}
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="grid grid-cols-2 gap-2">
-          {chartData.map((item) => (
-            <div key={item.category} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className="flex h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: item.fill }}
-                />
-                <Label className="font-normal">{item.category}</Label>
-              </div>
-              <div className="font-medium">{formatCurrency(item.amount)}</div>
-            </div>
-          ))}
-        </div>
-      </CardFooter>
     </Card>
   );
 }

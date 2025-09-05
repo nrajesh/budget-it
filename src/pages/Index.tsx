@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart"; // Keep this import for Analytics page
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
@@ -193,7 +192,7 @@ const Index = () => {
         </CardContent>
       </Card>
       <div className="lg:col-span-2">
-        <Card>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle>Income vs. Expenses</CardTitle>
             <CardDescription>Monthly overview of your financial activity.</CardDescription>
@@ -229,8 +228,6 @@ const Index = () => {
       <div className="lg:col-span-2">
         <SpendingCategoriesChart transactions={transactions} /> {/* Updated prop */}
       </div>
-      {/* Removed BalanceOverTimeChart */}
-      {/* Removed RecentTransactions */}
     </div>
   );
 };
