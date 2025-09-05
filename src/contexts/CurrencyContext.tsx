@@ -1,44 +1,96 @@
-import * as React from 'react';
-
-// Mock conversion rates relative to USD
-export const conversionRates: { [key: string]: number } = {
-  USD: 1,
-  EUR: 0.92,
-  INR: 83.5,
-  CHF: 0.9,
-  GBP: 0.79,
-};
-
-export const currencies = Object.keys(conversionRates);
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface CurrencyContextType {
-  currency: string;
+  selectedCurrency: string;
   setCurrency: (currency: string) => void;
+  convertAmount: (amount: number) => number;
   formatCurrency: (amount: number) => string;
-  convertCurrency: (amount: number) => number;
+  currencySymbols: { [key: string]: string };
+  availableCurrencies: { code: string; name: string }[];
 }
 
-const CurrencyContext = React.createContext<CurrencyContextType | undefined>(undefined);
+const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrency] = React.useState<string>('USD');
+// Mock exchange rates relative to USD (assuming all base data is in USD)
+const exchangeRates: { [key: string]: number } = {
+  USD: 1.0,
+  EUR: 0.92, // 1 USD = 0.92 EUR
+  GBP: 0.79, // 1 USD = 0.79 GBP
+  JPY: 155.0, // 1 USD = 155 JPY
+  CAD: 1.37, // 1 USD = 1.37 CAD
+  AUD: 1.51, // 1 USD = 1.51 AUD
+  CHF: 0.90, // 1 USD = 0.90 CHF
+  INR: 83.5, // 1 USD = 83.5 INR
+  BRL: 5.15, // 1 USD = 5.15 BRL
+  CNY: 7.25, // 1 USD = 7.25 CNY
+};
 
-  const convertCurrency = (amount: number) => {
-    const rate = conversionRates[currency] || 1;
+const currencySymbols: { [key: string]: string } = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: 'C$',
+  AUD: 'A$',
+  CHF: 'CHF',
+  INR: '₹',
+  BRL: 'R$',
+  CNY: '¥',
+};
+
+const availableCurrencies = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'BRL', name: 'Brazilian Real' },
+  { code: 'CNY', name: 'Chinese Yuan' },
+];
+
+export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
+    return localStorage.getItem('selectedCurrency') || 'USD';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('selectedCurrency', selectedCurrency);
+  }, [selectedCurrency]);
+
+  const setCurrency = useCallback((currency: string) => {
+    if (exchangeRates[currency]) {
+      setSelectedCurrency(currency);
+    } else {
+      console.warn(`Currency ${currency} not supported.`);
+    }
+  }, []);
+
+  const convertAmount = useCallback((amount: number): number => {
+    const rate = exchangeRates[selectedCurrency];
+    if (rate === undefined) {
+      console.warn(`Exchange rate for ${selectedCurrency} not found. Returning original amount.`);
+      return amount;
+    }
     return amount * rate;
-  };
+  }, [selectedCurrency]);
 
-  const formatCurrency = (amount: number) => {
-    const convertedAmount = convertCurrency(amount);
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(convertedAmount);
-  };
+  const formatCurrency = useCallback((amount: number): string => {
+    const convertedAmount = convertAmount(amount);
+    const symbol = currencySymbols[selectedCurrency] || selectedCurrency; // Fallback to code if symbol not found
+    return `${symbol}${convertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [selectedCurrency, convertAmount]);
 
-  const value = { currency, setCurrency, formatCurrency, convertCurrency };
+  const value = React.useMemo(() => ({
+    selectedCurrency,
+    setCurrency,
+    convertAmount,
+    formatCurrency,
+    currencySymbols,
+    availableCurrencies,
+  }), [selectedCurrency, setCurrency, convertAmount, formatCurrency]);
 
   return (
     <CurrencyContext.Provider value={value}>
@@ -48,7 +100,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useCurrency = () => {
-  const context = React.useContext(CurrencyContext);
+  const context = useContext(CurrencyContext);
   if (context === undefined) {
     throw new Error('useCurrency must be used within a CurrencyProvider');
   }

@@ -1,190 +1,239 @@
-import * as React from "react";
-import {
-  DollarSign,
-  FileText,
-} from "lucide-react";
-import {
-  Line,
-  LineChart,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { incomeVsExpensesData, chartConfig as staticChartConfig } from "@/data/finance-data";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useMemo, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
-import { slugify } from "@/lib/utils";
-import { type ChartConfig } from "@/components/ui/chart";
+import { RecentTransactions } from "@/components/RecentTransactions";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+
+const chartConfig = {
+  income: {
+    label: "Income",
+    color: "hsl(var(--chart-1))",
+  },
+  expenses: {
+    label: "Expenses",
+    color: "hsl(var(--chart-2))",
+  },
+} satisfies ChartConfig;
 
 const Index = () => {
   const { transactions } = useTransactions();
-  const { formatCurrency, convertCurrency, currency } = useCurrency();
+  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency(); // Updated currency context usage
 
-  const { netWorth, monthlySpending } = React.useMemo(() => {
-    const nonTransfer = transactions.filter(t => t.category !== 'Transfer');
-    const worth = nonTransfer.reduce((sum, t) => sum + t.amount, 0);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const monthly = nonTransfer
-      .filter(t => new Date(t.date) > thirtyDaysAgo && t.amount < 0)
-      .reduce((sum, t) => sum + t.amount, 0);
+  const filteredTransactions = useMemo(() => {
+    let filtered = transactions;
 
-    return { netWorth: worth, monthlySpending: monthly };
-  }, [transactions]);
+    if (selectedAccounts.length > 0) {
+      filtered = filtered.filter(t => selectedAccounts.includes(t.account));
+    }
 
-  const { spendingData, spendingConfig } = React.useMemo(() => {
-    const spendingByCategory = transactions
-      .filter(t => t.amount < 0 && t.category !== 'Transfer')
-      .reduce((acc, t) => {
-        if (!acc[t.category]) acc[t.category] = 0;
-        acc[t.category] += Math.abs(t.amount);
-        return acc;
-      }, {} as Record<string, number>);
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(t => selectedCategories.includes(t.category));
+    }
 
-    const data = Object.entries(spendingByCategory).map(([name, value], index) => ({
-      name, value, fill: `hsl(var(--chart-${index + 1}))`,
-    })).sort((a, b) => b.value - a.value);
+    return filtered;
+  }, [transactions, selectedAccounts, selectedCategories]);
 
-    const config = data.reduce((acc, item) => {
-      acc[slugify(item.name)] = { label: item.name, color: item.fill };
+  const monthlySummary = useMemo(() => {
+    const summary: { [key: string]: { income: number; expenses: number } } = {};
+
+    transactions.forEach(transaction => {
+      const month = new Date(transaction.date).toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      if (!summary[month]) {
+        summary[month] = { income: 0, expenses: 0 };
+      }
+
+      if (transaction.amount > 0 && transaction.category !== 'Transfer') {
+        summary[month].income += transaction.amount;
+      } else if (transaction.amount < 0 && transaction.category !== 'Transfer') {
+        summary[month].expenses += Math.abs(transaction.amount);
+      }
+    });
+
+    // Sort months chronologically
+    const sortedMonths = Object.keys(summary).sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      const dateA = new Date(`${monthA} 1, ${yearA}`);
+      const dateB = new Date(`${monthB} 1, ${yearB}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return sortedMonths.map(month => ({
+      month,
+      income: convertAmount(summary[month].income), // Convert amount
+      expenses: convertAmount(summary[month].expenses), // Convert amount
+    }));
+  }, [transactions, convertAmount]);
+
+  const totalBalance = useMemo(() => {
+    const balance = transactions.reduce((acc, t) => {
+      if (t.category !== 'Transfer') {
+        return acc + t.amount;
+      }
       return acc;
-    }, {} as ChartConfig);
+    }, 0);
+    return convertAmount(balance); // Convert amount
+  }, [transactions, convertAmount]);
 
-    return { spendingData: data, spendingConfig: config };
-  }, [transactions]);
+  const totalIncome = useMemo(() => {
+    const income = transactions.reduce((acc, t) => {
+      if (t.amount > 0 && t.category !== 'Transfer') {
+        return acc + t.amount;
+      }
+      return acc;
+    }, 0);
+    return convertAmount(income); // Convert amount
+  }, [transactions, convertAmount]);
 
-  const yAxisFormatter = (value: number) => {
-    const converted = convertCurrency(value);
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency, notation: 'compact', compactDisplay: 'short' }).format(converted);
-  };
+  const totalExpenses = useMemo(() => {
+    const expenses = transactions.reduce((acc, t) => {
+      if (t.amount < 0 && t.category !== 'Transfer') {
+        return acc + Math.abs(t.amount);
+      }
+      return acc;
+    }, 0);
+    return convertAmount(expenses); // Convert amount
+  }, [transactions, convertAmount]);
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-      <div className="grid gap-6">
-        <Card className="bg-primary text-primary-foreground">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            className="h-4 w-4 text-muted-foreground"
+          >
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+          <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            className="h-4 w-4 text-muted-foreground"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87m-3-1.13a4 4 0 0 1 0-7.75" />
+          </svg>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+          <p className="text-xs text-muted-foreground">+180.1% from last month</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            className="h-4 w-4 text-muted-foreground"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87m-3-1.13a4 4 0 0 1 0-7.75" />
+          </svg>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+          <p className="text-xs text-muted-foreground">-10% from last month</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Active Now</CardTitle>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            className="h-4 w-4 text-muted-foreground"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">+573</div>
+          <p className="text-xs text-muted-foreground">+201 since last hour</p>
+        </CardContent>
+      </Card>
+      <div className="lg:col-span-2">
+        <Card>
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription className="text-primary-foreground/80">
-              Check your financial overview
-            </CardDescription>
+            <CardTitle>Income vs. Expenses</CardTitle>
+            <CardDescription>Monthly overview of your financial activity.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-start gap-4 sm:flex-row">
-            <div className="grid flex-1 grid-cols-2 gap-4">
-              <div className="rounded-lg bg-primary/80 p-4">
-                <p className="text-sm text-primary-foreground/80">
-                  Net Worth
-                </p>
-                <p className="text-2xl font-bold">{formatCurrency(netWorth)}</p>
-              </div>
-              <div className="rounded-lg bg-primary/80 p-4">
-                <p className="text-sm text-primary-foreground/80">
-                  Monthly Spending
-                </p>
-                <p className="text-2xl font-bold">{formatCurrency(monthlySpending)}</p>
-              </div>
-            </div>
-            <div className="hidden sm:block">
-              <img
-                src="/placeholder.svg"
-                alt="Welcome illustration"
-                className="h-32 w-32"
-              />
-            </div>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+              <BarChart data={monthlySummary}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
+                />
+                <YAxis
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => formatCurrency(Number(value))} // Format Y-axis labels
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dashed" formatter={(value) => formatCurrency(Number(value))} />}
+                />
+                <Bar dataKey="income" fill="var(--color-income)" radius={4} />
+                <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Monthly Spending
-              </CardTitle>
-              <DollarSign className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(monthlySpending)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Bills Due
-              </CardTitle>
-              <FileText className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-muted-foreground">
-                2 due this week
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Net Worth
-              </CardTitle>
-              <DollarSign className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-5">
-          <Card className="lg:col-span-3">
-            <CardHeader>
-              <CardTitle>Income vs Expenses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={staticChartConfig} className="h-64 w-full">
-                <LineChart data={incomeVsExpensesData}>
-                  <RechartsTooltip
-                    content={<ChartTooltipContent indicator="dot" formatter={(value) => formatCurrency(Number(value))} />}
-                  />
-                  <XAxis dataKey="month" />
-                  <YAxis
-                    tickFormatter={yAxisFormatter}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="income"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="expenses"
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeWidth={2}
-                    strokeDasharray="3 3"
-                    dot={false}
-                  />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-          <div className="lg:col-span-2">
-            <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
-          </div>
-        </div>
+      </div>
+      <div className="lg:col-span-2">
+        <SpendingCategoriesChart transactions={transactions} /> {/* Updated prop */}
+      </div>
+      <div className="lg:col-span-2">
+        <BalanceOverTimeChart transactions={transactions} />
+      </div>
+      <div className="lg:col-span-2">
+        <RecentTransactions transactions={transactions} selectedCategories={[]} />
       </div>
     </div>
   );

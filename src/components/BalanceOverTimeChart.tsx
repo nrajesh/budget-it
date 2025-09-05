@@ -1,98 +1,129 @@
-"use client";
-
 import * as React from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig
-} from "@/components/ui/chart";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type Transaction } from "@/data/finance-data";
-import { accounts as allAccounts } from "@/data/finance-data";
-import { useCurrency } from "@/contexts/CurrencyContext";
-
-const slugify = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
-  selectedAccounts: string[];
-  chartConfig: ChartConfig;
 }
 
-export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConfig }: BalanceOverTimeChartProps) {
-  const { currency, convertCurrency } = useCurrency();
-  const accountSlugs = React.useMemo(() => allAccounts.map(slugify), []);
+const chartConfig = {
+  balance: {
+    label: "Balance",
+    color: "hsl(var(--chart-1))",
+  },
+  Checking: {
+    label: "Checking",
+    color: "hsl(var(--chart-2))",
+  },
+  Savings: {
+    label: "Savings",
+    color: "hsl(var(--chart-3))",
+  },
+  Credit: {
+    label: "Credit",
+    color: "hsl(var(--chart-4))",
+  },
+} satisfies ChartConfig;
 
-  const chartData = React.useMemo(() => {
-    if (transactions.length === 0) return [];
+export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
+  const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
+  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(['Checking', 'Savings', 'Credit']);
 
-    const dailyChanges: { [date: string]: { [accountSlug: string]: number } } = {};
-    // Filter out 'Transfer' transactions before processing
-    const nonTransferTransactions = transactions.filter(t => t.category !== 'Transfer');
-
-    for (const t of nonTransferTransactions) {
-        const date = new Date(t.date).toISOString().split('T')[0];
-        const accountSlug = slugify(t.account);
-        if (!dailyChanges[date]) dailyChanges[date] = {};
-        const amount = typeof t.amount === 'number' ? t.amount : 0;
-        if (!dailyChanges[date][accountSlug]) dailyChanges[date][accountSlug] = 0;
-        dailyChanges[date][accountSlug] += amount;
-    }
-
-    const sortedDates = Object.keys(dailyChanges).sort();
-    const cumulativeBalances: { [accountSlug: string]: number } = {};
-    accountSlugs.forEach(slug => cumulativeBalances[slug] = 0);
-
-    return sortedDates.map(date => {
-        const changes = dailyChanges[date];
-        const record: { [key: string]: any } = { date };
-        accountSlugs.forEach(slug => {
-            const changeAmount = typeof changes[slug] === 'number' ? changes[slug] : 0;
-            cumulativeBalances[slug] += changeAmount;
-            record[slug] = Math.max(0, cumulativeBalances[slug]);
-        });
-        return record;
-    });
-  }, [transactions, accountSlugs]);
-
-  const tooltipFormatter = (value: any, name: any, item: any) => {
-    const payload = item.payload;
-    const accountLabel = chartConfig[name as keyof typeof chartConfig]?.label;
-    const originalValue = typeof payload[name] === 'number' ? payload[name] : 0; 
-    const totalForVisible = selectedAccounts.reduce((acc, slug) => acc + (typeof payload[slug] === 'number' ? payload[slug] : 0), 0);
-    const percentage = totalForVisible > 0 ? (originalValue / totalForVisible) * 100 : 0;
-    
-    const convertedValue = convertCurrency(originalValue);
-    const formattedValue = new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(convertedValue);
-
-    return (
-        <div className="w-full flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: item.color }} />
-                <span className="text-muted-foreground">{accountLabel}</span>
-            </div>
-            <span className="font-bold text-foreground">
-                {formattedValue} ({percentage.toFixed(1)}%)
-            </span>
-        </div>
+  const toggleAccount = (account: string) => {
+    setSelectedAccounts(prev =>
+      prev.includes(account) ? prev.filter(a => a !== account) : [...prev, account]
     );
   };
 
+  const chartData = React.useMemo(() => {
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const dailyBalances: { [date: string]: { [account: string]: number } } = {};
+
+    // Initialize balances for all accounts to 0
+    const allAccounts = Array.from(new Set(transactions.map(t => t.account)));
+    allAccounts.forEach(account => {
+      dailyBalances['initial'] = { ...dailyBalances['initial'], [account]: 0 };
+    });
+
+    sortedTransactions.forEach(transaction => {
+      const date = new Date(transaction.date).toISOString().split('T')[0];
+      if (!dailyBalances[date]) {
+        // Carry over previous day's balance if this is the first transaction for the day
+        const previousDate = Object.keys(dailyBalances).sort().pop();
+        dailyBalances[date] = previousDate ? { ...dailyBalances[previousDate] } : { ...dailyBalances['initial'] };
+      }
+
+      // Apply transaction amount to the specific account, regardless of category for simplicity
+      // A more complex transfer model would require 'fromAccount' and 'toAccount' fields in Transaction type
+      if (dailyBalances[date][transaction.account] !== undefined) {
+        dailyBalances[date][transaction.account] += transaction.amount;
+      }
+    });
+
+    // Convert dailyBalances object to an array of objects for Recharts
+    const formattedData = Object.entries(dailyBalances)
+      .filter(([date]) => date !== 'initial') // Remove the initial placeholder
+      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+      .map(([date, balances]) => {
+        const obj: { date: string; [key: string]: number | string } = { date };
+        Object.entries(balances).forEach(([account, balance]) => {
+          obj[account] = convertAmount(balance); // Convert balance
+        });
+        return obj;
+      });
+
+    return formattedData;
+  }, [transactions, convertAmount]);
+
+  const totalBalance = React.useMemo(() => {
+    if (chartData.length === 0) return 0;
+    const lastDayBalances = chartData[chartData.length - 1];
+    return selectedAccounts.reduce((sum, account) => {
+      const balance = lastDayBalances[account];
+      return sum + (typeof balance === 'number' ? balance : 0);
+    }, 0);
+  }, [chartData, selectedAccounts]);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Balance Composition Over Time</CardTitle>
-        <CardDescription>Relative balance of each account over time.</CardDescription>
+      <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+        <div className="flex flex-1 flex-col justify-center p-6">
+          <CardTitle>Balance Over Time</CardTitle>
+          <CardDescription>
+            Total balance: {formatCurrency(totalBalance)}
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-1 p-6">
+          {Object.keys(chartConfig).filter(key => key !== 'balance').map(account => (
+            <div key={account} className="flex items-center space-x-2">
+              <Checkbox
+                id={`account-${account}`}
+                checked={selectedAccounts.includes(account)}
+                onCheckedChange={() => toggleAccount(account)}
+              />
+              <Label htmlFor={`account-${account}`}>{account}</Label>
+            </div>
+          ))}
+        </div>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-          <AreaChart
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[250px] w-full"
+        >
+          <LineChart
             accessibilityLayer
             data={chartData}
-            margin={{ left: 12, right: 12 }}
-            stackOffset="expand"
+            margin={{
+              left: 12,
+              right: 12,
+            }}
           >
             <CartesianGrid vertical={false} />
             <XAxis
@@ -100,29 +131,38 @@ export function BalanceOverTimeChart({ transactions, selectedAccounts, chartConf
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              minTickGap={32}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+              }}
             />
             <YAxis
-              tickFormatter={(value) => `${(value * 100).toFixed(0)}%`}
-              domain={[0, 1]}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => formatCurrency(Number(value))} // Format Y-axis labels
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent formatter={tooltipFormatter} />}
+              content={
+                <ChartTooltipContent
+                  indicator="dashed"
+                  formatter={(value) => formatCurrency(Number(value))} // Format tooltip values
+                />
+              }
             />
-            {selectedAccounts.map((accountSlug) => (
-              <Area
-                key={accountSlug}
-                dataKey={accountSlug}
-                name={accountSlug}
+            {selectedAccounts.map(account => (
+              <Line
+                key={account}
+                dataKey={account}
                 type="monotone"
-                fill={`var(--color-${accountSlug})`}
-                stroke={`var(--color-${accountSlug})`}
-                stackId="a"
+                stroke={chartConfig[account as keyof typeof chartConfig]?.color}
                 strokeWidth={2}
+                dot={false}
               />
             ))}
-          </AreaChart>
+          </LineChart>
         </ChartContainer>
       </CardContent>
     </Card>

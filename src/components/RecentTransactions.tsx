@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/pagination";
 import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 interface RecentTransactionsProps {
   transactions: Transaction[]; // These are transactions filtered by account
@@ -21,7 +21,7 @@ interface RecentTransactionsProps {
 
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
   const { transactions: allTransactions } = useTransactions(); // Get all transactions for balance calculation
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
@@ -101,10 +101,10 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                     <Badge variant="outline">{transaction.category}</Badge>
                   </TableCell>
                   <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+                    {formatCurrency(transaction.amount)} {/* Convert and format amount */}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatCurrency(transaction.runningBalance)}
+                    {formatCurrency(transaction.runningBalance)} {/* Convert and format running balance */}
                   </TableCell>
                 </TableRow>
               ))

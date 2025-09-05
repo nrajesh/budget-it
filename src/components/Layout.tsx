@@ -51,11 +51,19 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Import Select components
 import AddTransactionDialog from "./AddTransactionDialog";
-import { CurrencySwitcher } from "./CurrencySwitcher";
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();
+  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency(); // Use currency context
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
@@ -75,7 +83,7 @@ const Layout = () => {
   const pageTitle = getPageTitle(location.pathname);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="min-h-screen">
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
@@ -222,7 +230,20 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <CurrencySwitcher />
+            {/* Currency Dropdown */}
+            <Select value={selectedCurrency} onValueChange={setCurrency}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableCurrencies.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    {currency.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Button
               variant="ghost"
               size="icon"
@@ -255,7 +276,7 @@ const Layout = () => {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-muted/40 p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
           <Outlet />
         </main>
         <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg">
