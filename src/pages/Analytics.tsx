@@ -2,7 +2,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { DollarSign, TrendingUp, TrendingDown, Scale } from "lucide-react";
-import { IncomeVsExpensesChart } from "@/components/IncomeVsExpensesChart";
+import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { type ChartConfig } from "@/components/ui/chart";
@@ -105,7 +105,7 @@ const AnalyticsPage = () => {
         </Card>
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        <IncomeVsExpensesChart />
+        <BalanceOverTimeChart />
         <SpendingCategoriesChart data={spendingData} config={spendingConfig} />
       </div>
       <div className="grid gap-4">
