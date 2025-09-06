@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import { Payee } from '@/components/AddEditPayeeDialog';
-import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
+
 
 interface PayeesServiceProps {
   setVendors: React.Dispatch<React.SetStateAction<Payee[]>>;
