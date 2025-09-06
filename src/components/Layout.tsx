@@ -17,7 +17,7 @@ import {
   Plus,
   ShoppingCart,
   User,
-  Users,
+  Store, // Changed from Users to Store for Vendors
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,8 @@ const Layout = () => {
         return "Transactions";
       case "/analytics":
         return "Analytics";
+      case "/vendors": // Added Vendors page title
+        return "Vendors";
       case "/settings":
         return "Settings";
       default:
@@ -118,7 +120,7 @@ const Layout = () => {
               <SidebarMenuItem>
                 <Link to="/transactions" className="w-full">
                   <SidebarMenuButton isActive={location.pathname === "/transactions"}>
-                    <Users />
+                    <Store /> {/* Changed icon to Store */}
                     Transactions
                   </SidebarMenuButton>
                 </Link>
@@ -129,10 +131,12 @@ const Layout = () => {
             <SidebarGroupLabel>Apps</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Phone />
-                  Payees
-                </SidebarMenuButton>
+                <Link to="/vendors" className="w-full"> {/* Added Vendors link */}
+                  <SidebarMenuButton isActive={location.pathname === "/vendors"}>
+                    <Store /> {/* Changed icon to Store */}
+                    Vendors {/* Renamed from Payees */}
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
