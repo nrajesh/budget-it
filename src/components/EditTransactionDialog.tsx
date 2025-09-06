@@ -31,12 +31,13 @@ import {
 import { categories } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react"; // Import Loader2
 import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils"; // Import formatDateToYYYYMMDD
+import LoadingOverlay from "./LoadingOverlay"; // Import LoadingOverlay
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -69,6 +70,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
+  const [isSaving, setIsSaving] = React.useState(false); // New state for loading overlay
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,6 +99,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         ...transaction,
         date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
       });
+      setIsSaving(false); // Reset saving state when dialog opens
     }
   }, [transaction, form, isOpen, fetchPayees]);
 
@@ -156,14 +159,19 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     }
   }, [isTransfer, form]);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    updateTransaction({
-      ...transaction,
-      ...values,
-      date: new Date(values.date).toISOString(),
-      currency: accountCurrencyMap.get(values.account) || transaction.currency, // Ensure currency is updated to current account currency
-    });
-    onOpenChange(false);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSaving(true); // Start loading
+    try {
+      await updateTransaction({
+        ...transaction,
+        ...values,
+        date: new Date(values.date).toISOString(),
+        currency: accountCurrencyMap.get(values.account) || transaction.currency, // Ensure currency is updated to current account currency
+      });
+      onOpenChange(false);
+    } finally {
+      setIsSaving(false); // End loading
+    }
   };
 
   const handleDelete = () => {
@@ -197,6 +205,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent>
+          <LoadingOverlay isLoading={isSaving} message="Saving changes..." /> {/* Loading overlay */}
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
           </DialogHeader>
@@ -330,11 +339,15 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                   type="button"
                   variant="destructive"
                   onClick={() => setIsDeleteConfirmOpen(true)}
+                  disabled={isSaving} // Disable delete button while saving
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
-                <Button type="submit">Save changes</Button>
+                <Button type="submit" disabled={isSaving}>
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save changes
+                </Button>
               </DialogFooter>
             </form>
           </Form>
