@@ -44,7 +44,7 @@ const VendorsPage = () => {
 
   const fetchVendors = React.useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from("vendors_with_balance").select("*");
+    const { data, error } = await supabase.from("vendors_with_balance").select("*").eq('is_account', false); // Filter for non-accounts
 
     if (error) {
       showError(`Failed to fetch vendors: ${error.message}`);
@@ -145,7 +145,7 @@ const VendorsPage = () => {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Manage Vendors & Accounts</CardTitle>
+          <CardTitle>Manage Vendors</CardTitle> {/* Updated title */}
           <div className="mt-4">
             <Input
               placeholder="Search by name..."
@@ -168,7 +168,7 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
+                  {/* Removed Type column */}
                   <TableHead>Balance</TableHead>
                   <TableHead>Currency</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -177,11 +177,11 @@ const VendorsPage = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={5} className="text-center">Loading...</TableCell> {/* Adjusted colSpan */}
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground"> {/* Adjusted colSpan */}
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -196,11 +196,7 @@ const VendorsPage = () => {
                         />
                       </TableCell>
                       <TableCell className="font-medium">{vendor.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={vendor.is_account ? "default" : "secondary"}>
-                          {vendor.is_account ? "Account" : "Vendor"}
-                        </Badge>
-                      </TableCell>
+                      {/* Removed Type Cell */}
                       <TableCell>
                         {vendor.is_account ? formatCurrency(vendor.running_balance || 0, vendor.currency || 'USD') : "-"}
                       </TableCell>
