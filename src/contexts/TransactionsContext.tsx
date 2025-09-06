@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { Transaction, accounts, vendors, categories } from '@/data/finance-data';
+import { Transaction, categories } from '@/data/finance-data'; // Removed 'accounts' and 'vendors' from here
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { ensurePayeeExists, checkIfPayeeIsAccount } from '@/integrations/supabase/utils'; // New imports
 
 interface TransactionToDelete {
   id: string;
@@ -22,12 +23,13 @@ interface TransactionsContextType {
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 // Helper function to generate sample transactions for a given month, account, and currency
-const generateTransactions = (
+const generateTransactions = async ( // Made async
   monthOffset: number,
   count: number,
-  accountNames: string[],
+  baseAccountNames: string[], // These are potential names for accounts
+  baseVendorNames: string[], // These are potential names for regular vendors
   currencyCodes: string[],
-): Omit<Transaction, 'id' | 'created_at'>[] => {
+): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
   const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
@@ -38,27 +40,36 @@ const generateTransactions = (
     const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
 
     const isTransfer = Math.random() < 0.2;
-    const accountName = accountNames[Math.floor(Math.random() * accountNames.length)];
+    const accountName = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
     const currencyCode = currencyCodes[Math.floor(Math.random() * currencyCodes.length)];
 
-    let vendorName = vendors[Math.floor(Math.random() * vendors.length)];
+    let vendorName = baseVendorNames[Math.floor(Math.random() * baseVendorNames.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
+    // Ensure the primary account exists in the database
+    await ensurePayeeExists(accountName, true);
+
     if (isTransfer) {
-      let destAccount = accountNames[Math.floor(Math.random() * accountNames.length)];
+      let destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
       while (destAccount === accountName) {
-        destAccount = accountNames[Math.floor(Math.random() * accountNames.length)];
+        destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
       }
-      vendorName = destAccount;
+      vendorName = destAccount; // Vendor is actually another account for a transfer
       categoryName = 'Transfer';
       amountValue = Math.abs(amountValue);
+
+      // Ensure the destination account exists in the database
+      await ensurePayeeExists(destAccount, true);
+
     } else {
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
         amountValue = -amountValue;
       } else if (categoryName === 'Salary') {
         amountValue = Math.abs(amountValue) * 5;
       }
+      // Ensure the regular vendor exists in the database
+      await ensurePayeeExists(vendorName, false);
     }
 
     const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
@@ -105,7 +116,7 @@ const generateTransactions = (
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { availableCurrencies } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true); // FIX: Corrected syntax from '=>' to '='
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTransactions = React.useCallback(async () => {
     setIsLoading(true);
@@ -128,17 +139,28 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [fetchTransactions]);
 
   const addTransaction = React.useCallback(async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
-    const isTransfer = accounts.includes(transaction.vendor);
     const newDateISO = new Date(transaction.date).toISOString();
     const baseRemarks = transaction.remarks || "";
 
-    const commonTransactionFields = {
-      ...transaction,
-      currency: 'USD', // Default to USD for new manual transactions
-      date: newDateISO,
-    };
-
     try {
+      // Ensure the primary account exists and is marked as an account
+      await ensurePayeeExists(transaction.account, true);
+
+      const isTransfer = await checkIfPayeeIsAccount(transaction.vendor); // Dynamically check if vendor is an account
+      if (isTransfer) {
+        // Ensure the destination account exists and is marked as an account
+        await ensurePayeeExists(transaction.vendor, true);
+      } else {
+        // Ensure the vendor exists as a regular vendor
+        await ensurePayeeExists(transaction.vendor, false);
+      }
+
+      const commonTransactionFields = {
+        ...transaction,
+        currency: 'USD', // Default to USD for new manual transactions
+        date: newDateISO,
+      };
+
       if (isTransfer) {
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(transaction.amount);
@@ -186,12 +208,23 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     const wasTransfer = !!originalTransaction.transfer_id;
-    const isNowTransfer = accounts.includes(updatedTransaction.vendor);
+    const isNowTransfer = await checkIfPayeeIsAccount(updatedTransaction.vendor); // Dynamically check if new vendor is an account
     const newAmount = Math.abs(updatedTransaction.amount);
     const newDateISO = new Date(updatedTransaction.date).toISOString();
     const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
 
     try {
+      // Ensure the primary account exists and is marked as an account
+      await ensurePayeeExists(updatedTransaction.account, true);
+
+      if (isNowTransfer) {
+        // Ensure the new vendor (destination account) exists and is marked as an account
+        await ensurePayeeExists(updatedTransaction.vendor, true);
+      } else {
+        // Ensure the new vendor exists as a regular vendor
+        await ensurePayeeExists(updatedTransaction.vendor, false);
+      }
+
       // Case 1: Editing a regular transaction to become a transfer
       if (!wasTransfer && isNowTransfer) {
         const { error: deleteError } = await supabase.from('transactions').delete().eq('id', originalTransaction.id);
@@ -353,13 +386,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       await clearAllTransactions();
 
-      const accountsToUse = accounts;
+      // Use a set of common account and vendor names for demo data
+      const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
+      const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
 
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...generateTransactions(0, 300, accountsToUse, currenciesToUse));
-      demoData.push(...generateTransactions(-1, 300, accountsToUse, currenciesToUse));
-      demoData.push(...generateTransactions(-2, 300, accountsToUse, currenciesToUse));
+      demoData.push(...await generateTransactions(0, 300, baseAccountNames, baseVendorNames, currenciesToUse));
+      demoData.push(...await generateTransactions(-1, 300, baseAccountNames, baseVendorNames, currenciesToUse));
+      demoData.push(...await generateTransactions(-2, 300, baseAccountNames, baseVendorNames, currenciesToUse));
 
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;

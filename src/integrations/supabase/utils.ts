@@ -1,0 +1,121 @@
+import { supabase } from './client';
+import { showError } from '@/utils/toast';
+
+/**
+ * Ensures a payee (vendor or account) exists in the 'vendors' table,
+ * and if it's an account, ensures a corresponding entry in the 'accounts' table.
+ * @param name The name of the payee.
+ * @param isAccount True if the payee should be treated as an account, false for a regular vendor.
+ * @returns The ID of the existing or newly created vendor, or null if an error occurred.
+ */
+export async function ensurePayeeExists(name: string, isAccount: boolean): Promise<string | null> {
+  if (!name) return null;
+
+  try {
+    // 1. Check if a vendor with this name already exists
+    let { data: existingVendor, error: vendorFetchError } = await supabase
+      .from('vendors')
+      .select('id, is_account, account_id')
+      .eq('name', name)
+      .single();
+
+    if (vendorFetchError && vendorFetchError.code !== 'PGRST116') { // PGRST116 means no rows found
+      throw vendorFetchError;
+    }
+
+    if (existingVendor) {
+      // Vendor already exists
+      if (isAccount && (!existingVendor.is_account || !existingVendor.account_id)) {
+        // Existing vendor should be an account but isn't fully set up as one.
+        // Ensure an entry in 'accounts' table exists and link it.
+        let accountId = existingVendor.account_id;
+        if (!accountId) {
+          const { data: newAccount, error: newAccountError } = await supabase
+            .from('accounts')
+            .insert({
+              currency: 'USD', // Default currency for auto-created accounts
+              starting_balance: 0,
+              remarks: `Auto-created account for vendor: ${name}`,
+            })
+            .select('id')
+            .single();
+          if (newAccountError) throw newAccountError;
+          accountId = newAccount.id;
+        }
+        const { error: updateVendorError } = await supabase
+          .from('vendors')
+          .update({ is_account: true, account_id: accountId })
+          .eq('id', existingVendor.id);
+        if (updateVendorError) throw updateVendorError;
+        return existingVendor.id;
+      } else if (!isAccount && existingVendor.is_account) {
+        // Existing vendor is an account, but we're trying to treat it as a regular vendor.
+        // This is a potential conflict. We'll respect the existing 'is_account' status.
+        console.warn(`Attempted to create regular vendor "${name}" but it already exists as an account. Using existing record.`);
+        return existingVendor.id;
+      }
+      // If existingVendor is already correctly configured (e.g., already an account and isAccount is true,
+      // or already a regular vendor and isAccount is false), just return its ID.
+      return existingVendor.id;
+    } else {
+      // Vendor does not exist, create it
+      if (isAccount) {
+        // Create both an account and a linked vendor
+        const { data: newAccount, error: newAccountError } = await supabase
+          .from('accounts')
+          .insert({
+            currency: 'USD',
+            starting_balance: 0,
+            remarks: `Auto-created account for vendor: ${name}`,
+          })
+          .select('id')
+          .single();
+        if (newAccountError) throw newAccountError;
+
+        const { data: newVendor, error: newVendorError } = await supabase
+          .from('vendors')
+          .insert({ name, is_account: true, account_id: newAccount.id })
+          .select('id')
+          .single();
+        if (newVendorError) throw newVendorError;
+        return newVendor.id;
+      } else {
+        // Create a regular vendor
+        const { data: newVendor, error: newVendorError } = await supabase
+          .from('vendors')
+          .insert({ name, is_account: false, account_id: null })
+          .select('id')
+          .single();
+        if (newVendorError) throw newVendorError;
+        return newVendor.id;
+      }
+    }
+  } catch (error: any) {
+    showError(`Error ensuring payee "${name}" exists: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Checks if a payee with the given name is currently marked as an account in the database.
+ * @param name The name of the payee to check.
+ * @returns True if the payee is an account, false otherwise or if an error occurs.
+ */
+export async function checkIfPayeeIsAccount(name: string): Promise<boolean> {
+  if (!name) return false;
+  try {
+    const { data, error } = await supabase
+      .from('vendors')
+      .select('is_account')
+      .eq('name', name)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+      throw error;
+    }
+    return data?.is_account || false;
+  } catch (error: any) {
+    console.error(`Error checking if payee "${name}" is an account: ${error.message}`);
+    return false;
+  }
+}
