@@ -18,6 +18,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
@@ -37,6 +38,7 @@ const VendorsPage = () => {
   
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [vendorToDelete, setVendorToDelete] = React.useState<Payee | null>(null);
+  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
 
   const { formatCurrency } = useCurrency();
 
@@ -51,6 +53,7 @@ const VendorsPage = () => {
       setVendors(data as Payee[]);
     }
     setIsLoading(false);
+    setSelectedRows([]);
   }, []);
 
   React.useEffect(() => {
@@ -84,29 +87,61 @@ const VendorsPage = () => {
   };
 
   const confirmDelete = async () => {
-    if (!vendorToDelete) return;
+    if (!vendorToDelete && selectedRows.length === 0) return;
+
+    const idsToDelete = vendorToDelete ? [vendorToDelete.id] : selectedRows;
+    const successMessage = vendorToDelete ? "Vendor deleted successfully." : `${selectedRows.length} items deleted successfully.`;
+
     try {
-      const { error } = await supabase.rpc('delete_vendor_and_update_transactions', {
-        p_vendor_id: vendorToDelete.id,
+      const { error } = await supabase.rpc('delete_payees_batch', {
+        p_vendor_ids: idsToDelete,
       });
       if (error) throw error;
-      showSuccess("Vendor deleted successfully.");
+      showSuccess(successMessage);
       fetchVendors();
     } catch (error: any) {
-      showError(`Failed to delete vendor: ${error.message}`);
+      showError(`Failed to delete: ${error.message}`);
     } finally {
       setIsConfirmOpen(false);
       setVendorToDelete(null);
+      setSelectedRows([]);
     }
   };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(currentVendors.map((v) => v.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleRowSelect = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, id]);
+    } else {
+      setSelectedRows((prev) => prev.filter((rowId) => rowId !== id));
+    }
+  };
+
+  const numSelected = selectedRows.length;
+  const rowCount = currentVendors.length;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Vendors</h2>
-        <Button onClick={handleAddClick}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor
-        </Button>
+        <div className="flex items-center space-x-2">
+          {numSelected > 0 && (
+            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete ({numSelected})
+            </Button>
+          )}
+          <Button onClick={handleAddClick}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor
+          </Button>
+        </div>
       </div>
       <Card>
         <CardHeader>
@@ -125,6 +160,13 @@ const VendorsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>
+                    <Checkbox
+                      checked={rowCount > 0 && numSelected === rowCount}
+                      onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Balance</TableHead>
@@ -135,17 +177,24 @@ const VendorsPage = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                       No vendors found.
                     </TableCell>
                   </TableRow>
                 ) : (
                   currentVendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
+                    <TableRow key={vendor.id} data-state={selectedRows.includes(vendor.id) && "selected"}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedRows.includes(vendor.id)}
+                          onCheckedChange={(checked) => handleRowSelect(vendor.id, Boolean(checked))}
+                          aria-label="Select row"
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{vendor.name}</TableCell>
                       <TableCell>
                         <Badge variant={vendor.is_account ? "default" : "secondary"}>
@@ -173,7 +222,9 @@ const VendorsPage = () => {
         </CardContent>
         <CardFooter className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredVendors.length)} of {filteredVendors.length} vendors
+            {numSelected > 0
+              ? `${numSelected} of ${filteredVendors.length} row(s) selected.`
+              : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredVendors.length)} of ${filteredVendors.length} vendors`}
           </div>
           <Pagination>
             <PaginationContent>
@@ -203,8 +254,8 @@ const VendorsPage = () => {
         isOpen={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
         onConfirm={confirmDelete}
-        title={`Delete ${vendorToDelete?.name}?`}
-        description="This will permanently delete the vendor and may affect related transactions. This action cannot be undone."
+        title="Are you sure?"
+        description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone."
         confirmText="Delete"
       />
     </div>

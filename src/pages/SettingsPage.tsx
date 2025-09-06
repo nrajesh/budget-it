@@ -6,11 +6,12 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
-import { RotateCcw, DatabaseZap, DollarSign } from "lucide-react";
+import { RotateCcw, DatabaseZap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { clearAllTransactions, generateDiverseDemoData } = useTransactions();
+  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
@@ -20,16 +21,31 @@ const SettingsPage = () => {
     showSuccess(`Default currency set to ${value}.`);
   };
 
-  const handleResetData = () => {
-    clearAllTransactions();
-    showSuccess("All transaction data has been reset.");
-    setIsResetConfirmOpen(false);
+  const handleResetData = async () => {
+    try {
+      const { error } = await supabase.rpc('clear_all_app_data');
+      if (error) throw error;
+      
+      // Also clear the client-side state via the context
+      clearAllTransactions();
+
+      showSuccess("All application data has been reset.");
+    } catch (error: any) {
+      showError(`Failed to reset data: ${error.message}`);
+    } finally {
+      setIsResetConfirmOpen(false);
+    }
   };
 
-  const handleGenerateDemoData = () => {
-    generateDiverseDemoData();
-    showSuccess("Diverse demo data has been generated.");
-    setIsGenerateConfirmOpen(false);
+  const handleGenerateDemoData = async () => {
+    try {
+      await generateDiverseDemoData();
+      showSuccess("Diverse demo data has been generated.");
+    } catch (error: any) {
+      showError(`Failed to generate demo data: ${error.message}`);
+    } finally {
+      setIsGenerateConfirmOpen(false);
+    }
   };
 
   return (
@@ -63,7 +79,7 @@ const SettingsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>Reset All Data</CardTitle>
-            <CardDescription>Permanently delete all transaction records.</CardDescription>
+            <CardDescription>Permanently delete all transaction, vendor, and account records.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
@@ -78,7 +94,7 @@ const SettingsPage = () => {
           <CardHeader>
             <CardTitle>Generate Demo Data</CardTitle>
             <CardDescription>
-              Generate diverse demo transactions.
+              Generate diverse demo transactions. This will clear existing data first.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -95,7 +111,7 @@ const SettingsPage = () => {
         onOpenChange={setIsResetConfirmOpen}
         onConfirm={handleResetData}
         title="Are you sure you want to reset all data?"
-        description="This action cannot be undone. All your transaction data will be permanently deleted."
+        description="This action cannot be undone. All your transaction, vendor, and account data will be permanently deleted."
         confirmText="Reset Data"
       />
 
