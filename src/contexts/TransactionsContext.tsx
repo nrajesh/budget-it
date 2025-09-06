@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { Transaction, accounts, vendors, categories } from '@/data/finance-data';
+import { Transaction, accounts, vendors as staticVendors, categories } from '@/data/finance-data'; // Renamed vendors to staticVendors
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { Vendor } from './VendorsContext'; // Import Vendor type
 
 interface TransactionsContextType {
   transactions: Transaction[];
@@ -35,7 +36,7 @@ const generateTransactions = (
     const accountName = accountNames[Math.floor(Math.random() * accountNames.length)];
     const currencyCode = currencyCodes[Math.floor(Math.random() * currencyCodes.length)];
 
-    let vendorName = vendors[Math.floor(Math.random() * vendors.length)];
+    let vendorName = staticVendors[Math.floor(Math.random() * staticVendors.length)]; // Use staticVendors for demo data generation
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
@@ -72,7 +73,7 @@ const generateTransactions = (
         transfer_id,
         amount: -Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
-        remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
+        remarks: baseRemarks ? `${baseRemarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
       };
       sampleTransactions.push(debitTransaction);
 
@@ -101,6 +102,41 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
+  // Function to sync vendors from transactions to the vendors table
+  const syncVendorsFromTransactions = React.useCallback(async () => {
+    const { data: allTransactions, error: fetchError } = await supabase
+      .from('transactions')
+      .select('vendor');
+
+    if (fetchError) {
+      console.error("Error fetching transactions for vendor sync:", fetchError.message);
+      return;
+    }
+
+    const uniqueVendorNames = new Set<string>();
+    allTransactions.forEach(t => {
+      // Only add vendors that are not also accounts (to avoid adding accounts to the vendor list)
+      if (!accounts.includes(t.vendor)) {
+        uniqueVendorNames.add(t.vendor);
+      }
+    });
+
+    const vendorsToInsert = Array.from(uniqueVendorNames).map(name => ({ name }));
+
+    if (vendorsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('vendors')
+        .insert(vendorsToInsert)
+        .onConflict('name') // Handle unique constraint on 'name'
+        .doNothing()
+        .select(); // Select should be after onConflict
+
+      if (insertError && insertError.code !== '23505') { // Ignore unique violation error
+        console.error("Error inserting vendors:", insertError.message);
+      }
+    }
+  }, []);
+
   const fetchTransactions = React.useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -113,9 +149,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setTransactions([]);
     } else {
       setTransactions(data as Transaction[]);
+      await syncVendorsFromTransactions(); // Sync vendors after fetching transactions
     }
     setIsLoading(false);
-  }, []);
+  }, [syncVendorsFromTransactions]);
 
   React.useEffect(() => {
     fetchTransactions();
@@ -166,7 +203,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
-      fetchTransactions();
+      fetchTransactions(); // Refetch to update UI and trigger vendor sync
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
     }
@@ -276,7 +313,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (error) throw error;
         showSuccess("Transaction updated successfully!");
       }
-      fetchTransactions();
+      fetchTransactions(); // Refetch to update UI and trigger vendor sync
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
@@ -293,7 +330,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (error) throw error;
         showSuccess("Transaction deleted successfully!");
       }
-      fetchTransactions();
+      fetchTransactions(); // Refetch to update UI and trigger vendor sync
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
     }
@@ -301,18 +338,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const clearAllTransactions = React.useCallback(async () => {
     try {
-      const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
-      if (error) throw error;
+      const { error: transactionsError } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+      if (transactionsError) throw transactionsError;
+      
+      const { error: vendorsError } = await supabase.from('vendors').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Also clear vendors
+      if (vendorsError) throw vendorsError;
+
       setTransactions([]);
-      showSuccess("All transactions cleared successfully!");
+      showSuccess("All transactions and vendors cleared successfully!");
     } catch (error: any) {
-      showError(`Failed to clear transactions: ${error.message}`);
+      showError(`Failed to clear data: ${error.message}`);
     }
   }, []);
 
   const generateDiverseDemoData = React.useCallback(async () => {
     try {
-      await clearAllTransactions();
+      await clearAllTransactions(); // Clear both transactions and vendors
 
       const accountsToUse = accounts;
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
@@ -325,7 +366,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;
       showSuccess("Diverse demo data generated successfully!");
-      fetchTransactions();
+      fetchTransactions(); // Refetch to update UI and trigger vendor sync
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     }
