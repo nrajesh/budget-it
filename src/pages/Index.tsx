@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
+import { SpendingByVendorChart } from "@/components/SpendingByVendorChart"; // Import new component
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext"; // Updated currency context usage
-import { Wallet, TrendingUp, TrendingDown } from "lucide-react"; // Import Wallet, TrendingUp, TrendingDown icons
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn for conditional class names
 
 const chartConfig = {
   income: {
@@ -21,7 +23,7 @@ const chartConfig = {
 
 const Index = () => {
   const { transactions } = useTransactions();
-  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency(); // Updated currency context usage
+  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
 
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -67,8 +69,8 @@ const Index = () => {
 
     return sortedMonths.map(month => ({
       month,
-      income: convertAmount(summary[month].income), // Convert amount
-      expenses: convertAmount(summary[month].expenses), // Convert amount
+      income: convertAmount(summary[month].income),
+      expenses: convertAmount(summary[month].expenses),
     }));
   }, [transactions, convertAmount]);
 
@@ -79,7 +81,7 @@ const Index = () => {
       }
       return acc;
     }, 0);
-    return convertAmount(balance); // Convert amount
+    return convertAmount(balance);
   }, [transactions, convertAmount]);
 
   const totalIncome = useMemo(() => {
@@ -89,7 +91,7 @@ const Index = () => {
       }
       return acc;
     }, 0);
-    return convertAmount(income); // Convert amount
+    return convertAmount(income);
   }, [transactions, convertAmount]);
 
   const totalExpenses = useMemo(() => {
@@ -99,7 +101,7 @@ const Index = () => {
       }
       return acc;
     }, 0);
-    return convertAmount(expenses); // Convert amount
+    return convertAmount(expenses);
   }, [transactions, convertAmount]);
 
   const numberOfActiveAccounts = useMemo(() => {
@@ -114,7 +116,7 @@ const Index = () => {
   ) => {
     const sortedMonths = Object.keys(data).sort();
     if (sortedMonths.length < 2) {
-      return "N/A";
+      return { value: "N/A", isPositive: null };
     }
 
     const currentMonthKey = sortedMonths[sortedMonths.length - 1];
@@ -124,12 +126,13 @@ const Index = () => {
     const previousMonthValue = data[previousMonthKey] || 0;
 
     if (previousMonthValue === 0) {
-      return currentMonthValue > 0 ? "N/A (No data last month)" : "0%";
+      return { value: currentMonthValue > 0 ? "N/A (No data last month)" : "0%", isPositive: null };
     }
 
     const change = ((currentMonthValue - previousMonthValue) / previousMonthValue) * 100;
-    const sign = change >= 0 ? "+" : "";
-    return `${sign}${change.toFixed(1)}%`;
+    const isPositive = change >= 0;
+    const sign = isPositive ? "+" : "";
+    return { value: `${sign}${change.toFixed(1)}%`, isPositive };
   };
 
   const monthlyExpensesData = useMemo(() => {
@@ -172,9 +175,17 @@ const Index = () => {
     return data;
   }, [transactions]);
 
-  const expensesPercentageChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
-  const incomePercentageChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);
-  const balancePercentageChange = useMemo(() => calculatePercentageChange(monthlyBalanceData, true), [monthlyBalanceData]);
+  const expensesChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
+  const incomeChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);
+  const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData, true), [monthlyBalanceData]);
+
+  const getChangeColorClass = (isPositive: boolean | null, type: 'income' | 'expenses' | 'balance') => {
+    if (isPositive === null) return "text-muted-foreground"; // N/A or 0%
+    if (type === 'expenses') {
+      return isPositive ? "text-red-500" : "text-green-500"; // Red for increased expenses, green for decreased
+    }
+    return isPositive ? "text-green-500" : "text-red-500"; // Green for increased income/balance, red for decreased
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -196,33 +207,39 @@ const Index = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-          <p className="text-xs text-muted-foreground">{balancePercentageChange} from last month</p>
+          <p className={cn("text-xs", getChangeColorClass(balanceChange.isPositive, 'balance'))}>
+            {balanceChange.value} from last month
+          </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" /> {/* Changed icon to TrendingUp */}
+          <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-          <p className="text-xs text-muted-foreground">{incomePercentageChange} from last month</p>
+          <p className={cn("text-xs", getChangeColorClass(incomeChange.isPositive, 'income'))}>
+            {incomeChange.value} from last month
+          </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" /> {/* Changed icon to TrendingDown */}
+          <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-          <p className="text-xs text-muted-foreground">{expensesPercentageChange} from last month</p>
+          <p className={cn("text-xs", getChangeColorClass(expensesChange.isPositive, 'expenses'))}>
+            {expensesChange.value} from last month
+          </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
-          <Wallet className="h-4 w-4 text-muted-foreground" /> {/* Changed icon to Wallet */}
+          <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{numberOfActiveAccounts}</div>
@@ -242,15 +259,16 @@ const Index = () => {
                 <XAxis
                   dataKey="month"
                   tickLine={false}
-                  tickMargin={10}
                   axisLine={false}
+                  tickMargin={10}
+                  minTickGap={32}
                   tickFormatter={(value) => value.slice(0, 3)}
                 />
                 <YAxis
                   tickLine={false}
-                  tickMargin={10}
                   axisLine={false}
-                  tickFormatter={(value) => formatCurrency(Number(value))} // Format Y-axis labels
+                  tickMargin={8}
+                  tickFormatter={(value) => formatCurrency(Number(value))}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -263,8 +281,11 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="lg:col-span-2">
-        <SpendingCategoriesChart transactions={transactions} /> {/* Updated prop */}
+      <div className="lg:col-span-1">
+        <SpendingCategoriesChart transactions={filteredTransactions} />
+      </div>
+      <div className="lg:col-span-1"> {/* New div for the SpendingByVendorChart */}
+        <SpendingByVendorChart transactions={filteredTransactions} />
       </div>
     </div>
   );
