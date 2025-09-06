@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
+  const { generateDiverseDemoData, clearAllTransactions, refetchAllPayees } = useTransactions(); // Get refetchAllPayees
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
@@ -26,9 +26,7 @@ const SettingsPage = () => {
       const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
       
-      // Also clear the client-side state via the context
-      clearAllTransactions();
-
+      clearAllTransactions(); // This now also triggers refetchAllPayees internally
       showSuccess("All application data has been reset.");
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
@@ -39,7 +37,7 @@ const SettingsPage = () => {
 
   const handleGenerateDemoData = async () => {
     try {
-      await generateDiverseDemoData();
+      await generateDiverseDemoData(); // This now also triggers refetchAllPayees internally
       showSuccess("Diverse demo data has been generated.");
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);

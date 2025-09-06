@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 export type Payee = {
   id: string;
@@ -36,7 +37,7 @@ export type Payee = {
   starting_balance: number | null;
   remarks: string | null;
   running_balance: number | null;
-  totalTransactions?: number; // Added for vendors page
+  totalTransactions?: number;
 };
 
 const formSchema = z.object({
@@ -52,7 +53,7 @@ interface AddEditPayeeDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   payee: Payee | null;
   onSuccess: () => void;
-  isAccountOnly?: boolean; // New prop
+  isAccountOnly?: boolean;
 }
 
 const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
@@ -60,14 +61,15 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   onOpenChange,
   payee,
   onSuccess,
-  isAccountOnly = false, // Default to false
+  isAccountOnly = false,
 }) => {
   const { availableCurrencies } = useCurrency();
+  const { refetchAllPayees } = useTransactions(); // Use refetchAllPayees from context
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      is_account: isAccountOnly ? true : false, // Set default based on prop
+      is_account: isAccountOnly ? true : false,
       currency: "EUR",
       starting_balance: 0,
       remarks: "",
@@ -88,18 +90,17 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     } else {
       form.reset({
         name: "",
-        is_account: isAccountOnly ? true : false, // Reset based on prop
+        is_account: isAccountOnly ? true : false,
         currency: "EUR",
         starting_balance: 0,
         remarks: "",
       });
     }
-  }, [payee, form, isOpen, isAccountOnly]); // Add isAccountOnly to dependency array
+  }, [payee, form, isOpen, isAccountOnly]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (payee) {
-        // Edit mode
         if (payee.name !== values.name) {
           const { error: rpcError } = await supabase.rpc('update_vendor_name', {
             p_vendor_id: payee.id,
@@ -120,7 +121,6 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         }
         showSuccess("Payee updated successfully!");
       } else {
-        // Add mode
         if (values.is_account) {
           const { data: accountData, error: accountError } = await supabase
             .from("accounts")
@@ -146,6 +146,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         showSuccess("Payee added successfully!");
       }
       onSuccess();
+      refetchAllPayees(); // Call refetchAllPayees after any successful add/edit
       onOpenChange(false);
     } catch (error: any) {
       showError(`Error: ${error.message}`);
@@ -185,7 +186,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!!payee || isAccountOnly} // Disable if editing or if it's an account-only dialog
+                      disabled={!!payee || isAccountOnly}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">

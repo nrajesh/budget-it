@@ -23,11 +23,12 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Edit, Loader2 } from "lucide-react"; // Import Loader2
+import { PlusCircle, Trash2, Edit, Loader2 } from "lucide-react";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const VendorsPage = () => {
-  const [vendors, setVendors] = React.useState<Payee[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { vendors, fetchVendors, refetchAllPayees } = useTransactions(); // Use vendors and fetchVendors from context
+  const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -44,44 +45,16 @@ const VendorsPage = () => {
   const [isSavingName, setIsSavingName] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const { formatCurrency, convertAmount } = useCurrency();
+  const { formatCurrency } = useCurrency();
 
-  const fetchVendors = React.useCallback(async () => {
-    setIsLoading(true);
-    const { data: vendorsData, error } = await supabase
-      .from("vendors_with_balance")
-      .select("*")
-      .eq('is_account', false)
-      .order('name', { ascending: true }); // Order by name
-
-    if (error) {
-      showError(`Failed to fetch vendors: ${error.message}`);
-      setVendors([]);
-    } else {
-      const vendorsWithTransactions = await Promise.all(
-        vendorsData.map(async (vendor) => {
-          const { data: transactionsSumData, error: sumError } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('vendor', vendor.name);
-
-          if (sumError) {
-            console.error(`Error fetching transaction sum for ${vendor.name}:`, sumError.message);
-            return { ...vendor, totalTransactions: 0 };
-          }
-
-          const totalAmount = transactionsSumData.reduce((sum, t) => sum + t.amount, 0);
-          return { ...vendor, totalTransactions: convertAmount(totalAmount) };
-        })
-      );
-      setVendors(vendorsWithTransactions as Payee[]);
-    }
-    setIsLoading(false);
-    setSelectedRows([]);
-  }, [convertAmount]);
-
+  // Initial fetch for vendors
   React.useEffect(() => {
-    fetchVendors();
+    const loadVendors = async () => {
+      setIsLoading(true);
+      await fetchVendors();
+      setIsLoading(false);
+    };
+    loadVendors();
   }, [fetchVendors]);
 
   const filteredVendors = React.useMemo(() => {
@@ -117,7 +90,7 @@ const VendorsPage = () => {
       });
       if (error) throw error;
       showSuccess(successMessage);
-      fetchVendors();
+      refetchAllPayees(); // Re-fetch all payees after deletion
     } catch (error: any) {
       showError(`Failed to delete: ${error.message}`);
     } finally {
@@ -146,7 +119,6 @@ const VendorsPage = () => {
   const startEditing = (vendor: Payee) => {
     setEditingVendorId(vendor.id);
     setEditedName(vendor.name);
-    // Use a timeout to ensure the input is rendered before focusing
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
@@ -166,7 +138,7 @@ const VendorsPage = () => {
       });
       if (error) throw error;
       showSuccess("Vendor name updated successfully!");
-      fetchVendors(); // Re-fetch to update the list and transaction sums
+      refetchAllPayees(); // Re-fetch all payees to update the list and transaction sums
     } catch (error: any) {
       showError(`Failed to update vendor name: ${error.message}`);
     } finally {
@@ -177,9 +149,9 @@ const VendorsPage = () => {
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, vendor: Payee) => {
     if (event.key === 'Enter') {
-      event.currentTarget.blur(); // Trigger onBlur to save
+      event.currentTarget.blur();
     } else if (event.key === 'Escape') {
-      setEditingVendorId(null); // Cancel editing
+      setEditingVendorId(null);
     }
   };
 
@@ -227,18 +199,18 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Total Transactions</TableHead> {/* Renamed column */}
+                  <TableHead>Total Transactions</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell> {/* Adjusted colSpan */}
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground"> {/* Adjusted colSpan */}
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -316,7 +288,7 @@ const VendorsPage = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         payee={selectedVendor}
-        onSuccess={fetchVendors}
+        onSuccess={refetchAllPayees} // Call refetchAllPayees on success
       />
       <ConfirmationDialog
         isOpen={isConfirmOpen}

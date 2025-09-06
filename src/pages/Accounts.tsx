@@ -24,10 +24,11 @@ import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const AccountsPage = () => {
-  const [accounts, setAccounts] = React.useState<Payee[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { accounts, fetchAccounts, refetchAllPayees } = useTransactions(); // Use accounts and fetchAccounts from context
+  const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -41,26 +42,14 @@ const AccountsPage = () => {
 
   const { formatCurrency } = useCurrency();
 
-  const fetchAccounts = React.useCallback(async () => {
-    setIsLoading(true);
-    const { data, error } = await supabase
-      .from("vendors_with_balance")
-      .select("*")
-      .eq('is_account', true)
-      .order('name', { ascending: true }); // Order by name
-
-    if (error) {
-      showError(`Failed to fetch accounts: ${error.message}`);
-      setAccounts([]);
-    } else {
-      setAccounts(data as Payee[]);
-    }
-    setIsLoading(false);
-    setSelectedRows([]);
-  }, []);
-
+  // Initial fetch for accounts
   React.useEffect(() => {
-    fetchAccounts();
+    const loadAccounts = async () => {
+      setIsLoading(true);
+      await fetchAccounts();
+      setIsLoading(false);
+    };
+    loadAccounts();
   }, [fetchAccounts]);
 
   const filteredAccounts = React.useMemo(() => {
@@ -101,7 +90,7 @@ const AccountsPage = () => {
       });
       if (error) throw error;
       showSuccess(successMessage);
-      fetchAccounts();
+      refetchAllPayees(); // Re-fetch all payees after deletion
     } catch (error: any) {
       showError(`Failed to delete: ${error.message}`);
     } finally {
@@ -247,7 +236,7 @@ const AccountsPage = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         payee={selectedAccount}
-        onSuccess={fetchAccounts}
+        onSuccess={refetchAllPayees} // Call refetchAllPayees on success
         isAccountOnly={true}
       />
       <ConfirmationDialog

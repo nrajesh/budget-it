@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { Transaction, categories } from '@/data/finance-data'; // Removed 'accounts' and 'vendors' from here
+import { Transaction, categories } from '@/data/finance-data';
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount } from '@/integrations/supabase/utils'; // New imports
+import { ensurePayeeExists, checkIfPayeeIsAccount } from '@/integrations/supabase/utils';
+import { Payee } from '@/components/AddEditPayeeDialog'; // Import Payee type
 
 interface TransactionToDelete {
   id: string;
@@ -12,22 +13,27 @@ interface TransactionToDelete {
 
 interface TransactionsContextType {
   transactions: Transaction[];
+  vendors: Payee[]; // Added vendors state
+  accounts: Payee[]; // Added accounts state
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
   clearAllTransactions: () => void;
   generateDiverseDemoData: () => void;
+  fetchVendors: () => Promise<void>; // Expose fetchVendors
+  fetchAccounts: () => Promise<void>; // Expose fetchAccounts
+  refetchAllPayees: () => Promise<void>; // Expose combined refetch
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 // Helper function to generate sample transactions for a given month, account, and currency
-const generateTransactions = async ( // Made async
+const generateTransactions = async (
   monthOffset: number,
   count: number,
-  baseAccountNames: string[], // These are potential names for accounts
-  baseVendorNames: string[], // These are potential names for regular vendors
+  baseAccountNames: string[],
+  baseVendorNames: string[],
   currencyCodes: string[],
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
@@ -50,14 +56,11 @@ const generateTransactions = async ( // Made async
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
-    console.log(`--- [generateTransactions] Generating transaction ${i + 1} for month offset ${monthOffset} ---`);
-    console.log(`[generateTransactions]   Initial: Account: "${accountName}", Vendor: "${vendorName}", Category: "${categoryName}", Amount: ${amountValue}, Currency: ${currencyCode}, IsTransfer: ${isTransfer}`);
-
     // Ensure the primary account exists in the database
     const primaryAccountId = await ensurePayeeExists(accountName, true);
     if (!primaryAccountId) {
       console.error(`[generateTransactions] Failed to ensure primary account "${accountName}" exists. Skipping transaction.`);
-      continue; // Skip this transaction if primary account creation/lookup fails
+      continue;
     }
 
     if (isTransfer) {
@@ -65,7 +68,7 @@ const generateTransactions = async ( // Made async
       while (destAccount === accountName) {
         destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
       }
-      vendorName = destAccount; // Vendor is actually another account for a transfer
+      vendorName = destAccount;
       categoryName = 'Transfer';
       amountValue = Math.abs(amountValue);
 
@@ -73,7 +76,7 @@ const generateTransactions = async ( // Made async
       const destAccountId = await ensurePayeeExists(destAccount, true);
       if (!destAccountId) {
         console.error(`[generateTransactions] Failed to ensure destination account "${destAccount}" exists. Skipping transfer.`);
-        continue; // Skip this transaction if destination account creation/lookup fails
+        continue;
       }
 
     } else {
@@ -86,7 +89,7 @@ const generateTransactions = async ( // Made async
       const regularVendorId = await ensurePayeeExists(vendorName, false);
       if (!regularVendorId) {
         console.error(`[generateTransactions] Failed to ensure regular vendor "${vendorName}" exists. Skipping transaction.`);
-        continue; // Skip this transaction if regular vendor creation/lookup fails
+        continue;
       }
     }
 
@@ -135,8 +138,10 @@ const generateTransactions = async ( // Made async
 };
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { availableCurrencies } = useCurrency();
+  const { availableCurrencies, convertAmount } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+  const [vendors, setVendors] = React.useState<Payee[]>([]); // New state for vendors
+  const [accounts, setAccounts] = React.useState<Payee[]>([]); // New state for accounts
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTransactions = React.useCallback(async () => {
@@ -155,30 +160,78 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setIsLoading(false);
   }, []);
 
+  const fetchVendors = React.useCallback(async () => {
+    const { data: vendorsData, error } = await supabase
+      .from("vendors_with_balance")
+      .select("*")
+      .eq('is_account', false)
+      .order('name', { ascending: true });
+
+    if (error) {
+      showError(`Failed to fetch vendors: ${error.message}`);
+      setVendors([]);
+    } else {
+      const vendorsWithTransactions = await Promise.all(
+        vendorsData.map(async (vendor) => {
+          const { data: transactionsSumData, error: sumError } = await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('vendor', vendor.name);
+
+          if (sumError) {
+            console.error(`Error fetching transaction sum for ${vendor.name}:`, sumError.message);
+            return { ...vendor, totalTransactions: 0 };
+          }
+
+          const totalAmount = transactionsSumData.reduce((sum, t) => sum + t.amount, 0);
+          return { ...vendor, totalTransactions: convertAmount(totalAmount) };
+        })
+      );
+      setVendors(vendorsWithTransactions as Payee[]);
+    }
+  }, [convertAmount]);
+
+  const fetchAccounts = React.useCallback(async () => {
+    const { data, error } = await supabase
+      .from("vendors_with_balance")
+      .select("*")
+      .eq('is_account', true)
+      .order('name', { ascending: true });
+
+    if (error) {
+      showError(`Failed to fetch accounts: ${error.message}`);
+      setAccounts([]);
+    } else {
+      setAccounts(data as Payee[]);
+    }
+  }, []);
+
+  const refetchAllPayees = React.useCallback(async () => {
+    await Promise.all([fetchVendors(), fetchAccounts()]);
+  }, [fetchVendors, fetchAccounts]);
+
   React.useEffect(() => {
     fetchTransactions();
-  }, [fetchTransactions]);
+    refetchAllPayees(); // Fetch vendors and accounts on initial load
+  }, [fetchTransactions, refetchAllPayees]);
 
   const addTransaction = React.useCallback(async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
     const newDateISO = new Date(transaction.date).toISOString();
     const baseRemarks = transaction.remarks || "";
 
     try {
-      // Ensure the primary account exists and is marked as an account
       await ensurePayeeExists(transaction.account, true);
 
-      const isTransfer = await checkIfPayeeIsAccount(transaction.vendor); // Dynamically check if vendor is an account
+      const isTransfer = await checkIfPayeeIsAccount(transaction.vendor);
       if (isTransfer) {
-        // Ensure the destination account exists and is marked as an account
         await ensurePayeeExists(transaction.vendor, true);
       } else {
-        // Ensure the vendor exists as a regular vendor
         await ensurePayeeExists(transaction.vendor, false);
       }
 
       const commonTransactionFields = {
         ...transaction,
-        currency: 'USD', // Default to USD for new manual transactions
+        currency: 'USD',
         date: newDateISO,
       };
 
@@ -210,16 +263,17 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       } else {
         const { error } = await supabase.from('transactions').insert({
           ...commonTransactionFields,
-          transfer_id: null, // Ensure transfer_id is null for regular transactions
+          transfer_id: null,
         });
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
       fetchTransactions();
+      refetchAllPayees(); // Refresh payees after adding transaction
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
     }
-  }, [fetchTransactions]);
+  }, [fetchTransactions, refetchAllPayees]);
 
   const updateTransaction = React.useCallback(async (updatedTransaction: Transaction) => {
     const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
@@ -229,20 +283,17 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     const wasTransfer = !!originalTransaction.transfer_id;
-    const isNowTransfer = await checkIfPayeeIsAccount(updatedTransaction.vendor); // Dynamically check if new vendor is an account
+    const isNowTransfer = await checkIfPayeeIsAccount(updatedTransaction.vendor);
     const newAmount = Math.abs(updatedTransaction.amount);
     const newDateISO = new Date(updatedTransaction.date).toISOString();
     const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
 
     try {
-      // Ensure the primary account exists and is marked as an account
       await ensurePayeeExists(updatedTransaction.account, true);
 
       if (isNowTransfer) {
-        // Ensure the new vendor (destination account) exists and is marked as an account
         await ensurePayeeExists(updatedTransaction.vendor, true);
       } else {
-        // Ensure the new vendor exists as a regular vendor
         await ensurePayeeExists(updatedTransaction.vendor, false);
       }
 
@@ -282,7 +333,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const newSingleTransaction = {
           ...updatedTransaction,
           transfer_id: null,
-          amount: -newAmount, // Assuming regular transactions are expenses by default when converting from transfer
+          amount: -newAmount,
           date: newDateISO,
         };
         const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
@@ -337,10 +388,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         showSuccess("Transaction updated successfully!");
       }
       fetchTransactions();
+      refetchAllPayees(); // Refresh payees after updating transaction
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
-  }, [transactions, fetchTransactions]);
+  }, [transactions, fetchTransactions, refetchAllPayees]);
 
   const deleteTransaction = React.useCallback(async (transactionId: string, transfer_id?: string) => {
     try {
@@ -354,10 +406,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         showSuccess("Transaction deleted successfully!");
       }
       fetchTransactions();
+      refetchAllPayees(); // Refresh payees after deleting transaction
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
     }
-  }, [fetchTransactions]);
+  }, [fetchTransactions, refetchAllPayees]);
 
   const deleteMultipleTransactions = React.useCallback(async (transactionsToDelete: TransactionToDelete[]) => {
     try {
@@ -371,14 +424,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
       });
 
-      // Delete all transactions by their IDs
       if (idsToDelete.length > 0) {
         const { error: idDeleteError } = await supabase.from('transactions').delete().in('id', idsToDelete);
         if (idDeleteError) throw idDeleteError;
       }
 
-      // Delete all associated transfer transactions by their transfer_ids
-      // This handles cases where only one side of a transfer was selected
       if (transferIdsToDelete.length > 0) {
         const uniqueTransferIds = [...new Set(transferIdsToDelete)];
         const { error: transferDeleteError } = await supabase.from('transactions').delete().in('transfer_id', uniqueTransferIds);
@@ -387,27 +437,30 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       showSuccess(`${transactionsToDelete.length} transactions deleted successfully!`);
       fetchTransactions();
+      refetchAllPayees(); // Refresh payees after deleting multiple transactions
     } catch (error: any) {
       showError(`Failed to delete multiple transactions: ${error.message}`);
     }
-  }, [fetchTransactions]);
+  }, [fetchTransactions, refetchAllPayees]);
 
   const clearAllTransactions = React.useCallback(async () => {
     try {
-      const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
+      const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       if (error) throw error;
       setTransactions([]);
+      setVendors([]); // Clear vendors state
+      setAccounts([]); // Clear accounts state
       showSuccess("All transactions cleared successfully!");
+      refetchAllPayees(); // Re-fetch all payees to update the lists
     } catch (error: any) {
       showError(`Failed to clear transactions: ${error.message}`);
     }
-  }, []);
+  }, [refetchAllPayees]);
 
   const generateDiverseDemoData = React.useCallback(async () => {
     try {
       await clearAllTransactions();
 
-      // Use a set of common account and vendor names for demo data
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
@@ -417,25 +470,44 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       demoData.push(...await generateTransactions(-1, 300, baseAccountNames, baseVendorNames, currenciesToUse));
       demoData.push(...await generateTransactions(-2, 300, baseAccountNames, baseVendorNames, currenciesToUse));
 
-      console.log("[generateDiverseDemoData] Generated demoData length before insert:", demoData.length); // Added console log
+      console.log("[generateDiverseDemoData] Generated demoData length before insert:", demoData.length);
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;
       showSuccess("Diverse demo data generated successfully!");
       fetchTransactions();
+      refetchAllPayees(); // Re-fetch all payees to update the lists
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     }
-  }, [availableCurrencies, clearAllTransactions, fetchTransactions]);
+  }, [availableCurrencies, clearAllTransactions, fetchTransactions, refetchAllPayees]);
 
   const value = React.useMemo(() => ({
     transactions,
+    vendors, // Include vendors in context value
+    accounts, // Include accounts in context value
     addTransaction,
     updateTransaction,
     deleteTransaction,
     deleteMultipleTransactions,
     clearAllTransactions,
     generateDiverseDemoData,
-  }), [transactions, addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions, clearAllTransactions, generateDiverseDemoData]);
+    fetchVendors,
+    fetchAccounts,
+    refetchAllPayees,
+  }), [
+    transactions,
+    vendors,
+    accounts,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    deleteMultipleTransactions,
+    clearAllTransactions,
+    generateDiverseDemoData,
+    fetchVendors,
+    fetchAccounts,
+    refetchAllPayees,
+  ]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading transactions...</div>;
