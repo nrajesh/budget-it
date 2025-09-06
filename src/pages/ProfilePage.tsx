@@ -165,16 +165,17 @@ const ProfilePage = () => {
       return;
     }
 
-    let newAvatarUrl = profileForm.getValues("avatar_url");
+    let newAvatarUrl = profileForm.getValues("avatar_url"); // Get current URL from form state
 
     try {
       if (avatarOption === "upload" && selectedFile) {
-        if (currentAvatarUrl) {
+        // If uploading a new file, delete old one if it was an uploaded file
+        if (currentAvatarUrl && !currentAvatarUrl.includes("/placeholder.svg") && currentAvatarUrl.includes(user.id)) {
           await deleteOldAvatar(currentAvatarUrl, user.id);
         }
         newAvatarUrl = await uploadAvatar(selectedFile, user.id);
       } else if (avatarOption === "url" && newAvatarUrl !== currentAvatarUrl) {
-        // If URL changed, and old was an uploaded file, delete it
+        // If URL changed in input, and old was an uploaded file, delete it
         if (currentAvatarUrl && !currentAvatarUrl.includes("/placeholder.svg") && currentAvatarUrl.includes(user.id)) {
           await deleteOldAvatar(currentAvatarUrl, user.id);
         }
@@ -183,8 +184,21 @@ const ProfilePage = () => {
         await deleteOldAvatar(currentAvatarUrl, user.id);
       }
 
-      profileForm.setValue("avatar_url", newAvatarUrl || "");
-      setCurrentAvatarUrl(newAvatarUrl);
+      // Now, update the user_profile table with the determined newAvatarUrl
+      const { error: updateProfileError } = await supabase
+        .from("user_profile")
+        .update({
+          avatar_url: newAvatarUrl || null, // Store null if empty string
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (updateProfileError) {
+        throw updateProfileError;
+      }
+
+      profileForm.setValue("avatar_url", newAvatarUrl || ""); // Update form state
+      setCurrentAvatarUrl(newAvatarUrl); // Update local state for current avatar
       setIsAvatarModalOpen(false);
       showSuccess("Avatar updated successfully!");
       fetchUserProfile(); // Re-fetch profile to update Layout and other components
@@ -441,7 +455,7 @@ const ProfilePage = () => {
               <TabsTrigger value="url">
                 <LinkIcon className="mr-2 h-4 w-4" /> Use URL
               </TabsTrigger>
-              <TabsTrigger value="upload">
+            <TabsTrigger value="upload">
                 <Upload className="mr-2 h-4 w-4" /> Upload File
               </TabsTrigger>
             </TabsList>
