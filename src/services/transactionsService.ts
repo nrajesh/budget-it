@@ -3,7 +3,6 @@ import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
 import { categories } from '@/data/finance-data'; // Needed for category filtering in add/update
-import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface TransactionToDelete {
   id: string;
@@ -15,10 +14,10 @@ interface TransactionsServiceProps {
   refetchAllPayees: () => Promise<void>;
   transactions: Transaction[]; // To find original transaction for updates
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Add setTransactions
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number; // Added
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions }: TransactionsServiceProps) => {
-  const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
+export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies }: TransactionsServiceProps) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
     const { receivingAmount, ...restOfTransaction } = transaction; // Extract receivingAmount
@@ -87,34 +86,97 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
     }
   };
 
-  const updateTransaction = async (updatedTransaction: Transaction) => {
+  const updateTransaction = async (updatedTransaction: Transaction, receivingAmount?: number) => {
     try {
-      // Get currency from the local map, assuming the account exists and its currency is known
-      // No need to call ensurePayeeExists or checkIfPayeeIsAccount as the UI only allows selecting existing payees
-      const accountCurrency = transactions.find(t => t.id === updatedTransaction.id)?.currency || 'USD'; // Fallback to existing currency or USD
+      const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
+      if (!originalTransaction) {
+        throw new Error("Original transaction not found for update.");
+      }
 
       const newDateISO = new Date(updatedTransaction.date).toISOString();
 
-      const { error } = await supabase.from('transactions').update({
-        date: newDateISO,
-        account: updatedTransaction.account,
-        vendor: updatedTransaction.vendor,
-        category: updatedTransaction.category,
-        amount: updatedTransaction.amount,
-        remarks: updatedTransaction.remarks,
-        currency: accountCurrency, // Use the currency from the original transaction or a default
-        transfer_id: updatedTransaction.transfer_id || null, // Keep existing transfer_id or set to null
-      }).eq('id', updatedTransaction.id);
+      if (originalTransaction.transfer_id) {
+        // This is a transfer transaction
+        const sendingAccountCurrency = await getAccountCurrency(updatedTransaction.account);
+        const receivingAccountCurrency = await getAccountCurrency(updatedTransaction.vendor);
 
-      if (error) {
-        throw error;
+        const isSameCurrencyTransfer = sendingAccountCurrency === receivingAccountCurrency;
+
+        // Find the other linked transaction
+        const { data: linkedTransactions, error: fetchLinkedError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('transfer_id', originalTransaction.transfer_id)
+          .neq('id', originalTransaction.id);
+
+        if (fetchLinkedError) throw fetchLinkedError;
+        if (!linkedTransactions || linkedTransactions.length === 0) {
+          throw new Error("Linked transfer transaction not found.");
+        }
+        const otherTransaction = linkedTransactions[0];
+
+        const updates: Promise<any>[] = [];
+
+        // Update the current transaction (the one being edited)
+        const currentTransactionUpdatePayload = {
+          date: newDateISO,
+          account: updatedTransaction.account,
+          vendor: updatedTransaction.vendor,
+          category: updatedTransaction.category,
+          amount: updatedTransaction.amount,
+          remarks: updatedTransaction.remarks,
+          currency: sendingAccountCurrency, // Ensure currency is correct for sending side
+        };
+        updates.push(supabase.from('transactions').update(currentTransactionUpdatePayload).eq('id', updatedTransaction.id).select('*'));
+
+        // Update the other linked transaction
+        let otherTransactionAmount = 0;
+        if (isSameCurrencyTransfer) {
+          // For same currency, the other side is simply the negative of the current amount
+          otherTransactionAmount = -updatedTransaction.amount;
+        } else {
+          // For cross-currency, use the provided receivingAmount or calculate
+          const calculatedReceivingAmount = convertBetweenCurrencies(
+            Math.abs(updatedTransaction.amount),
+            sendingAccountCurrency,
+            receivingAccountCurrency
+          );
+          otherTransactionAmount = receivingAmount ?? calculatedReceivingAmount;
+        }
+
+        const otherTransactionUpdatePayload = {
+          date: newDateISO, // Date should be same for both
+          account: otherTransaction.account, // Keep original account/vendor for the other side
+          vendor: otherTransaction.vendor,
+          category: 'Transfer', // Always 'Transfer' for linked transactions
+          amount: otherTransactionAmount,
+          remarks: otherTransaction.remarks, // Keep original remarks for the other side
+          currency: receivingAccountCurrency, // Ensure currency is correct for receiving side
+        };
+        updates.push(supabase.from('transactions').update(otherTransactionUpdatePayload).eq('id', otherTransaction.id).select('*'));
+
+        await Promise.all(updates);
+        showSuccess("Transfer transactions updated successfully!");
+
+      } else {
+        // Not a transfer, proceed with single transaction update
+        const { error } = await supabase.from('transactions').update({
+          date: newDateISO,
+          account: updatedTransaction.account,
+          vendor: updatedTransaction.vendor,
+          category: updatedTransaction.category,
+          amount: updatedTransaction.amount,
+          remarks: updatedTransaction.remarks,
+          currency: updatedTransaction.currency, // Use the currency from the original transaction
+          transfer_id: null,
+        }).eq('id', updatedTransaction.id);
+
+        if (error) throw error;
+        showSuccess("Transaction updated successfully!");
       }
 
-      showSuccess("Transaction updated successfully!");
-      // Directly update the local state for immediate UI reflection
-      setTransactions(prevTransactions =>
-        prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
-      );
+      fetchTransactions(); // Re-fetch all to ensure consistency
+      refetchAllPayees(); // Re-fetch payees in case account balances changed
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }

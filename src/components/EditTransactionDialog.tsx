@@ -46,6 +46,7 @@ const formSchema = z.object({
   amount: z.coerce.number(),
   remarks: z.string().optional(),
   category: z.string().min(1, "Category is required"),
+  receivingAmount: z.coerce.number().optional(), // Added for editable receiving amount
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
@@ -55,21 +56,25 @@ interface EditTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   transaction: Transaction;
+  onUpdateSuccess: () => void; // Added for refreshing parent table
 }
 
 const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
   transaction,
+  onUpdateSuccess,
 }) => {
   const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions();
-  const { currencySymbols, convertBetweenCurrencies } = useCurrency();
+  const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
-  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
-  const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
-  const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
+  const [sendingAccountCurrencyCode, setSendingAccountCurrencyCode] = React.useState<string>('USD');
+  const [receivingAccountCurrencyCode, setReceivingAccountCurrencyCode] = React.useState<string | null>(null);
+  const [isSameCurrencyTransfer, setIsSameCurrencyTransfer] = React.useState(false);
+  const [isTransfer, setIsTransfer] = React.useState(false);
+  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
   const [isSaving, setIsSaving] = React.useState(false); // New state for loading overlay
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -77,10 +82,11 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     defaultValues: {
       ...transaction,
       date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
+      receivingAmount: 0, // Initialize receivingAmount
     },
   });
 
-  const fetchPayees = React.useCallback(async () => {
+  const fetchPayeesAndCurrencies = React.useCallback(async () => {
     const { data, error } = await supabase.from('vendors').select('name, is_account');
     if (error) {
       console.error("Error fetching payees:", error.message);
@@ -90,70 +96,84 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     const vendors = data.filter(p => !p.is_account).map(p => p.name);
     setAllAccounts(accounts);
     setAllVendors(vendors);
-  }, []);
+
+    const currentSendingAccountCurrency = accountCurrencyMap.get(transaction.account) || await getAccountCurrency(transaction.account);
+    setSendingAccountCurrencyCode(currentSendingAccountCurrency);
+
+    const isCurrentTransactionTransfer = !!transaction.transfer_id;
+    setIsTransfer(isCurrentTransactionTransfer);
+
+    if (isCurrentTransactionTransfer) {
+      const currentReceivingAccountCurrency = accountCurrencyMap.get(transaction.vendor) || await getAccountCurrency(transaction.vendor);
+      setReceivingAccountCurrencyCode(currentReceivingAccountCurrency);
+      setIsSameCurrencyTransfer(currentSendingAccountCurrency === currentReceivingAccountCurrency);
+
+      // Set receivingAmount for cross-currency transfers
+      if (currentSendingAccountCurrency !== currentReceivingAccountCurrency) {
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(transaction.amount),
+          currentSendingAccountCurrency,
+          currentReceivingAccountCurrency
+        );
+        setAutoCalculatedReceivingAmount(convertedAmount);
+        // Set the form field value to the auto-calculated amount as a suggestion
+        form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
+      } else {
+        setAutoCalculatedReceivingAmount(0);
+        form.setValue("receivingAmount", 0);
+      }
+    } else {
+      setReceivingAccountCurrencyCode(null);
+      setIsSameCurrencyTransfer(false);
+      setAutoCalculatedReceivingAmount(0);
+      form.setValue("receivingAmount", 0);
+    }
+  }, [transaction, accountCurrencyMap, convertBetweenCurrencies, form]);
 
   React.useEffect(() => {
     if (isOpen) {
-      fetchPayees();
+      fetchPayeesAndCurrencies();
       form.reset({
         ...transaction,
         date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
+        receivingAmount: 0, // Reset receivingAmount
       });
       setIsSaving(false); // Reset saving state when dialog opens
     }
-  }, [transaction, form, isOpen, fetchPayees]);
+  }, [transaction, form, isOpen, fetchPayeesAndCurrencies]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const amountValue = form.watch("amount");
-  const isTransfer = allAccounts.includes(vendorValue);
 
-  // Effect to update currency symbol for sending account when account changes or dialog opens
+  // Re-calculate auto-calculated receiving amount if sending amount changes in cross-currency transfer
   React.useEffect(() => {
-    const updateCurrencySymbol = async () => {
-      if (accountValue) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
-        setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
-      } else {
-        setAccountCurrencySymbol('$');
-      }
-    };
-    updateCurrencySymbol();
-  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
-
-  // Effect to fetch destination account currency when vendor changes (if it's an account)
-  React.useEffect(() => {
-    const fetchDestinationCurrency = async () => {
-      if (isTransfer && vendorValue) {
-        // Prioritize local map, then fallback to Supabase call
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
-        setDestinationAccountCurrency(currencyCode);
-      } else {
-        setDestinationAccountCurrency(null);
-      }
-    };
-    fetchDestinationCurrency();
-  }, [vendorValue, isTransfer, accountCurrencyMap]); // Added accountCurrencyMap to dependencies
-
-
-  React.useEffect(() => {
-    if (isTransfer) {
-      form.setValue("category", "Transfer");
-    } else if (form.getValues("category") === "Transfer") {
-      // If it was a transfer but now isn't, clear category or set a default
-      form.setValue("category", "");
+    if (isTransfer && !isSameCurrencyTransfer && sendingAccountCurrencyCode && receivingAccountCurrencyCode) {
+      const convertedAmount = convertBetweenCurrencies(
+        Math.abs(amountValue),
+        sendingAccountCurrencyCode,
+        receivingAccountCurrencyCode
+      );
+      setAutoCalculatedReceivingAmount(convertedAmount);
+      // Update the form field value to the auto-calculated amount as a suggestion
+      form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
     }
-  }, [isTransfer, form]);
+  }, [amountValue, isTransfer, isSameCurrencyTransfer, sendingAccountCurrencyCode, receivingAccountCurrencyCode, convertBetweenCurrencies, form]);
+
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSaving(true); // Start loading
     try {
-      await updateTransaction({
-        ...transaction,
-        ...values,
-        date: new Date(values.date).toISOString(),
-        currency: accountCurrencyMap.get(values.account) || transaction.currency, // Ensure currency is updated to current account currency
-      });
+      await updateTransaction(
+        {
+          ...transaction,
+          ...values,
+          date: new Date(values.date).toISOString(),
+          currency: sendingAccountCurrencyCode, // Ensure currency is updated to current account currency
+        },
+        isTransfer && !isSameCurrencyTransfer ? values.receivingAmount : undefined // Pass receivingAmount only for cross-currency transfers
+      );
+      onUpdateSuccess(); // Notify parent component of success
       onOpenChange(false);
     } finally {
       setIsSaving(false); // End loading
@@ -162,6 +182,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const handleDelete = () => {
     deleteTransaction(transaction.id, transaction.transfer_id);
+    onUpdateSuccess(); // Notify parent component of success
     onOpenChange(false);
   };
 
@@ -185,7 +206,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
 
-  // Removed showReceivingValueField and the corresponding FormItem
+  const showReceivingValueField = isTransfer && !isSameCurrencyTransfer;
 
   return (
     <>
@@ -259,9 +280,10 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.filter(c => c !== 'Transfer').map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {categoryOptions.map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                    {isTransfer && <FormDescription>Category is fixed as 'Transfer' for transfer transactions.</FormDescription>}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -274,16 +296,53 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                     <FormLabel>Amount (Sending)</FormLabel>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                        {accountCurrencySymbol}
+                        {currencySymbols[sendingAccountCurrencyCode] || sendingAccountCurrencyCode}
                       </span>
                       <FormControl>
                         <Input type="number" step="0.01" {...field} className="pl-8" />
                       </FormControl>
                     </div>
+                    {isTransfer && isSameCurrencyTransfer && (
+                      <FormDescription>
+                        This amount will also update the linked transfer transaction.
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {showReceivingValueField && (
+                <FormField
+                  control={form.control}
+                  name="receivingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (Receiving)</FormLabel>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {currencySymbols[receivingAccountCurrencyCode || 'USD'] || receivingAccountCurrencyCode}
+                        </span>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...field}
+                            value={field.value === 0 ? "" : field.value} // Display empty string for 0
+                            onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                            placeholder={autoCalculatedReceivingAmount.toFixed(2)} // Show auto-calculated as placeholder
+                            className="pl-8"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormDescription>
+                        This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, receivingAccountCurrencyCode || 'USD')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
