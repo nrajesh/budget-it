@@ -51,7 +51,8 @@ const VendorsPage = () => {
     const { data: vendorsData, error } = await supabase
       .from("vendors_with_balance")
       .select("*")
-      .eq('is_account', false); // Filter for non-accounts
+      .eq('is_account', false)
+      .order('name', { ascending: true }); // Order by name
 
     if (error) {
       showError(`Failed to fetch vendors: ${error.message}`);

@@ -43,7 +43,11 @@ const AccountsPage = () => {
 
   const fetchAccounts = React.useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from("vendors_with_balance").select("*").eq('is_account', true);
+    const { data, error } = await supabase
+      .from("vendors_with_balance")
+      .select("*")
+      .eq('is_account', true)
+      .order('name', { ascending: true }); // Order by name
 
     if (error) {
       showError(`Failed to fetch accounts: ${error.message}`);
