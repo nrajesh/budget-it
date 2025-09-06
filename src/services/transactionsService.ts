@@ -3,6 +3,7 @@ import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
 import { categories } from '@/data/finance-data'; // Needed for category filtering in add/update
+import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface TransactionToDelete {
   id: string;
@@ -16,6 +17,7 @@ interface TransactionsServiceProps {
 }
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions }: TransactionsServiceProps) => {
+  const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
     const newDateISO = new Date(transaction.date).toISOString();
@@ -42,6 +44,10 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(transaction.amount);
 
+        // Get destination account currency for conversion
+        const destinationAccountCurrency = await getAccountCurrency(transaction.vendor);
+        const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
+
         const debitTransaction = {
           ...commonTransactionFields,
           transfer_id: transfer_id,
@@ -55,9 +61,10 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           transfer_id: transfer_id,
           account: transaction.vendor,
           vendor: transaction.account,
-          amount: newAmount,
+          amount: convertedReceivingAmount, // Use converted amount for credit
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${transaction.account})` : `Transfer from ${transaction.account}`,
+          currency: destinationAccountCurrency, // Set currency for credit side
         };
 
         const { error } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
@@ -107,6 +114,9 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (deleteError) throw deleteError;
 
         const transfer_id = `transfer_${Date.now()}`;
+        const destinationAccountCurrency = await getAccountCurrency(updatedTransaction.vendor);
+        const convertedReceivingAmount = convertBetweenCurrencies(newAbsoluteAmount, accountCurrency, destinationAccountCurrency);
+
         // Create new objects without the 'id' from updatedTransaction
         const { id: _, ...debitTransactionPayload } = {
           ...updatedTransaction,
@@ -122,11 +132,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           transfer_id: transfer_id,
           account: updatedTransaction.vendor,
           vendor: updatedTransaction.account,
-          amount: newAbsoluteAmount, // Credit is positive
+          amount: convertedReceivingAmount, // Credit is positive, converted
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
           date: newDateISO,
-          currency: accountCurrency,
+          currency: destinationAccountCurrency, // Set currency for credit side
         };
         const { error: insertError } = await supabase.from('transactions').insert([debitTransactionPayload, creditTransactionPayload]);
         if (insertError) throw insertError;
@@ -177,6 +187,9 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         const newCreditAccount = updatedTransaction.vendor;
         const transfer_id = originalTransaction.transfer_id; // Explicitly carry over transfer_id
 
+        const destinationAccountCurrency = await getAccountCurrency(newCreditAccount);
+        const convertedReceivingAmount = convertBetweenCurrencies(newAbsoluteAmount, accountCurrency, destinationAccountCurrency);
+
         const newDebitData = {
           date: newDateISO,
           account: newDebitAccount,
@@ -192,10 +205,10 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           date: newDateISO,
           account: newCreditAccount,
           vendor: newDebitAccount,
-          amount: newAbsoluteAmount, // Credit is positive
+          amount: convertedReceivingAmount, // Credit is positive, converted
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
-          currency: accountCurrency,
+          currency: destinationAccountCurrency, // Set currency for credit side
           transfer_id: transfer_id,
         };
 

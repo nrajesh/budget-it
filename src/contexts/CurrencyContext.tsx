@@ -7,6 +7,7 @@ interface CurrencyContextType {
   formatCurrency: (amount: number, currencyCode?: string) => string;
   currencySymbols: { [key: string]: string };
   availableCurrencies: { code: string; name: string }[];
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number; // New function
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -77,6 +78,28 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     return amount * rate;
   }, [selectedCurrency]);
 
+  const convertBetweenCurrencies = useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
+    if (fromCurrency === toCurrency) {
+      return amount;
+    }
+
+    const fromRate = exchangeRates[fromCurrency];
+    const toRate = exchangeRates[toCurrency];
+
+    if (fromRate === undefined) {
+      console.warn(`Exchange rate for source currency ${fromCurrency} not found. Cannot convert.`);
+      return amount;
+    }
+    if (toRate === undefined) {
+      console.warn(`Exchange rate for target currency ${toCurrency} not found. Cannot convert.`);
+      return amount;
+    }
+
+    // Convert from source currency to USD, then from USD to target currency
+    const amountInUSD = amount / fromRate;
+    return amountInUSD * toRate;
+  }, []);
+
   const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
     const displayCurrency = currencyCode || selectedCurrency;
     const symbol = currencySymbols[displayCurrency] || displayCurrency;
@@ -90,7 +113,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     formatCurrency,
     currencySymbols,
     availableCurrencies,
-  }), [selectedCurrency, setCurrency, convertAmount, formatCurrency]);
+    convertBetweenCurrencies, // Include new function
+  }), [selectedCurrency, setCurrency, convertAmount, formatCurrency, convertBetweenCurrencies]);
 
   return (
     <CurrencyContext.Provider value={value}>
