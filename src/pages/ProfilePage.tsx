@@ -322,19 +322,15 @@ const ProfilePage = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="url" className="mt-4 space-y-4">
-              <FormField
-                control={form.control}
-                name="avatar_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Avatar URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/avatar.jpg" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Removed FormField and FormMessage, directly using Input */}
+              <div>
+                <FormLabel>Avatar URL</FormLabel>
+                <Input
+                  placeholder="https://example.com/avatar.jpg"
+                  value={form.watch("avatar_url") || ""}
+                  onChange={(e) => form.setValue("avatar_url", e.target.value)}
+                />
+              </div>
               {form.watch("avatar_url") && (
                 <div className="relative w-24 h-24 mx-auto">
                   <Avatar className="w-full h-full">
@@ -355,13 +351,11 @@ const ProfilePage = () => {
               )}
             </TabsContent>
             <TabsContent value="upload" className="mt-4 space-y-4">
-              <FormItem>
+              {/* Removed FormItem and FormMessage, directly using label and Input */}
+              <div>
                 <FormLabel>Upload Image</FormLabel>
-                <FormControl>
-                  <Input type="file" accept="image/*" onChange={handleFileChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                <Input type="file" accept="image/*" onChange={handleFileChange} />
+              </div>
               {filePreview && (
                 <div className="relative w-24 h-24 mx-auto">
                   <Avatar className="w-full h-full">
