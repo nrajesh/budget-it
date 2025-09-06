@@ -30,6 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client"; // Import supabase
+import { Loader2 } from "lucide-react"; // Import Loader2 icon
 
 const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -38,8 +39,9 @@ const TransactionsPage = () => {
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
   const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
 
-  const { transactions, deleteMultipleTransactions, accountCurrencyMap } = useTransactions(); // Get accountCurrencyMap
+  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions } = useTransactions(); // Get accountCurrencyMap and fetchTransactions
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -185,13 +187,34 @@ const TransactionsPage = () => {
   const numSelected = selectedTransactionIds.length; // Corrected from selectedRows
   const rowCount = currentTransactions.length;
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchTransactions();
+    setIsRefreshing(false);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
       <div className="p-4 md:p-8">
         <Card>
           <CardHeader>
-            <CardTitle>All Transactions</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              All Transactions
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span className="sr-only">Refresh Transactions</span>
+              </Button>
+            </CardTitle>
             <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
               <Input
                 placeholder="Search vendor or remarks..."

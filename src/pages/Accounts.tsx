@@ -25,6 +25,7 @@ import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import { RotateCcw, Loader2 } from "lucide-react"; // Import RotateCcw and Loader2 icons
 
 const AccountsPage = () => {
   const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions } = useTransactions(); // Use accounts and fetchAccounts from context
@@ -39,6 +40,7 @@ const AccountsPage = () => {
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [accountToDelete, setAccountToDelete] = React.useState<Payee | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
 
   const { formatCurrency } = useCurrency();
 
@@ -120,6 +122,12 @@ const AccountsPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentAccounts.length;
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchAccounts();
+    setIsRefreshing(false);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -133,6 +141,19 @@ const AccountsPage = () => {
           )}
           <Button onClick={handleAddClick}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add Account
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isLoading || isRefreshing}
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
+            <span className="sr-only">Refresh Accounts</span>
           </Button>
         </div>
       </div>

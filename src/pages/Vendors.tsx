@@ -23,7 +23,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Edit, Loader2 } from "lucide-react";
+import { PlusCircle, Trash2, Edit, Loader2, RotateCcw } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const VendorsPage = () => {
@@ -44,6 +44,7 @@ const VendorsPage = () => {
   const [editedName, setEditedName] = React.useState<string>("");
   const [isSavingName, setIsSavingName] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
 
   const { formatCurrency } = useCurrency();
 
@@ -160,6 +161,12 @@ const VendorsPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentVendors.length;
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchVendors();
+    setIsRefreshing(false);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -173,6 +180,19 @@ const VendorsPage = () => {
           )}
           <Button onClick={handleAddClick}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isLoading || isRefreshing}
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
+            <span className="sr-only">Refresh Vendors</span>
           </Button>
         </div>
       </div>

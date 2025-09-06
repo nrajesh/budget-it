@@ -96,6 +96,10 @@ const Layout = () => {
         return "Settings";
       case "/profile":
         return "Profile Settings";
+      case "/vendors":
+        return "Vendors";
+      case "/accounts":
+        return "Accounts";
       default:
         return "Page Not Found";
     }
