@@ -42,7 +42,6 @@ const generateTransactions = async ( // Made async
     const isTransfer = Math.random() < 0.2;
     const accountName = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
     
-    // Ensure currencyCode is always a string, with a fallback to 'USD'
     const currencyCode = currencyCodes.length > 0 
       ? currencyCodes[Math.floor(Math.random() * currencyCodes.length)] 
       : 'USD'; 
@@ -51,8 +50,15 @@ const generateTransactions = async ( // Made async
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
+    console.log(`--- [generateTransactions] Generating transaction ${i + 1} for month offset ${monthOffset} ---`);
+    console.log(`[generateTransactions]   Initial: Account: "${accountName}", Vendor: "${vendorName}", Category: "${categoryName}", Amount: ${amountValue}, Currency: ${currencyCode}, IsTransfer: ${isTransfer}`);
+
     // Ensure the primary account exists in the database
-    await ensurePayeeExists(accountName, true);
+    const primaryAccountId = await ensurePayeeExists(accountName, true);
+    if (!primaryAccountId) {
+      console.error(`[generateTransactions] Failed to ensure primary account "${accountName}" exists. Skipping transaction.`);
+      continue; // Skip this transaction if primary account creation/lookup fails
+    }
 
     if (isTransfer) {
       let destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
@@ -64,7 +70,11 @@ const generateTransactions = async ( // Made async
       amountValue = Math.abs(amountValue);
 
       // Ensure the destination account exists in the database
-      await ensurePayeeExists(destAccount, true);
+      const destAccountId = await ensurePayeeExists(destAccount, true);
+      if (!destAccountId) {
+        console.error(`[generateTransactions] Failed to ensure destination account "${destAccount}" exists. Skipping transfer.`);
+        continue; // Skip this transaction if destination account creation/lookup fails
+      }
 
     } else {
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
@@ -73,7 +83,11 @@ const generateTransactions = async ( // Made async
         amountValue = Math.abs(amountValue) * 5;
       }
       // Ensure the regular vendor exists in the database
-      await ensurePayeeExists(vendorName, false);
+      const regularVendorId = await ensurePayeeExists(vendorName, false);
+      if (!regularVendorId) {
+        console.error(`[generateTransactions] Failed to ensure regular vendor "${vendorName}" exists. Skipping transaction.`);
+        continue; // Skip this transaction if regular vendor creation/lookup fails
+      }
     }
 
     const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
@@ -96,6 +110,7 @@ const generateTransactions = async ( // Made async
         remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
       };
       sampleTransactions.push(debitTransaction);
+      console.log(`[generateTransactions]   Added debit transfer: ${JSON.stringify(debitTransaction)}`);
 
       const creditTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
@@ -107,11 +122,13 @@ const generateTransactions = async ( // Made async
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
       };
       sampleTransactions.push(creditTransaction);
+      console.log(`[generateTransactions]   Added credit transfer: ${JSON.stringify(creditTransaction)}`);
     } else {
       const singleTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
       };
       sampleTransactions.push(singleTransaction);
+      console.log(`[generateTransactions]   Added single transaction: ${JSON.stringify(singleTransaction)}`);
     }
   }
   return sampleTransactions;
@@ -400,7 +417,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       demoData.push(...await generateTransactions(-1, 300, baseAccountNames, baseVendorNames, currenciesToUse));
       demoData.push(...await generateTransactions(-2, 300, baseAccountNames, baseVendorNames, currenciesToUse));
 
-      console.log("Generated demoData length before insert:", demoData.length); // Added console log
+      console.log("[generateDiverseDemoData] Generated demoData length before insert:", demoData.length); // Added console log
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;
       showSuccess("Diverse demo data generated successfully!");
