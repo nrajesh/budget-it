@@ -16,8 +16,8 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Login = lazy(() => import("@/pages/Login"));
-const Payees = lazy(() => import("@/pages/Payees")); // Added lazy import for Payees
 const Accounts = lazy(() => import("@/pages/Accounts")); // Added lazy import for Accounts
+const Vendors = lazy(() => import("@/pages/Vendors")); // Added lazy import for Vendors
 
 function App() {
   return (
@@ -33,8 +33,8 @@ function App() {
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Index />} />
                     <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/payees" element={<Payees />} />
-                    <Route path="/accounts" element={<Accounts />} /> {/* New route */}
+                    <Route path="/vendors" element={<Vendors />} /> {/* Updated route */}
+                    <Route path="/accounts" element={<Accounts />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />

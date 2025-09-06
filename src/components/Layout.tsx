@@ -155,10 +155,12 @@ const Layout = () => {
             <SidebarGroupLabel>Apps</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Phone />
-                  Payees
-                </SidebarMenuButton>
+                <Link to="/vendors" className="w-full">
+                  <SidebarMenuButton isActive={location.pathname === "/vendors"}>
+                    <Phone />
+                    Vendors
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
