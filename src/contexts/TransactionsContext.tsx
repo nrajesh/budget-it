@@ -4,9 +4,9 @@ import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import { Payee } from '@/components/AddEditPayeeDialog';
-import { createTransactionsService } from '@/services/transactionsService'; // Removed .ts
-import { createPayeesService } from '@/services/payeesService'; // Removed .ts
-import { createDemoDataService } from '@/services/demoDataService'; // Removed .ts
+import { createTransactionsService } from '@/services/transactionsService';
+import { createPayeesService } from '@/services/payeesService';
+import { createDemoDataService } from '@/services/demoDataService';
 
 interface TransactionToDelete {
   id: string;

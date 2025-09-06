@@ -18,6 +18,7 @@ const generateTransactions = async (
   count: number,
   existingAccountNames: string[],
   existingVendorNames: string[],
+  accountCurrencyMap: Map<string, string>, // New parameter for pre-fetched currencies
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -31,9 +32,8 @@ const generateTransactions = async (
     const isTransfer = Math.random() < 0.2;
     const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
     
-    // Dynamically get the currency for the selected account
-    const accountCurrency = await getAccountCurrency(accountName);
-    const currencyCode = accountCurrency || 'USD'; // Fallback to USD if currency not found
+    // Dynamically get the currency for the selected account from the map
+    const currencyCode = accountCurrencyMap.get(accountName) || 'USD'; // Fallback to USD if currency not found
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
@@ -133,13 +133,32 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
         if (id) createdVendorNames.push(name);
       }
 
-      // Step 3: Generate transactions using the pre-created names
-      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames));
+      // Step 3: Pre-fetch all account currencies into a map
+      const accountCurrencyMap = new Map<string, string>();
+      const { data: accountCurrencyData, error: currencyError } = await supabase
+        .from('vendors')
+        .select('name, accounts(currency)')
+        .eq('is_account', true);
 
-      // Step 4: Batch insert transactions
+      if (currencyError) {
+        console.error("Error fetching account currencies:", currencyError.message);
+        showError("Failed to fetch account currencies for demo data generation.");
+        return;
+      }
+
+      accountCurrencyData.forEach(item => {
+        if (item.accounts && item.accounts.length > 0) {
+          accountCurrencyMap.set(item.name, item.accounts[0].currency);
+        }
+      });
+
+      // Step 4: Generate transactions using the pre-created names and currency map
+      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
+
+      // Step 5: Batch insert transactions
       if (demoData.length > 0) {
         const { error } = await supabase.from('transactions').insert(demoData);
         if (error) throw error;

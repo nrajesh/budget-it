@@ -12,8 +12,9 @@ interface PayeesServiceProps {
 export const createPayeesService = ({ setVendors, setAccounts, convertAmount }: PayeesServiceProps) => {
 
   const fetchVendors = async () => {
+    // Use the new vendor_transaction_summary view to get total_transaction_amount efficiently
     const { data: vendorsData, error } = await supabase
-      .from("vendors_with_balance")
+      .from("vendor_transaction_summary") // Changed to use the new view
       .select("*")
       .eq('is_account', false)
       .order('name', { ascending: true });
@@ -22,22 +23,11 @@ export const createPayeesService = ({ setVendors, setAccounts, convertAmount }: 
       showError(`Failed to fetch vendors: ${error.message}`);
       setVendors([]);
     } else {
-      const vendorsWithTransactions = await Promise.all(
-        vendorsData.map(async (vendor) => {
-          const { data: transactionsSumData, error: sumError } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('vendor', vendor.name);
-
-          if (sumError) {
-            console.error(`Error fetching transaction sum for ${vendor.name}:`, sumError.message);
-            return { ...vendor, totalTransactions: 0 };
-          }
-
-          const totalAmount = transactionsSumData.reduce((sum, t) => sum + t.amount, 0);
-          return { ...vendor, totalTransactions: convertAmount(totalAmount) };
-        })
-      );
+      // Map total_transaction_amount to totalTransactions for consistency with Payee type
+      const vendorsWithTransactions = vendorsData.map(vendor => ({
+        ...vendor,
+        totalTransactions: convertAmount(vendor.total_transaction_amount || 0),
+      }));
       setVendors(vendorsWithTransactions as Payee[]);
     }
   };
