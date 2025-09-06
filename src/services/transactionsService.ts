@@ -107,7 +107,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (deleteError) throw deleteError;
 
         const transfer_id = `transfer_${Date.now()}`;
-        const debitTransaction = {
+        // Create new objects without the 'id' from updatedTransaction
+        const { id: _, ...debitTransactionPayload } = {
           ...updatedTransaction,
           transfer_id: transfer_id,
           amount: -newAbsoluteAmount, // Debit is negative
@@ -116,7 +117,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           date: newDateISO,
           currency: accountCurrency,
         };
-        const creditTransaction = {
+        const { id: __, ...creditTransactionPayload } = {
           ...updatedTransaction,
           transfer_id: transfer_id,
           account: updatedTransaction.vendor,
@@ -127,7 +128,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           date: newDateISO,
           currency: accountCurrency,
         };
-        const { error: insertError } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
+        const { error: insertError } = await supabase.from('transactions').insert([debitTransactionPayload, creditTransactionPayload]);
         if (insertError) throw insertError;
         showSuccess("Transaction converted to transfer and updated successfully!");
       }
@@ -136,14 +137,15 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transfer_id);
         if (deleteError) throw deleteError;
 
-        const newSingleTransaction = {
+        // Create new object without the 'id' from updatedTransaction
+        const { id: _, ...newSingleTransactionPayload } = {
           ...updatedTransaction,
           transfer_id: null,
           amount: updatedTransaction.amount, // Use the amount as entered by user for regular transaction
           date: newDateISO,
           currency: accountCurrency,
         };
-        const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
+        const { error: insertError } = await supabase.from('transactions').insert(newSingleTransactionPayload);
         if (insertError) throw insertError;
         showSuccess("Transfer converted to transaction and updated successfully!");
       }
