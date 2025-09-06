@@ -127,7 +127,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           remarks: updatedTransaction.remarks,
           currency: sendingAccountCurrency, // Ensure currency is correct for sending side
         };
-        updates.push(supabase.from('transactions').update(currentTransactionUpdatePayload).eq('id', updatedTransaction.id).select('*'));
+        updates.push(Promise.resolve(supabase.from('transactions').update(currentTransactionUpdatePayload).eq('id', updatedTransaction.id).select('*')));
 
         // Update the other linked transaction
         let otherTransactionAmount = 0;
@@ -153,7 +153,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           remarks: otherTransaction.remarks, // Keep original remarks for the other side
           currency: receivingAccountCurrency, // Ensure currency is correct for receiving side
         };
-        updates.push(supabase.from('transactions').update(otherTransactionUpdatePayload).eq('id', otherTransaction.id).select('*'));
+        updates.push(Promise.resolve(supabase.from('transactions').update(otherTransactionUpdatePayload).eq('id', otherTransaction.id).select('*')));
 
         await Promise.all(updates);
         showSuccess("Transfer transactions updated successfully!");
