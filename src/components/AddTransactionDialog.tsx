@@ -18,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
@@ -58,11 +59,13 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const { addTransaction } = useTransactions();
-  const { currencySymbols } = useCurrency();
+  const { addTransaction, accountCurrencyMap } = useTransactions();
+  const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
+  const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
+  const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
 
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -100,25 +103,61 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
         remarks: "",
       });
       setAccountCurrencySymbol('$'); // Reset currency symbol
+      setDestinationAccountCurrency(null);
+      setDisplayReceivingAmount(0);
     }
   }, [isOpen, form, fetchPayees]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
+  const amountValue = form.watch("amount");
   const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
 
-  // Effect to update currency symbol when account changes
+  // Effect to update currency symbol for sending account when account changes
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = await getAccountCurrency(accountValue); // This will now always return a string
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols]);
+  }, [accountValue, currencySymbols, accountCurrencyMap]);
+
+  // Effect to fetch destination account currency when vendor changes (if it's an account)
+  React.useEffect(() => {
+    const fetchDestinationCurrency = async () => {
+      if (isTransfer && vendorValue) {
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
+        setDestinationAccountCurrency(currencyCode);
+      } else {
+        setDestinationAccountCurrency(null);
+      }
+    };
+    fetchDestinationCurrency();
+  }, [vendorValue, isTransfer, accountCurrencyMap]);
+
+  // Effect to calculate displayReceivingAmount for transfers with different currencies
+  React.useEffect(() => {
+    if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
+      const sendingCurrency = accountCurrencyMap.get(accountValue);
+      if (sendingCurrency && sendingCurrency !== destinationAccountCurrency) {
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(amountValue), // Always use absolute value for conversion display
+          sendingCurrency,
+          destinationAccountCurrency
+        );
+        setDisplayReceivingAmount(convertedAmount);
+      } else {
+        setDisplayReceivingAmount(0); // No conversion needed or currencies are the same
+      }
+    } else {
+      setDisplayReceivingAmount(0);
+    }
+  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies]);
+
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -154,6 +193,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
 
+  const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -183,7 +224,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               name="account"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Account</FormLabel>
+                  <FormLabel>Account (Sending)</FormLabel>
                   <Combobox
                     options={filteredAccountOptions}
                     value={field.value}
@@ -201,7 +242,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               name="vendor"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendor / Destination Account</FormLabel>
+                  <FormLabel>Vendor / Account (Receiving)</FormLabel>
                    <Combobox
                     options={filteredCombinedVendorOptions}
                     value={field.value}
@@ -238,7 +279,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount (Sending)</FormLabel>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
                       {accountCurrencySymbol}
@@ -251,6 +292,29 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 </FormItem>
               )}
             />
+
+            {showReceivingValueField && (
+              <FormItem>
+                <FormLabel>Amount (Receiving)</FormLabel>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                    {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                  </span>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      value={displayReceivingAmount.toFixed(2)}
+                      readOnly
+                      className="pl-8 bg-muted"
+                    />
+                  </FormControl>
+                </div>
+                <FormDescription>
+                  This is the estimated amount received in the destination account's currency.
+                </FormDescription>
+              </FormItem>
+            )}
+
             <FormField
               control={form.control}
               name="remarks"
