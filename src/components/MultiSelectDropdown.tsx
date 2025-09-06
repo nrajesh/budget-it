@@ -5,7 +5,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandList,
-  CommandItem, // Added CommandItem here
+  CommandItem,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -24,6 +24,7 @@ interface Option {
 }
 
 interface MultiSelectDropdownProps {
+  id?: string; // Added id prop here
   options: Option[]; // These are the actual data options, without an 'All' option
   selectedValues: string[]; // These are the actual selected data values
   onSelectChange: (values: string[]) => void;
@@ -31,6 +32,7 @@ interface MultiSelectDropdownProps {
 }
 
 export function MultiSelectDropdown({
+  id, // Destructure id prop
   options,
   selectedValues,
   onSelectChange,
@@ -60,7 +62,7 @@ export function MultiSelectDropdown({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full sm:w-[200px] justify-between"> {/* Adjusted width */}
+        <Button variant="outline" className="w-full sm:w-[200px] justify-between">
           {isAllSelected && options.length > 0 ? (
             <span>{allOption.label} ({options.length})</span>
           ) : (
@@ -69,7 +71,7 @@ export function MultiSelectDropdown({
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full sm:w-[200px] p-0"> {/* Adjusted width */}
+      <PopoverContent className="w-full sm:w-[200px] p-0">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandList>

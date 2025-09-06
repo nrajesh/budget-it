@@ -90,18 +90,26 @@ const Analytics = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4">
-        <MultiSelectDropdown
-          options={availableAccounts}
-          selectedValues={selectedAccounts}
-          onSelectChange={setSelectedAccounts}
-          placeholder="Filter by Account"
-        />
-        <MultiSelectDropdown
-          options={availableCategories}
-          selectedValues={selectedCategories}
-          onSelectChange={setSelectedCategories}
-          placeholder="Filter by Category"
-        />
+        <div className="flex flex-col gap-2">
+          <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
+          <MultiSelectDropdown
+            id="account-filter"
+            options={availableAccounts}
+            selectedValues={selectedAccounts}
+            onSelectChange={setSelectedAccounts}
+            placeholder="Filter by Account"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
+          <MultiSelectDropdown
+            id="category-filter"
+            options={availableCategories}
+            selectedValues={selectedCategories}
+            onSelectChange={setSelectedCategories}
+            placeholder="Filter by Category"
+          />
+        </div>
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
