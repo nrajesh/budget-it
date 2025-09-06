@@ -246,6 +246,7 @@ export const useTransactionManagement = () => {
               amount: parseFloat(row.Amount) || 0,
               remarks: row.Remarks,
               currency: accountCurrency,
+              transfer_id: row.transfer_id || null, // Include transfer_id from CSV
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -291,6 +292,7 @@ export const useTransactionManagement = () => {
       "Amount": t.amount,
       "Remarks": t.remarks,
       "Currency": t.currency,
+      "transfer_id": t.transfer_id || null, // Include transfer_id for export
     }));
 
     const csv = Papa.unparse(dataToExport, {
