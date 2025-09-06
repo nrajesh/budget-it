@@ -29,12 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { accounts, categories } from "@/data/finance-data"; // Removed static vendors import
+import { accounts, vendors, categories } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox"; // Import Combobox
-import { useVendors } from "@/contexts/VendorsContext"; // Import useVendors
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -60,7 +59,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   transaction,
 }) => {
   const { updateTransaction, deleteTransaction } = useTransactions();
-  const { vendors: dynamicVendors } = useVendors(); // Use dynamic vendors
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -103,7 +101,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   };
 
   const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
-  const dynamicVendorOptions = dynamicVendors.map(v => ({ value: v.name, label: v.name })); // Map dynamic vendors
+  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
 
   // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
@@ -111,8 +109,8 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     disabled: option.value === vendorValue && accounts.includes(vendorValue),
   }));
 
-  // Combine dynamic vendor and account options for the vendor dropdown
-  const combinedBaseVendorOptions = [...baseAccountOptions, ...dynamicVendorOptions];
+  // Combine vendor and account options for the vendor dropdown
+  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
 
   // Filter combined vendor options: disable if it's the selected account
   const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({

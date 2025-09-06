@@ -21,9 +21,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { accounts, categories } from "@/data/finance-data"; // Removed static vendors import
+import { accounts, vendors, categories } from "@/data/finance-data";
 import { Combobox } from "@/components/ui/combobox";
-import { useVendors } from "@/contexts/VendorsContext"; // Import useVendors
 
 interface AddTransactionFormValues {
   date: string;
@@ -56,7 +55,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   onOpenChange,
 }) => {
   const { addTransaction } = useTransactions();
-  const { vendors: dynamicVendors } = useVendors(); // Use dynamic vendors
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -98,7 +96,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   };
 
   const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
-  const dynamicVendorOptions = dynamicVendors.map(v => ({ value: v.name, label: v.name })); // Map dynamic vendors
+  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
 
   // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
@@ -106,8 +104,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     disabled: option.value === vendorValue && accounts.includes(vendorValue),
   }));
 
-  // Combine dynamic vendor and account options for the vendor dropdown
-  const combinedBaseVendorOptions = [...baseAccountOptions, ...dynamicVendorOptions];
+  // Combine vendor and account options for the vendor dropdown
+  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
 
   // Filter combined vendor options: disable if it's the selected account
   const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
