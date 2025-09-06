@@ -14,9 +14,10 @@ interface TransactionsServiceProps {
   fetchTransactions: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
   transactions: Transaction[]; // To find original transaction for updates
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Add setTransactions
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions }: TransactionsServiceProps) => {
+export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions }: TransactionsServiceProps) => {
   const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
@@ -117,8 +118,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       }
 
       showSuccess("Transaction updated successfully!");
-      fetchTransactions();
-      refetchAllPayees();
+      // Directly update the local state for immediate UI reflection
+      setTransactions(prevTransactions =>
+        prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
+      );
+      refetchAllPayees(); // Keep this for aggregated data updates (charts, etc.)
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }

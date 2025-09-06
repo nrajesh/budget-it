@@ -28,6 +28,7 @@ interface TransactionsContextType {
   fetchAccounts: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
   fetchTransactions: () => Promise<void>;
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Expose setTransactions
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -81,7 +82,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions,
     refetchAllPayees,
     transactions,
-  }), [fetchTransactions, refetchAllPayees, transactions]);
+    setTransactions, // Pass setTransactions
+  }), [fetchTransactions, refetchAllPayees, transactions, setTransactions]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
     fetchTransactions,
@@ -111,6 +113,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchAccounts,
     refetchAllPayees,
     fetchTransactions,
+    setTransactions, // Include setTransactions
   }), [
     transactions,
     vendors,
@@ -126,6 +129,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchAccounts,
     refetchAllPayees,
     fetchTransactions,
+    setTransactions, // Add to dependencies
   ]);
 
   if (isLoading) {
