@@ -241,13 +241,12 @@ const TransactionsPage = () => {
             return ensurePayeeExists(name, isTransfer);
           }));
 
-          // Step 2: Fetch currencies for all accounts involved
-          const currencyPromises = uniqueAccounts.map(name => getAccountCurrency(name));
-          const currencies = await Promise.all(currencyPromises);
-          const currencyMap = new Map(uniqueAccounts.map((name, i) => [name, currencies[i]]));
+          // IMPORTANT: Refresh all payees (including accounts) to ensure accountCurrencyMap is up-to-date
+          await refetchAllPayees();
 
+          // Step 2: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
-            const accountCurrency = currencyMap.get(row.Account);
+            const accountCurrency = accountCurrencyMap.get(row.Account); // Use the map from context
             if (!accountCurrency) {
               console.warn(`Could not find currency for account: ${row.Account}. Skipping row.`);
               return null;
@@ -274,7 +273,7 @@ const TransactionsPage = () => {
           if (error) throw error;
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          await refetchAllPayees(); // This also calls fetchTransactions
+          // No need to call refetchAllPayees() again here, as it was called earlier
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
         } finally {
