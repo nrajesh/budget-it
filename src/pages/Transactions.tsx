@@ -316,6 +316,7 @@ const TransactionsPage = () => {
                     disabled={currentPage === 1}
                   />
                 </PaginationItem>
+                {/* Removed individual page numbers */}
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
