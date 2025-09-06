@@ -210,6 +210,7 @@ const TransactionsPage = () => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
+      delimiter: ';', // Added to handle semicolon-separated CSVs
       complete: async (results) => {
         const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks"];
         const actualHeaders = results.meta.fields || [];
