@@ -25,87 +25,87 @@ import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { PlusCircle, Trash2, Edit } from "lucide-react";
 
-const VendorsPage = () => { // Renamed component
-  const [vendors, setVendors] = React.useState<Payee[]>([]); // Renamed state
+const VendorsPage = () => {
+  const [vendors, setVendors] = React.useState<Payee[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
   
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedVendor, setSelectedVendor] = React.useState<Payee | null>(null); // Renamed state
+  const [selectedVendor, setSelectedVendor] = React.useState<Payee | null>(null);
   
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [vendorToDelete, setVendorToDelete] = React.useState<Payee | null>(null); // Renamed state
+  const [vendorToDelete, setVendorToDelete] = React.useState<Payee | null>(null);
 
   const { formatCurrency } = useCurrency();
 
-  const fetchVendors = React.useCallback(async () => { // Renamed function
+  const fetchVendors = React.useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase.from("vendors_with_balance").select("*");
 
     if (error) {
-      showError(`Failed to fetch vendors: ${error.message}`); // Updated message
-      setVendors([]); // Renamed state
+      showError(`Failed to fetch vendors: ${error.message}`);
+      setVendors([]);
     } else {
-      setVendors(data as Payee[]); // Renamed state
+      setVendors(data as Payee[]);
     }
     setIsLoading(false);
   }, []);
 
   React.useEffect(() => {
-    fetchVendors(); // Renamed function
+    fetchVendors();
   }, [fetchVendors]);
 
-  const filteredVendors = React.useMemo(() => { // Renamed variable
-    return vendors.filter((p) => // Renamed state
+  const filteredVendors = React.useMemo(() => {
+    return vendors.filter((p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [vendors, searchTerm]); // Renamed state
+  }, [vendors, searchTerm]);
 
-  const totalPages = Math.ceil(filteredVendors.length / itemsPerPage); // Renamed variable
+  const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentVendors = filteredVendors.slice(startIndex, endIndex); // Renamed variable
+  const currentVendors = filteredVendors.slice(startIndex, endIndex);
 
   const handleAddClick = () => {
-    setSelectedVendor(null); // Renamed state
+    setSelectedVendor(null);
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (vendor: Payee) => { // Renamed parameter
-    setSelectedVendor(vendor); // Renamed state
+  const handleEditClick = (vendor: Payee) => {
+    setSelectedVendor(vendor);
     setIsDialogOpen(true);
   };
   
-  const handleDeleteClick = (vendor: Payee) => { // Renamed parameter
-    setVendorToDelete(vendor); // Renamed state
+  const handleDeleteClick = (vendor: Payee) => {
+    setVendorToDelete(vendor);
     setIsConfirmOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!vendorToDelete) return; // Renamed state
+    if (!vendorToDelete) return;
     try {
       const { error } = await supabase.rpc('delete_vendor_and_update_transactions', {
-        p_vendor_id: vendorToDelete.id, // Renamed state
+        p_vendor_id: vendorToDelete.id,
       });
       if (error) throw error;
-      showSuccess("Vendor deleted successfully."); // Updated message
-      fetchVendors(); // Renamed function
+      showSuccess("Vendor deleted successfully.");
+      fetchVendors();
     } catch (error: any) {
-      showError(`Failed to delete vendor: ${error.message}`); // Updated message
+      showError(`Failed to delete vendor: ${error.message}`);
     } finally {
       setIsConfirmOpen(false);
-      setVendorToDelete(null); // Renamed state
+      setVendorToDelete(null);
     }
   };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Vendors</h2> {/* Updated title */}
+        <h2 className="text-3xl font-bold tracking-tight">Vendors</h2>
         <Button onClick={handleAddClick}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor {/* Updated button text */}
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor
         </Button>
       </div>
       <Card>
@@ -137,14 +137,14 @@ const VendorsPage = () => { // Renamed component
                   <TableRow>
                     <TableCell colSpan={5} className="text-center">Loading...</TableCell>
                   </TableRow>
-                ) : currentVendors.length === 0 ? ( // Renamed variable
+                ) : currentVendors.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                      No vendors found. {/* Updated message */}
+                      No vendors found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  currentVendors.map((vendor) => ( // Renamed variable and parameter
+                  currentVendors.map((vendor) => (
                     <TableRow key={vendor.id}>
                       <TableCell className="font-medium">{vendor.name}</TableCell>
                       <TableCell>
@@ -157,10 +157,10 @@ const VendorsPage = () => { // Renamed component
                       </TableCell>
                       <TableCell>{vendor.is_account ? vendor.currency : "-"}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(vendor)}> {/* Renamed parameter */}
+                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(vendor)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)}> {/* Renamed parameter */}
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -173,7 +173,7 @@ const VendorsPage = () => { // Renamed component
         </CardContent>
         <CardFooter className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {startIndex + 1} to {Math.min(endIndex, filteredVendors.length)} of {filteredVendors.length} vendors {/* Updated message */}
+            Showing {startIndex + 1} to {Math.min(endIndex, filteredVendors.length)} of {filteredVendors.length} vendors
           </div>
           <Pagination>
             <PaginationContent>
@@ -196,19 +196,19 @@ const VendorsPage = () => { // Renamed component
       <AddEditPayeeDialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        payee={selectedVendor} // Renamed state
-        onSuccess={fetchVendors} // Renamed function
+        payee={selectedVendor}
+        onSuccess={fetchVendors}
       />
       <ConfirmationDialog
         isOpen={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
         onConfirm={confirmDelete}
-        title={`Delete ${vendorToDelete?.name}?`} {/* Renamed state */}
-        description="This will permanently delete the vendor and may affect related transactions. This action cannot be undone." {/* Updated message */}
+        title={`Delete ${vendorToDelete?.name}?`}
+        description="This will permanently delete the vendor and may affect related transactions. This action cannot be undone."
         confirmText="Delete"
       />
     </div>
   );
 };
 
-export default VendorsPage; // Renamed export
+export default VendorsPage;
