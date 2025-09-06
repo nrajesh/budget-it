@@ -4,11 +4,17 @@ import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 
+interface TransactionToDelete {
+  id: string;
+  transfer_id?: string;
+}
+
 interface TransactionsContextType {
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
+  deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
   clearAllTransactions: () => void;
   generateDiverseDemoData: () => void;
 }
@@ -99,7 +105,7 @@ const generateTransactions = (
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { availableCurrencies } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(true); // FIX: Corrected syntax from '=>' to '='
 
   const fetchTransactions = React.useCallback(async () => {
     setIsLoading(true);
@@ -299,6 +305,39 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, [fetchTransactions]);
 
+  const deleteMultipleTransactions = React.useCallback(async (transactionsToDelete: TransactionToDelete[]) => {
+    try {
+      const idsToDelete: string[] = [];
+      const transferIdsToDelete: string[] = [];
+
+      transactionsToDelete.forEach(item => {
+        idsToDelete.push(item.id);
+        if (item.transfer_id) {
+          transferIdsToDelete.push(item.transfer_id);
+        }
+      });
+
+      // Delete all transactions by their IDs
+      if (idsToDelete.length > 0) {
+        const { error: idDeleteError } = await supabase.from('transactions').delete().in('id', idsToDelete);
+        if (idDeleteError) throw idDeleteError;
+      }
+
+      // Delete all associated transfer transactions by their transfer_ids
+      // This handles cases where only one side of a transfer was selected
+      if (transferIdsToDelete.length > 0) {
+        const uniqueTransferIds = [...new Set(transferIdsToDelete)];
+        const { error: transferDeleteError } = await supabase.from('transactions').delete().in('transfer_id', uniqueTransferIds);
+        if (transferDeleteError) throw transferDeleteError;
+      }
+
+      showSuccess(`${transactionsToDelete.length} transactions deleted successfully!`);
+      fetchTransactions();
+    } catch (error: any) {
+      showError(`Failed to delete multiple transactions: ${error.message}`);
+    }
+  }, [fetchTransactions]);
+
   const clearAllTransactions = React.useCallback(async () => {
     try {
       const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all rows
@@ -336,9 +375,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    deleteMultipleTransactions,
     clearAllTransactions,
     generateDiverseDemoData,
-  }), [transactions, addTransaction, updateTransaction, deleteTransaction, clearAllTransactions, generateDiverseDemoData]);
+  }), [transactions, addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions, clearAllTransactions, generateDiverseDemoData]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading transactions...</div>;

@@ -25,15 +25,20 @@ import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { RotateCcw } from "lucide-react"; // Import the reset icon
-
-const ITEMS_PER_PAGE = 10;
+import { RotateCcw, Trash2 } from "lucide-react"; // Import the reset and trash icons
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
+import ConfirmationDialog from "@/components/ConfirmationDialog"; // Import ConfirmationDialog
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 
 const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10); // New state for items per page
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
-  const { transactions } = useTransactions();
+  const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]); // New state for multi-select
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false); // New state for bulk delete confirmation
+
+  const { transactions, deleteMultipleTransactions } = useTransactions(); // Use deleteMultipleTransactions
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -98,9 +103,9 @@ const TransactionsPage = () => {
     return filtered;
   }, [transactions, searchTerm, selectedAccounts, selectedCategories, dateRange, availableAccountOptions.length, availableCategoryOptions.length]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage); // Use itemsPerPage
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
   const handleRowClick = (transaction: Transaction) => {
@@ -115,10 +120,40 @@ const TransactionsPage = () => {
     setDateRange(undefined);
   };
 
-  // Reset pagination when filters change
+  // Multi-select handlers
+  const handleSelectOne = (id: string) => {
+    setSelectedTransactionIds((prev) =>
+      prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTransactionIds(currentTransactions.map((t) => t.id));
+    } else {
+      setSelectedTransactionIds([]);
+    }
+  };
+
+  const isAllSelectedOnPage =
+    currentTransactions.length > 0 &&
+    currentTransactions.every((t) => selectedTransactionIds.includes(t.id));
+
+  const handleBulkDelete = () => {
+    const transactionsToDelete = selectedTransactionIds.map(id => {
+      const transaction = transactions.find(t => t.id === id);
+      return { id, transfer_id: transaction?.transfer_id };
+    });
+    deleteMultipleTransactions(transactionsToDelete);
+    setSelectedTransactionIds([]); // Clear selection after deletion
+    setIsBulkDeleteConfirmOpen(false);
+  };
+
+  // Reset pagination and selection when filters or itemsPerPage change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filteredTransactions]);
+    setSelectedTransactionIds([]);
+  }, [filteredTransactions, itemsPerPage]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -127,7 +162,7 @@ const TransactionsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>All Transactions</CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end"> {/* Added items-end for alignment */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
               <Input
                 placeholder="Search vendor or remarks..."
                 value={searchTerm}
@@ -152,12 +187,30 @@ const TransactionsPage = () => {
                 <span className="sr-only">Reset Filters</span>
               </Button>
             </div>
+            {selectedTransactionIds.length > 0 && (
+              <div className="mt-4 flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsBulkDeleteConfirmOpen(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Selected ({selectedTransactionIds.length})
+                </Button>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
-            <div className="border rounded-md overflow-x-auto"> {/* Added overflow-x-auto here */}
+            <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={isAllSelectedOnPage}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Select all transactions on current page"
+                      />
+                    </TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Account</TableHead>
                     <TableHead>Vendor</TableHead>
@@ -169,21 +222,38 @@ const TransactionsPage = () => {
                 <TableBody>
                   {currentTransactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
                         No transactions found matching your filters.
                       </TableCell>
                     </TableRow>
                   ) : (
                     currentTransactions.map((transaction) => (
-                      <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
-                        <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{transaction.account}</TableCell>
-                        <TableCell>{transaction.vendor}</TableCell>
-                        <TableCell>{transaction.category}</TableCell>
-                        <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                      <TableRow key={transaction.id} className="group">
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedTransactionIds.includes(transaction.id)}
+                            onCheckedChange={() => handleSelectOne(transaction.id)}
+                            aria-label={`Select transaction ${transaction.id}`}
+                          />
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          {transaction.account}
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          {transaction.vendor}
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          {transaction.category}
+                        </TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
                           {formatCurrency(transaction.amount)}
                         </TableCell>
-                        <TableCell>{transaction.remarks}</TableCell>
+                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          {transaction.remarks}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -191,28 +261,37 @@ const TransactionsPage = () => {
               </Table>
             </div>
           </CardContent>
-          <CardFooter className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
-            </span>
+          <CardFooter className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+              </span>
+              <Select value={String(itemsPerPage)} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                <SelectTrigger className="w-[80px] h-8">
+                  <SelectValue placeholder="10" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Pagination>
               <PaginationContent>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  />
+                </PaginationItem>
               </PaginationContent>
             </Pagination>
           </CardFooter>
@@ -224,6 +303,14 @@ const TransactionsPage = () => {
             transaction={selectedTransaction}
           />
         )}
+        <ConfirmationDialog
+          isOpen={isBulkDeleteConfirmOpen}
+          onOpenChange={setIsBulkDeleteConfirmOpen}
+          onConfirm={handleBulkDelete}
+          title={`Are you sure you want to delete ${selectedTransactionIds.length} transactions?`}
+          description="This action cannot be undone. All selected transactions and their associated transfer entries (if any) will be permanently deleted."
+          confirmText="Delete Selected"
+        />
       </div>
     </div>
   );
