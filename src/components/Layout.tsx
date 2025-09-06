@@ -60,12 +60,22 @@ import {
 } from "@/components/ui/select";
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface UserProfile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+}
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = React.useState(true);
 
   const getPageTitle = (pathname: string) => {
     switch (pathname) {
@@ -77,12 +87,62 @@ const Layout = () => {
         return "Analytics";
       case "/settings":
         return "Settings";
+      case "/profile":
+        return "Profile Settings";
       default:
         return "Page Not Found";
     }
   };
 
   const pageTitle = getPageTitle(location.pathname);
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      setLoadingProfile(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data, error } = await supabase
+          .from("user_profile")
+          .select("first_name, last_name, avatar_url, email")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching user profile:", error.message);
+          setUserProfile({
+            first_name: null,
+            last_name: null,
+            avatar_url: null,
+            email: user.email, // Fallback to auth email
+          });
+        } else if (data) {
+          setUserProfile(data);
+        }
+      } else {
+        setUserProfile(null);
+      }
+      setLoadingProfile(false);
+    };
+
+    fetchProfile();
+
+    // Listen for auth state changes to refetch profile
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+        fetchProfile();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const displayName = userProfile?.first_name && userProfile?.last_name
+    ? `${userProfile.first_name} ${userProfile.last_name}`
+    : userProfile?.first_name || userProfile?.last_name || "User Name";
+  const displayEmail = userProfile?.email || "user@example.com";
+  const displayAvatar = userProfile?.avatar_url || "/placeholder.svg";
+  const avatarFallback = (userProfile?.first_name?.charAt(0) || "") + (userProfile?.last_name?.charAt(0) || "");
 
   return (
     <SidebarProvider className="min-h-screen">
@@ -155,7 +215,7 @@ const Layout = () => {
               <Collapsible asChild>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={location.pathname.startsWith("/settings")}>
+                    <SidebarMenuButton isActive={location.pathname.startsWith("/profile") || location.pathname.startsWith("/settings")}>
                       <User />
                       User Profile
                       <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
@@ -164,7 +224,11 @@ const Layout = () => {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton>Profile</SidebarMenuSubButton>
+                        <Link to="/profile" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/profile"}>
+                            Profile
+                          </SidebarMenuSubButton>
+                        </Link>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <Link to="/settings" className="w-full">
@@ -204,15 +268,16 @@ const Layout = () => {
               <Button
                 variant="ghost"
                 className="h-auto w-full justify-start gap-2 p-2"
+                disabled={loadingProfile}
               >
                 <Avatar className="size-8">
-                  <AvatarImage src="/placeholder.svg" alt="Jonathan Deo" />
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarImage src={displayAvatar} alt={displayName} />
+                  <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
                 </Avatar>
                 <div className="text-left">
-                  <p className="text-sm font-medium">User Name</p>
+                  <p className="text-sm font-medium">{displayName}</p>
                   <p className="text-xs text-muted-foreground">
-                    user@example.com
+                    {displayEmail}
                   </p>
                 </div>
               </Button>
@@ -220,9 +285,13 @@ const Layout = () => {
             <DropdownMenuContent className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/profile">Profile</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings">Settings</Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarFooter>
@@ -264,16 +333,21 @@ const Layout = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative size-8 rounded-full">
                   <Avatar className="size-8">
-                    <AvatarImage src="/placeholder.svg" alt="Jonathan Deo" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={displayAvatar} alt={displayName} />
+                    <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>Billing</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">Settings</Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
