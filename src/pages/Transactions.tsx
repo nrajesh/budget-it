@@ -1,327 +1,75 @@
 import * as React from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Transaction, categories as allDefinedCategories } from "@/data/finance-data";
+import { Transaction } from "@/data/finance-data";
 import EditTransactionDialog from "@/components/EditTransactionDialog";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { Input } from "@/components/ui/input";
-import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
-import { DateRangePicker } from "@/components/DateRangePicker";
-import { slugify, formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils"; // Import date utilities
-import { DateRange } from "react-day-picker";
-import { RotateCcw, Trash2, Upload, Download } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
-import Papa from "papaparse";
-import { ensurePayeeExists, getAccountCurrency } from "@/integrations/supabase/utils";
-import { showSuccess, showError } from "@/utils/toast";
+
+// Import new modular components and hook
+import { useTransactionManagement } from "@/hooks/useTransactionManagement";
+import { TransactionFilters } from "@/components/transactions/TransactionFilters.tsx";
+import { TransactionActions } from "@/components/transactions/TransactionActions.tsx";
+import { TransactionsTable } from "@/components/transactions/TransactionsTable.tsx";
 
 const TransactionsPage = () => {
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(10);
+  const {
+    // States
+    currentPage,
+    itemsPerPage,
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    dateRange,
+    isRefreshing,
+    isImporting,
+    selectedTransactionIds,
+    isBulkDeleteConfirmOpen,
+    fileInputRef,
+    availableAccountOptions,
+    availableCategoryOptions,
+    filteredTransactions,
+    totalPages,
+    startIndex,
+    endIndex,
+    currentTransactions,
+    numSelected,
+    accountCurrencyMap,
+    formatCurrency,
+    isAllSelectedOnPage,
+
+    // Setters
+    setCurrentPage,
+    setItemsPerPage,
+    setSearchTerm,
+    setSelectedAccounts,
+    setSelectedCategories,
+    setDateRange,
+    setIsBulkDeleteConfirmOpen,
+
+    // Handlers
+    handleResetFilters,
+    handleSelectOne,
+    handleSelectAll,
+    handleBulkDelete,
+    handleRefresh,
+    handleImportClick,
+    handleFileChange,
+    handleExportClick,
+  } = useTransactionManagement();
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
-  const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
-  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions, refetchAllPayees } = useTransactions();
-  const { formatCurrency } = useCurrency();
-
-  // Filter states
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
-
-  // State for dynamically fetched account options
-  const [availableAccountOptions, setAvailableAccountOptions] = React.useState<{ value: string; label: string }[]>([]);
-
-  // Fetch available accounts dynamically
-  const fetchAvailableAccounts = React.useCallback(async () => {
-    const { data, error } = await supabase
-      .from('vendors')
-      .select('name')
-      .eq('is_account', true);
-
-    if (error) {
-      console.error("Error fetching account names:", error.message);
-      setAvailableAccountOptions([]);
-    } else {
-      const options = data.map(item => ({
-        value: slugify(item.name),
-        label: item.name,
-      }));
-      setAvailableAccountOptions(options);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchAvailableAccounts();
-  }, [fetchAvailableAccounts]);
-
-  const availableCategoryOptions = React.useMemo(() => {
-    return allDefinedCategories.map(category => ({
-      value: slugify(category),
-      label: category,
-    }));
-  }, []);
-
-  // Initialize selected filters to "all" by default
-  React.useEffect(() => {
-    if (availableAccountOptions.length > 0) {
-      setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-    }
-  }, [availableAccountOptions]);
-
-  React.useEffect(() => {
-    if (availableCategoryOptions.length > 0) {
-      setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-    }
-  }, [availableCategoryOptions]);
-
-  const filteredTransactions = React.useMemo(() => {
-    let filtered = transactions;
-
-    // Filter by search term
-    if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
-          (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
-      );
-    }
-
-    // Filter by selected accounts
-    if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
-      filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
-    }
-
-    // Filter by selected categories
-    if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
-      filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
-    }
-
-    // Filter by date range
-    if (dateRange?.from) {
-      const fromDate = dateRange.from;
-      const toDate = dateRange.to || new Date(); // If 'to' is not set, assume today
-      filtered = filtered.filter((t) => {
-        const transactionDate = new Date(t.date);
-        return transactionDate >= fromDate && transactionDate <= toDate;
-      });
-    }
-
-    return filtered;
-  }, [transactions, searchTerm, selectedAccounts, selectedCategories, dateRange, availableAccountOptions.length, availableCategoryOptions.length]);
-
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
   const handleRowClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsDialogOpen(true);
-  };
-
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-    setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-    setDateRange(undefined);
-  };
-
-  // Multi-select handlers
-  const handleSelectOne = (id: string) => {
-    setSelectedTransactionIds((prev) =>
-      prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedTransactionIds(currentTransactions.map((t) => t.id));
-    } else {
-      setSelectedTransactionIds([]);
-    }
-  };
-
-  const isAllSelectedOnPage =
-    currentTransactions.length > 0 &&
-    currentTransactions.every((t) => selectedTransactionIds.includes(t.id));
-
-  const handleBulkDelete = () => {
-    const transactionsToDelete = selectedTransactionIds.map(id => {
-      const transaction = transactions.find(t => t.id === id);
-      return { id, transfer_id: transaction?.transfer_id };
-    });
-    deleteMultipleTransactions(transactionsToDelete);
-    setSelectedTransactionIds([]);
-    setIsBulkDeleteConfirmOpen(false);
-  };
-
-  // Reset pagination and selection when filters or itemsPerPage change
-  React.useEffect(() => {
-    setCurrentPage(1);
-    setSelectedTransactionIds([]);
-  }, [filteredTransactions, itemsPerPage]);
-
-  const numSelected = selectedTransactionIds.length;
-  const rowCount = currentTransactions.length;
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchTransactions();
-    setIsRefreshing(false);
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsImporting(true);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      delimiter: ';',
-      complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency"];
-        const actualHeaders = results.meta.fields || [];
-        const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
-
-        if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}. Please ensure all columns are present.`);
-          setIsImporting(false);
-          return;
-        }
-
-        const parsedData = results.data as any[];
-        if (parsedData.length === 0) {
-          showError("No data found in CSV.");
-          setIsImporting(false);
-          return;
-        }
-
-        try {
-          // Step 1: Ensure all payees exist
-          const uniqueAccountsData = parsedData.map(row => ({
-            name: row.Account,
-            currency: row.Currency,
-          })).filter(item => item.name);
-
-          await Promise.all(uniqueAccountsData.map(async (acc) => {
-            await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
-          }));
-
-          const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
-          await Promise.all(uniqueVendors.map(name => {
-            const row = parsedData.find(r => r.Vendor === name);
-            const isTransfer = row?.Category === 'Transfer';
-            return ensurePayeeExists(name, isTransfer);
-          }));
-
-          await refetchAllPayees(); // Refresh all payees (including accounts) to ensure accountCurrencyMap is up-to-date
-
-          // Step 2: Prepare transactions for insertion using the now-updated accountCurrencyMap
-          const transactionsToInsert = parsedData.map(row => {
-            const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD';
-            if (!accountCurrency) {
-              console.warn(`Could not determine currency for account: ${row.Account}. Skipping row.`);
-              return null;
-            }
-            return {
-              date: parseDateFromDDMMYYYY(row.Date).toISOString(), // Parse date from DD-MMM-YYYY
-              account: row.Account,
-              vendor: row.Vendor,
-              category: row.Category,
-              amount: parseFloat(row.Amount) || 0,
-              remarks: row.Remarks,
-              currency: accountCurrency,
-            };
-          }).filter((t): t is NonNullable<typeof t> => t !== null);
-
-          if (transactionsToInsert.length === 0) {
-            showError("No valid transactions could be prepared from the CSV. Check account names, amounts, and currency column.");
-            setIsImporting(false);
-            return;
-          }
-
-          // Step 3: Insert transactions
-          const { error } = await supabase.from('transactions').insert(transactionsToInsert);
-          if (error) throw error;
-
-          showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          fetchTransactions(); // Re-fetch transactions to update the display
-        } catch (error: any) {
-          showError(`Import failed: ${error.message}`);
-        } finally {
-          setIsImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
-      },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
-      },
-    });
-  };
-
-  const handleExportClick = () => {
-    if (transactions.length === 0) {
-      showError("No transactions to export.");
-      return;
-    }
-
-    const dataToExport = transactions.map(t => ({
-      "Date": formatDateToDDMMYYYY(t.date), // Format date to DD-MMM-YYYY for export
-      "Account": t.account,
-      "Vendor": t.vendor,
-      "Category": t.category,
-      "Amount": t.amount,
-      "Remarks": t.remarks,
-      "Currency": t.currency,
-    }));
-
-    const csv = Papa.unparse(dataToExport, {
-      delimiter: ';',
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "transactions_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   return (
@@ -332,66 +80,29 @@ const TransactionsPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               All Transactions
-              <div className="flex items-center space-x-2">
-                <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-                  {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                  Import CSV
-                </Button>
-                <Button onClick={handleExportClick} variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export CSV
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                >
-                  {isRefreshing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-4 w-4" />
-                  )}
-                  <span className="sr-only">Refresh Transactions</span>
-                </Button>
-              </div>
+              <TransactionActions
+                numSelected={numSelected}
+                isImporting={isImporting}
+                isRefreshing={isRefreshing}
+                onImportClick={handleImportClick}
+                onExportClick={handleExportClick}
+                onRefresh={handleRefresh}
+                onBulkDeleteClick={() => setIsBulkDeleteConfirmOpen(true)}
+              />
             </CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
-              <Input
-                placeholder="Search vendor or remarks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm w-full"
-              />
-              <MultiSelectDropdown
-                options={availableAccountOptions}
-                selectedValues={selectedAccounts}
-                onSelectChange={setSelectedAccounts}
-                placeholder="Filter by Account"
-              />
-              <MultiSelectDropdown
-                options={availableCategoryOptions}
-                selectedValues={selectedCategories}
-                onSelectChange={setSelectedCategories}
-                placeholder="Filter by Category"
-              />
-              <DateRangePicker dateRange={dateRange} onDateChange={setDateRange} />
-              <Button variant="outline" size="icon" onClick={handleResetFilters} className="shrink-0">
-                <RotateCcw className="h-4 w-4" />
-                <span className="sr-only">Reset Filters</span>
-              </Button>
-            </div>
-            {selectedTransactionIds.length > 0 && (
-              <div className="mt-4 flex items-center gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={() => setIsBulkDeleteConfirmOpen(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Selected ({selectedTransactionIds.length})
-                </Button>
-              </div>
-            )}
+            <TransactionFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              availableAccountOptions={availableAccountOptions}
+              selectedAccounts={selectedAccounts}
+              setSelectedAccounts={setSelectedAccounts}
+              availableCategoryOptions={availableCategoryOptions}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              dateRange={dateRange}
+              onDateChange={setDateRange}
+              onResetFilters={handleResetFilters}
+            />
           </CardHeader>
           <CardContent>
             <input
@@ -401,69 +112,16 @@ const TransactionsPage = () => {
               className="hidden"
               accept=".csv"
             />
-            <div className="border rounded-md overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]">
-                      <Checkbox
-                        checked={isAllSelectedOnPage}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all transactions on current page"
-                      />
-                    </TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Remarks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                        No transactions found matching your filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    currentTransactions.map((transaction) => {
-                      const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
-                      return (
-                        <TableRow key={transaction.id} className="group">
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedTransactionIds.includes(transaction.id)}
-                              onCheckedChange={() => handleSelectOne(transaction.id)}
-                              aria-label={`Select transaction ${transaction.id}`}
-                            />
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {formatDateToDDMMYYYY(transaction.date)} {/* Display formatted date */}
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {transaction.account}
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {transaction.vendor}
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {transaction.category}
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
-                            {formatCurrency(transaction.amount, currentAccountCurrency)}
-                          </TableCell>
-                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {transaction.remarks}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <TransactionsTable
+              currentTransactions={currentTransactions}
+              accountCurrencyMap={accountCurrencyMap}
+              formatCurrency={formatCurrency}
+              selectedTransactionIds={selectedTransactionIds}
+              handleSelectOne={handleSelectOne}
+              handleSelectAll={handleSelectAll}
+              isAllSelectedOnPage={isAllSelectedOnPage}
+              handleRowClick={handleRowClick}
+            />
           </CardContent>
           <CardFooter className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -511,7 +169,7 @@ const TransactionsPage = () => {
           isOpen={isBulkDeleteConfirmOpen}
           onOpenChange={setIsBulkDeleteConfirmOpen}
           onConfirm={handleBulkDelete}
-          title={`Are you sure you want to delete ${selectedTransactionIds.length} transactions?`}
+          title={`Are you sure you want to delete ${numSelected} transactions?`}
           description="This action cannot be undone. All selected transactions and their associated transfer entries (if any) will be permanently deleted."
           confirmText="Delete Selected"
         />
