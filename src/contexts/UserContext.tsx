@@ -70,10 +70,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     fetchUserProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      /*if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-        fetchUserProfile();
-      }*/
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
         fetchUserProfile();
       }
     });
