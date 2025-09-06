@@ -41,7 +41,11 @@ const generateTransactions = async ( // Made async
 
     const isTransfer = Math.random() < 0.2;
     const accountName = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
-    const currencyCode = currencyCodes[Math.floor(Math.random() * currencyCodes.length)];
+    
+    // Ensure currencyCode is always a string, with a fallback to 'USD'
+    const currencyCode = currencyCodes.length > 0 
+      ? currencyCodes[Math.floor(Math.random() * currencyCodes.length)] 
+      : 'USD'; 
 
     let vendorName = baseVendorNames[Math.floor(Math.random() * baseVendorNames.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
@@ -396,6 +400,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       demoData.push(...await generateTransactions(-1, 300, baseAccountNames, baseVendorNames, currenciesToUse));
       demoData.push(...await generateTransactions(-2, 300, baseAccountNames, baseVendorNames, currenciesToUse));
 
+      console.log("Generated demoData length before insert:", demoData.length); // Added console log
       const { error } = await supabase.from('transactions').insert(demoData);
       if (error) throw error;
       showSuccess("Diverse demo data generated successfully!");
