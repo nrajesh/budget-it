@@ -2,9 +2,10 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
-import { type Transaction } from "@/data/finance-data"; // Removed 'accounts as allDefinedAccounts'
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
-import { supabase } from "@/integrations/supabase/client"; // Import supabase
+import { type Transaction } from "@/data/finance-data";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDateToDDMMYYYY } from "@/lib/utils"; // Import formatDateToDDMMYYYY
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -15,14 +16,12 @@ const chartConfig = {
     label: "Balance",
     color: "hsl(var(--chart-1))",
   },
-  // Dynamic account labels will be added here based on fetched data
 } satisfies ChartConfig;
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
-  const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
+  const { formatCurrency, convertAmount } = useCurrency();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
 
-  // Fetch all account names dynamically
   React.useEffect(() => {
     const fetchAccountNames = async () => {
       const { data, error } = await supabase
@@ -40,7 +39,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     fetchAccountNames();
   }, []);
 
-  // Dynamically determine which accounts have transactions in the filtered data
   const accountsToDisplay = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();
     transactions.forEach(t => uniqueAccounts.add(t.account));
@@ -52,7 +50,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
 
-    // Initialize balances for all *possible* accounts to 0 for consistent tracking
     allDefinedAccounts.forEach(account => {
       dailyBalances['initial'] = { ...dailyBalances['initial'], [account]: 0 };
     });
@@ -60,32 +57,28 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     sortedTransactions.forEach(transaction => {
       const date = new Date(transaction.date).toISOString().split('T')[0];
       if (!dailyBalances[date]) {
-        // Carry over previous day's balance if this is the first transaction for the day
         const previousDate = Object.keys(dailyBalances).sort().pop();
         dailyBalances[date] = previousDate ? { ...dailyBalances[previousDate] } : { ...dailyBalances['initial'] };
       }
 
-      // Apply transaction amount to the specific account
       if (dailyBalances[date][transaction.account] !== undefined) {
         dailyBalances[date][transaction.account] += transaction.amount;
       }
     });
 
-    // Convert dailyBalances object to an array of objects for Recharts
     const formattedData = Object.entries(dailyBalances)
-      .filter(([date]) => date !== 'initial') // Remove the initial placeholder
+      .filter(([date]) => date !== 'initial')
       .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
       .map(([date, balances]) => {
-        const obj: { date: string; [key: string]: number | string } = { date };
-        // Only include balances for accounts that are actually being displayed
+        const obj: { date: string; [key: string]: number | string } = { date: formatDateToDDMMYYYY(date) }; // Format date here
         accountsToDisplay.forEach(account => {
-          obj[account] = convertAmount(balances[account] || 0); // Convert balance
+          obj[account] = convertAmount(balances[account] || 0);
         });
         return obj;
       });
 
     return formattedData;
-  }, [transactions, convertAmount, accountsToDisplay, allDefinedAccounts]); // Added allDefinedAccounts to dependencies
+  }, [transactions, convertAmount, accountsToDisplay, allDefinedAccounts]);
 
   const totalBalance = React.useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -96,12 +89,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     }, 0);
   }, [chartData, accountsToDisplay]);
 
-  // Dynamically update chartConfig with fetched account colors
   const dynamicChartConfig = React.useMemo(() => {
     const newConfig = { ...chartConfig };
     allDefinedAccounts.forEach((account, index) => {
-      // Assign a color from a predefined set or generate one
-      const colorIndex = (index % 4) + 1; // Use chart-1 to chart-4 for accounts
+      const colorIndex = (index % 4) + 1;
       newConfig[account as keyof typeof newConfig] = {
         label: account,
         color: `hsl(var(--chart-${colorIndex}))`,
@@ -120,11 +111,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             Total balance: {formatCurrency(totalBalance)}
           </CardDescription>
         </div>
-        {/* Removed MultiSelectDropdown for account selection */}
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
-          config={dynamicChartConfig} // Use dynamicChartConfig
+          config={dynamicChartConfig}
           className="aspect-auto h-[250px] w-full"
         >
           <LineChart
@@ -142,23 +132,20 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-              }}
+              tickFormatter={(value) => value} // Display formatted date directly
             />
             <YAxis
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => formatCurrency(Number(value))} // Format Y-axis labels
+              tickFormatter={(value) => formatCurrency(Number(value))}
             />
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
                   indicator="dashed"
-                  formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} // Format tooltip values
+                  formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`}
                 />
               }
             />
@@ -167,7 +154,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 key={account}
                 dataKey={account}
                 type="monotone"
-                stroke={dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color} // Use dynamicChartConfig
+                stroke={dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color}
                 strokeWidth={2}
                 dot={false}
               />

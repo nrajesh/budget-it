@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/pagination";
 import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
-import { slugify } from "@/lib/utils"; // Import slugify
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { slugify, formatDateToDDMMYYYY } from "@/lib/utils"; // Import formatDateToDDMMYYYY
 
 interface RecentTransactionsProps {
   transactions: Transaction[]; // These are transactions filtered by account
@@ -21,8 +21,8 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
-  const { transactions: allTransactions, accountCurrencyMap } = useTransactions(); // Get all transactions for balance calculation and accountCurrencyMap
-  const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
+  const { transactions: allTransactions, accountCurrencyMap } = useTransactions();
+  const { formatCurrency, convertAmount } = useCurrency();
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
@@ -79,10 +79,11 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
         <CardDescription>Your most recent transactions, filtered by selected accounts and categories.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto"> {/* Added overflow-x-auto here */}
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Date</TableHead> {/* Added Date column */}
                 <TableHead>Vendor / Account</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -92,15 +93,16 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
             <TableBody>
               {currentTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-4 text-muted-foreground"> {/* Adjusted colspan */}
                     No transactions found for the selected filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 currentTransactions.map((transaction) => {
-                  const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency; // Use current account currency
+                  const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
                   return (
                     <TableRow key={transaction.id}>
+                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell> {/* Display formatted date */}
                       <TableCell>
                         <div className="font-medium">{transaction.vendor}</div>
                         <div className="text-sm text-muted-foreground">{transaction.account}</div>
@@ -109,10 +111,10 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                         <Badge variant="outline">{transaction.category}</Badge>
                       </TableCell>
                       <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(transaction.amount, currentAccountCurrency)} {/* Convert and format amount */}
+                        {formatCurrency(transaction.amount, currentAccountCurrency)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(transaction.runningBalance, currentAccountCurrency)} {/* Convert and format running balance */}
+                        {formatCurrency(transaction.runningBalance, currentAccountCurrency)}
                       </TableCell>
                     </TableRow>
                   );
@@ -127,16 +129,15 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious 
-                  onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)} 
-                  disabled={currentPage === 1} 
+                <PaginationPrevious
+                  onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
                 />
               </PaginationItem>
-              {/* Removed individual page numbers */}
               <PaginationItem>
-                <PaginationNext 
-                  onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)} 
-                  disabled={currentPage === totalPages} 
+                <PaginationNext
+                  onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
+                  disabled={currentPage === totalPages}
                 />
               </PaginationItem>
             </PaginationContent>

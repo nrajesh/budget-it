@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { categories } from "@/data/finance-data"; // Removed 'accounts' and 'vendors'
+import { categories } from "@/data/finance-data";
 import { Combobox } from "@/components/ui/combobox";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase
-import { getAccountCurrency } from "@/integrations/supabase/utils"; // Import getAccountCurrency
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { supabase } from "@/integrations/supabase/client";
+import { getAccountCurrency } from "@/integrations/supabase/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatDateToYYYYMMDD } from "@/lib/utils"; // Import formatDateToYYYYMMDD
 
 interface AddTransactionFormValues {
   date: string;
@@ -66,7 +67,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date().toISOString().split("T")[0],
+      date: formatDateToYYYYMMDD(new Date()), // Format for input type="date"
       account: "",
       vendor: "",
       category: "",
@@ -91,7 +92,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     if (isOpen) {
       fetchPayees();
       form.reset({
-        date: new Date().toISOString().split("T")[0],
+        date: formatDateToYYYYMMDD(new Date()), // Format for input type="date"
         account: "",
         vendor: "",
         category: "",
@@ -110,8 +111,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = await getAccountCurrency(accountValue);
-        setAccountCurrencySymbol(currencyCode ? currencySymbols[currencyCode] || currencyCode : '$');
+        const currencyCode = await getAccountCurrency(accountValue); // This will now always return a string
+        setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }

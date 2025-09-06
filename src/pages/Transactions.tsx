@@ -23,14 +23,14 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Input } from "@/components/ui/input";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { slugify } from "@/lib/utils";
+import { slugify, formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils"; // Import date utilities
 import { DateRange } from "react-day-picker";
 import { RotateCcw, Trash2, Upload, Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client"; // Import supabase
-import { Loader2 } from "lucide-react"; // Import Loader2 icon
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import Papa from "papaparse";
 import { ensurePayeeExists, getAccountCurrency } from "@/integrations/supabase/utils";
 import { showSuccess, showError } from "@/utils/toast";
@@ -42,11 +42,11 @@ const TransactionsPage = () => {
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
   const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
-  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions, fetchAccounts, refetchAllPayees } = useTransactions(); // Get accountCurrencyMap and fetchTransactions
+  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions, refetchAllPayees } = useTransactions();
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -189,7 +189,7 @@ const TransactionsPage = () => {
     setSelectedTransactionIds([]);
   }, [filteredTransactions, itemsPerPage]);
 
-  const numSelected = selectedTransactionIds.length; // Corrected from selectedRows
+  const numSelected = selectedTransactionIds.length;
   const rowCount = currentTransactions.length;
 
   const handleRefresh = async () => {
@@ -210,9 +210,9 @@ const TransactionsPage = () => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      delimiter: ';', // Added to handle semicolon-separated CSVs
+      delimiter: ';',
       complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency"]; // Added Currency
+        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency"];
         const actualHeaders = results.meta.fields || [];
         const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
 
@@ -231,45 +231,39 @@ const TransactionsPage = () => {
 
         try {
           // Step 1: Ensure all payees exist
-          // Collect unique accounts with their associated currency from the CSV
           const uniqueAccountsData = parsedData.map(row => ({
             name: row.Account,
-            currency: row.Currency, // Get currency from CSV
+            currency: row.Currency,
           })).filter(item => item.name);
 
-          // Ensure accounts exist, passing the currency from the CSV for new accounts
           await Promise.all(uniqueAccountsData.map(async (acc) => {
             await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
           }));
 
-          // Collect unique vendors
           const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
           await Promise.all(uniqueVendors.map(name => {
             const row = parsedData.find(r => r.Vendor === name);
             const isTransfer = row?.Category === 'Transfer';
-            // For vendors, no specific currency/balance needed, ensurePayeeExists handles creation
             return ensurePayeeExists(name, isTransfer);
           }));
 
-          // IMPORTANT: Refresh all payees (including accounts) to ensure accountCurrencyMap is up-to-date
-          await refetchAllPayees();
+          await refetchAllPayees(); // Refresh all payees (including accounts) to ensure accountCurrencyMap is up-to-date
 
           // Step 2: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
-            // Prioritize currency from accountCurrencyMap (for existing accounts), then from CSV, then default to 'USD'
-            const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD'; 
+            const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD';
             if (!accountCurrency) {
               console.warn(`Could not determine currency for account: ${row.Account}. Skipping row.`);
               return null;
             }
             return {
-              date: new Date(row.Date).toISOString(),
+              date: parseDateFromDDMMYYYY(row.Date).toISOString(), // Parse date from DD-MMM-YYYY
               account: row.Account,
               vendor: row.Vendor,
               category: row.Category,
               amount: parseFloat(row.Amount) || 0,
               remarks: row.Remarks,
-              currency: accountCurrency, // Use the determined currency
+              currency: accountCurrency,
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -284,7 +278,7 @@ const TransactionsPage = () => {
           if (error) throw error;
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          // No need to call refetchAllPayees() again here, as it was called earlier
+          fetchTransactions(); // Re-fetch transactions to update the display
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
         } finally {
@@ -308,17 +302,17 @@ const TransactionsPage = () => {
     }
 
     const dataToExport = transactions.map(t => ({
-      "Date": new Date(t.date).toLocaleDateString(),
+      "Date": formatDateToDDMMYYYY(t.date), // Format date to DD-MMM-YYYY for export
       "Account": t.account,
       "Vendor": t.vendor,
       "Category": t.category,
       "Amount": t.amount,
       "Remarks": t.remarks,
-      "Currency": t.currency, // Added Currency to export
+      "Currency": t.currency,
     }));
 
     const csv = Papa.unparse(dataToExport, {
-      delimiter: ';', // Export with semicolon delimiter
+      delimiter: ';',
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -435,7 +429,7 @@ const TransactionsPage = () => {
                     </TableRow>
                   ) : (
                     currentTransactions.map((transaction) => {
-                      const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency; // Use current account currency
+                      const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
                       return (
                         <TableRow key={transaction.id} className="group">
                           <TableCell>
@@ -446,7 +440,7 @@ const TransactionsPage = () => {
                             />
                           </TableCell>
                           <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {formatDateToDDMMYYYY(transaction.date)} {/* Display formatted date */}
                           </TableCell>
                           <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {transaction.account}
@@ -496,7 +490,6 @@ const TransactionsPage = () => {
                     disabled={currentPage === 1}
                   />
                 </PaginationItem>
-                {/* Removed individual page numbers */}
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}

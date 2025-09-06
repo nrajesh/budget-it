@@ -1,11 +1,11 @@
 "use client"
 
 import * as React from "react"
-import { CalendarIcon, ChevronsLeft, ChevronsRight } from "lucide-react" // Import ChevronsLeft, ChevronsRight
-import { addYears, format } from "date-fns" // Import addYears
+import { CalendarIcon, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { addYears, format } from "date-fns"
 import { DateRange } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
+import { cn, formatDateToDDMMYYYY } from "@/lib/utils" // Import formatDateToDDMMYYYY
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -56,7 +56,7 @@ export function DateRangePicker({
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full sm:w-[300px] justify-start text-left font-normal", // Adjusted width
+              "w-full sm:w-[300px] justify-start text-left font-normal",
               !dateRange && "text-muted-foreground"
             )}
           >
@@ -64,11 +64,11 @@ export function DateRangePicker({
             {dateRange?.from ? (
               dateRange.to ? (
                 <>
-                  {format(dateRange.from, "LLL dd, y")} -{" "}
-                  {format(dateRange.to, "LLL dd, y")}
+                  {formatDateToDDMMYYYY(dateRange.from)} -{" "} {/* Use formatDateToDDMMYYYY */}
+                  {formatDateToDDMMYYYY(dateRange.to)} {/* Use formatDateToDDMMYYYY */}
                 </>
               ) : (
-                format(dateRange.from, "LLL dd, y")
+                formatDateToDDMMYYYY(dateRange.from) // Use formatDateToDDMMYYYY
               )
             ) : (
               <span>Pick a date range</span>
@@ -93,8 +93,8 @@ export function DateRangePicker({
           <Calendar
             initialFocus
             mode="range"
-            month={month} // Control the displayed month
-            onMonthChange={setMonth} // Allow internal calendar navigation to update our state
+            month={month}
+            onMonthChange={setMonth}
             selected={dateRange}
             onSelect={onDateChange}
             numberOfMonths={2}

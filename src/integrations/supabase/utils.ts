@@ -154,10 +154,10 @@ export async function checkIfPayeeIsAccount(name: string): Promise<boolean> {
 /**
  * Fetches the currency of a given account.
  * @param accountName The name of the account.
- * @returns The currency code (e.g., 'USD', 'EUR') or null if not found/error.
+ * @returns The currency code (e.g., 'USD', 'EUR') or 'USD' if not found/error.
  */
-export async function getAccountCurrency(accountName: string): Promise<string | null> {
-  if (!accountName) return null;
+export async function getAccountCurrency(accountName: string): Promise<string> { // Changed return type to string
+  if (!accountName) return 'USD'; // Default to USD if no account name
   try {
     const { data, error } = await supabase
       .from('vendors')
@@ -171,10 +171,10 @@ export async function getAccountCurrency(accountName: string): Promise<string | 
     }
     // The 'accounts' relationship returns an array, even if single() is used on the parent.
     // We expect only one account for a given vendor name marked as an account.
-    return data?.accounts?.[0]?.currency || null;
+    return data?.accounts?.[0]?.currency || 'USD'; // Default to USD
   } catch (error: any) {
     console.error(`Error fetching currency for account "${accountName}": ${error.message}`);
-    return null;
+    return 'USD'; // Default to USD on error
   }
 }
 

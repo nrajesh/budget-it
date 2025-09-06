@@ -23,8 +23,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
     try {
       await ensurePayeeExists(transaction.account, true);
-      const accountCurrency = await getAccountCurrency(transaction.account);
-      if (!accountCurrency) throw new Error(`Could not determine currency for account: ${transaction.account}`);
+      const accountCurrency = await getAccountCurrency(transaction.account); // This will now always return a string
 
       const isTransfer = await checkIfPayeeIsAccount(transaction.vendor);
       if (isTransfer) {
@@ -94,8 +93,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
     try {
       await ensurePayeeExists(updatedTransaction.account, true);
-      const accountCurrency = await getAccountCurrency(updatedTransaction.account);
-      if (!accountCurrency) throw new Error(`Could not determine currency for account: ${updatedTransaction.account}`);
+      const accountCurrency = await getAccountCurrency(updatedTransaction.account); // This will now always return a string
 
       if (isNowTransfer) {
         await ensurePayeeExists(updatedTransaction.vendor, true);
@@ -125,7 +123,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           vendor: updatedTransaction.account,
           amount: newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
+          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${updatedTransaction.vendor})`, `(From ${updatedTransaction.account})`)}` : `Transfer from ${updatedTransaction.account}`,
           date: newDateISO,
           currency: accountCurrency, // Set currency based on account
         };
@@ -178,7 +176,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           vendor: newDebitAccount,
           amount: newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
+          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${newCreditAccount})`, `(From ${newDebitAccount})`)}` : `Transfer from ${newDebitAccount}`,
           currency: accountCurrency, // Set currency based on account
         };
 

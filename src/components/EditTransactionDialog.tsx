@@ -21,22 +21,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/data/finance-data";
 import {
-  Select, // Keep Select for category if not using Combobox there
+  Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { categories } from "@/data/finance-data"; // Removed 'accounts' and 'vendors'
+import { categories } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2 } from "lucide-react";
-import { Combobox } from "@/components/ui/combobox"; // Import Combobox
-import { supabase } from "@/integrations/supabase/client"; // Import supabase
-import { getAccountCurrency } from "@/integrations/supabase/utils"; // Import getAccountCurrency
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { Combobox } from "@/components/ui/combobox";
+import { supabase } from "@/integrations/supabase/client";
+import { getAccountCurrency } from "@/integrations/supabase/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatDateToYYYYMMDD } from "@/lib/utils"; // Import formatDateToYYYYMMDD
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -61,7 +60,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   onOpenChange,
   transaction,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions(); // Get accountCurrencyMap
+  const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions();
   const { currencySymbols } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
@@ -72,7 +71,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       ...transaction,
-      date: new Date(transaction.date).toISOString().split("T")[0],
+      date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
     },
   });
 
@@ -93,28 +92,28 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       fetchPayees();
       form.reset({
         ...transaction,
-        date: new Date(transaction.date).toISOString().split("T")[0],
+        date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
       });
     }
   }, [transaction, form, isOpen, fetchPayees]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
-  const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
+  const isTransfer = allAccounts.includes(vendorValue);
 
   // Effect to update currency symbol when account changes or dialog opens
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
         // Use the map from context for immediate lookup, fallback to DB if not found (shouldn't happen if map is comprehensive)
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
-        setAccountCurrencySymbol(currencyCode ? currencySymbols[currencyCode] || currencyCode : '$');
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue); // This will now always return a string
+        setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]); // Added accountCurrencyMap to dependencies
+  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -136,7 +135,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   };
 
   const handleDelete = () => {
-    deleteTransaction(transaction.id, transaction.transfer_id); // Changed to transfer_id
+    deleteTransaction(transaction.id, transaction.transfer_id);
     onOpenChange(false);
   };
 
@@ -290,7 +289,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         onConfirm={handleDelete}
         title="Are you sure you want to delete this transaction?"
         description={
-          transaction.transfer_id // Changed to transfer_id
+          transaction.transfer_id
             ? "This is a transfer. Deleting it will remove both the debit and credit entries. This action cannot be undone."
             : "This action cannot be undone. This will permanently delete the transaction."
         }
