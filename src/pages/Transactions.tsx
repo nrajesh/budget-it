@@ -25,12 +25,15 @@ import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2, Upload, Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client"; // Import supabase
 import { Loader2 } from "lucide-react"; // Import Loader2 icon
+import Papa from "papaparse";
+import { ensurePayeeExists, getAccountCurrency } from "@/integrations/supabase/utils";
+import { showSuccess, showError } from "@/utils/toast";
 
 const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -40,8 +43,10 @@ const TransactionsPage = () => {
   const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
+  const [isImporting, setIsImporting] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions } = useTransactions(); // Get accountCurrencyMap and fetchTransactions
+  const { transactions, deleteMultipleTransactions, accountCurrencyMap, fetchTransactions, fetchAccounts, refetchAllPayees } = useTransactions(); // Get accountCurrencyMap and fetchTransactions
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -193,6 +198,124 @@ const TransactionsPage = () => {
     setIsRefreshing(false);
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks"];
+        const actualHeaders = results.meta.fields || [];
+        const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
+
+        if (!hasAllHeaders) {
+          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
+          setIsImporting(false);
+          return;
+        }
+
+        const parsedData = results.data as any[];
+        if (parsedData.length === 0) {
+          showError("No data found in CSV.");
+          setIsImporting(false);
+          return;
+        }
+
+        try {
+          // Step 1: Ensure all payees exist
+          const uniqueAccounts = [...new Set(parsedData.map(row => row.Account).filter(Boolean))];
+          const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
+
+          await Promise.all(uniqueAccounts.map(name => ensurePayeeExists(name, true)));
+          await Promise.all(uniqueVendors.map(name => {
+            const row = parsedData.find(r => r.Vendor === name);
+            const isTransfer = row?.Category === 'Transfer';
+            return ensurePayeeExists(name, isTransfer);
+          }));
+
+          // Step 2: Fetch currencies for all accounts involved
+          const currencyPromises = uniqueAccounts.map(name => getAccountCurrency(name));
+          const currencies = await Promise.all(currencyPromises);
+          const currencyMap = new Map(uniqueAccounts.map((name, i) => [name, currencies[i]]));
+
+          const transactionsToInsert = parsedData.map(row => {
+            const accountCurrency = currencyMap.get(row.Account);
+            if (!accountCurrency) {
+              console.warn(`Could not find currency for account: ${row.Account}. Skipping row.`);
+              return null;
+            }
+            return {
+              date: new Date(row.Date).toISOString(),
+              account: row.Account,
+              vendor: row.Vendor,
+              category: row.Category,
+              amount: parseFloat(row.Amount) || 0,
+              remarks: row.Remarks,
+              currency: accountCurrency,
+            };
+          }).filter((t): t is NonNullable<typeof t> => t !== null);
+
+          if (transactionsToInsert.length === 0) {
+            showError("No valid transactions could be prepared from the CSV. Check account names and amounts.");
+            setIsImporting(false);
+            return;
+          }
+
+          // Step 3: Insert transactions
+          const { error } = await supabase.from('transactions').insert(transactionsToInsert);
+          if (error) throw error;
+
+          showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
+          await refetchAllPayees(); // This also calls fetchTransactions
+        } catch (error: any) {
+          showError(`Import failed: ${error.message}`);
+        } finally {
+          setIsImporting(false);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+        }
+      },
+      error: (error: any) => {
+        showError(`CSV parsing error: ${error.message}`);
+        setIsImporting(false);
+      },
+    });
+  };
+
+  const handleExportClick = () => {
+    if (transactions.length === 0) {
+      showError("No transactions to export.");
+      return;
+    }
+
+    const dataToExport = transactions.map(t => ({
+      "Date": new Date(t.date).toLocaleDateString(),
+      "Account": t.account,
+      "Vendor": t.vendor,
+      "Category": t.category,
+      "Amount": t.amount,
+      "Remarks": t.remarks,
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "transactions_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
@@ -201,19 +324,29 @@ const TransactionsPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               All Transactions
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-4 w-4" />
-                )}
-                <span className="sr-only">Refresh Transactions</span>
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
+                  {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                  Import CSV
+                </Button>
+                <Button onClick={handleExportClick} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Refresh Transactions</span>
+                </Button>
+              </div>
             </CardTitle>
             <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
               <Input
@@ -253,6 +386,13 @@ const TransactionsPage = () => {
             )}
           </CardHeader>
           <CardContent>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".csv"
+            />
             <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
