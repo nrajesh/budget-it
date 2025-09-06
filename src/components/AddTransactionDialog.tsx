@@ -36,6 +36,7 @@ interface AddTransactionFormValues {
   category: string;
   amount: number;
   remarks?: string;
+  receivingAmount?: number; // Added for editable receiving amount
 }
 
 const formSchema = z.object({
@@ -45,6 +46,7 @@ const formSchema = z.object({
   category: z.string().min(1, "Category is required"),
   amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   remarks: z.string().optional(),
+  receivingAmount: z.coerce.number().optional(), // Added for editable receiving amount
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
@@ -65,7 +67,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
-  const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
+  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0); // Renamed for clarity
 
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -76,6 +78,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       category: "",
       amount: 0,
       remarks: "",
+      receivingAmount: 0, // Initialize receivingAmount
     },
   });
 
@@ -101,10 +104,11 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
         category: "",
         amount: 0,
         remarks: "",
+        receivingAmount: 0, // Reset receivingAmount
       });
       setAccountCurrencySymbol('$'); // Reset currency symbol
       setDestinationAccountCurrency(null);
-      setDisplayReceivingAmount(0);
+      setAutoCalculatedReceivingAmount(0);
     }
   }, [isOpen, form, fetchPayees]);
 
@@ -139,7 +143,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     fetchDestinationCurrency();
   }, [vendorValue, isTransfer, accountCurrencyMap]);
 
-  // Effect to calculate displayReceivingAmount for transfers with different currencies
+  // Effect to calculate autoCalculatedReceivingAmount for transfers with different currencies
   React.useEffect(() => {
     if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
       const sendingCurrency = accountCurrencyMap.get(accountValue);
@@ -149,14 +153,18 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
           sendingCurrency,
           destinationAccountCurrency
         );
-        setDisplayReceivingAmount(convertedAmount);
+        setAutoCalculatedReceivingAmount(convertedAmount);
+        // Set the form field value to the auto-calculated amount as a suggestion
+        form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
       } else {
-        setDisplayReceivingAmount(0); // No conversion needed or currencies are the same
+        setAutoCalculatedReceivingAmount(0);
+        form.setValue("receivingAmount", 0);
       }
     } else {
-      setDisplayReceivingAmount(0);
+      setAutoCalculatedReceivingAmount(0);
+      form.setValue("receivingAmount", 0);
     }
-  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies]);
+  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies, form]);
 
 
   React.useEffect(() => {
@@ -294,25 +302,35 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
             />
 
             {showReceivingValueField && (
-              <FormItem>
-                <FormLabel>Amount (Receiving)</FormLabel>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                    {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
-                  </span>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      value={displayReceivingAmount.toFixed(2)}
-                      readOnly
-                      className="pl-8 bg-muted"
-                    />
-                  </FormControl>
-                </div>
-                <FormDescription>
-                  This is the estimated amount received in the destination account's currency.
-                </FormDescription>
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="receivingAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount (Receiving)</FormLabel>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                        {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                      </span>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...field}
+                          value={field.value === 0 ? "" : field.value} // Display empty string for 0
+                          onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                          placeholder={autoCalculatedReceivingAmount.toFixed(2)} // Show auto-calculated as placeholder
+                          className="pl-8"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormDescription>
+                      This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             <FormField

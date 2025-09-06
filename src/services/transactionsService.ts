@@ -20,7 +20,7 @@ interface TransactionsServiceProps {
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions }: TransactionsServiceProps) => {
   const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
     const newDateISO = new Date(transaction.date).toISOString();
     const baseRemarks = transaction.remarks || "";
 
@@ -62,7 +62,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           transfer_id: transfer_id,
           account: transaction.vendor,
           vendor: transaction.account,
-          amount: convertedReceivingAmount, // Use converted amount for credit
+          amount: transaction.receivingAmount ?? convertedReceivingAmount, // Use user-provided receivingAmount or fallback to calculated
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${transaction.account})` : `Transfer from ${transaction.account}`,
           currency: destinationAccountCurrency, // Set currency for credit side
