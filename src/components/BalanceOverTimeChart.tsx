@@ -2,8 +2,9 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
-import { type Transaction, accounts as allDefinedAccounts } from "@/data/finance-data"; // Import allDefinedAccounts
+import { type Transaction } from "@/data/finance-data"; // Removed 'accounts as allDefinedAccounts'
 import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { supabase } from "@/integrations/supabase/client"; // Import supabase
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -14,22 +15,30 @@ const chartConfig = {
     label: "Balance",
     color: "hsl(var(--chart-1))",
   },
-  "Checking Account": { // Updated to full name
-    label: "Checking Account",
-    color: "hsl(var(--chart-2))",
-  },
-  "Savings Account": { // Updated to full name
-    label: "Savings Account",
-    color: "hsl(var(--chart-3))",
-  },
-  "Credit Card": { // Updated to full name
-    label: "Credit Card",
-    color: "hsl(var(--chart-4))",
-  },
+  // Dynamic account labels will be added here based on fetched data
 } satisfies ChartConfig;
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
+  const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
+
+  // Fetch all account names dynamically
+  React.useEffect(() => {
+    const fetchAccountNames = async () => {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('name')
+        .eq('is_account', true);
+
+      if (error) {
+        console.error("Error fetching account names for chart:", error.message);
+        setAllDefinedAccounts([]);
+      } else {
+        setAllDefinedAccounts(data.map(item => item.name));
+      }
+    };
+    fetchAccountNames();
+  }, []);
 
   // Dynamically determine which accounts have transactions in the filtered data
   const accountsToDisplay = React.useMemo(() => {
@@ -76,7 +85,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       });
 
     return formattedData;
-  }, [transactions, convertAmount, accountsToDisplay]);
+  }, [transactions, convertAmount, accountsToDisplay, allDefinedAccounts]); // Added allDefinedAccounts to dependencies
 
   const totalBalance = React.useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -86,6 +95,21 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
   }, [chartData, accountsToDisplay]);
+
+  // Dynamically update chartConfig with fetched account colors
+  const dynamicChartConfig = React.useMemo(() => {
+    const newConfig = { ...chartConfig };
+    allDefinedAccounts.forEach((account, index) => {
+      // Assign a color from a predefined set or generate one
+      const colorIndex = (index % 4) + 1; // Use chart-1 to chart-4 for accounts
+      newConfig[account as keyof typeof newConfig] = {
+        label: account,
+        color: `hsl(var(--chart-${colorIndex}))`,
+      };
+    });
+    return newConfig;
+  }, [allDefinedAccounts]);
+
 
   return (
     <Card>
@@ -100,7 +124,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
-          config={chartConfig}
+          config={dynamicChartConfig} // Use dynamicChartConfig
           className="aspect-auto h-[250px] w-full"
         >
           <LineChart
@@ -134,7 +158,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               content={
                 <ChartTooltipContent
                   indicator="dashed"
-                  formatter={(value) => formatCurrency(Number(value))} // Format tooltip values
+                  formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} // Format tooltip values
                 />
               }
             />
@@ -143,7 +167,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 key={account}
                 dataKey={account}
                 type="monotone"
-                stroke={chartConfig[account as keyof typeof chartConfig]?.color}
+                stroke={dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color} // Use dynamicChartConfig
                 strokeWidth={2}
                 dot={false}
               />

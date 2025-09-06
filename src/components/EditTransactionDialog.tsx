@@ -29,11 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { accounts, vendors, categories } from "@/data/finance-data";
+import { categories } from "@/data/finance-data"; // Removed 'accounts' and 'vendors'
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox"; // Import Combobox
+import { supabase } from "@/integrations/supabase/client"; // Import supabase
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -60,6 +61,8 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 }) => {
   const { updateTransaction, deleteTransaction } = useTransactions();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
+  const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
+  const [allVendors, setAllVendors] = React.useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,20 +72,38 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     },
   });
 
-  const accountValue = form.watch("account");
-  const vendorValue = form.watch("vendor");
-  const isTransfer = accounts.includes(vendorValue);
+  const fetchPayees = React.useCallback(async () => {
+    const { data, error } = await supabase.from('vendors').select('name, is_account');
+    if (error) {
+      console.error("Error fetching payees:", error.message);
+      return;
+    }
+    const accounts = data.filter(p => p.is_account).map(p => p.name);
+    const vendors = data.filter(p => !p.is_account).map(p => p.name);
+    setAllAccounts(accounts);
+    setAllVendors(vendors);
+  }, []);
 
   React.useEffect(() => {
-    form.reset({
-      ...transaction,
-      date: new Date(transaction.date).toISOString().split("T")[0],
-    });
-  }, [transaction, form]);
+    if (isOpen) {
+      fetchPayees();
+      form.reset({
+        ...transaction,
+        date: new Date(transaction.date).toISOString().split("T")[0],
+      });
+    }
+  }, [transaction, form, isOpen, fetchPayees]);
+
+  const accountValue = form.watch("account");
+  const vendorValue = form.watch("vendor");
+  const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
 
   React.useEffect(() => {
     if (isTransfer) {
       form.setValue("category", "Transfer");
+    } else if (form.getValues("category") === "Transfer") {
+      // If it was a transfer but now isn't, clear category or set a default
+      form.setValue("category", "");
     }
   }, [isTransfer, form]);
 
@@ -100,13 +121,13 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     onOpenChange(false);
   };
 
-  const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
-  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
+  const baseAccountOptions = allAccounts.map(acc => ({ value: acc, label: acc }));
+  const baseVendorOptions = allVendors.map(v => ({ value: v, label: v }));
 
   // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
     ...option,
-    disabled: option.value === vendorValue && accounts.includes(vendorValue),
+    disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   }));
 
   // Combine vendor and account options for the vendor dropdown
@@ -221,7 +242,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
+                </FormItem>
                 )}
               />
               <DialogFooter className="sm:justify-between pt-4">

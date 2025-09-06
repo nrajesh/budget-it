@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { accounts, vendors, categories } from "@/data/finance-data";
+import { categories } from "@/data/finance-data"; // Removed 'accounts' and 'vendors'
 import { Combobox } from "@/components/ui/combobox";
+import { supabase } from "@/integrations/supabase/client"; // Import supabase
 
 interface AddTransactionFormValues {
   date: string;
@@ -55,6 +56,9 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   onOpenChange,
 }) => {
   const { addTransaction } = useTransactions();
+  const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
+  const [allVendors, setAllVendors] = React.useState<string[]>([]);
+
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -67,18 +71,21 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     },
   });
 
-  const accountValue = form.watch("account");
-  const vendorValue = form.watch("vendor");
-  const isTransfer = accounts.includes(vendorValue);
-
-  React.useEffect(() => {
-    if (isTransfer) {
-      form.setValue("category", "Transfer");
+  const fetchPayees = React.useCallback(async () => {
+    const { data, error } = await supabase.from('vendors').select('name, is_account');
+    if (error) {
+      console.error("Error fetching payees:", error.message);
+      return;
     }
-  }, [isTransfer, form]);
+    const accounts = data.filter(p => p.is_account).map(p => p.name);
+    const vendors = data.filter(p => !p.is_account).map(p => p.name);
+    setAllAccounts(accounts);
+    setAllVendors(vendors);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
+      fetchPayees();
       form.reset({
         date: new Date().toISOString().split("T")[0],
         account: "",
@@ -88,20 +95,33 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
         remarks: "",
       });
     }
-  }, [isOpen, form]);
+  }, [isOpen, form, fetchPayees]);
+
+  const accountValue = form.watch("account");
+  const vendorValue = form.watch("vendor");
+  const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
+
+  React.useEffect(() => {
+    if (isTransfer) {
+      form.setValue("category", "Transfer");
+    } else if (form.getValues("category") === "Transfer") {
+      // If it was a transfer but now isn't, clear category or set a default
+      form.setValue("category", "");
+    }
+  }, [isTransfer, form]);
 
   const onSubmit = (values: AddTransactionFormValues) => {
     addTransaction(values);
     onOpenChange(false);
   };
 
-  const baseAccountOptions = accounts.map(acc => ({ value: acc, label: acc }));
-  const baseVendorOptions = vendors.map(v => ({ value: v, label: v }));
+  const baseAccountOptions = allAccounts.map(acc => ({ value: acc, label: acc }));
+  const baseVendorOptions = allVendors.map(v => ({ value: v, label: v }));
 
   // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
     ...option,
-    disabled: option.value === vendorValue && accounts.includes(vendorValue),
+    disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   }));
 
   // Combine vendor and account options for the vendor dropdown

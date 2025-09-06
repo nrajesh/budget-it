@@ -60,7 +60,7 @@ export type Transaction = {
 };
 
 export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
-export const accounts = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
+// Removed accounts as it will now be fetched from Supabase
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
 
 // Removed transactionsData as it will now be fetched from Supabase

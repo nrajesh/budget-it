@@ -14,7 +14,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Transaction, accounts as allDefinedAccounts, categories as allDefinedCategories } from "@/data/finance-data";
+import { Transaction, categories as allDefinedCategories } from "@/data/finance-data";
 import EditTransactionDialog from "@/components/EditTransactionDialog";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,20 +25,21 @@ import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { RotateCcw, Trash2 } from "lucide-react"; // Import the reset and trash icons
-import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox
-import ConfirmationDialog from "@/components/ConfirmationDialog"; // Import ConfirmationDialog
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
+import { RotateCcw, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client"; // Import supabase
 
 const TransactionsPage = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage, setItemsPerPage] = React.useState(10); // New state for items per page
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
-  const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]); // New state for multi-select
-  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false); // New state for bulk delete confirmation
+  const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
 
-  const { transactions, deleteMultipleTransactions } = useTransactions(); // Use deleteMultipleTransactions
+  const { transactions, deleteMultipleTransactions } = useTransactions();
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -47,12 +48,31 @@ const TransactionsPage = () => {
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
-  const availableAccountOptions = React.useMemo(() => {
-    return allDefinedAccounts.map(account => ({
-      value: slugify(account),
-      label: account,
-    }));
+  // State for dynamically fetched account options
+  const [availableAccountOptions, setAvailableAccountOptions] = React.useState<{ value: string; label: string }[]>([]);
+
+  // Fetch available accounts dynamically
+  const fetchAvailableAccounts = React.useCallback(async () => {
+    const { data, error } = await supabase
+      .from('vendors')
+      .select('name')
+      .eq('is_account', true);
+
+    if (error) {
+      console.error("Error fetching account names:", error.message);
+      setAvailableAccountOptions([]);
+    } else {
+      const options = data.map(item => ({
+        value: slugify(item.name),
+        label: item.name,
+      }));
+      setAvailableAccountOptions(options);
+    }
   }, []);
+
+  React.useEffect(() => {
+    fetchAvailableAccounts();
+  }, [fetchAvailableAccounts]);
 
   const availableCategoryOptions = React.useMemo(() => {
     return allDefinedCategories.map(category => ({
@@ -63,9 +83,16 @@ const TransactionsPage = () => {
 
   // Initialize selected filters to "all" by default
   React.useEffect(() => {
-    setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-    setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-  }, [availableAccountOptions, availableCategoryOptions]);
+    if (availableAccountOptions.length > 0) {
+      setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
+    }
+  }, [availableAccountOptions]);
+
+  React.useEffect(() => {
+    if (availableCategoryOptions.length > 0) {
+      setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
+    }
+  }, [availableCategoryOptions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = transactions;
@@ -103,7 +130,7 @@ const TransactionsPage = () => {
     return filtered;
   }, [transactions, searchTerm, selectedAccounts, selectedCategories, dateRange, availableAccountOptions.length, availableCategoryOptions.length]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage); // Use itemsPerPage
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
@@ -145,7 +172,7 @@ const TransactionsPage = () => {
       return { id, transfer_id: transaction?.transfer_id };
     });
     deleteMultipleTransactions(transactionsToDelete);
-    setSelectedTransactionIds([]); // Clear selection after deletion
+    setSelectedTransactionIds([]);
     setIsBulkDeleteConfirmOpen(false);
   };
 
@@ -154,6 +181,9 @@ const TransactionsPage = () => {
     setCurrentPage(1);
     setSelectedTransactionIds([]);
   }, [filteredTransactions, itemsPerPage]);
+
+  const numSelected = selectedTransactionIds.length; // Corrected from selectedRows
+  const rowCount = currentTransactions.length;
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -289,7 +319,7 @@ const TransactionsPage = () => {
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || totalPages === 0}
                   />
                 </PaginationItem>
               </PaginationContent>
