@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
-import { categories } from '@/data/finance-data'; // Needed for category filtering in add/update
+// import { categories } from '@/data/finance-data'; // Not directly used in this service, can be removed if not needed elsewhere
 
 interface TransactionToDelete {
   id: string;
@@ -86,7 +86,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
     }
   };
 
-  const updateTransaction = async (updatedTransaction: Transaction, receivingAmount?: number) => {
+  const updateTransaction = async (updatedTransaction: Transaction, receivingAmount?: number | null) => {
     try {
       const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
       if (!originalTransaction) {
@@ -127,7 +127,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           remarks: updatedTransaction.remarks,
           currency: sendingAccountCurrency, // Ensure currency is correct for sending side
         };
-        updates.push(Promise.resolve(supabase.from('transactions').update(currentTransactionUpdatePayload).eq('id', updatedTransaction.id).select('*')));
+        updates.push(supabase.from('transactions').update(currentTransactionUpdatePayload).eq('id', updatedTransaction.id).select('*') as unknown as Promise<any>);
 
         // Update the other linked transaction
         let otherTransactionAmount = 0;
@@ -135,13 +135,13 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           // For same currency, the other side is simply the negative of the current amount
           otherTransactionAmount = -updatedTransaction.amount;
         } else {
-          // For cross-currency, use the provided receivingAmount or calculate
+          // For cross-currency, use the provided receivingAmount if it's not null, otherwise calculate
           const calculatedReceivingAmount = convertBetweenCurrencies(
             Math.abs(updatedTransaction.amount),
             sendingAccountCurrency,
             receivingAccountCurrency
           );
-          otherTransactionAmount = receivingAmount ?? calculatedReceivingAmount;
+          otherTransactionAmount = (receivingAmount !== null && receivingAmount !== undefined) ? receivingAmount : calculatedReceivingAmount;
         }
 
         const otherTransactionUpdatePayload = {
@@ -153,7 +153,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           remarks: otherTransaction.remarks, // Keep original remarks for the other side
           currency: receivingAccountCurrency, // Ensure currency is correct for receiving side
         };
-        updates.push(Promise.resolve(supabase.from('transactions').update(otherTransactionUpdatePayload).eq('id', otherTransaction.id).select('*')));
+        updates.push(supabase.from('transactions').update(otherTransactionUpdatePayload).eq('id', otherTransaction.id).select('*') as unknown as Promise<any>);
 
         await Promise.all(updates);
         showSuccess("Transfer transactions updated successfully!");

@@ -46,7 +46,7 @@ const formSchema = z.object({
   amount: z.coerce.number(),
   remarks: z.string().optional(),
   category: z.string().min(1, "Category is required"),
-  receivingAmount: z.coerce.number().optional(), // Added for editable receiving amount
+  receivingAmount: z.coerce.number().optional().nullable(), // Allow null for empty input
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
@@ -65,7 +65,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   transaction,
   onUpdateSuccess,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions();
+  const { updateTransaction, deleteTransaction, accountCurrencyMap, transactions: allTransactions } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
@@ -82,7 +82,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     defaultValues: {
       ...transaction,
       date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
-      receivingAmount: 0, // Initialize receivingAmount
+      receivingAmount: null, // Initialize as null for empty input
     },
   });
 
@@ -106,29 +106,33 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     if (isCurrentTransactionTransfer) {
       const currentReceivingAccountCurrency = accountCurrencyMap.get(transaction.vendor) || await getAccountCurrency(transaction.vendor);
       setReceivingAccountCurrencyCode(currentReceivingAccountCurrency);
-      setIsSameCurrencyTransfer(currentSendingAccountCurrency === currentReceivingAccountCurrency);
+      const sameCurrency = currentSendingAccountCurrency === currentReceivingAccountCurrency;
+      setIsSameCurrencyTransfer(sameCurrency);
 
-      // Set receivingAmount for cross-currency transfers
-      if (currentSendingAccountCurrency !== currentReceivingAccountCurrency) {
+      if (!sameCurrency) {
+        // For cross-currency transfers, find the linked transaction to get its amount
+        const linkedTransaction = allTransactions.find(t => t.transfer_id === transaction.transfer_id && t.id !== transaction.id);
+        const initialReceivingAmount = linkedTransaction ? Math.abs(linkedTransaction.amount) : 0;
+
         const convertedAmount = convertBetweenCurrencies(
           Math.abs(transaction.amount),
           currentSendingAccountCurrency,
           currentReceivingAccountCurrency
         );
         setAutoCalculatedReceivingAmount(convertedAmount);
-        // Set the form field value to the auto-calculated amount as a suggestion
-        form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
+        // Set the form field value to the actual receiving amount from the linked transaction
+        form.setValue("receivingAmount", parseFloat(initialReceivingAmount.toFixed(2)));
       } else {
         setAutoCalculatedReceivingAmount(0);
-        form.setValue("receivingAmount", 0);
+        form.setValue("receivingAmount", null); // Reset to null for same-currency transfers
       }
     } else {
       setReceivingAccountCurrencyCode(null);
       setIsSameCurrencyTransfer(false);
       setAutoCalculatedReceivingAmount(0);
-      form.setValue("receivingAmount", 0);
+      form.setValue("receivingAmount", null); // Reset to null for non-transfers
     }
-  }, [transaction, accountCurrencyMap, convertBetweenCurrencies, form]);
+  }, [transaction, accountCurrencyMap, convertBetweenCurrencies, form, allTransactions]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -136,7 +140,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       form.reset({
         ...transaction,
         date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
-        receivingAmount: 0, // Reset receivingAmount
+        receivingAmount: null, // Reset to null for empty input
       });
       setIsSaving(false); // Reset saving state when dialog opens
     }
@@ -155,10 +159,8 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         receivingAccountCurrencyCode
       );
       setAutoCalculatedReceivingAmount(convertedAmount);
-      // Update the form field value to the auto-calculated amount as a suggestion
-      form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
     }
-  }, [amountValue, isTransfer, isSameCurrencyTransfer, sendingAccountCurrencyCode, receivingAccountCurrencyCode, convertBetweenCurrencies, form]);
+  }, [amountValue, isTransfer, isSameCurrencyTransfer, sendingAccountCurrencyCode, receivingAccountCurrencyCode, convertBetweenCurrencies]);
 
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -171,7 +173,10 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
           date: new Date(values.date).toISOString(),
           currency: sendingAccountCurrencyCode, // Ensure currency is updated to current account currency
         },
-        isTransfer && !isSameCurrencyTransfer ? values.receivingAmount : undefined // Pass receivingAmount only for cross-currency transfers
+        // Pass receivingAmount only for cross-currency transfers, and only if it's not null
+        isTransfer && !isSameCurrencyTransfer && values.receivingAmount !== null
+          ? values.receivingAmount
+          : undefined
       );
       onUpdateSuccess(); // Notify parent component of success
       onOpenChange(false);
@@ -328,9 +333,9 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                             type="number"
                             step="0.01"
                             {...field}
-                            value={field.value === 0 ? "" : field.value} // Display empty string for 0
-                            onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                            placeholder={autoCalculatedReceivingAmount.toFixed(2)} // Show auto-calculated as placeholder
+                            value={field.value === null ? "" : field.value} // Display empty string for null
+                            onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
+                            placeholder={autoCalculatedReceivingAmount.toFixed(2)} // Always show auto-calculated as placeholder
                             className="pl-8"
                           />
                         </FormControl>
