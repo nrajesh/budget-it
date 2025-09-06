@@ -202,7 +202,7 @@ const AccountsPage = () => {
                   </TableRow>
                 ) : (
                   currentAccounts.map((account) => (
-                    <TableRow key={account.id} data-state={selectedRows.includes(account.id) && "selected"}>
+                    <TableRow key={account.id} data-state={selectedRows.includes(account.id) && "selected"} onDoubleClick={() => handleEditClick(account)}>
                       <TableCell>
                         <Checkbox
                           checked={selectedRows.includes(account.id)}

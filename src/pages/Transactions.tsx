@@ -291,22 +291,22 @@ const TransactionsPage = () => {
                               aria-label={`Select transaction ${transaction.id}`}
                             />
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {new Date(transaction.date).toLocaleDateString()}
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {transaction.account}
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {transaction.vendor}
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {transaction.category}
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
                             {formatCurrency(transaction.amount, currentAccountCurrency)}
                           </TableCell>
-                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                          <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                             {transaction.remarks}
                           </TableCell>
                         </TableRow>

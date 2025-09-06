@@ -178,24 +178,26 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="is_account"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={!!payee || isAccountOnly}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Is this an account?</FormLabel>
-                  </div>
-                </FormItem>
-              )}
-            />
+            {!(payee && payee.is_account) && ( // Only render if not editing an account
+              <FormField
+                control={form.control}
+                name="is_account"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!!payee || isAccountOnly}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Is this an account?</FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
             {isAccount && (
               <div className="space-y-4 p-4 border rounded-md">
                 <FormField
