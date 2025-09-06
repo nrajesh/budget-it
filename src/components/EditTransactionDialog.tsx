@@ -125,29 +125,15 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
-        const currencyCode = await getAccountCurrency(vendorValue);
+        // Prioritize local map, then fallback to Supabase call
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
         setDestinationAccountCurrency(currencyCode);
       } else {
         setDestinationAccountCurrency(null);
       }
     };
     fetchDestinationCurrency();
-  }, [vendorValue, isTransfer]);
-
-  // Effect to calculate and display receiving amount for cross-currency transfers
-  React.useEffect(() => {
-    if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
-      const sourceCurrency = accountCurrencyMap.get(accountValue);
-      if (sourceCurrency && sourceCurrency !== destinationAccountCurrency) {
-        const convertedAmount = convertBetweenCurrencies(Math.abs(amountValue), sourceCurrency, destinationAccountCurrency);
-        setDisplayReceivingAmount(convertedAmount);
-      } else {
-        setDisplayReceivingAmount(Math.abs(amountValue)); // Same currency, receiving amount is absolute sending amount
-      }
-    } else {
-      setDisplayReceivingAmount(0);
-    }
-  }, [isTransfer, amountValue, accountValue, vendorValue, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies]);
+  }, [vendorValue, isTransfer, accountCurrencyMap]); // Added accountCurrencyMap to dependencies
 
 
   React.useEffect(() => {

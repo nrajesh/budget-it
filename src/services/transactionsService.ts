@@ -88,17 +88,9 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
   const updateTransaction = async (updatedTransaction: Transaction) => {
     try {
-      // Ensure the account exists and get its currency
-      await ensurePayeeExists(updatedTransaction.account, true);
-      const accountCurrency = await getAccountCurrency(updatedTransaction.account);
-
-      // Ensure the vendor exists (and is correctly marked as account if it's a transfer destination)
-      const isTransferDestination = await checkIfPayeeIsAccount(updatedTransaction.vendor);
-      if (isTransferDestination) {
-        await ensurePayeeExists(updatedTransaction.vendor, true);
-      } else {
-        await ensurePayeeExists(updatedTransaction.vendor, false);
-      }
+      // Get currency from the local map, assuming the account exists and its currency is known
+      // No need to call ensurePayeeExists or checkIfPayeeIsAccount as the UI only allows selecting existing payees
+      const accountCurrency = transactions.find(t => t.id === updatedTransaction.id)?.currency || 'USD'; // Fallback to existing currency or USD
 
       const newDateISO = new Date(updatedTransaction.date).toISOString();
 
@@ -109,7 +101,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         category: updatedTransaction.category,
         amount: updatedTransaction.amount,
         remarks: updatedTransaction.remarks,
-        currency: accountCurrency, // Always update currency based on the account
+        currency: accountCurrency, // Use the currency from the original transaction or a default
         transfer_id: updatedTransaction.transfer_id || null, // Keep existing transfer_id or set to null
       }).eq('id', updatedTransaction.id);
 
@@ -122,7 +114,6 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       setTransactions(prevTransactions =>
         prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
       );
-      // refetchAllPayees(); // Defer this call as it's not immediately needed on the transactions screen
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
