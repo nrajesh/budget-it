@@ -4,7 +4,7 @@ import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount } from '@/integrations/supabase/utils';
-import { Payee } from '@/components/AddEditPayeeDialog'; // Import Payee type
+import { Payee } from '@/components/AddEditPayeeDialog';
 
 interface TransactionToDelete {
   id: string;
@@ -13,17 +13,17 @@ interface TransactionToDelete {
 
 interface TransactionsContextType {
   transactions: Transaction[];
-  vendors: Payee[]; // Added vendors state
-  accounts: Payee[]; // Added accounts state
+  vendors: Payee[];
+  accounts: Payee[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
   clearAllTransactions: () => void;
   generateDiverseDemoData: () => void;
-  fetchVendors: () => Promise<void>; // Expose fetchVendors
-  fetchAccounts: () => Promise<void>; // Expose fetchAccounts
-  refetchAllPayees: () => Promise<void>; // Expose combined refetch
+  fetchVendors: () => Promise<void>;
+  fetchAccounts: () => Promise<void>;
+  refetchAllPayees: () => Promise<void>;
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -32,8 +32,8 @@ const TransactionsContext = React.createContext<TransactionsContextType | undefi
 const generateTransactions = async (
   monthOffset: number,
   count: number,
-  baseAccountNames: string[],
-  baseVendorNames: string[],
+  existingAccountNames: string[], // Now receives pre-created account names
+  existingVendorNames: string[], // Now receives pre-created vendor names
   currencyCodes: string[],
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
@@ -46,50 +46,29 @@ const generateTransactions = async (
     const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
 
     const isTransfer = Math.random() < 0.2;
-    const accountName = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
+    const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
     
     const currencyCode = currencyCodes.length > 0 
       ? currencyCodes[Math.floor(Math.random() * currencyCodes.length)] 
       : 'USD'; 
 
-    let vendorName = baseVendorNames[Math.floor(Math.random() * baseVendorNames.length)];
+    let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
-    // Ensure the primary account exists in the database
-    const primaryAccountId = await ensurePayeeExists(accountName, true);
-    if (!primaryAccountId) {
-      console.error(`[generateTransactions] Failed to ensure primary account "${accountName}" exists. Skipping transaction.`);
-      continue;
-    }
-
     if (isTransfer) {
-      let destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
+      let destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
       while (destAccount === accountName) {
-        destAccount = baseAccountNames[Math.floor(Math.random() * baseAccountNames.length)];
+        destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
       }
       vendorName = destAccount;
       categoryName = 'Transfer';
       amountValue = Math.abs(amountValue);
-
-      // Ensure the destination account exists in the database
-      const destAccountId = await ensurePayeeExists(destAccount, true);
-      if (!destAccountId) {
-        console.error(`[generateTransactions] Failed to ensure destination account "${destAccount}" exists. Skipping transfer.`);
-        continue;
-      }
-
     } else {
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
         amountValue = -amountValue;
       } else if (categoryName === 'Salary') {
         amountValue = Math.abs(amountValue) * 5;
-      }
-      // Ensure the regular vendor exists in the database
-      const regularVendorId = await ensurePayeeExists(vendorName, false);
-      if (!regularVendorId) {
-        console.error(`[generateTransactions] Failed to ensure regular vendor "${vendorName}" exists. Skipping transaction.`);
-        continue;
       }
     }
 
@@ -113,7 +92,6 @@ const generateTransactions = async (
         remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
       };
       sampleTransactions.push(debitTransaction);
-      console.log(`[generateTransactions]   Added debit transfer: ${JSON.stringify(debitTransaction)}`);
 
       const creditTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
@@ -125,13 +103,11 @@ const generateTransactions = async (
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
       };
       sampleTransactions.push(creditTransaction);
-      console.log(`[generateTransactions]   Added credit transfer: ${JSON.stringify(creditTransaction)}`);
     } else {
       const singleTransaction: Omit<Transaction, 'id' | 'created_at'> = {
         ...baseTransactionDetails,
       };
       sampleTransactions.push(singleTransaction);
-      console.log(`[generateTransactions]   Added single transaction: ${JSON.stringify(singleTransaction)}`);
     }
   }
   return sampleTransactions;
@@ -140,8 +116,8 @@ const generateTransactions = async (
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { availableCurrencies, convertAmount } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
-  const [vendors, setVendors] = React.useState<Payee[]>([]); // New state for vendors
-  const [accounts, setAccounts] = React.useState<Payee[]>([]); // New state for accounts
+  const [vendors, setVendors] = React.useState<Payee[]>([]);
+  const [accounts, setAccounts] = React.useState<Payee[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTransactions = React.useCallback(async () => {
@@ -212,7 +188,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   React.useEffect(() => {
     fetchTransactions();
-    refetchAllPayees(); // Fetch vendors and accounts on initial load
+    refetchAllPayees();
   }, [fetchTransactions, refetchAllPayees]);
 
   const addTransaction = React.useCallback(async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => {
@@ -269,7 +245,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         showSuccess("Transaction added successfully!");
       }
       fetchTransactions();
-      refetchAllPayees(); // Refresh payees after adding transaction
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
     }
@@ -388,7 +364,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         showSuccess("Transaction updated successfully!");
       }
       fetchTransactions();
-      refetchAllPayees(); // Refresh payees after updating transaction
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
@@ -406,7 +382,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         showSuccess("Transaction deleted successfully!");
       }
       fetchTransactions();
-      refetchAllPayees(); // Refresh payees after deleting transaction
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
     }
@@ -437,7 +413,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       showSuccess(`${transactionsToDelete.length} transactions deleted successfully!`);
       fetchTransactions();
-      refetchAllPayees(); // Refresh payees after deleting multiple transactions
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to delete multiple transactions: ${error.message}`);
     }
@@ -448,10 +424,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       if (error) throw error;
       setTransactions([]);
-      setVendors([]); // Clear vendors state
-      setAccounts([]); // Clear accounts state
+      setVendors([]);
+      setAccounts([]);
       showSuccess("All transactions cleared successfully!");
-      refetchAllPayees(); // Re-fetch all payees to update the lists
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to clear transactions: ${error.message}`);
     }
@@ -459,23 +435,50 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const generateDiverseDemoData = React.useCallback(async () => {
     try {
-      await clearAllTransactions();
+      await clearAllTransactions(); // Clear existing data first
 
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
 
-      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, baseAccountNames, baseVendorNames, currenciesToUse));
-      demoData.push(...await generateTransactions(-1, 300, baseAccountNames, baseVendorNames, currenciesToUse));
-      demoData.push(...await generateTransactions(-2, 300, baseAccountNames, baseVendorNames, currenciesToUse));
+      // Step 1: Pre-create all accounts
+      console.log("[generateDiverseDemoData] Pre-creating accounts...");
+      const createdAccountNames: string[] = [];
+      for (const name of baseAccountNames) {
+        const id = await ensurePayeeExists(name, true);
+        if (id) createdAccountNames.push(name);
+      }
+      console.log(`[generateDiverseDemoData] Pre-created ${createdAccountNames.length} accounts.`);
 
-      console.log("[generateDiverseDemoData] Generated demoData length before insert:", demoData.length);
-      const { error } = await supabase.from('transactions').insert(demoData);
-      if (error) throw error;
-      showSuccess("Diverse demo data generated successfully!");
+      // Step 2: Pre-create all regular vendors
+      console.log("[generateDiverseDemoData] Pre-creating regular vendors...");
+      const createdVendorNames: string[] = [];
+      for (const name of baseVendorNames) {
+        const id = await ensurePayeeExists(name, false);
+        if (id) createdVendorNames.push(name);
+      }
+      console.log(`[generateDiverseDemoData] Pre-created ${createdVendorNames.length} regular vendors.`);
+
+      // Step 3: Generate transactions using the pre-created names
+      console.log("[generateDiverseDemoData] Generating transaction data...");
+      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, currenciesToUse));
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, currenciesToUse));
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, currenciesToUse));
+      console.log(`[generateDiverseDemoData] Generated ${demoData.length} raw transactions.`);
+
+      // Step 4: Batch insert transactions
+      if (demoData.length > 0) {
+        console.log("[generateDiverseDemoData] Inserting generated transactions into Supabase...");
+        const { error } = await supabase.from('transactions').insert(demoData);
+        if (error) throw error;
+        showSuccess("Diverse demo data generated successfully!");
+      } else {
+        showError("No demo data was generated to insert.");
+      }
+      
       fetchTransactions();
-      refetchAllPayees(); // Re-fetch all payees to update the lists
+      refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     }
@@ -483,8 +486,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const value = React.useMemo(() => ({
     transactions,
-    vendors, // Include vendors in context value
-    accounts, // Include accounts in context value
+    vendors,
+    accounts,
     addTransaction,
     updateTransaction,
     deleteTransaction,
