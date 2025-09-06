@@ -322,13 +322,14 @@ const ProfilePage = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="url" className="mt-4 space-y-4">
-              {/* Removed FormField and FormMessage, directly using Input */}
               <div>
-                <FormLabel>Avatar URL</FormLabel>
+                <label htmlFor="avatar-url-input" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Avatar URL</label>
                 <Input
+                  id="avatar-url-input"
                   placeholder="https://example.com/avatar.jpg"
                   value={form.watch("avatar_url") || ""}
                   onChange={(e) => form.setValue("avatar_url", e.target.value)}
+                  className="mt-2"
                 />
               </div>
               {form.watch("avatar_url") && (
@@ -351,10 +352,9 @@ const ProfilePage = () => {
               )}
             </TabsContent>
             <TabsContent value="upload" className="mt-4 space-y-4">
-              {/* Removed FormItem and FormMessage, directly using label and Input */}
               <div>
-                <FormLabel>Upload Image</FormLabel>
-                <Input type="file" accept="image/*" onChange={handleFileChange} />
+                <label htmlFor="avatar-upload-input" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Upload Image</label>
+                <Input id="avatar-upload-input" type="file" accept="image/*" onChange={handleFileChange} className="mt-2" />
               </div>
               {filePreview && (
                 <div className="relative w-24 h-24 mx-auto">
