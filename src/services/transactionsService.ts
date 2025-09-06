@@ -21,32 +21,33 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
   const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
-    const newDateISO = new Date(transaction.date).toISOString();
-    const baseRemarks = transaction.remarks || "";
+    const { receivingAmount, ...restOfTransaction } = transaction; // Extract receivingAmount
+    const newDateISO = new Date(restOfTransaction.date).toISOString();
+    const baseRemarks = restOfTransaction.remarks || "";
 
     try {
-      await ensurePayeeExists(transaction.account, true);
-      const accountCurrency = await getAccountCurrency(transaction.account); // This will now always return a string
+      await ensurePayeeExists(restOfTransaction.account, true);
+      const accountCurrency = await getAccountCurrency(restOfTransaction.account); // This will now always return a string
 
-      const isTransfer = await checkIfPayeeIsAccount(transaction.vendor);
+      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
       if (isTransfer) {
-        await ensurePayeeExists(transaction.vendor, true);
+        await ensurePayeeExists(restOfTransaction.vendor, true);
       } else {
-        await ensurePayeeExists(transaction.vendor, false);
+        await ensurePayeeExists(restOfTransaction.vendor, false);
       }
 
       const commonTransactionFields = {
-        ...transaction,
+        ...restOfTransaction, // Use restOfTransaction which excludes receivingAmount
         currency: accountCurrency, // Set currency based on account
         date: newDateISO,
       };
 
       if (isTransfer) {
         const transfer_id = `transfer_${Date.now()}`;
-        const newAmount = Math.abs(transaction.amount);
+        const newAmount = Math.abs(restOfTransaction.amount);
 
         // Get destination account currency for conversion
-        const destinationAccountCurrency = await getAccountCurrency(transaction.vendor);
+        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor);
         const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
 
         const debitTransaction = {
@@ -54,17 +55,17 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           transfer_id: transfer_id,
           amount: -newAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (To ${transaction.vendor})` : `Transfer to ${transaction.vendor}`,
+          remarks: baseRemarks ? `${baseRemarks} (To ${restOfTransaction.vendor})` : `Transfer to ${restOfTransaction.vendor}`,
         };
 
         const creditTransaction = {
           ...commonTransactionFields,
           transfer_id: transfer_id,
-          account: transaction.vendor,
-          vendor: transaction.account,
-          amount: transaction.receivingAmount ?? convertedReceivingAmount, // Use user-provided receivingAmount or fallback to calculated
+          account: restOfTransaction.vendor,
+          vendor: restOfTransaction.account,
+          amount: receivingAmount ?? convertedReceivingAmount, // Use user-provided receivingAmount or fallback to calculated
           category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (From ${transaction.account})` : `Transfer from ${transaction.account}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${restOfTransaction.account})` : `Transfer from ${restOfTransaction.account}`,
           currency: destinationAccountCurrency, // Set currency for credit side
         };
 
