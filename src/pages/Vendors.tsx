@@ -17,14 +17,13 @@ import {
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Edit } from "lucide-react";
+import { PlusCircle, Trash2, Edit, Loader2 } from "lucide-react"; // Import Loader2
 
 const VendorsPage = () => {
   const [vendors, setVendors] = React.useState<Payee[]>([]);
@@ -40,21 +39,45 @@ const VendorsPage = () => {
   const [vendorToDelete, setVendorToDelete] = React.useState<Payee | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
 
-  const { formatCurrency } = useCurrency();
+  const [editingVendorId, setEditingVendorId] = React.useState<string | null>(null);
+  const [editedName, setEditedName] = React.useState<string>("");
+  const [isSavingName, setIsSavingName] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const { formatCurrency, convertAmount } = useCurrency();
 
   const fetchVendors = React.useCallback(async () => {
     setIsLoading(true);
-    const { data, error } = await supabase.from("vendors_with_balance").select("*").eq('is_account', false); // Filter for non-accounts
+    const { data: vendorsData, error } = await supabase
+      .from("vendors_with_balance")
+      .select("*")
+      .eq('is_account', false); // Filter for non-accounts
 
     if (error) {
       showError(`Failed to fetch vendors: ${error.message}`);
       setVendors([]);
     } else {
-      setVendors(data as Payee[]);
+      const vendorsWithTransactions = await Promise.all(
+        vendorsData.map(async (vendor) => {
+          const { data: transactionsSumData, error: sumError } = await supabase
+            .from('transactions')
+            .select('amount')
+            .eq('vendor', vendor.name);
+
+          if (sumError) {
+            console.error(`Error fetching transaction sum for ${vendor.name}:`, sumError.message);
+            return { ...vendor, totalTransactions: 0 };
+          }
+
+          const totalAmount = transactionsSumData.reduce((sum, t) => sum + t.amount, 0);
+          return { ...vendor, totalTransactions: convertAmount(totalAmount) };
+        })
+      );
+      setVendors(vendorsWithTransactions as Payee[]);
     }
     setIsLoading(false);
     setSelectedRows([]);
-  }, []);
+  }, [convertAmount]);
 
   React.useEffect(() => {
     fetchVendors();
@@ -76,11 +99,6 @@ const VendorsPage = () => {
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (vendor: Payee) => {
-    setSelectedVendor(vendor);
-    setIsDialogOpen(true);
-  };
-  
   const handleDeleteClick = (vendor: Payee) => {
     setVendorToDelete(vendor);
     setIsConfirmOpen(true);
@@ -124,6 +142,46 @@ const VendorsPage = () => {
     }
   };
 
+  const startEditing = (vendor: Payee) => {
+    setEditingVendorId(vendor.id);
+    setEditedName(vendor.name);
+    // Use a timeout to ensure the input is rendered before focusing
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+  };
+
+  const handleSaveName = async (vendorId: string, originalName: string) => {
+    if (editedName.trim() === "" || editedName === originalName) {
+      setEditingVendorId(null);
+      return;
+    }
+
+    setIsSavingName(true);
+    try {
+      const { error } = await supabase.rpc('update_vendor_name', {
+        p_vendor_id: vendorId,
+        p_new_name: editedName.trim(),
+      });
+      if (error) throw error;
+      showSuccess("Vendor name updated successfully!");
+      fetchVendors(); // Re-fetch to update the list and transaction sums
+    } catch (error: any) {
+      showError(`Failed to update vendor name: ${error.message}`);
+    } finally {
+      setIsSavingName(false);
+      setEditingVendorId(null);
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, vendor: Payee) => {
+    if (event.key === 'Enter') {
+      event.currentTarget.blur(); // Trigger onBlur to save
+    } else if (event.key === 'Escape') {
+      setEditingVendorId(null); // Cancel editing
+    }
+  };
+
   const numSelected = selectedRows.length;
   const rowCount = currentVendors.length;
 
@@ -145,7 +203,7 @@ const VendorsPage = () => {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Manage Vendors</CardTitle> {/* Updated title */}
+          <CardTitle>Manage Vendors</CardTitle>
           <div className="mt-4">
             <Input
               placeholder="Search by name..."
@@ -168,20 +226,18 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  {/* Removed Type column */}
-                  <TableHead>Balance</TableHead>
-                  <TableHead>Currency</TableHead>
+                  <TableHead>Total Transactions</TableHead> {/* Renamed column */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell> {/* Adjusted colSpan */}
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell> {/* Adjusted colSpan */}
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground"> {/* Adjusted colSpan */}
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground"> {/* Adjusted colSpan */}
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -195,19 +251,34 @@ const VendorsPage = () => {
                           aria-label="Select row"
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{vendor.name}</TableCell>
-                      {/* Removed Type Cell */}
-                      <TableCell>
-                        {vendor.is_account ? formatCurrency(vendor.running_balance || 0, vendor.currency || 'USD') : "-"}
+                      <TableCell className="font-medium">
+                        {editingVendorId === vendor.id ? (
+                          <Input
+                            ref={inputRef}
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            onBlur={() => handleSaveName(vendor.id, vendor.name)}
+                            onKeyDown={(e) => handleKeyDown(e, vendor)}
+                            disabled={isSavingName}
+                            className="h-8"
+                          />
+                        ) : (
+                          <div onClick={() => startEditing(vendor)} className="cursor-pointer hover:text-primary">
+                            {vendor.name}
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell>{vendor.is_account ? vendor.currency : "-"}</TableCell>
+                      <TableCell>
+                        {formatCurrency(vendor.totalTransactions || 0)}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(vendor)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {isSavingName && editingVendorId === vendor.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                        ) : (
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

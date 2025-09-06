@@ -36,6 +36,7 @@ export type Payee = {
   starting_balance: number | null;
   remarks: string | null;
   running_balance: number | null;
+  totalTransactions?: number; // Added for vendors page
 };
 
 const formSchema = z.object({
