@@ -27,7 +27,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatDateToYYYYMMDD } from "@/lib/utils"; // Import formatDateToYYYYMMDD
+import { formatDateToYYYYMMDD } from "@/lib/utils";
 
 interface AddTransactionFormValues {
   date: string;
@@ -36,7 +36,7 @@ interface AddTransactionFormValues {
   category: string;
   amount: number;
   remarks?: string;
-  receivingAmount?: number; // Added for editable receiving amount
+  receivingAmount?: number;
 }
 
 const formSchema = z.object({
@@ -46,7 +46,7 @@ const formSchema = z.object({
   category: z.string().min(1, "Category is required"),
   amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   remarks: z.string().optional(),
-  receivingAmount: z.coerce.number().optional(), // Added for editable receiving amount
+  receivingAmount: z.coerce.number().optional(),
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
@@ -67,18 +67,18 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
-  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0); // Renamed for clarity
+  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
 
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: formatDateToYYYYMMDD(new Date()), // Format for input type="date"
+      date: formatDateToYYYYMMDD(new Date()),
       account: "",
       vendor: "",
       category: "",
       amount: 0,
       remarks: "",
-      receivingAmount: 0, // Initialize receivingAmount
+      receivingAmount: 0,
     },
   });
 
@@ -98,15 +98,15 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     if (isOpen) {
       fetchPayees();
       form.reset({
-        date: formatDateToYYYYMMDD(new Date()), // Format for input type="date"
+        date: formatDateToYYYYMMDD(new Date()),
         account: "",
         vendor: "",
         category: "",
         amount: 0,
         remarks: "",
-        receivingAmount: 0, // Reset receivingAmount
+        receivingAmount: 0,
       });
-      setAccountCurrencySymbol('$'); // Reset currency symbol
+      setAccountCurrencySymbol('$');
       setDestinationAccountCurrency(null);
       setAutoCalculatedReceivingAmount(0);
     }
@@ -115,9 +115,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const amountValue = form.watch("amount");
-  const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
+  const isTransfer = allAccounts.includes(vendorValue);
 
-  // Effect to update currency symbol for sending account when account changes
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
@@ -130,7 +129,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     updateCurrencySymbol();
   }, [accountValue, currencySymbols, accountCurrencyMap]);
 
-  // Effect to fetch destination account currency when vendor changes (if it's an account)
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
@@ -143,18 +141,16 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     fetchDestinationCurrency();
   }, [vendorValue, isTransfer, accountCurrencyMap]);
 
-  // Effect to calculate autoCalculatedReceivingAmount for transfers with different currencies
   React.useEffect(() => {
     if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
       const sendingCurrency = accountCurrencyMap.get(accountValue);
       if (sendingCurrency && sendingCurrency !== destinationAccountCurrency) {
         const convertedAmount = convertBetweenCurrencies(
-          Math.abs(amountValue), // Always use absolute value for conversion display
+          Math.abs(amountValue),
           sendingCurrency,
           destinationAccountCurrency
         );
         setAutoCalculatedReceivingAmount(convertedAmount);
-        // Set the form field value to the auto-calculated amount as a suggestion
         form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
       } else {
         setAutoCalculatedReceivingAmount(0);
@@ -171,7 +167,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     if (isTransfer) {
       form.setValue("category", "Transfer");
     } else if (form.getValues("category") === "Transfer") {
-      // If it was a transfer but now isn't, clear category or set a default
       form.setValue("category", "");
     }
   }, [isTransfer, form]);
@@ -184,16 +179,13 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const baseAccountOptions = allAccounts.map(acc => ({ value: acc, label: acc }));
   const baseVendorOptions = allVendors.map(v => ({ value: v, label: v }));
 
-  // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
     ...option,
     disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   }));
 
-  // Combine vendor and account options for the vendor dropdown
   const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
 
-  // Filter combined vendor options: disable if it's the selected account
   const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
     ...option,
     disabled: option.value === accountValue,
@@ -288,14 +280,14 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Amount (Sending)</FormLabel>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                      {accountCurrencySymbol}
-                    </span>
-                    <FormControl>
+                  <FormControl>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                        {accountCurrencySymbol}
+                      </span>
                       <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
-                    </FormControl>
-                  </div>
+                    </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -308,22 +300,22 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Amount (Receiving)</FormLabel>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                        {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
-                      </span>
-                      <FormControl>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                        </span>
                         <Input
                           type="number"
                           step="0.01"
                           {...field}
-                          value={field.value === 0 ? "" : field.value} // Display empty string for 0
+                          value={field.value === 0 ? "" : field.value}
                           onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                          placeholder={autoCalculatedReceivingAmount.toFixed(2)} // Show auto-calculated as placeholder
+                          placeholder={autoCalculatedReceivingAmount.toFixed(2)}
                           className="pl-8"
                         />
-                      </FormControl>
-                    </div>
+                      </div>
+                    </FormControl>
                     <FormDescription>
                       This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
                     </FormDescription>

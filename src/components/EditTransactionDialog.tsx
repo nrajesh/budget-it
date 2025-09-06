@@ -217,8 +217,54 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               <FormField control={form.control} name="account" render={({ field }) => ( <FormItem> <FormLabel>From Account</FormLabel> <Combobox options={baseAccountOptions} value={field.value} onChange={field.onChange} placeholder="Select an account" searchPlaceholder="Search accounts..." emptyPlaceholder="No account found." /> <FormMessage /> </FormItem> )} />
               <FormField control={form.control} name="vendor" render={({ field }) => ( <FormItem> <FormLabel>{isTransfer ? 'To Account' : 'Vendor'}</FormLabel> <Combobox options={combinedBaseVendorOptions} value={field.value} onChange={field.onChange} placeholder="Select a vendor or account" searchPlaceholder="Search..." emptyPlaceholder="No results found." /> <FormMessage /> </FormItem> )} />
               <FormField control={form.control} name="category" render={({ field }) => ( <FormItem> <FormLabel>Category</FormLabel> <Select onValueChange={field.onChange} value={field.value} disabled={isTransfer}> <FormControl> <SelectTrigger> <SelectValue placeholder="Select a category" /> </SelectTrigger> </FormControl> <SelectContent> {categoryOptions.map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)} </SelectContent> </Select> {isTransfer && <FormDescription>Category is fixed for transfers.</FormDescription>} <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount ({isTransfer ? 'Sending' : 'Transaction'})</FormLabel> <div className="relative"> <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none"> {currencySymbols[sendingAccountCurrencyCode] || sendingAccountCurrencyCode} </span> <FormControl> <Input type="number" step="0.01" {...field} className="pl-8" /> </FormControl> </div> {isTransfer && isSameCurrencyTransfer && ( <FormDescription> This amount will also update the linked transfer transaction. </FormDescription> )} <FormMessage /> </FormItem> )} />
-              {showReceivingValueField && ( <FormField control={form.control} name="receivingAmount" render={({ field }) => ( <FormItem> <FormLabel>Amount (Receiving)</FormLabel> <div className="relative"> <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none"> {currencySymbols[receivingAccountCurrencyCode || 'USD'] || receivingAccountCurrencyCode} </span> <FormControl> <Input type="number" step="0.01" {...field} value={field.value === null ? "" : field.value} onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))} placeholder={autoCalculatedReceivingAmount.toFixed(2)} className="pl-8" /> </FormControl> </div> <FormDescription> Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, receivingAccountCurrencyCode || 'USD')} </FormDescription> <FormMessage /> </FormItem> )} /> )}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount ({isTransfer ? 'Sending' : 'Transaction'})</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {currencySymbols[sendingAccountCurrencyCode] || sendingAccountCurrencyCode}
+                        </span>
+                        <Input type="number" step="0.01" {...field} className="pl-8" />
+                      </div>
+                    </FormControl>
+                    {isTransfer && isSameCurrencyTransfer && ( <FormDescription> This amount will also update the linked transfer transaction. </FormDescription> )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {showReceivingValueField && (
+                <FormField
+                  control={form.control}
+                  name="receivingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (Receiving)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                            {currencySymbols[receivingAccountCurrencyCode || 'USD'] || receivingAccountCurrencyCode}
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...field}
+                            value={field.value === null ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value === "" ? null : parseFloat(e.target.value))}
+                            placeholder={autoCalculatedReceivingAmount.toFixed(2)}
+                            className="pl-8"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription> Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, receivingAccountCurrencyCode || 'USD')} </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField control={form.control} name="remarks" render={({ field }) => ( <FormItem> <FormLabel>Remarks</FormLabel> <FormControl> <Input {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
               <DialogFooter className="sm:justify-between pt-4">
                 <Button type="button" variant="destructive" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isSaving}> <Trash2 className="mr-2 h-4 w-4" /> Delete </Button>
