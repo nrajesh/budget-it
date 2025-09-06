@@ -2,23 +2,28 @@ import * as React from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTheme } from "next-themes";
 import {
+  Home,
+  ArrowRightLeft,
+  BarChart2,
+  Settings,
+  Users,
+  Mountain,
+  LayoutGrid,
   BarChart3,
-  Bell,
+  Phone,
+  ShoppingCart,
+  Newspaper,
+  MessageSquare,
   ChevronDown,
   FileText,
-  LayoutGrid,
-  Mail,
-  MessageSquare,
-  Moon,
-  Mountain,
-  Newspaper,
   Notebook,
-  Phone,
+  Mail,
+  Moon,
   Plus,
-  ShoppingCart,
   User,
-  Users,
+  Bell,
 } from "lucide-react";
+import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +67,14 @@ import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useUser } from "@/contexts/UserContext"; // Import useUser
 import { supabase } from "@/integrations/supabase/client"; // Import supabase for logout
+
+const navItems = [
+  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/transactions", label: "Transactions", icon: ArrowRightLeft },
+  { href: "/payees", label: "Payees", icon: Users },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();

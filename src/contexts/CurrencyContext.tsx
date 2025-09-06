@@ -4,7 +4,7 @@ interface CurrencyContextType {
   selectedCurrency: string;
   setCurrency: (currency: string) => void;
   convertAmount: (amount: number) => number;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number, currencyCode?: string) => string;
   currencySymbols: { [key: string]: string };
   availableCurrencies: { code: string; name: string }[];
 }
@@ -77,11 +77,11 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     return amount * rate;
   }, [selectedCurrency]);
 
-  const formatCurrency = useCallback((amount: number): string => {
-    const convertedAmount = convertAmount(amount);
-    const symbol = currencySymbols[selectedCurrency] || selectedCurrency; // Fallback to code if symbol not found
-    return `${symbol}${convertedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }, [selectedCurrency, convertAmount]);
+  const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
+    const displayCurrency = currencyCode || selectedCurrency;
+    const symbol = currencySymbols[displayCurrency] || displayCurrency;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [selectedCurrency]);
 
   const value = React.useMemo(() => ({
     selectedCurrency,

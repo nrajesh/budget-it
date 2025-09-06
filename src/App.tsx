@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Login = lazy(() => import("@/pages/Login"));
+const Payees = lazy(() => import("@/pages/Payees")); // Added lazy import for Payees
 
 function App() {
   return (
@@ -30,10 +31,11 @@ function App() {
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Index />} />
-                    <Route path="analytics" element={<Analytics />} />
-                    <Route path="transactions" element={<Transactions />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="/transactions" element={<Transactions />} />
+                    <Route path="/payees" element={<Payees />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Route>
