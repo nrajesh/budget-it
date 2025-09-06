@@ -32,37 +32,60 @@ export async function ensurePayeeExists(
     }
 
     if (existingVendor) {
-      // Payee exists, check if its type matches the requested type
-      if (isAccount && (!existingVendor.is_account || !existingVendor.account_id)) {
-        // Existing vendor should be an account but isn't fully set up as one.
-        // Ensure an entry in 'accounts' table exists and link it.
+      // Payee exists
+      if (isAccount) {
+        // It should be an account. Ensure it's correctly set up as one and has a currency.
         let accountId = existingVendor.account_id;
-        if (!accountId) {
-          const { data: newAccount, error: newAccountError } = await supabase
+        let accountCurrency: string | null = null;
+
+        if (accountId) {
+          // Fetch existing account details to check currency
+          const { data: existingAccountData, error: fetchAccountError } = await supabase
             .from('accounts')
-            .insert({
-              currency: options?.currency || 'USD', // Use provided currency or default
-              starting_balance: options?.startingBalance || 0, // Use provided starting balance or default
-              remarks: options?.remarks || `Auto-created account for vendor: ${name}`, // Use provided remarks or default
-            })
-            .select('id')
+            .select('currency')
+            .eq('id', accountId)
             .single();
-          if (newAccountError) throw newAccountError;
-          accountId = newAccount.id;
+
+          if (fetchAccountError && fetchAccountError.code !== 'PGRST116') {
+            throw fetchAccountError;
+          }
+          accountCurrency = existingAccountData?.currency || null;
         }
-        const { error: updateVendorError } = await supabase
-          .from('vendors')
-          .update({ is_account: true, account_id: accountId })
-          .eq('id', existingVendor.id);
-        if (updateVendorError) throw updateVendorError;
-        return existingVendor.id;
-      } else if (!isAccount && existingVendor.is_account) {
-        // Existing vendor is an account, but we're trying to treat it as a regular vendor.
-        // This is a potential conflict. We'll respect the existing 'is_account' status.
-        return existingVendor.id; // Return existing ID, but it's an account
+
+        // If account_id is missing or currency is null, create/update account entry
+        if (!accountId || !accountCurrency) {
+          const { data: upsertedAccount, error: upsertAccountError } = await supabase
+            .from('accounts')
+            .upsert({
+              id: accountId || undefined, // Use existing ID if present, otherwise let Supabase generate
+              currency: options?.currency || accountCurrency || 'USD', // Prioritize options, then existing, then default
+              starting_balance: options?.startingBalance || 0,
+              remarks: options?.remarks || `Auto-created/updated account for vendor: ${name}`,
+            }, { onConflict: 'id' }) // Upsert by ID
+            .select('id, currency')
+            .single();
+
+          if (upsertAccountError) throw upsertAccountError;
+          accountId = upsertedAccount.id;
+          accountCurrency = upsertedAccount.currency;
+        }
+
+        // Ensure vendor is marked as account and linked
+        if (!existingVendor.is_account || existingVendor.account_id !== accountId) {
+          const { error: updateVendorError } = await supabase
+            .from('vendors')
+            .update({ is_account: true, account_id: accountId })
+            .eq('id', existingVendor.id);
+          if (updateVendorError) throw updateVendorError;
+        }
+      } else {
+        // It should be a regular vendor. Ensure it's not marked as an account.
+        // If an existing vendor is an account, but we're trying to treat it as a regular vendor,
+        // we'll prioritize its existing 'is_account' status to avoid unintended data changes.
+        if (existingVendor.is_account) {
+          console.warn(`Attempted to treat existing account "${name}" as a regular vendor. Keeping it as an account.`);
+        }
       }
-      // If existingVendor is already correctly configured (e.g., already an account and isAccount is true,
-      // or already a regular vendor and isAccount is false), just return its ID.
       return existingVendor.id;
     } else {
       // Vendor does not exist, create it
