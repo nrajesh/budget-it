@@ -122,7 +122,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       setTransactions(prevTransactions =>
         prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
       );
-      refetchAllPayees(); // Keep this for aggregated data updates (charts, etc.)
+      // refetchAllPayees(); // Defer this call as it's not immediately needed on the transactions screen
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
