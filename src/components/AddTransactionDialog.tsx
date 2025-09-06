@@ -225,14 +225,16 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Account (Sending)</FormLabel>
-                  <Combobox
-                    options={filteredAccountOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select an account..."
-                    searchPlaceholder="Search accounts..."
-                    emptyPlaceholder="No account found."
-                  />
+                  <FormControl>
+                    <Combobox
+                      options={filteredAccountOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select an account..."
+                      searchPlaceholder="Search accounts..."
+                      emptyPlaceholder="No account found."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -243,14 +245,16 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vendor / Account (Receiving)</FormLabel>
-                   <Combobox
-                    options={filteredCombinedVendorOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select a vendor or account..."
-                    searchPlaceholder="Search..."
-                    emptyPlaceholder="No results found."
-                  />
+                  <FormControl>
+                    <Combobox
+                      options={filteredCombinedVendorOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a vendor or account..."
+                      searchPlaceholder="Search..."
+                      emptyPlaceholder="No results found."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -261,15 +265,17 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                   <Combobox
-                    options={categoryOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select a category..."
-                    searchPlaceholder="Search categories..."
-                    emptyPlaceholder="No category found."
-                    disabled={isTransfer}
-                  />
+                  <FormControl>
+                    <Combobox
+                      options={categoryOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a category..."
+                      searchPlaceholder="Search categories..."
+                      emptyPlaceholder="No category found."
+                      disabled={isTransfer}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
