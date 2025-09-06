@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { showSuccess, showError } from "@/utils/toast"; // Assuming you have these toast utilities
+import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap, DollarSign } from "lucide-react";
 
 const SettingsPage = () => {
@@ -45,7 +45,7 @@ const SettingsPage = () => {
           </CardHeader>
           <CardContent>
             <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
-              <SelectTrigger className="w-full sm:w-[180px]"> {/* Adjusted width */}
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
@@ -78,7 +78,7 @@ const SettingsPage = () => {
           <CardHeader>
             <CardTitle>Generate Demo Data</CardTitle>
             <CardDescription>
-              Generate diverse demo transactions for 6 accounts across 3 currencies.
+              Generate diverse demo transactions.
             </CardDescription>
           </CardHeader>
           <CardContent>

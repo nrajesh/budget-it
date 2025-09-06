@@ -60,22 +60,15 @@ import {
 } from "@/components/ui/select";
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { supabase } from "@/integrations/supabase/client";
-
-interface UserProfile {
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  email: string | null;
-}
+import { useUser } from "@/contexts/UserContext"; // Import useUser
+import { supabase } from "@/integrations/supabase/client"; // Import supabase for logout
 
 const Layout = () => {
   const { setTheme, theme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
+  const { user, userProfile, isLoadingUser } = useUser(); // Use user context
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = React.useState(true);
 
   const getPageTitle = (pathname: string) => {
     switch (pathname) {
@@ -96,51 +89,10 @@ const Layout = () => {
 
   const pageTitle = getPageTitle(location.pathname);
 
-  React.useEffect(() => {
-    const fetchProfile = async () => {
-      setLoadingProfile(true);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data, error } = await supabase
-          .from("user_profile")
-          .select("first_name, last_name, avatar_url, email")
-          .eq("id", user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching user profile:", error.message);
-          setUserProfile({
-            first_name: null,
-            last_name: null,
-            avatar_url: null,
-            email: user.email, // Fallback to auth email
-          });
-        } else if (data) {
-          setUserProfile(data);
-        }
-      } else {
-        setUserProfile(null);
-      }
-      setLoadingProfile(false);
-    };
-
-    fetchProfile();
-
-    // Listen for auth state changes to refetch profile
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-        fetchProfile();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const displayName = userProfile?.first_name && userProfile?.last_name
     ? `${userProfile.first_name} ${userProfile.last_name}`
     : userProfile?.first_name || userProfile?.last_name || "User Name";
-  const displayEmail = userProfile?.email || "user@example.com";
+  const displayEmail = userProfile?.email || user?.email || "user@example.com";
   const displayAvatar = userProfile?.avatar_url || "/placeholder.svg";
   const avatarFallback = (userProfile?.first_name?.charAt(0) || "") + (userProfile?.last_name?.charAt(0) || "");
 
@@ -268,7 +220,7 @@ const Layout = () => {
               <Button
                 variant="ghost"
                 className="h-auto w-full justify-start gap-2 p-2"
-                disabled={loadingProfile}
+                disabled={isLoadingUser}
               >
                 <Avatar className="size-8">
                   <AvatarImage src={displayAvatar} alt={displayName} />
@@ -291,6 +243,12 @@ const Layout = () => {
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                await supabase.auth.signOut();
+                // Optionally redirect to login page
+              }}>
+                Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -347,6 +305,12 @@ const Layout = () => {
                 <DropdownMenuItem>Billing</DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  await supabase.auth.signOut();
+                  // Optionally redirect to login page
+                }}>
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
