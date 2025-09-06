@@ -25,7 +25,7 @@ interface TransactionsContextType {
   accounts: Payee[];
   accountCurrencyMap: Map<string, string>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
-  updateTransaction: (transaction: Transaction, receivingAmount?: number) => void; // Updated signature
+  updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
   clearAllTransactions: () => void;
@@ -41,7 +41,7 @@ interface TransactionsContextType {
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { convertAmount, convertBetweenCurrencies } = useCurrency(); // Get convertBetweenCurrencies
+  const { convertAmount } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [vendors, setVendors] = React.useState<Payee[]>([]);
   const [accounts, setAccounts] = React.useState<Payee[]>([]);
@@ -91,8 +91,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     refetchAllPayees,
     transactions,
     setTransactions,
-    convertBetweenCurrencies, // Pass it here
-  }), [fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies]);
+  }), [fetchTransactions, refetchAllPayees, transactions, setTransactions]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
     fetchTransactions,

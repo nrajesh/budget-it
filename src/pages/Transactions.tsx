@@ -63,7 +63,6 @@ const TransactionsPage = () => {
     handleImportClick,
     handleFileChange,
     handleExportClick,
-    fetchTransactions, // Destructure fetchTransactions
   } = useTransactionManagement();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -72,10 +71,6 @@ const TransactionsPage = () => {
   const handleRowClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsDialogOpen(true);
-  };
-
-  const handleUpdateSuccess = () => {
-    fetchTransactions(); // Re-fetch transactions to update the table
   };
 
   return (
@@ -170,7 +165,6 @@ const TransactionsPage = () => {
             isOpen={isDialogOpen}
             onOpenChange={setIsDialogOpen}
             transaction={selectedTransaction}
-            onUpdateSuccess={handleUpdateSuccess}
           />
         )}
         <ConfirmationDialog

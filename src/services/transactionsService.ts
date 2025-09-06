@@ -2,6 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
+import { categories } from '@/data/finance-data'; // Needed for category filtering in add/update
+import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface TransactionToDelete {
   id: string;
@@ -11,21 +13,21 @@ interface TransactionToDelete {
 interface TransactionsServiceProps {
   fetchTransactions: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
-  transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency:string) => number;
+  transactions: Transaction[]; // To find original transaction for updates
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Add setTransactions
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, convertBetweenCurrencies }: TransactionsServiceProps) => {
+export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions }: TransactionsServiceProps) => {
+  const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
-    const { receivingAmount, ...restOfTransaction } = transaction;
+    const { receivingAmount, ...restOfTransaction } = transaction; // Extract receivingAmount
     const newDateISO = new Date(restOfTransaction.date).toISOString();
     const baseRemarks = restOfTransaction.remarks || "";
 
     try {
       await ensurePayeeExists(restOfTransaction.account, true);
-      const accountCurrency = await getAccountCurrency(restOfTransaction.account);
+      const accountCurrency = await getAccountCurrency(restOfTransaction.account); // This will now always return a string
 
       const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
       if (isTransfer) {
@@ -35,20 +37,22 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       }
 
       const commonTransactionFields = {
-        ...restOfTransaction,
-        currency: accountCurrency,
+        ...restOfTransaction, // Use restOfTransaction which excludes receivingAmount
+        currency: accountCurrency, // Set currency based on account
         date: newDateISO,
       };
 
       if (isTransfer) {
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(restOfTransaction.amount);
+
+        // Get destination account currency for conversion
         const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor);
         const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
 
         const debitTransaction = {
           ...commonTransactionFields,
-          transfer_id,
+          transfer_id: transfer_id,
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${restOfTransaction.vendor})` : `Transfer to ${restOfTransaction.vendor}`,
@@ -56,20 +60,23 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
         const creditTransaction = {
           ...commonTransactionFields,
-          transfer_id,
+          transfer_id: transfer_id,
           account: restOfTransaction.vendor,
           vendor: restOfTransaction.account,
-          amount: receivingAmount ?? convertedReceivingAmount,
+          amount: receivingAmount ?? convertedReceivingAmount, // Use user-provided receivingAmount or fallback to calculated
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${restOfTransaction.account})` : `Transfer from ${restOfTransaction.account}`,
-          currency: destinationAccountCurrency,
+          currency: destinationAccountCurrency, // Set currency for credit side
         };
 
         const { error } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
         if (error) throw error;
         showSuccess("Transfer added successfully!");
       } else {
-        const { error } = await supabase.from('transactions').insert({ ...commonTransactionFields, transfer_id: null });
+        const { error } = await supabase.from('transactions').insert({
+          ...commonTransactionFields,
+          transfer_id: null,
+        });
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
@@ -80,87 +87,34 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
     }
   };
 
-  const updateTransaction = async (updatedTransaction: Transaction, receivingAmount?: number | null) => {
+  const updateTransaction = async (updatedTransaction: Transaction) => {
     try {
+      // Get currency from the local map, assuming the account exists and its currency is known
+      // No need to call ensurePayeeExists or checkIfPayeeIsAccount as the UI only allows selecting existing payees
+      const accountCurrency = transactions.find(t => t.id === updatedTransaction.id)?.currency || 'USD'; // Fallback to existing currency or USD
+
       const newDateISO = new Date(updatedTransaction.date).toISOString();
 
-      if (updatedTransaction.transfer_id) {
-        // This is a transfer. The `updatedTransaction` is always the debit side.
-        const { data: linkedTransactions, error: fetchLinkedError } = await supabase
-          .from('transactions')
-          .select('id')
-          .eq('transfer_id', updatedTransaction.transfer_id)
-          .neq('id', updatedTransaction.id);
+      const { error } = await supabase.from('transactions').update({
+        date: newDateISO,
+        account: updatedTransaction.account,
+        vendor: updatedTransaction.vendor,
+        category: updatedTransaction.category,
+        amount: updatedTransaction.amount,
+        remarks: updatedTransaction.remarks,
+        currency: accountCurrency, // Use the currency from the original transaction or a default
+        transfer_id: updatedTransaction.transfer_id || null, // Keep existing transfer_id or set to null
+      }).eq('id', updatedTransaction.id);
 
-        if (fetchLinkedError) throw fetchLinkedError;
-        if (!linkedTransactions || linkedTransactions.length === 0) throw new Error("Linked transfer transaction not found.");
-        
-        const creditTxId = linkedTransactions[0].id;
-        const sendingAccount = updatedTransaction.account;
-        const receivingAccount = updatedTransaction.vendor;
-
-        const sendingAccountCurrency = await getAccountCurrency(sendingAccount);
-        const receivingAccountCurrency = await getAccountCurrency(receivingAccount);
-        const isSameCurrencyTransfer = sendingAccountCurrency === receivingAccountCurrency;
-
-        // Debit Payload
-        const debitUpdatePayload = {
-          date: newDateISO,
-          account: sendingAccount,
-          vendor: receivingAccount,
-          category: 'Transfer',
-          amount: -Math.abs(updatedTransaction.amount),
-          remarks: updatedTransaction.remarks,
-          currency: sendingAccountCurrency,
-        };
-
-        // Credit Payload
-        let creditAmount = 0;
-        if (isSameCurrencyTransfer) {
-          creditAmount = Math.abs(updatedTransaction.amount);
-        } else {
-          const calculatedReceivingAmount = convertBetweenCurrencies(Math.abs(updatedTransaction.amount), sendingAccountCurrency, receivingAccountCurrency);
-          creditAmount = (receivingAmount !== null && receivingAmount !== undefined) ? receivingAmount : calculatedReceivingAmount;
-        }
-
-        const creditUpdatePayload = {
-          date: newDateISO,
-          account: receivingAccount,
-          vendor: sendingAccount,
-          category: 'Transfer',
-          amount: creditAmount,
-          remarks: `Transfer from ${sendingAccount}`,
-          currency: receivingAccountCurrency,
-        };
-
-        const updates = [
-          supabase.from('transactions').update(debitUpdatePayload).eq('id', updatedTransaction.id),
-          supabase.from('transactions').update(creditUpdatePayload).eq('id', creditTxId),
-        ];
-
-        const results = await Promise.all(updates);
-        results.forEach(result => { if (result.error) throw result.error; });
-        showSuccess("Transfer transactions updated successfully!");
-
-      } else {
-        // Not a transfer, proceed with single transaction update
-        const { error } = await supabase.from('transactions').update({
-          date: newDateISO,
-          account: updatedTransaction.account,
-          vendor: updatedTransaction.vendor,
-          category: updatedTransaction.category,
-          amount: updatedTransaction.amount,
-          remarks: updatedTransaction.remarks,
-          currency: updatedTransaction.currency,
-          transfer_id: null,
-        }).eq('id', updatedTransaction.id);
-
-        if (error) throw error;
-        showSuccess("Transaction updated successfully!");
+      if (error) {
+        throw error;
       }
 
-      fetchTransactions();
-      refetchAllPayees();
+      showSuccess("Transaction updated successfully!");
+      // Directly update the local state for immediate UI reflection
+      setTransactions(prevTransactions =>
+        prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
+      );
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
     }
