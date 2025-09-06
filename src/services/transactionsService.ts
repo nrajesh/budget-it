@@ -87,7 +87,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
     const wasTransfer = !!originalTransaction.transfer_id;
     const isNowTransfer = await checkIfPayeeIsAccount(updatedTransaction.vendor);
-    const newAmount = Math.abs(updatedTransaction.amount);
+    const newAbsoluteAmount = Math.abs(updatedTransaction.amount); // Always use absolute value from form
     const newDateISO = new Date(updatedTransaction.date).toISOString();
     const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
 
@@ -110,22 +110,22 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         const debitTransaction = {
           ...updatedTransaction,
           transfer_id: transfer_id,
-          amount: -newAmount,
+          amount: -newAbsoluteAmount, // Debit is negative
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
           date: newDateISO,
-          currency: accountCurrency, // Set currency based on account
+          currency: accountCurrency,
         };
         const creditTransaction = {
           ...updatedTransaction,
           transfer_id: transfer_id,
           account: updatedTransaction.vendor,
           vendor: updatedTransaction.account,
-          amount: newAmount,
+          amount: newAbsoluteAmount, // Credit is positive
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${updatedTransaction.vendor})`, `(From ${updatedTransaction.account})`)}` : `Transfer from ${updatedTransaction.account}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
           date: newDateISO,
-          currency: accountCurrency, // Set currency based on account
+          currency: accountCurrency,
         };
         const { error: insertError } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
         if (insertError) throw insertError;
@@ -139,9 +139,9 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         const newSingleTransaction = {
           ...updatedTransaction,
           transfer_id: null,
-          amount: -newAmount,
+          amount: updatedTransaction.amount, // Use the amount as entered by user for regular transaction
           date: newDateISO,
-          currency: accountCurrency, // Set currency based on account
+          currency: accountCurrency,
         };
         const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
         if (insertError) throw insertError;
@@ -154,35 +154,52 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           throw new Error("Sibling transfer transaction not found.");
         }
 
-        const oldDebitId = originalTransaction.amount < 0 ? originalTransaction.id : sibling.id;
-        const oldCreditId = originalTransaction.amount < 0 ? sibling.id : originalTransaction.id;
+        // Determine which of the two existing records (originalTransaction or sibling)
+        // corresponds to the 'debit' side (updatedTransaction.account) and 'credit' side (updatedTransaction.vendor)
+        let debitRecordId: string;
+        let creditRecordId: string;
+
+        // The transaction whose 'account' matches updatedTransaction.account should be the debit side
+        // The transaction whose 'account' matches updatedTransaction.vendor should be the credit side
+        if (originalTransaction.account === updatedTransaction.account) {
+          debitRecordId = originalTransaction.id;
+          creditRecordId = sibling.id;
+        } else if (sibling.account === updatedTransaction.account) {
+          debitRecordId = sibling.id;
+          creditRecordId = originalTransaction.id;
+        } else {
+          throw new Error("Could not map updated account to existing transfer records.");
+        }
 
         const newDebitAccount = updatedTransaction.account;
         const newCreditAccount = updatedTransaction.vendor;
+        const transfer_id = originalTransaction.transfer_id; // Explicitly carry over transfer_id
 
         const newDebitData = {
           date: newDateISO,
           account: newDebitAccount,
           vendor: newCreditAccount,
-          amount: -newAmount,
+          amount: -newAbsoluteAmount, // Debit is negative
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${newCreditAccount})` : `Transfer to ${newCreditAccount}`,
-          currency: accountCurrency, // Set currency based on account
+          currency: accountCurrency,
+          transfer_id: transfer_id,
         };
 
         const newCreditData = {
           date: newDateISO,
           account: newCreditAccount,
           vendor: newDebitAccount,
-          amount: newAmount,
+          amount: newAbsoluteAmount, // Credit is positive
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${newCreditAccount})`, `(From ${newDebitAccount})`)}` : `Transfer from ${newDebitAccount}`,
-          currency: accountCurrency, // Set currency based on account
+          remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
+          currency: accountCurrency,
+          transfer_id: transfer_id,
         };
 
-        const { error: debitError } = await supabase.from('transactions').update(newDebitData).eq('id', oldDebitId);
+        const { error: debitError } = await supabase.from('transactions').update(newDebitData).eq('id', debitRecordId);
         if (debitError) throw debitError;
-        const { error: creditError } = await supabase.from('transactions').update(newCreditData).eq('id', oldCreditId);
+        const { error: creditError } = await supabase.from('transactions').update(newCreditData).eq('id', creditRecordId);
         if (creditError) throw creditError;
         showSuccess("Transfer updated successfully!");
       }
@@ -192,7 +209,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           ...updatedTransaction,
           date: newDateISO,
           transfer_id: null,
-          currency: accountCurrency, // Set currency based on account
+          currency: accountCurrency,
         }).eq('id', updatedTransaction.id);
         if (error) throw error;
         showSuccess("Transaction updated successfully!");
