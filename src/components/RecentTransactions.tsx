@@ -21,7 +21,7 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
-  const { transactions: allTransactions } = useTransactions(); // Get all transactions for balance calculation
+  const { transactions: allTransactions, accountCurrencyMap } = useTransactions(); // Get all transactions for balance calculation and accountCurrencyMap
   const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
@@ -97,23 +97,26 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                   </TableCell>
                 </TableRow>
               ) : (
-                currentTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      <div className="font-medium">{transaction.vendor}</div>
-                      <div className="text-sm text-muted-foreground">{transaction.account}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{transaction.category}</Badge>
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(transaction.amount, transaction.currency)} {/* Convert and format amount */}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(transaction.runningBalance, transaction.currency)} {/* Convert and format running balance */}
-                    </TableCell>
-                  </TableRow>
-                ))
+                currentTransactions.map((transaction) => {
+                  const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency; // Use current account currency
+                  return (
+                    <TableRow key={transaction.id}>
+                      <TableCell>
+                        <div className="font-medium">{transaction.vendor}</div>
+                        <div className="text-sm text-muted-foreground">{transaction.account}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{transaction.category}</Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(transaction.amount, currentAccountCurrency)} {/* Convert and format amount */}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(transaction.runningBalance, currentAccountCurrency)} {/* Convert and format running balance */}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -129,16 +132,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                   disabled={currentPage === 1} 
                 />
               </PaginationItem>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    onClick={() => paginate(page)}
-                    isActive={page === currentPage}
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+              {/* Removed individual page numbers */}
               <PaginationItem>
                 <PaginationNext 
                   onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)} 

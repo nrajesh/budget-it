@@ -61,7 +61,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   onOpenChange,
   transaction,
 }) => {
-  const { updateTransaction, deleteTransaction } = useTransactions();
+  const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions(); // Get accountCurrencyMap
   const { currencySymbols } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
@@ -106,14 +106,15 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = await getAccountCurrency(accountValue);
+        // Use the map from context for immediate lookup, fallback to DB if not found (shouldn't happen if map is comprehensive)
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencyCode ? currencySymbols[currencyCode] || currencyCode : '$');
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, isOpen]); // Added isOpen to dependencies
+  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]); // Added accountCurrencyMap to dependencies
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -129,6 +130,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       ...transaction,
       ...values,
       date: new Date(values.date).toISOString(),
+      currency: accountCurrencyMap.get(values.account) || transaction.currency, // Ensure currency is updated to current account currency
     });
     onOpenChange(false);
   };

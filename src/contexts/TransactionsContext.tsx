@@ -17,6 +17,7 @@ interface TransactionsContextType {
   transactions: Transaction[];
   vendors: Payee[];
   accounts: Payee[];
+  accountCurrencyMap: Map<string, string>; // Added accountCurrencyMap
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
@@ -36,6 +37,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [vendors, setVendors] = React.useState<Payee[]>([]);
   const [accounts, setAccounts] = React.useState<Payee[]>([]);
+  const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map()); // Initialize map
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchTransactions = React.useCallback(async () => {
@@ -59,6 +61,17 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setAccounts,
     convertAmount,
   }), [setVendors, setAccounts, convertAmount]);
+
+  // Effect to update accountCurrencyMap when accounts change
+  React.useEffect(() => {
+    const newMap = new Map<string, string>();
+    accounts.forEach(account => {
+      if (account.name && account.currency) {
+        newMap.set(account.name, account.currency);
+      }
+    });
+    setAccountCurrencyMap(newMap);
+  }, [accounts]);
 
   const refetchAllPayees = React.useCallback(async () => {
     await Promise.all([fetchVendors(), fetchAccounts(), fetchTransactions()]);
@@ -87,6 +100,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     transactions,
     vendors,
     accounts,
+    accountCurrencyMap, // Include map in context value
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -101,6 +115,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     transactions,
     vendors,
     accounts,
+    accountCurrencyMap, // Add to dependencies
     addTransaction,
     updateTransaction,
     deleteTransaction,

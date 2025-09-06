@@ -39,7 +39,7 @@ const TransactionsPage = () => {
   const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
 
-  const { transactions, deleteMultipleTransactions } = useTransactions();
+  const { transactions, deleteMultipleTransactions, accountCurrencyMap } = useTransactions(); // Get accountCurrencyMap
   const { formatCurrency } = useCurrency();
 
   // Filter states
@@ -257,35 +257,38 @@ const TransactionsPage = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    currentTransactions.map((transaction) => (
-                      <TableRow key={transaction.id} className="group">
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedTransactionIds.includes(transaction.id)}
-                            onCheckedChange={() => handleSelectOne(transaction.id)}
-                            aria-label={`Select transaction ${transaction.id}`}
-                          />
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                          {new Date(transaction.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                          {transaction.account}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                          {transaction.vendor}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                          {transaction.category}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
-                          {formatCurrency(transaction.amount, transaction.currency)}
-                        </TableCell>
-                        <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
-                          {transaction.remarks}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    currentTransactions.map((transaction) => {
+                      const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency; // Use current account currency
+                      return (
+                        <TableRow key={transaction.id} className="group">
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedTransactionIds.includes(transaction.id)}
+                              onCheckedChange={() => handleSelectOne(transaction.id)}
+                              aria-label={`Select transaction ${transaction.id}`}
+                            />
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                            {new Date(transaction.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                            {transaction.account}
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                            {transaction.vendor}
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                            {transaction.category}
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
+                            {formatCurrency(transaction.amount, currentAccountCurrency)}
+                          </TableCell>
+                          <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                            {transaction.remarks}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
