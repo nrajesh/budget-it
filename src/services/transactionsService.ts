@@ -86,149 +86,37 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
   };
 
   const updateTransaction = async (updatedTransaction: Transaction) => {
-    const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
-    if (!originalTransaction) {
-      showError("Original transaction not found.");
-      return;
-    }
-
-    const wasTransfer = !!originalTransaction.transfer_id;
-    const isNowTransfer = await checkIfPayeeIsAccount(updatedTransaction.vendor);
-    const newAbsoluteAmount = Math.abs(updatedTransaction.amount); // Always use absolute value from form
-    const newDateISO = new Date(updatedTransaction.date).toISOString();
-    const baseRemarks = updatedTransaction.remarks?.split(" (From ")[0].split(" (To ")[0] || "";
-
     try {
+      // Ensure the account exists and get its currency
       await ensurePayeeExists(updatedTransaction.account, true);
-      const accountCurrency = await getAccountCurrency(updatedTransaction.account); // This will now always return a string
+      const accountCurrency = await getAccountCurrency(updatedTransaction.account);
 
-      if (isNowTransfer) {
+      // Ensure the vendor exists (and is correctly marked as account if it's a transfer destination)
+      const isTransferDestination = await checkIfPayeeIsAccount(updatedTransaction.vendor);
+      if (isTransferDestination) {
         await ensurePayeeExists(updatedTransaction.vendor, true);
       } else {
         await ensurePayeeExists(updatedTransaction.vendor, false);
       }
 
-      // Case 1: Editing a regular transaction to become a transfer
-      if (!wasTransfer && isNowTransfer) {
-        const { error: deleteError } = await supabase.from('transactions').delete().eq('id', originalTransaction.id);
-        if (deleteError) throw deleteError;
+      const newDateISO = new Date(updatedTransaction.date).toISOString();
 
-        const transfer_id = `transfer_${Date.now()}`;
-        const destinationAccountCurrency = await getAccountCurrency(updatedTransaction.vendor);
-        const convertedReceivingAmount = convertBetweenCurrencies(newAbsoluteAmount, accountCurrency, destinationAccountCurrency);
+      const { error } = await supabase.from('transactions').update({
+        date: newDateISO,
+        account: updatedTransaction.account,
+        vendor: updatedTransaction.vendor,
+        category: updatedTransaction.category,
+        amount: updatedTransaction.amount,
+        remarks: updatedTransaction.remarks,
+        currency: accountCurrency, // Always update currency based on the account
+        transfer_id: updatedTransaction.transfer_id || null, // Keep existing transfer_id or set to null
+      }).eq('id', updatedTransaction.id);
 
-        // Create new objects without the 'id' from updatedTransaction
-        const { id: _, ...debitTransactionPayload } = {
-          ...updatedTransaction,
-          transfer_id: transfer_id,
-          amount: -newAbsoluteAmount, // Debit is negative
-          category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
-          date: newDateISO,
-          currency: accountCurrency,
-        };
-        const { id: __, ...creditTransactionPayload } = {
-          ...updatedTransaction,
-          transfer_id: transfer_id,
-          account: updatedTransaction.vendor,
-          vendor: updatedTransaction.account,
-          amount: convertedReceivingAmount, // Credit is positive, converted
-          category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
-          date: newDateISO,
-          currency: destinationAccountCurrency, // Set currency for credit side
-        };
-        const { error: insertError } = await supabase.from('transactions').insert([debitTransactionPayload, creditTransactionPayload]);
-        if (insertError) throw insertError;
-        showSuccess("Transaction converted to transfer and updated successfully!");
+      if (error) {
+        throw error;
       }
-      // Case 2: Editing a transfer to become a regular transaction
-      else if (wasTransfer && !isNowTransfer) {
-        const { error: deleteError } = await supabase.from('transactions').delete().eq('transfer_id', originalTransaction.transfer_id);
-        if (deleteError) throw deleteError;
 
-        // Create new object without the 'id' from updatedTransaction
-        const { id: _, ...newSingleTransactionPayload } = {
-          ...updatedTransaction,
-          transfer_id: null,
-          amount: updatedTransaction.amount, // Use the amount as entered by user for regular transaction
-          date: newDateISO,
-          currency: accountCurrency,
-        };
-        const { error: insertError } = await supabase.from('transactions').insert(newSingleTransactionPayload);
-        if (insertError) throw insertError;
-        showSuccess("Transfer converted to transaction and updated successfully!");
-      }
-      // Case 3: Editing a transfer (remains a transfer)
-      else if (wasTransfer && isNowTransfer) {
-        const sibling = transactions.find(t => t.transfer_id === originalTransaction.transfer_id && t.id !== originalTransaction.id);
-        if (!sibling) {
-          throw new Error("Sibling transfer transaction not found.");
-        }
-
-        // Determine which of the two existing records (originalTransaction or sibling)
-        // corresponds to the 'debit' side (updatedTransaction.account) and 'credit' side (updatedTransaction.vendor)
-        let debitRecordId: string;
-        let creditRecordId: string;
-
-        // The transaction whose 'account' matches updatedTransaction.account should be the debit side
-        // The transaction whose 'account' matches updatedTransaction.vendor should be the credit side
-        if (originalTransaction.account === updatedTransaction.account) {
-          debitRecordId = originalTransaction.id;
-          creditRecordId = sibling.id;
-        } else if (sibling.account === updatedTransaction.account) {
-          debitRecordId = sibling.id;
-          creditRecordId = originalTransaction.id;
-        } else {
-          throw new Error("Could not map updated account to existing transfer records.");
-        }
-
-        const newDebitAccount = updatedTransaction.account;
-        const newCreditAccount = updatedTransaction.vendor;
-        const transfer_id = originalTransaction.transfer_id; // Explicitly carry over transfer_id
-
-        const destinationAccountCurrency = await getAccountCurrency(newCreditAccount);
-        const convertedReceivingAmount = convertBetweenCurrencies(newAbsoluteAmount, accountCurrency, destinationAccountCurrency);
-
-        const newDebitData = {
-          date: newDateISO,
-          account: newDebitAccount,
-          vendor: newCreditAccount,
-          amount: -newAbsoluteAmount, // Debit is negative
-          category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (To ${newCreditAccount})` : `Transfer to ${newCreditAccount}`,
-          currency: accountCurrency,
-          transfer_id: transfer_id,
-        };
-
-        const newCreditData = {
-          date: newDateISO,
-          account: newCreditAccount,
-          vendor: newDebitAccount,
-          amount: convertedReceivingAmount, // Credit is positive, converted
-          category: 'Transfer',
-          remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
-          currency: destinationAccountCurrency, // Set currency for credit side
-          transfer_id: transfer_id,
-        };
-
-        const { error: debitError } = await supabase.from('transactions').update(newDebitData).eq('id', debitRecordId);
-        if (debitError) throw debitError;
-        const { error: creditError } = await supabase.from('transactions').update(newCreditData).eq('id', creditRecordId);
-        if (creditError) throw creditError;
-        showSuccess("Transfer updated successfully!");
-      }
-      // Case 4: Editing a regular transaction (remains regular)
-      else {
-        const { error } = await supabase.from('transactions').update({
-          ...updatedTransaction,
-          date: newDateISO,
-          transfer_id: null,
-          currency: accountCurrency,
-        }).eq('id', updatedTransaction.id);
-        if (error) throw error;
-        showSuccess("Transaction updated successfully!");
-      }
+      showSuccess("Transaction updated successfully!");
       fetchTransactions();
       refetchAllPayees();
     } catch (error: any) {
