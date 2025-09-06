@@ -35,6 +35,8 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox"; // Import Combobox
 import { supabase } from "@/integrations/supabase/client"; // Import supabase
+import { getAccountCurrency } from "@/integrations/supabase/utils"; // Import getAccountCurrency
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -60,9 +62,11 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   transaction,
 }) => {
   const { updateTransaction, deleteTransaction } = useTransactions();
+  const { currencySymbols } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
+  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,6 +101,19 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
+
+  // Effect to update currency symbol when account changes or dialog opens
+  React.useEffect(() => {
+    const updateCurrencySymbol = async () => {
+      if (accountValue) {
+        const currencyCode = await getAccountCurrency(accountValue);
+        setAccountCurrencySymbol(currencyCode ? currencySymbols[currencyCode] || currencyCode : '$');
+      } else {
+        setAccountCurrencySymbol('$');
+      }
+    };
+    updateCurrencySymbol();
+  }, [accountValue, currencySymbols, isOpen]); // Added isOpen to dependencies
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -225,9 +242,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Amount</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                        {accountCurrencySymbol}
+                      </span>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} className="pl-8" />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -279,7 +279,7 @@ const TransactionsPage = () => {
                           {transaction.category}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
-                          {formatCurrency(transaction.amount)}
+                          {formatCurrency(transaction.amount, transaction.currency)}
                         </TableCell>
                         <TableCell onClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
                           {transaction.remarks}

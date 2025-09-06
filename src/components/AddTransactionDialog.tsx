@@ -24,6 +24,8 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { categories } from "@/data/finance-data"; // Removed 'accounts' and 'vendors'
 import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client"; // Import supabase
+import { getAccountCurrency } from "@/integrations/supabase/utils"; // Import getAccountCurrency
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 interface AddTransactionFormValues {
   date: string;
@@ -56,8 +58,10 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   onOpenChange,
 }) => {
   const { addTransaction } = useTransactions();
+  const { currencySymbols } = useCurrency();
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
+  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
 
   const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -94,12 +98,26 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
         amount: 0,
         remarks: "",
       });
+      setAccountCurrencySymbol('$'); // Reset currency symbol
     }
   }, [isOpen, form, fetchPayees]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const isTransfer = allAccounts.includes(vendorValue); // Check against dynamically fetched accounts
+
+  // Effect to update currency symbol when account changes
+  React.useEffect(() => {
+    const updateCurrencySymbol = async () => {
+      if (accountValue) {
+        const currencyCode = await getAccountCurrency(accountValue);
+        setAccountCurrencySymbol(currencyCode ? currencySymbols[currencyCode] || currencyCode : '$');
+      } else {
+        setAccountCurrencySymbol('$');
+      }
+    };
+    updateCurrencySymbol();
+  }, [accountValue, currencySymbols]);
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -220,9 +238,14 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} placeholder="0.00" />
-                  </FormControl>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                      {accountCurrencySymbol}
+                    </span>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

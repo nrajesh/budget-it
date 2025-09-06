@@ -107,10 +107,10 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                       <Badge variant="outline">{transaction.category}</Badge>
                     </TableCell>
                     <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(transaction.amount)} {/* Convert and format amount */}
+                      {formatCurrency(transaction.amount, transaction.currency)} {/* Convert and format amount */}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(transaction.runningBalance)} {/* Convert and format running balance */}
+                      {formatCurrency(transaction.runningBalance, transaction.currency)} {/* Convert and format running balance */}
                     </TableCell>
                   </TableRow>
                 ))

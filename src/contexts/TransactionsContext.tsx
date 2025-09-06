@@ -3,7 +3,7 @@ import { Transaction, categories } from '@/data/finance-data';
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount } from '@/integrations/supabase/utils';
+import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Payee } from '@/components/AddEditPayeeDialog';
 
 interface TransactionToDelete {
@@ -24,7 +24,7 @@ interface TransactionsContextType {
   fetchVendors: () => Promise<void>;
   fetchAccounts: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
-  fetchTransactions: () => Promise<void>; // Added fetchTransactions to the interface
+  fetchTransactions: () => Promise<void>;
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -184,8 +184,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   const refetchAllPayees = React.useCallback(async () => {
-    await Promise.all([fetchVendors(), fetchAccounts()]);
-  }, [fetchVendors, fetchAccounts]);
+    await Promise.all([fetchVendors(), fetchAccounts(), fetchTransactions()]); // Also refetch transactions
+  }, [fetchVendors, fetchAccounts, fetchTransactions]);
 
   React.useEffect(() => {
     fetchTransactions();
@@ -198,6 +198,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       await ensurePayeeExists(transaction.account, true);
+      const accountCurrency = await getAccountCurrency(transaction.account);
+      if (!accountCurrency) throw new Error(`Could not determine currency for account: ${transaction.account}`);
 
       const isTransfer = await checkIfPayeeIsAccount(transaction.vendor);
       if (isTransfer) {
@@ -208,7 +210,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       const commonTransactionFields = {
         ...transaction,
-        currency: 'USD',
+        currency: accountCurrency, // Set currency based on account
         date: newDateISO,
       };
 
@@ -267,6 +269,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       await ensurePayeeExists(updatedTransaction.account, true);
+      const accountCurrency = await getAccountCurrency(updatedTransaction.account);
+      if (!accountCurrency) throw new Error(`Could not determine currency for account: ${updatedTransaction.account}`);
 
       if (isNowTransfer) {
         await ensurePayeeExists(updatedTransaction.vendor, true);
@@ -287,6 +291,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${updatedTransaction.vendor})` : `Transfer to ${updatedTransaction.vendor}`,
           date: newDateISO,
+          currency: accountCurrency, // Set currency based on account
         };
         const creditTransaction = {
           ...updatedTransaction,
@@ -297,6 +302,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${updatedTransaction.account})` : `Transfer from ${updatedTransaction.account}`,
           date: newDateISO,
+          currency: accountCurrency, // Set currency based on account
         };
         const { error: insertError } = await supabase.from('transactions').insert([debitTransaction, creditTransaction]);
         if (insertError) throw insertError;
@@ -312,6 +318,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           transfer_id: null,
           amount: -newAmount,
           date: newDateISO,
+          currency: accountCurrency, // Set currency based on account
         };
         const { error: insertError } = await supabase.from('transactions').insert(newSingleTransaction);
         if (insertError) throw insertError;
@@ -337,6 +344,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           amount: -newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (To ${newCreditAccount})` : `Transfer to ${newCreditAccount}`,
+          currency: accountCurrency, // Set currency based on account
         };
 
         const newCreditData = {
@@ -346,6 +354,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           amount: newAmount,
           category: 'Transfer',
           remarks: baseRemarks ? `${baseRemarks} (From ${newDebitAccount})` : `Transfer from ${newDebitAccount}`,
+          currency: accountCurrency, // Set currency based on account
         };
 
         const { error: debitError } = await supabase.from('transactions').update(newDebitData).eq('id', oldDebitId);
@@ -360,6 +369,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           ...updatedTransaction,
           date: newDateISO,
           transfer_id: null,
+          currency: accountCurrency, // Set currency based on account
         }).eq('id', updatedTransaction.id);
         if (error) throw error;
         showSuccess("Transaction updated successfully!");
@@ -443,34 +453,27 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const currenciesToUse = availableCurrencies.slice(0, 3).map(c => c.code);
 
       // Step 1: Pre-create all accounts
-      console.log("[generateDiverseDemoData] Pre-creating accounts...");
       const createdAccountNames: string[] = [];
       for (const name of baseAccountNames) {
         const id = await ensurePayeeExists(name, true);
         if (id) createdAccountNames.push(name);
       }
-      console.log(`[generateDiverseDemoData] Pre-created ${createdAccountNames.length} accounts.`);
 
       // Step 2: Pre-create all regular vendors
-      console.log("[generateDiverseDemoData] Pre-creating regular vendors...");
       const createdVendorNames: string[] = [];
       for (const name of baseVendorNames) {
         const id = await ensurePayeeExists(name, false);
         if (id) createdVendorNames.push(name);
       }
-      console.log(`[generateDiverseDemoData] Pre-created ${createdVendorNames.length} regular vendors.`);
 
       // Step 3: Generate transactions using the pre-created names
-      console.log("[generateDiverseDemoData] Generating transaction data...");
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
       demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, currenciesToUse));
       demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, currenciesToUse));
       demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, currenciesToUse));
-      console.log(`[generateDiverseDemoData] Generated ${demoData.length} raw transactions.`);
 
       // Step 4: Batch insert transactions
       if (demoData.length > 0) {
-        console.log("[generateDiverseDemoData] Inserting generated transactions into Supabase...");
         const { error } = await supabase.from('transactions').insert(demoData);
         if (error) throw error;
         showSuccess("Diverse demo data generated successfully!");
@@ -498,7 +501,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchVendors,
     fetchAccounts,
     refetchAllPayees,
-    fetchTransactions, // Included fetchTransactions in the context value
+    fetchTransactions,
   }), [
     transactions,
     vendors,
