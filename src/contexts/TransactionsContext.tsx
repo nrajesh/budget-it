@@ -35,7 +35,6 @@ const generateTransactions = async (
   count: number,
   existingAccountNames: string[], // Now receives pre-created account names
   existingVendorNames: string[], // Now receives pre-created vendor names
-  currencyCodes: string[],
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -49,9 +48,9 @@ const generateTransactions = async (
     const isTransfer = Math.random() < 0.2;
     const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
     
-    const currencyCode = currencyCodes.length > 0 
-      ? currencyCodes[Math.floor(Math.random() * currencyCodes.length)] 
-      : 'USD'; 
+    // Dynamically get the currency for the selected account
+    const accountCurrency = await getAccountCurrency(accountName);
+    const currencyCode = accountCurrency || 'USD'; // Fallback to USD if currency not found
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
     let categoryName = categories[Math.floor(Math.random() * categories.length)];
@@ -76,7 +75,7 @@ const generateTransactions = async (
     const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
       date: date.toISOString(),
       account: accountName,
-      currency: currencyCode,
+      currency: currencyCode, // Use the fetched account currency
       vendor: vendorName,
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
@@ -468,9 +467,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // Step 3: Generate transactions using the pre-created names
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, currenciesToUse));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, currenciesToUse));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, currenciesToUse));
+      // Pass createdAccountNames and createdVendorNames to generateTransactions
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames));
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames));
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames));
 
       // Step 4: Batch insert transactions
       if (demoData.length > 0) {

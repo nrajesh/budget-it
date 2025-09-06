@@ -27,7 +27,7 @@ import { PlusCircle, Trash2, Edit } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const AccountsPage = () => {
-  const { accounts, fetchAccounts, refetchAllPayees } = useTransactions(); // Use accounts and fetchAccounts from context
+  const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions } = useTransactions(); // Use accounts and fetchAccounts from context
   const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -91,6 +91,7 @@ const AccountsPage = () => {
       if (error) throw error;
       showSuccess(successMessage);
       refetchAllPayees(); // Re-fetch all payees after deletion
+      fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to delete: ${error.message}`);
     } finally {

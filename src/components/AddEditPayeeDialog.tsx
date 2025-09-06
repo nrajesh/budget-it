@@ -64,7 +64,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   isAccountOnly = false,
 }) => {
   const { availableCurrencies } = useCurrency();
-  const { refetchAllPayees } = useTransactions(); // Use refetchAllPayees from context
+  const { refetchAllPayees, fetchTransactions } = useTransactions(); // Use refetchAllPayees and fetchTransactions from context
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -147,6 +147,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
       }
       onSuccess();
       refetchAllPayees(); // Call refetchAllPayees after any successful add/edit
+      fetchTransactions(); // Also refetch transactions to update any affected entries
       onOpenChange(false);
     } catch (error: any) {
       showError(`Error: ${error.message}`);
