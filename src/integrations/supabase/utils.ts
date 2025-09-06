@@ -6,9 +6,14 @@ import { showError } from '@/utils/toast';
  * and if it's an account, ensures a corresponding entry in the 'accounts' table.
  * @param name The name of the payee.
  * @param isAccount True if the payee should be treated as an account, false for a regular vendor.
+ * @param options Optional parameters for new account creation (currency, startingBalance, remarks).
  * @returns The ID of the existing or newly created vendor, or null if an error occurred.
  */
-export async function ensurePayeeExists(name: string, isAccount: boolean): Promise<string | null> {
+export async function ensurePayeeExists(
+  name: string,
+  isAccount: boolean,
+  options?: { currency?: string; startingBalance?: number; remarks?: string }
+): Promise<string | null> {
   if (!name) {
     console.warn("ensurePayeeExists called with empty name.");
     return null;
@@ -36,9 +41,9 @@ export async function ensurePayeeExists(name: string, isAccount: boolean): Promi
           const { data: newAccount, error: newAccountError } = await supabase
             .from('accounts')
             .insert({
-              currency: 'USD', // Default currency for auto-created accounts
-              starting_balance: 0,
-              remarks: `Auto-created account for vendor: ${name}`,
+              currency: options?.currency || 'USD', // Use provided currency or default
+              starting_balance: options?.startingBalance || 0, // Use provided starting balance or default
+              remarks: options?.remarks || `Auto-created account for vendor: ${name}`, // Use provided remarks or default
             })
             .select('id')
             .single();
@@ -66,9 +71,9 @@ export async function ensurePayeeExists(name: string, isAccount: boolean): Promi
         const { data: newAccount, error: newAccountError } = await supabase
           .from('accounts')
           .insert({
-            currency: 'USD',
-            starting_balance: 0,
-            remarks: `Auto-created account for vendor: ${name}`,
+            currency: options?.currency || 'USD',
+            starting_balance: options?.startingBalance || 0,
+            remarks: options?.remarks || `Auto-created account for vendor: ${name}`,
           })
           .select('id')
           .single();

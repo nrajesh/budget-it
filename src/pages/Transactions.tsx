@@ -212,12 +212,12 @@ const TransactionsPage = () => {
       skipEmptyLines: true,
       delimiter: ';', // Added to handle semicolon-separated CSVs
       complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks"];
+        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency"]; // Added Currency
         const actualHeaders = results.meta.fields || [];
         const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
 
         if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
+          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}. Please ensure all columns are present.`);
           setIsImporting(false);
           return;
         }
@@ -231,13 +231,23 @@ const TransactionsPage = () => {
 
         try {
           // Step 1: Ensure all payees exist
-          const uniqueAccounts = [...new Set(parsedData.map(row => row.Account).filter(Boolean))];
-          const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
+          // Collect unique accounts with their associated currency from the CSV
+          const uniqueAccountsData = parsedData.map(row => ({
+            name: row.Account,
+            currency: row.Currency, // Get currency from CSV
+          })).filter(item => item.name);
 
-          await Promise.all(uniqueAccounts.map(name => ensurePayeeExists(name, true)));
+          // Ensure accounts exist, passing the currency from the CSV for new accounts
+          await Promise.all(uniqueAccountsData.map(async (acc) => {
+            await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
+          }));
+
+          // Collect unique vendors
+          const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
           await Promise.all(uniqueVendors.map(name => {
             const row = parsedData.find(r => r.Vendor === name);
             const isTransfer = row?.Category === 'Transfer';
+            // For vendors, no specific currency/balance needed, ensurePayeeExists handles creation
             return ensurePayeeExists(name, isTransfer);
           }));
 
@@ -246,9 +256,10 @@ const TransactionsPage = () => {
 
           // Step 2: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
-            const accountCurrency = accountCurrencyMap.get(row.Account); // Use the map from context
+            // Prioritize currency from accountCurrencyMap (for existing accounts), then from CSV, then default to 'USD'
+            const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD'; 
             if (!accountCurrency) {
-              console.warn(`Could not find currency for account: ${row.Account}. Skipping row.`);
+              console.warn(`Could not determine currency for account: ${row.Account}. Skipping row.`);
               return null;
             }
             return {
@@ -258,12 +269,12 @@ const TransactionsPage = () => {
               category: row.Category,
               amount: parseFloat(row.Amount) || 0,
               remarks: row.Remarks,
-              currency: accountCurrency,
+              currency: accountCurrency, // Use the determined currency
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
           if (transactionsToInsert.length === 0) {
-            showError("No valid transactions could be prepared from the CSV. Check account names and amounts.");
+            showError("No valid transactions could be prepared from the CSV. Check account names, amounts, and currency column.");
             setIsImporting(false);
             return;
           }
@@ -303,9 +314,12 @@ const TransactionsPage = () => {
       "Category": t.category,
       "Amount": t.amount,
       "Remarks": t.remarks,
+      "Currency": t.currency, // Added Currency to export
     }));
 
-    const csv = Papa.unparse(dataToExport);
+    const csv = Papa.unparse(dataToExport, {
+      delimiter: ';', // Export with semicolon delimiter
+    });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
