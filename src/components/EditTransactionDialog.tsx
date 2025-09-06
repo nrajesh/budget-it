@@ -185,7 +185,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
 
-  const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
+  // Removed showReceivingValueField and the corresponding FormItem
 
   return (
     <>
@@ -284,28 +284,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                   </FormItem>
                 )}
               />
-
-              {showReceivingValueField && (
-                <FormItem>
-                  <FormLabel>Amount (Receiving)</FormLabel>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                      {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
-                    </span>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        value={displayReceivingAmount.toFixed(2)}
-                        readOnly
-                        className="pl-8 bg-muted"
-                      />
-                    </FormControl>
-                  </div>
-                  <FormDescription>
-                    This is the estimated amount received in the destination account's currency.
-                  </FormDescription>
-                </FormItem>
-              )}
 
               <FormField
                 control={form.control}
