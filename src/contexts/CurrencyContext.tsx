@@ -25,7 +25,7 @@ const exchangeRates: { [key: string]: number } = {
   CNY: 7.25, // 1 USD = 7.25 CNY
 };
 
-const currencySymbols: { [key: string]: string } = {
+export const currencySymbols: { [key: string]: string } = { // Exported
   USD: '$',
   EUR: '€',
   GBP: '£',
@@ -38,7 +38,7 @@ const currencySymbols: { [key: string]: string } = {
   CNY: '¥',
 };
 
-const availableCurrencies = [
+export const availableCurrencies = [ // Exported
   { code: 'USD', name: 'US Dollar' },
   { code: 'EUR', name: 'Euro' },
   { code: 'GBP', name: 'British Pound' },
