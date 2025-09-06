@@ -22,6 +22,7 @@ import {
   Plus,
   User,
   Bell,
+  Banknote,
 } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -213,10 +214,12 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Notebook />
-                  Notes
-                </SidebarMenuButton>
+                <Link to="/accounts" className="w-full">
+                  <SidebarMenuButton isActive={location.pathname === "/accounts"}>
+                    <Banknote />
+                    Accounts
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>

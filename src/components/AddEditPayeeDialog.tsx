@@ -51,6 +51,7 @@ interface AddEditPayeeDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   payee: Payee | null;
   onSuccess: () => void;
+  isAccountOnly?: boolean; // New prop
 }
 
 const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
@@ -58,13 +59,14 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   onOpenChange,
   payee,
   onSuccess,
+  isAccountOnly = false, // Default to false
 }) => {
   const { availableCurrencies } = useCurrency();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      is_account: false,
+      is_account: isAccountOnly ? true : false, // Set default based on prop
       currency: "EUR",
       starting_balance: 0,
       remarks: "",
@@ -85,13 +87,13 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     } else {
       form.reset({
         name: "",
-        is_account: false,
+        is_account: isAccountOnly ? true : false, // Reset based on prop
         currency: "EUR",
         starting_balance: 0,
         remarks: "",
       });
     }
-  }, [payee, form, isOpen]);
+  }, [payee, form, isOpen, isAccountOnly]); // Add isAccountOnly to dependency array
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -182,7 +184,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={!!payee} // Cannot change type after creation
+                      disabled={!!payee || isAccountOnly} // Disable if editing or if it's an account-only dialog
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
