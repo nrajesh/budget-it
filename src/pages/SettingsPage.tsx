@@ -8,6 +8,7 @@ import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog"; // Import new component
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
@@ -15,6 +16,7 @@ const SettingsPage = () => {
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
+  const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false); // New state for progress dialog
 
   const handleCurrencyChange = (value: string) => {
     setCurrency(value);
@@ -36,13 +38,15 @@ const SettingsPage = () => {
   };
 
   const handleGenerateDemoData = async () => {
+    setIsDemoDataProgressDialogOpen(true); // Open progress dialog
     try {
       await generateDiverseDemoData(); // This now also triggers refetchAllPayees internally
-      showSuccess("Diverse demo data has been generated.");
+      // showSuccess is called inside generateDiverseDemoData now
     } catch (error: any) {
-      showError(`Failed to generate demo data: ${error.message}`);
+      // showError is called inside generateDiverseDemoData now
     } finally {
       setIsGenerateConfirmOpen(false);
+      // The progress dialog will close itself when demoDataProgress becomes null
     }
   };
 
@@ -120,6 +124,11 @@ const SettingsPage = () => {
         title="Generate new demo data?"
         description="This will clear all existing transactions and generate new diverse demo data. This action cannot be undone."
         confirmText="Generate"
+      />
+
+      <DemoDataProgressDialog
+        isOpen={isDemoDataProgressDialogOpen}
+        onOpenChange={setIsDemoDataProgressDialogOpen}
       />
     </div>
   );

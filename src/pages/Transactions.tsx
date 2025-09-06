@@ -17,6 +17,7 @@ import { useTransactionManagement } from "@/hooks/useTransactionManagement";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters.tsx";
 import { TransactionActions } from "@/components/transactions/TransactionActions.tsx";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable.tsx";
+import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
 
 const TransactionsPage = () => {
   const {
@@ -74,6 +75,7 @@ const TransactionsPage = () => {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing transactions..." : "Refreshing transactions..."} />
       <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
       <div className="p-4 md:p-8">
         <Card>

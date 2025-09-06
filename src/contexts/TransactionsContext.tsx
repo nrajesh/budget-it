@@ -13,11 +13,17 @@ interface TransactionToDelete {
   transfer_id?: string;
 }
 
+interface DemoDataProgress {
+  stage: string;
+  progress: number;
+  totalStages: number;
+}
+
 interface TransactionsContextType {
   transactions: Transaction[];
   vendors: Payee[];
   accounts: Payee[];
-  accountCurrencyMap: Map<string, string>; // Added accountCurrencyMap
+  accountCurrencyMap: Map<string, string>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
@@ -28,18 +34,20 @@ interface TransactionsContextType {
   fetchAccounts: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
   fetchTransactions: () => Promise<void>;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Expose setTransactions
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  demoDataProgress: DemoDataProgress | null;
 }
 
-const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
+export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { convertAmount } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [vendors, setVendors] = React.useState<Payee[]>([]);
   const [accounts, setAccounts] = React.useState<Payee[]>([]);
-  const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map()); // Initialize map
+  const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = React.useState(true);
+  const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
   const fetchTransactions = React.useCallback(async () => {
     setIsLoading(true);
@@ -82,7 +90,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions,
     refetchAllPayees,
     transactions,
-    setTransactions, // Pass setTransactions
+    setTransactions,
   }), [fetchTransactions, refetchAllPayees, transactions, setTransactions]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
@@ -91,7 +99,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setTransactions,
     setVendors,
     setAccounts,
-  }), [fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts]);
+    setDemoDataProgress,
+  }), [fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setDemoDataProgress]);
 
   React.useEffect(() => {
     fetchTransactions();
@@ -102,7 +111,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     transactions,
     vendors,
     accounts,
-    accountCurrencyMap, // Include map in context value
+    accountCurrencyMap,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -113,12 +122,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchAccounts,
     refetchAllPayees,
     fetchTransactions,
-    setTransactions, // Include setTransactions
+    setTransactions,
+    demoDataProgress,
   }), [
     transactions,
     vendors,
     accounts,
-    accountCurrencyMap, // Add to dependencies
+    accountCurrencyMap,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -129,7 +139,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchAccounts,
     refetchAllPayees,
     fetchTransactions,
-    setTransactions, // Add to dependencies
+    setTransactions,
+    demoDataProgress,
   ]);
 
   if (isLoading) {

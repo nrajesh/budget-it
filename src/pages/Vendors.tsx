@@ -26,6 +26,7 @@ import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 import Papa from "papaparse";
+import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
 
 const VendorsPage = () => {
   const { vendors, fetchVendors, refetchAllPayees, fetchTransactions } = useTransactions(); // Use vendors, fetchVendors, refetchAllPayees, and fetchTransactions from context
@@ -249,6 +250,7 @@ const VendorsPage = () => {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing vendors..." : "Refreshing vendors..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Vendors</h2>
         <div className="flex items-center space-x-2">

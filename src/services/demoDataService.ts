@@ -10,6 +10,7 @@ interface DemoDataServiceProps {
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   setVendors: React.Dispatch<React.SetStateAction<any[]>>; // Use any[] for simplicity here, Payee[] in context
   setAccounts: React.Dispatch<React.SetStateAction<any[]>>; // Use any[] for simplicity here, Payee[] in context
+  setDemoDataProgress: React.Dispatch<React.SetStateAction<{ stage: string; progress: number; totalStages: number } | null>>;
 }
 
 // Helper function to generate sample transactions for a given month, account, and currency
@@ -96,7 +97,7 @@ const generateTransactions = async (
   return sampleTransactions;
 };
 
-export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts }: DemoDataServiceProps) => {
+export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setDemoDataProgress }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
     try {
@@ -113,13 +114,18 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
   };
 
   const generateDiverseDemoData = async () => {
+    const totalStages = 5; // Clear, Accounts, Vendors, Currencies, Transactions
+    let currentStage = 0;
+
     try {
+      setDemoDataProgress({ stage: "Clearing existing data...", progress: ++currentStage, totalStages });
       await clearAllTransactions(); // Clear existing data first
 
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
       
       // Step 1: Pre-create all accounts
+      setDemoDataProgress({ stage: "Creating demo accounts...", progress: ++currentStage, totalStages });
       const createdAccountNames: string[] = [];
       for (const name of baseAccountNames) {
         const id = await ensurePayeeExists(name, true);
@@ -127,6 +133,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       }
 
       // Step 2: Pre-create all regular vendors
+      setDemoDataProgress({ stage: "Creating demo vendors...", progress: ++currentStage, totalStages });
       const createdVendorNames: string[] = [];
       for (const name of baseVendorNames) {
         const id = await ensurePayeeExists(name, false);
@@ -134,6 +141,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       }
 
       // Step 3: Pre-fetch all account currencies into a map
+      setDemoDataProgress({ stage: "Fetching account currencies...", progress: ++currentStage, totalStages });
       const accountCurrencyMap = new Map<string, string>();
       const { data: accountCurrencyData, error: currencyError } = await supabase
         .from('vendors')
@@ -143,6 +151,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       if (currencyError) {
         console.error("Error fetching account currencies:", currencyError.message);
         showError("Failed to fetch account currencies for demo data generation.");
+        setDemoDataProgress(null);
         return;
       }
 
@@ -153,6 +162,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       });
 
       // Step 4: Generate transactions using the pre-created names and currency map
+      setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
       demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
       demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
@@ -171,6 +181,8 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       refetchAllPayees();
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
+    } finally {
+      setDemoDataProgress(null); // Clear progress on completion or error
     }
   };
 

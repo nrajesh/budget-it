@@ -27,6 +27,7 @@ import { PlusCircle, Trash2, Edit, Upload, Download } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 import { RotateCcw, Loader2 } from "lucide-react"; // Import RotateCcw and Loader2 icons
 import Papa from "papaparse";
+import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
 
 const AccountsPage = () => {
   const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions } = useTransactions(); // Use accounts and fetchAccounts from context
@@ -218,6 +219,7 @@ const AccountsPage = () => {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing accounts..." : "Refreshing accounts..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Accounts</h2>
         <div className="flex items-center space-x-2">
