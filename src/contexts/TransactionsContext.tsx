@@ -66,6 +66,8 @@ const generateTransactions = (
       category: categoryName,
     };
 
+    const baseRemarks = baseTransactionDetails.remarks || ""; // Defined baseRemarks here
+
     if (isTransfer) {
       const transfer_id = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
       const debitTransaction: Omit<Transaction, 'id' | 'created_at'> = {
@@ -126,10 +128,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (vendorsToInsert.length > 0) {
       const { error: insertError } = await supabase
         .from('vendors')
-        .insert(vendorsToInsert)
-        .onConflict('name') // Handle unique constraint on 'name'
-        .doNothing()
-        .select(); // Select should be after onConflict
+        .upsert(vendorsToInsert, { onConflict: 'name' }) // Use upsert with onConflict
+        .select();
 
       if (insertError && insertError.code !== '23505') { // Ignore unique violation error
         console.error("Error inserting vendors:", insertError.message);
