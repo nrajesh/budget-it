@@ -27,7 +27,7 @@ import { PlusCircle, Trash2, Edit, Loader2 } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const VendorsPage = () => {
-  const { vendors, fetchVendors, refetchAllPayees } = useTransactions(); // Use vendors and fetchVendors from context
+  const { vendors, fetchVendors, refetchAllPayees, fetchTransactions } = useTransactions(); // Use vendors, fetchVendors, refetchAllPayees, and fetchTransactions from context
   const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -91,6 +91,7 @@ const VendorsPage = () => {
       if (error) throw error;
       showSuccess(successMessage);
       refetchAllPayees(); // Re-fetch all payees after deletion
+      fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to delete: ${error.message}`);
     } finally {
@@ -139,6 +140,7 @@ const VendorsPage = () => {
       if (error) throw error;
       showSuccess("Vendor name updated successfully!");
       refetchAllPayees(); // Re-fetch all payees to update the list and transaction sums
+      fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to update vendor name: ${error.message}`);
     } finally {

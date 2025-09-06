@@ -24,6 +24,7 @@ interface TransactionsContextType {
   fetchVendors: () => Promise<void>;
   fetchAccounts: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
+  fetchTransactions: () => Promise<void>; // Added fetchTransactions to the interface
 }
 
 const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -497,6 +498,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchVendors,
     fetchAccounts,
     refetchAllPayees,
+    fetchTransactions, // Included fetchTransactions in the context value
   }), [
     transactions,
     vendors,
@@ -510,6 +512,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchVendors,
     fetchAccounts,
     refetchAllPayees,
+    fetchTransactions,
   ]);
 
   if (isLoading) {
