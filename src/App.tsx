@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
 import { UserProvider } from "./contexts/UserContext";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import ProtectedRoute from "@/components/ProtectedRoute"; // Import ProtectedRoute
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Lazy load page components
 const Index = lazy(() => import("@/pages/Index"));
@@ -16,8 +16,8 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Login = lazy(() => import("@/pages/Login"));
-const Accounts = lazy(() => import("@/pages/Accounts")); // Added lazy import for Accounts
-const Vendors = lazy(() => import("@/pages/Vendors")); // Added lazy import for Vendors
+const Accounts = lazy(() => import("@/pages/Accounts"));
+const Vendors = lazy(() => import("@/pages/Vendors")); // Correctly importing Vendors
 
 function App() {
   return (
@@ -33,7 +33,7 @@ function App() {
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Index />} />
                     <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/vendors" element={<Vendors />} /> {/* Updated route */}
+                    <Route path="/vendors" element={<Vendors />} /> {/* Using the Vendors component */}
                     <Route path="/accounts" element={<Accounts />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/settings" element={<SettingsPage />} />
