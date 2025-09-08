@@ -102,18 +102,14 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                   const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
                   return (
                     <TableRow key={transaction.id}>
-                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell> {/* Display formatted date */}
-                      <TableCell>
+                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell><TableCell>
                         <div className="font-medium">{transaction.vendor}</div>
                         <div className="text-sm text-muted-foreground">{transaction.account}</div>
-                      </TableCell>
-                      <TableCell>
+                      </TableCell><TableCell>
                         <Badge variant="outline">{transaction.category}</Badge>
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      </TableCell><TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(transaction.amount, currentAccountCurrency)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
+                      </TableCell><TableCell className="text-right font-medium">
                         {formatCurrency(transaction.runningBalance, currentAccountCurrency)}
                       </TableCell>
                     </TableRow>
