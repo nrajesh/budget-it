@@ -10,7 +10,7 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
-        storageKey="portfolio-theme"
+        storageKey="budgetit-theme"
       >
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -25,7 +25,7 @@ createRoot(document.getElementById("root")!).render(
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
-  
+
   <CurrencyProvider>
     <App />
   </CurrencyProvider>
