@@ -197,14 +197,14 @@ const Layout = () => {
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
                         <Link to="/profile" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/profile"} asChild>
+                          <SidebarMenuSubButton isActive={location.pathname === "/profile"}>
                             Profile
                           </SidebarMenuSubButton>
                         </Link>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
                         <Link to="/settings" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/settings"} asChild>
+                          <SidebarMenuSubButton isActive={location.pathname === "/settings"}>
                             Settings
                           </SidebarMenuSubButton>
                         </Link>
