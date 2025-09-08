@@ -80,7 +80,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="w-full">
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead><TableHead>Vendor / Account</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Balance</TableHead>

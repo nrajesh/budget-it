@@ -34,7 +34,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 }) => {
   return (
     <div className="border rounded-md overflow-x-auto">
-      <Table>
+      <Table className="w-full">
         <TableHeader>
           <TableRow>
             <TableHead className="w-[50px]">
