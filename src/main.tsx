@@ -5,11 +5,15 @@ import { ThemeProvider } from "./components/ThemeProvider.tsx";
 import { CurrencyProvider } from "./contexts/CurrencyContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
+  <CurrencyProvider>
+    <App />
+  </CurrencyProvider>
   <React.StrictMode>
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
+        storageKey="budgetit-theme"
       >
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -24,8 +28,4 @@ createRoot(document.getElementById("root")!).render(
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
-
-  <CurrencyProvider>
-    <App />
-  </CurrencyProvider>
 );
