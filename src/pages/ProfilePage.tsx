@@ -69,7 +69,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4">
       <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
       <div className="grid gap-6 lg:grid-cols-2 max-w-4xl mx-auto">
         <ProfileForm setIsAvatarModalOpen={setIsAvatarModalOpen} />
