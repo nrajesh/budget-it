@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme-provider";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
@@ -21,7 +20,7 @@ const Vendors = lazy(() => import("@/pages/Vendors")); // Correctly importing Ve
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <>
       <UserProvider>
         <TransactionsProvider>
           <Router>
@@ -47,7 +46,7 @@ function App() {
         </TransactionsProvider>
       </UserProvider>
       <Toaster />
-    </ThemeProvider>
+    </>
   );
 }
 
