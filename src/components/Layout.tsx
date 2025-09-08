@@ -194,24 +194,22 @@ const Layout = () => {
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <Link to="/profile" className="w-full">
-                            <SidebarMenuSubButton isActive={location.pathname === "/profile"} asChild>
-                              Profile
-                            </SidebarMenuSubButton>
-                          </Link>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <Link to="/settings" className="w-full">
-                            <SidebarMenuSubButton isActive={location.pathname === "/settings"} asChild>
-                              Settings
-                            </SidebarMenuSubButton>
-                          </Link>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </div>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <Link to="/profile" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/profile"} asChild>
+                            Profile
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <Link to="/settings" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/settings"} asChild>
+                            Settings
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
