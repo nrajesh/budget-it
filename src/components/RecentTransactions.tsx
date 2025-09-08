@@ -83,11 +83,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead> {/* Added Date column */}
-                <TableHead>Vendor / Account</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Balance</TableHead>
+                <TableHead>Date</TableHead><TableHead>Vendor / Account</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Balance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
