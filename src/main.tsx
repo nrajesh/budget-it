@@ -7,7 +7,7 @@ import { CurrencyProvider } from "./contexts/CurrencyContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <CurrencyProvider>
         <App />
       </CurrencyProvider>
