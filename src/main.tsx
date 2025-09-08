@@ -10,7 +10,6 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider
         attribute="class"
         defaultTheme="dark"
-        storageKey="portfolio-theme"
       >
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
