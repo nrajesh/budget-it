@@ -3,7 +3,6 @@ import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
 import { categories } from '@/data/finance-data'; // Needed for category filtering in add/update
-import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface TransactionToDelete {
   id: string;
@@ -15,10 +14,10 @@ interface TransactionsServiceProps {
   refetchAllPayees: () => Promise<void>;
   transactions: Transaction[]; // To find original transaction for updates
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Add setTransactions
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions }: TransactionsServiceProps) => {
-  const { convertBetweenCurrencies } = useCurrency(); // Use the new conversion function
+export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies }: TransactionsServiceProps) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
     const { receivingAmount, ...restOfTransaction } = transaction; // Extract receivingAmount

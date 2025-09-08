@@ -41,7 +41,7 @@ interface TransactionsContextType {
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { convertAmount } = useCurrency();
+  const { convertAmount, convertBetweenCurrencies } = useCurrency();
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [vendors, setVendors] = React.useState<Payee[]>([]);
   const [accounts, setAccounts] = React.useState<Payee[]>([]);
@@ -91,7 +91,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     refetchAllPayees,
     transactions,
     setTransactions,
-  }), [fetchTransactions, refetchAllPayees, transactions, setTransactions]);
+    convertBetweenCurrencies,
+  }), [fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
     fetchTransactions,
