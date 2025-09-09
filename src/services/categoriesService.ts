@@ -3,7 +3,6 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Category } from '@/pages/Categories'; // Import the Category type
 import { ensureCategoryExists } from '@/integrations/supabase/utils'; // Import ensureCategoryExists
 import { Transaction } from '@/data/finance-data'; // Import Transaction type
-// Removed: import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface CategoriesServiceProps {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -13,7 +12,7 @@ interface CategoriesServiceProps {
 }
 
 export const createCategoriesService = ({ setCategories, userId, getTransactions, convertAmount }: CategoriesServiceProps) => {
-  // Removed: const { convertAmount } = useCurrency(); // Use useCurrency hook here
+  // The convertAmount is now passed as a prop, so no need to use the hook here.
 
   const syncCategoriesFromTransactions = async () => {
     if (!userId) {
@@ -64,7 +63,7 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
       if (error) {
         throw error;
       }
-      // Map total_transaction_amount to totalTransactions and convert
+      // Map total_transaction_amount to totalTransactions and convert using the passed convertAmount
       const categoriesWithTransactions = data.map(cat => ({
         ...cat,
         totalTransactions: convertAmount(cat.total_transaction_amount || 0),
