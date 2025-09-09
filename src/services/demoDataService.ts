@@ -44,6 +44,8 @@ const generateTransactions = async (
     let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)]; // Use dynamic categories
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
+    let destinationAccountCurrency: string = 'USD'; // Initialize here
+
     if (isTransfer) {
       let destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
       while (destAccount === accountName) {
@@ -52,6 +54,7 @@ const generateTransactions = async (
       vendorName = destAccount;
       categoryName = 'Transfer';
       amountValue = Math.abs(amountValue);
+      destinationAccountCurrency = accountCurrencyMap.get(destAccount) || 'USD'; // Define for transfers
     } else {
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
         amountValue = -amountValue;
@@ -90,7 +93,7 @@ const generateTransactions = async (
         amount: Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
-        currency: destinationAccountCurrency,
+        currency: destinationAccountCurrency, // Now correctly defined
       };
       sampleTransactions.push(creditTransaction);
     } else {

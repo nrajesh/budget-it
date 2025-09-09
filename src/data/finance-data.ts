@@ -57,6 +57,7 @@ export type Transaction = {
   remarks?: string;
   category: string;
   created_at: string;
+  user_id: string; // Added user_id here
 };
 
 // Base categories for seeding and initial demo data generation.

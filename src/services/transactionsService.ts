@@ -19,7 +19,7 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id'> & { date: string; receivingAmount?: number }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       return;
@@ -46,6 +46,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         ...restOfTransaction,
         currency: accountCurrency,
         date: newDateISO,
+        user_id: userId, // This is where user_id is added
       };
 
       if (isTransfer) {
