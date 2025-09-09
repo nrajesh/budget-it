@@ -19,7 +19,7 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id'> & { date: string; receivingAmount?: number }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string; receivingAmount?: number }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       return;
@@ -29,14 +29,14 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
     const baseRemarks = restOfTransaction.remarks || "";
 
     try {
-      await ensurePayeeExists(restOfTransaction.account, true, userId);
-      const accountCurrency = await getAccountCurrency(restOfTransaction.account, userId);
+      await ensurePayeeExists(restOfTransaction.account, true);
+      const accountCurrency = await getAccountCurrency(restOfTransaction.account);
 
-      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor, userId);
+      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
       if (isTransfer) {
-        await ensurePayeeExists(restOfTransaction.vendor, true, userId);
+        await ensurePayeeExists(restOfTransaction.vendor, true);
       } else {
-        await ensurePayeeExists(restOfTransaction.vendor, false, userId);
+        await ensurePayeeExists(restOfTransaction.vendor, false);
       }
 
       // Ensure category exists
@@ -46,14 +46,13 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         ...restOfTransaction,
         currency: accountCurrency,
         date: newDateISO,
-        user_id: userId, // Add user_id here
       };
 
       if (isTransfer) {
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(restOfTransaction.amount);
 
-        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor, userId);
+        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor);
         const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
 
         const debitTransaction = {
@@ -71,7 +70,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
           vendor: restOfTransaction.account,
           amount: receivingAmount ?? convertedReceivingAmount,
           category: 'Transfer',
-          remarks: baseRemarks ? `${(baseRemarks as string).replace(`(To ${restOfTransaction.vendor})`, `(From ${restOfTransaction.account})`)}` : `Transfer from ${restOfTransaction.account}`,
+          remarks: baseRemarks ? `${baseRemarks} (From ${restOfTransaction.account})` : `Transfer from ${restOfTransaction.account}`,
           currency: destinationAccountCurrency,
         };
 
@@ -115,7 +114,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         remarks: updatedTransaction.remarks,
         currency: accountCurrency,
         transfer_id: updatedTransaction.transfer_id || null,
-      }).eq('id', updatedTransaction.id).eq('user_id', userId); // Filter by user_id
+      }).eq('id', updatedTransaction.id);
 
       if (error) {
         throw error;
@@ -131,17 +130,13 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
   };
 
   const deleteTransaction = async (transactionId: string, transfer_id?: string) => {
-    if (!userId) {
-      showError("User not logged in. Cannot delete transaction.");
-      return;
-    }
     try {
       if (transfer_id) {
-        const { error } = await supabase.from('transactions').delete().eq('transfer_id', transfer_id).eq('user_id', userId); // Filter by user_id
+        const { error } = await supabase.from('transactions').delete().eq('transfer_id', transfer_id);
         if (error) throw error;
         showSuccess("Transfer deleted successfully!");
       } else {
-        const { error } = await supabase.from('transactions').delete().eq('id', transactionId).eq('user_id', userId); // Filter by user_id
+        const { error } = await supabase.from('transactions').delete().eq('id', transactionId);
         if (error) throw error;
         showSuccess("Transaction deleted successfully!");
       }
@@ -153,10 +148,6 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
   };
 
   const deleteMultipleTransactions = async (transactionsToDelete: TransactionToDelete[]) => {
-    if (!userId) {
-      showError("User not logged in. Cannot delete multiple transactions.");
-      return;
-    }
     try {
       const idsToDelete: string[] = [];
       const transferIdsToDelete: string[] = [];
@@ -169,13 +160,13 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       });
 
       if (idsToDelete.length > 0) {
-        const { error: idDeleteError } = await supabase.from('transactions').delete().in('id', idsToDelete).eq('user_id', userId); // Filter by user_id
+        const { error: idDeleteError } = await supabase.from('transactions').delete().in('id', idsToDelete);
         if (idDeleteError) throw idDeleteError;
       }
 
       if (transferIdsToDelete.length > 0) {
         const uniqueTransferIds = [...new Set(transferIdsToDelete)];
-        const { error: transferDeleteError } = await supabase.from('transactions').delete().in('transfer_id', uniqueTransferIds).eq('user_id', userId); // Filter by user_id
+        const { error: transferDeleteError } = await supabase.from('transactions').delete().in('transfer_id', uniqueTransferIds);
         if (transferDeleteError) throw transferDeleteError;
       }
 

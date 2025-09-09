@@ -24,10 +24,9 @@ import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
-import { getAccountCurrency, ensurePayeeExists } from "@/integrations/supabase/utils"; // Import ensurePayeeExists
+import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
-import { useUser } from "@/contexts/UserContext"; // Import useUser
 
 interface AddTransactionFormValues {
   date: string;
@@ -63,7 +62,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 }) => {
   const { addTransaction, accountCurrencyMap, categories: allCategories } = useTransactions(); // Get allCategories from context
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
-  const { user } = useUser(); // Get user from UserContext
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
@@ -84,8 +82,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   });
 
   const fetchPayees = React.useCallback(async () => {
-    if (!user?.id) return;
-    const { data, error } = await supabase.from('vendors').select('name, is_account').eq('user_id', user.id); // Filter by user_id
+    const { data, error } = await supabase.from('vendors').select('name, is_account');
     if (error) {
       console.error("Error fetching payees:", error.message);
       return;
@@ -94,7 +91,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     const vendors = data.filter(p => !p.is_account).map(p => p.name);
     setAllAccounts(accounts);
     setAllVendors(vendors);
-  }, [user?.id]);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -121,27 +118,27 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
-      if (accountValue && user?.id) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue, user.id);
+      if (accountValue) {
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, accountCurrencyMap, user?.id]);
+  }, [accountValue, currencySymbols, accountCurrencyMap]);
 
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
-      if (isTransfer && vendorValue && user?.id) {
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue, user.id);
+      if (isTransfer && vendorValue) {
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
         setDestinationAccountCurrency(currencyCode);
       } else {
         setDestinationAccountCurrency(null);
       }
     };
     fetchDestinationCurrency();
-  }, [vendorValue, isTransfer, accountCurrencyMap, user?.id]);
+  }, [vendorValue, isTransfer, accountCurrencyMap]);
 
   React.useEffect(() => {
     if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {

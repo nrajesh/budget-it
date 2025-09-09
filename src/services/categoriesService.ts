@@ -3,7 +3,6 @@ import { showError, showSuccess } from '@/utils/toast';
 import { Category } from '@/pages/Categories'; // Import the Category type
 import { ensureCategoryExists } from '@/integrations/supabase/utils'; // Import ensureCategoryExists
 import { Transaction } from '@/data/finance-data'; // Import Transaction type
-import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency
 
 interface CategoriesServiceProps {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
@@ -12,7 +11,6 @@ interface CategoriesServiceProps {
 }
 
 export const createCategoriesService = ({ setCategories, userId, getTransactions }: CategoriesServiceProps) => {
-  const { convertAmount } = useCurrency(); // Use useCurrency hook here
 
   const syncCategoriesFromTransactions = async () => {
     if (!userId) {
@@ -55,20 +53,15 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
       await syncCategoriesFromTransactions(); // Call sync before fetching
 
       const { data, error } = await supabase
-        .from("category_transaction_summary") // Fetch from the new view
-        .select("id, name, user_id, created_at, total_transaction_amount")
+        .from("categories")
+        .select("id, name, user_id, created_at")
         .eq('user_id', userId)
         .order('name', { ascending: true });
 
       if (error) {
         throw error;
       }
-      // Map total_transaction_amount to totalTransactions and convert
-      const categoriesWithTransactions = data.map(cat => ({
-        ...cat,
-        totalTransactions: convertAmount(cat.total_transaction_amount || 0),
-      }));
-      setCategories(categoriesWithTransactions as Category[]);
+      setCategories(data as Category[]);
     } catch (error: any) {
       showError(`Failed to fetch categories: ${error.message}`);
       setCategories([]);
@@ -88,7 +81,7 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
         user_id: userId,
       }));
 
-      const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'user_id,name', ignoreDuplicates: true });
+      const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
 
       if (error) throw error;
       showSuccess(`${categoriesToInsert.length} categories imported/updated successfully!`);

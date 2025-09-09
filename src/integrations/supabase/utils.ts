@@ -6,28 +6,25 @@ import { showError } from '@/utils/toast';
  * and if it's an account, ensures a corresponding entry in the 'accounts' table.
  * @param name The name of the payee.
  * @param isAccount True if the payee should be treated as an account, false for a regular vendor.
- * @param userId The ID of the user creating/owning the payee.
  * @param options Optional parameters for new account creation (currency, startingBalance, remarks).
  * @returns The ID of the existing or newly created vendor, or null if an error occurred.
  */
 export async function ensurePayeeExists(
   name: string,
   isAccount: boolean,
-  userId: string, // Added userId
   options?: { currency?: string; startingBalance?: number; remarks?: string }
 ): Promise<string | null> {
-  if (!name || !userId) {
-    console.warn("ensurePayeeExists called with empty name or userId.");
+  if (!name) {
+    console.warn("ensurePayeeExists called with empty name.");
     return null;
   }
 
   try {
-    // 1. Check if a vendor with this name already exists for this user
+    // 1. Check if a vendor with this name already exists
     let { data: existingVendor, error: vendorFetchError } = await supabase
       .from('vendors')
       .select('id, name, is_account, account_id')
       .eq('name', name)
-      .eq('user_id', userId) // Filter by user_id
       .single();
 
     if (vendorFetchError && vendorFetchError.code !== 'PGRST116') { // PGRST116 means no rows found
@@ -78,8 +75,7 @@ export async function ensurePayeeExists(
           const { error: updateVendorError } = await supabase
             .from('vendors')
             .update({ is_account: true, account_id: accountId })
-            .eq('id', existingVendor.id)
-            .eq('user_id', userId); // Filter by user_id
+            .eq('id', existingVendor.id);
           if (updateVendorError) throw updateVendorError;
         }
       } else {
@@ -108,7 +104,7 @@ export async function ensurePayeeExists(
 
         const { data: newVendor, error: newVendorError } = await supabase
           .from('vendors')
-          .insert({ name, is_account: true, account_id: newAccount.id, user_id: userId }) // Add user_id
+          .insert({ name, is_account: true, account_id: newAccount.id })
           .select('id')
           .single();
         if (newVendorError) throw newVendorError;
@@ -117,7 +113,7 @@ export async function ensurePayeeExists(
         // Create a regular vendor
         const { data: newVendor, error: newVendorError } = await supabase
           .from('vendors')
-          .insert({ name, is_account: false, account_id: null, user_id: userId }) // Add user_id
+          .insert({ name, is_account: false, account_id: null })
           .select('id')
           .single();
         if (newVendorError) throw newVendorError;
@@ -134,17 +130,15 @@ export async function ensurePayeeExists(
 /**
  * Checks if a payee with the given name is currently marked as an account in the database.
  * @param name The name of the payee to check.
- * @param userId The ID of the user.
  * @returns True if the payee is an account, false otherwise or if an error occurs.
  */
-export async function checkIfPayeeIsAccount(name: string, userId: string): Promise<boolean> {
-  if (!name || !userId) return false;
+export async function checkIfPayeeIsAccount(name: string): Promise<boolean> {
+  if (!name) return false;
   try {
     const { data, error } = await supabase
       .from('vendors')
       .select('is_account')
       .eq('name', name)
-      .eq('user_id', userId) // Filter by user_id
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
@@ -160,18 +154,16 @@ export async function checkIfPayeeIsAccount(name: string, userId: string): Promi
 /**
  * Fetches the currency of a given account.
  * @param accountName The name of the account.
- * @param userId The ID of the user.
  * @returns The currency code (e.g., 'USD', 'EUR') or 'USD' if not found/error.
  */
-export async function getAccountCurrency(accountName: string, userId: string): Promise<string> {
-  if (!accountName || !userId) return 'USD';
+export async function getAccountCurrency(accountName: string): Promise<string> {
+  if (!accountName) return 'USD';
   try {
     const { data, error } = await supabase
       .from('vendors')
       .select('accounts(currency)')
       .eq('name', accountName)
       .eq('is_account', true)
-      .eq('user_id', userId) // Filter by user_id
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -187,18 +179,16 @@ export async function getAccountCurrency(accountName: string, userId: string): P
 /**
  * Fetches details for a given account.
  * @param accountName The name of the account.
- * @param userId The ID of the user.
  * @returns An object containing currency, starting_balance, and remarks, or null if not found/error.
  */
-export async function getAccountDetails(accountName: string, userId: string): Promise<{ currency: string; starting_balance: number; remarks: string } | null> {
-  if (!accountName || !userId) return null;
+export async function getAccountDetails(accountName: string): Promise<{ currency: string; starting_balance: number; remarks: string } | null> {
+  if (!accountName) return null;
   try {
     const { data, error } = await supabase
       .from('vendors')
       .select('accounts(currency, starting_balance, remarks)')
       .eq('name', accountName)
       .eq('is_account', true)
-      .eq('user_id', userId) // Filter by user_id
       .single();
 
     if (error && error.code !== 'PGRST116') {

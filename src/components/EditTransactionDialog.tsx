@@ -37,7 +37,6 @@ import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import LoadingOverlay from "./LoadingOverlay";
-import { useUser } from "@/contexts/UserContext"; // Import useUser
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -64,7 +63,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 }) => {
   const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories } = useTransactions(); // Get allCategories from context
   const { currencySymbols, convertBetweenCurrencies } = useCurrency();
-  const { user } = useUser(); // Get user from UserContext
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
   const [allVendors, setAllVendors] = React.useState<string[]>([]);
@@ -82,8 +80,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   });
 
   const fetchPayees = React.useCallback(async () => {
-    if (!user?.id) return;
-    const { data, error } = await supabase.from('vendors').select('name, is_account').eq('user_id', user.id); // Filter by user_id
+    const { data, error } = await supabase.from('vendors').select('name, is_account');
     if (error) {
       console.error("Error fetching payees:", error.message);
       return;
@@ -92,7 +89,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     const vendors = data.filter(p => !p.is_account).map(p => p.name);
     setAllAccounts(accounts);
     setAllVendors(vendors);
-  }, [user?.id]);
+  }, []);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -112,27 +109,27 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
-      if (accountValue && user?.id) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue, user.id);
+      if (accountValue) {
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap, user?.id]);
+  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
 
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
-      if (isTransfer && vendorValue && user?.id) {
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue, user.id);
+      if (isTransfer && vendorValue) {
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
         setDestinationAccountCurrency(currencyCode);
       } else {
         setDestinationAccountCurrency(null);
       }
     };
     fetchDestinationCurrency();
-  }, [vendorValue, isTransfer, accountCurrencyMap, user?.id]);
+  }, [vendorValue, isTransfer, accountCurrencyMap]);
 
 
   React.useEffect(() => {

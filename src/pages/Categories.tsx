@@ -26,20 +26,17 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
 
 export type Category = {
   id: string;
   name: string;
   user_id: string;
   created_at: string;
-  totalTransactions?: number; // Added totalTransactions
 };
 
 const CategoriesPage = () => {
   const { categories, fetchCategories, fetchTransactions } = useTransactions();
   const { user } = useUser();
-  const { formatCurrency } = useCurrency(); // Use formatCurrency
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -150,8 +147,7 @@ const CategoriesPage = () => {
       const { error: updateTransactionsError } = await supabase
         .from('transactions')
         .update({ category: 'Others' })
-        .in('category', namesToDelete)
-        .eq('user_id', user.id); // Ensure only user's transactions are updated
+        .in('category', namesToDelete); // Update transactions by category name
 
       if (updateTransactionsError) {
         throw updateTransactionsError;
@@ -428,18 +424,17 @@ const CategoriesPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Total Transactions</TableHead> {/* New TableHead */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell> {/* Adjusted colspan */}
+                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground"> {/* Adjusted colspan */}
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                       No categories found.
                     </TableCell>
                   </TableRow>
@@ -473,9 +468,6 @@ const CategoriesPage = () => {
                             {category.name}
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(category.totalTransactions || 0)} {/* Display totalTransactions */}
                       </TableCell>
                       <TableCell className="text-right">
                         {isSavingName && editingCategoryId === category.id ? (

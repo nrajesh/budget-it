@@ -50,15 +50,10 @@ export const useTransactionManagement = () => {
 
   // Fetch available accounts dynamically
   const fetchAvailableAccounts = React.useCallback(async () => {
-    if (!user?.id) {
-      setAvailableAccountOptions([]);
-      return;
-    }
     const { data, error } = await supabase
       .from('vendors')
       .select('name')
-      .eq('is_account', true)
-      .eq('user_id', user.id); // Filter by user_id
+      .eq('is_account', true);
 
     if (error) {
       console.error("Error fetching account names:", error.message);
@@ -70,7 +65,7 @@ export const useTransactionManagement = () => {
       }));
       setAvailableAccountOptions(options);
     }
-  }, [user?.id]);
+  }, []);
 
   React.useEffect(() => {
     fetchAvailableAccounts();
@@ -232,29 +227,19 @@ export const useTransactionManagement = () => {
           })).filter(item => item.name);
 
           await Promise.all(uniqueAccountsData.map(async (acc) => {
-            if (user?.id) {
-              await ensurePayeeExists(acc.name, true, user.id, { currency: acc.currency, startingBalance: 0 });
-            }
+            await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
           }));
 
           const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
           await Promise.all(uniqueVendors.map(name => {
             const row = parsedData.find(r => r.Vendor === name);
             const isTransfer = row?.Category === 'Transfer';
-            if (user?.id) {
-              return ensurePayeeExists(name, isTransfer, user.id);
-            }
-            return Promise.resolve(null);
+            return ensurePayeeExists(name, isTransfer);
           }));
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
-          await Promise.all(uniqueCategories.map(name => {
-            if (user?.id) {
-              return ensureCategoryExists(name, user.id);
-            }
-            return Promise.resolve(null);
-          }));
+          await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
           await refetchAllPayees(); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
 
@@ -274,7 +259,6 @@ export const useTransactionManagement = () => {
               remarks: row.Remarks,
               currency: accountCurrency,
               transfer_id: row.transfer_id || null,
-              user_id: user.id, // Add user_id here
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -321,7 +305,6 @@ export const useTransactionManagement = () => {
       "Remarks": t.remarks,
       "Currency": t.currency,
       "transfer_id": t.transfer_id || null,
-      "user_id": t.user_id, // Include user_id in export
     }));
 
     const csv = Papa.unparse(dataToExport, {
