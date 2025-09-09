@@ -63,15 +63,6 @@ const VendorsPage = () => {
     loadVendors();
   }, [fetchVendors]);
 
-  // Calculate transaction counts for each vendor
-  const vendorTransactionCounts = React.useMemo(() => {
-    const counts: Record<string, number> = {};
-    vendors.forEach(vendor => {
-      counts[vendor.id] = vendor.totalTransactions || 0;
-    });
-    return counts;
-  }, [vendors]);
-
   const filteredVendors = React.useMemo(() => {
     return vendors.filter((p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -172,8 +163,8 @@ const VendorsPage = () => {
     }
   };
 
-  // New function to handle transaction count click
-  const handleTransactionCountClick = (vendorName: string) => {
+  // New function to handle vendor name click
+  const handleVendorNameClick = (vendorName: string) => {
     // Navigate to Transactions page with vendor filter
     navigate('/transactions', {
       state: {
@@ -338,18 +329,17 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Transactions</TableHead> {/* New column for transaction count */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -375,20 +365,14 @@ const VendorsPage = () => {
                             className="h-8"
                           />
                         ) : (
-                          <div onClick={() => startEditing(vendor)} className="cursor-pointer hover:text-primary">
+                          <div
+                            onClick={() => handleVendorNameClick(vendor.name)}
+                            className="cursor-pointer hover:text-primary hover:underline"
+                          >
                             {vendor.name}
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleTransactionCountClick(vendor.name)}
-                          className="text-blue-500 hover:underline cursor-pointer"
-                          disabled={vendorTransactionCounts[vendor.id] === 0}
-                        >
-                          {vendorTransactionCounts[vendor.id] || 0}
-                        </button>
-                      </TableCell> {/* Display transaction count as clickable link */}
                       <TableCell className="text-right">
                         {isSavingName && editingVendorId === vendor.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />

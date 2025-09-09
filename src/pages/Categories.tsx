@@ -67,15 +67,6 @@ const CategoriesPage = () => {
     loadCategories();
   }, [fetchCategories]);
 
-  // Calculate transaction counts for each category
-  const categoryTransactionCounts = React.useMemo(() => {
-    const counts: Record<string, number> = {};
-    categories.forEach(category => {
-      counts[category.id] = category.totalTransactions || 0;
-    });
-    return counts;
-  }, [categories]);
-
   const filteredCategories = React.useMemo(() => {
     return categories.filter((cat) =>
       cat.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -206,8 +197,8 @@ const CategoriesPage = () => {
     }
   };
 
-  // New function to handle transaction count click
-  const handleTransactionCountClick = (categoryName: string) => {
+  // New function to handle category name click
+  const handleCategoryNameClick = (categoryName: string) => {
     // Navigate to Transactions page with category filter
     navigate('/transactions', {
       state: {
@@ -379,18 +370,17 @@ const CategoriesPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Transactions</TableHead> {/* New column for transaction count */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                       No categories found.
                     </TableCell>
                   </TableRow>
@@ -416,20 +406,14 @@ const CategoriesPage = () => {
                             className="h-8"
                           />
                         ) : (
-                          <div onClick={() => startEditing(category)} className="cursor-pointer hover:text-primary">
+                          <div
+                            onClick={() => handleCategoryNameClick(category.name)}
+                            className="cursor-pointer hover:text-primary hover:underline"
+                          >
                             {category.name}
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => handleTransactionCountClick(category.name)}
-                          className="text-blue-500 hover:underline cursor-pointer"
-                          disabled={categoryTransactionCounts[category.id] === 0}
-                        >
-                          {categoryTransactionCounts[category.id] || 0}
-                        </button>
-                      </TableCell> {/* Display transaction count as clickable link */}
                       <TableCell className="text-right">
                         {isSavingName && editingCategoryId === category.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
