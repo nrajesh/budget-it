@@ -7,19 +7,24 @@ import { Transaction } from '@/data/finance-data'; // Import Transaction type
 interface CategoriesServiceProps {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   userId: string | undefined;
-  transactions: Transaction[]; // Pass transactions here
+  getTransactions: () => Transaction[]; // Changed to a getter function
 }
 
-export const createCategoriesService = ({ setCategories, userId, transactions }: CategoriesServiceProps) => {
+export const createCategoriesService = ({ setCategories, userId, getTransactions }: CategoriesServiceProps) => {
 
   const syncCategoriesFromTransactions = async () => {
-    if (!userId || transactions.length === 0) {
+    if (!userId) {
+      return;
+    }
+    const currentTransactions = getTransactions(); // Get latest transactions here
+
+    if (currentTransactions.length === 0) {
       return;
     }
 
     try {
       const uniqueTransactionCategories = new Set<string>();
-      transactions.forEach(t => {
+      currentTransactions.forEach(t => { // Use currentTransactions
         if (t.category && t.category !== 'Transfer') { // Exclude 'Transfer' as it's a special category
           uniqueTransactionCategories.add(t.category);
         }

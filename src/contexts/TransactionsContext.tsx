@@ -78,12 +78,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     convertAmount,
   }), [setVendors, setAccounts, convertAmount]);
 
-  // Pass transactions to createCategoriesService
+  // Pass a getter function for transactions to createCategoriesService
   const { fetchCategories } = React.useMemo(() => createCategoriesService({
     setCategories,
     userId: user?.id, // Pass userId to categories service
-    transactions, // Pass transactions here
-  }), [setCategories, user?.id, transactions]); // Add transactions to dependency array
+    getTransactions: () => transactions, // Pass getter function for transactions
+  }), [setCategories, user?.id]); // fetchCategories is now stable because `transactions` is not a direct dependency of its creation
 
   // Effect to update accountCurrencyMap when accounts change
   React.useEffect(() => {
@@ -100,12 +100,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Ensure transactions are fetched first if categories depend on them
     await fetchTransactions(); // Fetch transactions first
     await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]); // Then fetch payees and categories
-  }, [fetchVendors, fetchAccounts, fetchCategories, fetchTransactions]);
+  }, [fetchVendors, fetchAccounts, fetchCategories, fetchTransactions]); // Dependencies are stable functions
 
   const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
     fetchTransactions,
     refetchAllPayees,
-    transactions,
+    transactions, // This is fine here, as transactionsService doesn't cause a loop back to its own creation
     setTransactions,
     convertBetweenCurrencies,
     userId: user?.id, // Pass userId to transactions service
@@ -126,14 +126,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (user?.id) { // Only fetch data if user is logged in
       // Initial fetch: fetch transactions first, then other data that might depend on them
       const initialLoad = async () => {
-        await fetchTransactions();
+        await fetchTransactions(); // This updates `transactions` state
+        // Now `fetchCategories` is stable, so calling it here won't cause a re-render loop
         await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
       };
       initialLoad();
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          // On auth state change, re-fetch everything
           const authChangeLoad = async () => {
             await fetchTransactions();
             await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
@@ -152,7 +152,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setAccountCurrencyMap(new Map());
       setIsLoading(false);
     }
-  }, [fetchTransactions, fetchVendors, fetchAccounts, fetchCategories, user?.id]); // Add fetch functions to dependency array
+  }, [fetchTransactions, fetchVendors, fetchAccounts, fetchCategories, user?.id]); // All dependencies are now stable functions or primitive values.
 
   const value = React.useMemo(() => ({
     transactions,
