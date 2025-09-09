@@ -26,7 +26,6 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
 
 export type Category = {
   id: string;
@@ -38,7 +37,6 @@ export type Category = {
 const CategoriesPage = () => {
   const { categories, fetchCategories, fetchTransactions } = useTransactions();
   const { user } = useUser();
-  const { formatCurrency } = useCurrency();
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -56,37 +54,14 @@ const CategoriesPage = () => {
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // State for category transaction sums
-  const [categoryTransactionSums, setCategoryTransactionSums] = React.useState<Record<string, number>>({});
-
-  // Fetch category transaction sums
-  const fetchCategoryTransactionSums = React.useCallback(async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .rpc('get_category_transaction_sums', { user_id_param: user.id });
-
-    if (error) {
-      console.error("Error fetching category transaction sums:", error.message);
-      setCategoryTransactionSums({});
-    } else {
-      const sums: Record<string, number> = {};
-      data.forEach((item: { category: string; total_amount: number }) => {
-        sums[item.category] = item.total_amount;
-      });
-      setCategoryTransactionSums(sums);
-    }
-  }, [user]);
-
   React.useEffect(() => {
     const loadCategories = async () => {
       setIsLoading(true);
       await fetchCategories();
-      await fetchCategoryTransactionSums();
       setIsLoading(false);
     };
     loadCategories();
-  }, [fetchCategories, fetchCategoryTransactionSums]);
+  }, [fetchCategories]);
 
   const filteredCategories = React.useMemo(() => {
     return categories.filter((cat) =>
@@ -114,7 +89,6 @@ const CategoriesPage = () => {
         if (error) throw error;
         showSuccess("Category added successfully!");
         fetchCategories();
-        fetchCategoryTransactionSums(); // Refresh sums after adding
       } catch (error: any) {
         showError(`Failed to add category: ${error.message}`);
       }
@@ -146,7 +120,6 @@ const CategoriesPage = () => {
       if (error) throw error;
       showSuccess(successMessage);
       fetchCategories();
-      fetchCategoryTransactionSums(); // Refresh sums after deletion
       fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to delete: ${error.message}`);
@@ -203,7 +176,6 @@ const CategoriesPage = () => {
       if (error) throw error;
       showSuccess("Category name updated successfully!");
       fetchCategories();
-      fetchCategoryTransactionSums(); // Refresh sums after name change
       fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to update category name: ${error.message}`);
@@ -227,7 +199,6 @@ const CategoriesPage = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchCategories();
-    await fetchCategoryTransactionSums();
     setIsRefreshing(false);
   };
 
@@ -278,7 +249,6 @@ const CategoriesPage = () => {
 
           showSuccess(`${categoriesToInsert.length} categories imported successfully!`);
           await fetchCategories();
-          await fetchCategoryTransactionSums(); // Refresh sums after import
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
         } finally {
@@ -386,18 +356,17 @@ const CategoriesPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Total Transactions</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                       No categories found.
                     </TableCell>
                   </TableRow>
@@ -427,9 +396,6 @@ const CategoriesPage = () => {
                             {category.name}
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(categoryTransactionSums[category.name] || 0)}
                       </TableCell>
                       <TableCell className="text-right">
                         {isSavingName && editingCategoryId === category.id ? (

@@ -34,10 +34,10 @@ const VendorsPage = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
-  
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedVendor, setSelectedVendor] = React.useState<Payee | null>(null);
-  
+
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [vendorToDelete, setVendorToDelete] = React.useState<Payee | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
@@ -49,8 +49,6 @@ const VendorsPage = () => {
   const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const { formatCurrency } = useCurrency();
 
   // Initial fetch for vendors
   React.useEffect(() => {
@@ -144,7 +142,7 @@ const VendorsPage = () => {
       });
       if (error) throw error;
       showSuccess("Vendor name updated successfully!");
-      refetchAllPayees(); // Re-fetch all payees to update the list and transaction sums
+      refetchAllPayees(); // Re-fetch all payees to update the list
       fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
       showError(`Failed to update vendor name: ${error.message}`);
@@ -318,18 +316,17 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Total Transactions</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -359,9 +356,6 @@ const VendorsPage = () => {
                             {vendor.name}
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(vendor.totalTransactions || 0)}
                       </TableCell>
                       <TableCell className="text-right">
                         {isSavingName && editingVendorId === vendor.id ? (

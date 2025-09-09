@@ -2,7 +2,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import { Payee } from '@/components/AddEditPayeeDialog';
 
-
 interface PayeesServiceProps {
   setVendors: React.Dispatch<React.SetStateAction<Payee[]>>;
   setAccounts: React.Dispatch<React.SetStateAction<Payee[]>>;
@@ -12,9 +11,8 @@ interface PayeesServiceProps {
 export const createPayeesService = ({ setVendors, setAccounts, convertAmount }: PayeesServiceProps) => {
 
   const fetchVendors = async () => {
-    // Use the new vendor_transaction_summary view to get total_transaction_amount efficiently
-    const { data: vendorsData, error } = await supabase
-      .from("vendor_transaction_summary") // Changed to use the new view
+    const { data, error } = await supabase
+      .from("vendors")
       .select("*")
       .eq('is_account', false)
       .order('name', { ascending: true });
@@ -23,12 +21,7 @@ export const createPayeesService = ({ setVendors, setAccounts, convertAmount }: 
       showError(`Failed to fetch vendors: ${error.message}`);
       setVendors([]);
     } else {
-      // Map total_transaction_amount to totalTransactions for consistency with Payee type
-      const vendorsWithTransactions = vendorsData.map(vendor => ({
-        ...vendor,
-        totalTransactions: convertAmount(vendor.total_transaction_amount || 0),
-      }));
-      setVendors(vendorsWithTransactions as Payee[]);
+      setVendors(data as Payee[]);
     }
   };
 
