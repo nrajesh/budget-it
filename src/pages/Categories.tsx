@@ -81,10 +81,6 @@ const CategoriesPage = () => {
     }
     const newCategoryName = prompt("Enter new category name:");
     if (newCategoryName && newCategoryName.trim() !== "") {
-      if (newCategoryName.trim().toLowerCase() === 'others') {
-        showError("Category name 'Others' is reserved and cannot be added manually.");
-        return;
-      }
       try {
         const { error } = await supabase.from('categories').insert({
           name: newCategoryName.trim(),
@@ -100,10 +96,6 @@ const CategoriesPage = () => {
   };
 
   const handleDeleteClick = (category: Category) => {
-    if (category.name === 'Others') {
-      showError("The 'Others' category cannot be deleted.");
-      return;
-    }
     setCategoryToDelete(category);
     setIsConfirmOpen(true);
   };
@@ -115,60 +107,22 @@ const CategoriesPage = () => {
       return;
     }
 
-    const categoriesToDelete = categoryToDelete ? [categoryToDelete] : categories.filter(cat => selectedRows.includes(cat.id));
-    const deletableCategories = categoriesToDelete.filter(cat => cat.name !== 'Others');
-
-    if (deletableCategories.length === 0) {
-      showError("No deletable categories selected.");
-      setIsConfirmOpen(false);
-      setCategoryToDelete(null);
-      setSelectedRows([]);
-      return;
-    }
-
-    const idsToDelete = deletableCategories.map(cat => cat.id);
-    const namesToDelete = deletableCategories.map(cat => cat.name);
-    const successMessage = deletableCategories.length === 1 ? `Category '${deletableCategories[0].name}' deleted successfully.` : `${deletableCategories.length} categories deleted successfully.`;
+    const idsToDelete = categoryToDelete ? [categoryToDelete.id] : selectedRows;
+    const successMessage = categoryToDelete ? "Category deleted successfully." : `${selectedRows.length} categories deleted successfully.`;
 
     try {
-      // Find the 'Others' category ID for the current user
-      const { data: othersCategory, error: fetchOthersError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', 'Others')
-        .eq('user_id', user.id)
-        .single();
-
-      if (fetchOthersError || !othersCategory) {
-        throw new Error("Default 'Others' category not found. Cannot reassign transactions.");
-      }
-
-      // Step 1: Reassign transactions from deleted categories to 'Others'
-      const { error: updateTransactionsError } = await supabase
-        .from('transactions')
-        .update({ category: 'Others' })
-        .in('category', namesToDelete); // Update transactions by category name
-
-      if (updateTransactionsError) {
-        throw updateTransactionsError;
-      }
-
-      // Step 2: Delete the categories
-      const { error: deleteCategoriesError } = await supabase
+      const { error } = await supabase
         .from('categories')
         .delete()
         .in('id', idsToDelete)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id); // Ensure user can only delete their own categories
 
-      if (deleteCategoriesError) {
-        throw deleteCategoriesError;
-      }
-
+      if (error) throw error;
       showSuccess(successMessage);
       fetchCategories();
       fetchTransactions(); // Re-fetch transactions to update any affected entries
     } catch (error: any) {
-      showError(`Failed to delete categories: ${error.message}`);
+      showError(`Failed to delete: ${error.message}`);
     } finally {
       setIsConfirmOpen(false);
       setCategoryToDelete(null);
@@ -178,18 +132,13 @@ const CategoriesPage = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRows(currentCategories.filter(cat => cat.name !== 'Others').map((cat) => cat.id));
+      setSelectedRows(currentCategories.map((cat) => cat.id));
     } else {
       setSelectedRows([]);
     }
   };
 
   const handleRowSelect = (id: string, checked: boolean) => {
-    const category = categories.find(cat => cat.id === id);
-    if (category?.name === 'Others') {
-      showError("The 'Others' category cannot be selected for deletion.");
-      return;
-    }
     if (checked) {
       setSelectedRows((prev) => [...prev, id]);
     } else {
@@ -198,10 +147,6 @@ const CategoriesPage = () => {
   };
 
   const startEditing = (category: Category) => {
-    if (category.name === 'Others') {
-      showError("The 'Others' category name cannot be changed.");
-      return;
-    }
     setEditingCategoryId(category.id);
     setEditedName(category.name);
     setTimeout(() => {
@@ -216,11 +161,6 @@ const CategoriesPage = () => {
       return;
     }
     if (editedName.trim() === "" || editedName === originalName) {
-      setEditingCategoryId(null);
-      return;
-    }
-    if (editedName.trim().toLowerCase() === 'others') {
-      showError("Category name 'Others' is reserved and cannot be used.");
       setEditingCategoryId(null);
       return;
     }
@@ -298,20 +238,12 @@ const CategoriesPage = () => {
         }
 
         try {
-          const categoriesToInsert = categoryNames
-            .filter((name: string) => name.trim().toLowerCase() !== 'others') // Prevent importing 'Others'
-            .map((name: string) => ({
-              name: name.trim(),
-              user_id: user.id,
-            }));
+          const categoriesToInsert = categoryNames.map((name: string) => ({
+            name: name.trim(),
+            user_id: user.id,
+          }));
 
-          if (categoriesToInsert.length === 0) {
-            showSuccess("No new categories to import (or only 'Others' was present).");
-            setIsImporting(false);
-            return;
-          }
-
-          const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'user_id,name', ignoreDuplicates: true });
+          const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
 
           if (error) throw error;
 
@@ -446,7 +378,6 @@ const CategoriesPage = () => {
                           checked={selectedRows.includes(category.id)}
                           onCheckedChange={(checked) => handleRowSelect(category.id, Boolean(checked))}
                           aria-label="Select row"
-                          disabled={category.name === 'Others'}
                         />
                       </TableCell>
                       <TableCell className="font-medium">
@@ -457,14 +388,11 @@ const CategoriesPage = () => {
                             onChange={(e) => setEditedName(e.target.value)}
                             onBlur={() => handleSaveName(category.id, category.name)}
                             onKeyDown={(e) => handleKeyDown(e, category)}
-                            disabled={isSavingName || category.name === 'Others'}
+                            disabled={isSavingName}
                             className="h-8"
                           />
                         ) : (
-                          <div
-                            onClick={() => startEditing(category)}
-                            className={category.name === 'Others' ? "cursor-default text-muted-foreground" : "cursor-pointer hover:text-primary"}
-                          >
+                          <div onClick={() => startEditing(category)} className="cursor-pointer hover:text-primary">
                             {category.name}
                           </div>
                         )}
@@ -473,12 +401,7 @@ const CategoriesPage = () => {
                         {isSavingName && editingCategoryId === category.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                         ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(category)}
-                            disabled={category.name === 'Others'}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(category)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
@@ -519,7 +442,7 @@ const CategoriesPage = () => {
         onOpenChange={setIsConfirmOpen}
         onConfirm={confirmDelete}
         title="Are you sure?"
-        description="This will permanently delete the selected category(ies). All transactions associated with these categories will be reassigned to the 'Others' category. This action cannot be undone."
+        description="This will permanently delete the selected category(ies). Transactions associated with these categories will have their category field cleared. This action cannot be undone."
         confirmText="Delete"
       />
     </div>
