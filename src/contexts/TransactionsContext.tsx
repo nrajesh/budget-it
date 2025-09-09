@@ -28,7 +28,7 @@ interface TransactionsContextType {
   accounts: Payee[];
   categories: Category[]; // Add categories to context type
   accountCurrencyMap: Map<string, string>;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id'> & { date: string; receivingAmount?: number }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
