@@ -48,7 +48,7 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
-  transfer_id?: string; // Changed from transferId to transfer_id
+  transfer_id?: string;
   date: string;
   account: string;
   currency: string;
@@ -56,11 +56,10 @@ export type Transaction = {
   amount: number;
   remarks?: string;
   category: string;
-  created_at: string; // Added for Supabase
+  created_at: string;
 };
 
-export const categories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
-// Removed accounts as it will now be fetched from Supabase
+// Base categories for seeding and initial demo data generation.
+// The actual list in the app will be fetched from the database.
+export const baseCategories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);
-
-// Removed transactionsData as it will now be fetched from Supabase

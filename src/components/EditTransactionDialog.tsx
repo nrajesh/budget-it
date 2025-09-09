@@ -17,7 +17,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Import FormDescription here
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Transaction } from "@/data/finance-data";
@@ -28,16 +28,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { categories } from "@/data/finance-data";
-import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 import ConfirmationDialog from "./ConfirmationDialog";
-import { Trash2, Loader2 } from "lucide-react"; // Import Loader2
+import { Trash2, Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatDateToYYYYMMDD } from "@/lib/utils"; // Import formatDateToYYYYMMDD
-import LoadingOverlay from "./LoadingOverlay"; // Import LoadingOverlay
+import { formatDateToYYYYMMDD } from "@/lib/utils";
+import LoadingOverlay from "./LoadingOverlay";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -62,7 +61,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   onOpenChange,
   transaction,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap } = useTransactions();
+  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories } = useTransactions(); // Get allCategories from context
   const { currencySymbols, convertBetweenCurrencies } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
@@ -70,13 +69,13 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
-  const [isSaving, setIsSaving] = React.useState(false); // New state for loading overlay
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       ...transaction,
-      date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
+      date: formatDateToYYYYMMDD(transaction.date),
     },
   });
 
@@ -97,9 +96,9 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       fetchPayees();
       form.reset({
         ...transaction,
-        date: formatDateToYYYYMMDD(transaction.date), // Format for input type="date"
+        date: formatDateToYYYYMMDD(transaction.date),
       });
-      setIsSaving(false); // Reset saving state when dialog opens
+      setIsSaving(false);
     }
   }, [transaction, form, isOpen, fetchPayees]);
 
@@ -108,7 +107,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const amountValue = form.watch("amount");
   const isTransfer = allAccounts.includes(vendorValue);
 
-  // Effect to update currency symbol for sending account when account changes or dialog opens
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
@@ -121,11 +119,9 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     updateCurrencySymbol();
   }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
 
-  // Effect to fetch destination account currency when vendor changes (if it's an account)
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
-        // Prioritize local map, then fallback to Supabase call
         const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
         setDestinationAccountCurrency(currencyCode);
       } else {
@@ -133,30 +129,29 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       }
     };
     fetchDestinationCurrency();
-  }, [vendorValue, isTransfer, accountCurrencyMap]); // Added accountCurrencyMap to dependencies
+  }, [vendorValue, isTransfer, accountCurrencyMap]);
 
 
   React.useEffect(() => {
     if (isTransfer) {
       form.setValue("category", "Transfer");
     } else if (form.getValues("category") === "Transfer") {
-      // If it was a transfer but now isn't, clear category or set a default
       form.setValue("category", "");
     }
   }, [isTransfer, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSaving(true); // Start loading
+    setIsSaving(true);
     try {
       await updateTransaction({
         ...transaction,
         ...values,
         date: new Date(values.date).toISOString(),
-        currency: accountCurrencyMap.get(values.account) || transaction.currency, // Ensure currency is updated to current account currency
+        currency: accountCurrencyMap.get(values.account) || transaction.currency,
       });
       onOpenChange(false);
     } finally {
-      setIsSaving(false); // End loading
+      setIsSaving(false);
     }
   };
 
@@ -168,30 +163,25 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const baseAccountOptions = allAccounts.map(acc => ({ value: acc, label: acc }));
   const baseVendorOptions = allVendors.map(v => ({ value: v, label: v }));
 
-  // Filter account options: disable if it's the selected vendor (and vendor is an account)
   const filteredAccountOptions = baseAccountOptions.map(option => ({
     ...option,
     disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   }));
 
-  // Combine vendor and account options for the vendor dropdown
   const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
 
-  // Filter combined vendor options: disable if it's the selected account
   const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
     ...option,
     disabled: option.value === accountValue,
   }));
 
-  const categoryOptions = categories.filter(c => c !== 'Transfer').map(cat => ({ value: cat, label: cat }));
-
-  // Removed showReceivingValueField and the corresponding FormItem
+  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })); // Use allCategories from context
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent>
-          <LoadingOverlay isLoading={isSaving} message="Saving changes..." /> {/* Loading overlay */}
+          <LoadingOverlay isLoading={isSaving} message="Saving changes..." />
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
           </DialogHeader>
@@ -259,7 +249,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.filter(c => c !== 'Transfer').map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {allCategories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -303,7 +293,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                   type="button"
                   variant="destructive"
                   onClick={() => setIsDeleteConfirmOpen(true)}
-                  disabled={isSaving} // Disable delete button while saving
+                  disabled={isSaving}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete

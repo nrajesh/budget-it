@@ -1,16 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency } from '@/integrations/supabase/utils';
-import { Transaction, categories } from '@/data/finance-data';
-import { availableCurrencies } from '@/contexts/CurrencyContext'; // Updated import to use direct export
+import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
+import { Transaction, baseCategories } from '@/data/finance-data'; // Use baseCategories
+import { availableCurrencies } from '@/contexts/CurrencyContext';
+import { Category } from '@/pages/Categories'; // Import Category type
 
 interface DemoDataServiceProps {
   fetchTransactions: () => Promise<void>;
   refetchAllPayees: () => Promise<void>;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  setVendors: React.Dispatch<React.SetStateAction<any[]>>; // Use any[] for simplicity here, Payee[] in context
-  setAccounts: React.Dispatch<React.SetStateAction<any[]>>; // Use any[] for simplicity here, Payee[] in context
+  setVendors: React.Dispatch<React.SetStateAction<any[]>>;
+  setAccounts: React.Dispatch<React.SetStateAction<any[]>>;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>; // Add setCategories
   setDemoDataProgress: React.Dispatch<React.SetStateAction<{ stage: string; progress: number; totalStages: number } | null>>;
+  userId: string | undefined; // Add userId
 }
 
 // Helper function to generate sample transactions for a given month, account, and currency
@@ -19,7 +22,8 @@ const generateTransactions = async (
   count: number,
   existingAccountNames: string[],
   existingVendorNames: string[],
-  accountCurrencyMap: Map<string, string>, // New parameter for pre-fetched currencies
+  existingCategoryNames: string[], // New parameter for categories
+  accountCurrencyMap: Map<string, string>,
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -33,11 +37,10 @@ const generateTransactions = async (
     const isTransfer = Math.random() < 0.2;
     const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
     
-    // Dynamically get the currency for the selected account from the map
-    const currencyCode = accountCurrencyMap.get(accountName) || 'USD'; // Fallback to USD if currency not found
+    const currencyCode = accountCurrencyMap.get(accountName) || 'USD';
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
-    let categoryName = categories[Math.floor(Math.random() * categories.length)];
+    let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)]; // Use dynamic categories
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
     if (isTransfer) {
@@ -59,7 +62,7 @@ const generateTransactions = async (
     const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
       date: date.toISOString(),
       account: accountName,
-      currency: currencyCode, // Use the fetched account currency
+      currency: currencyCode,
       vendor: vendorName,
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
@@ -97,15 +100,16 @@ const generateTransactions = async (
   return sampleTransactions;
 };
 
-export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setDemoDataProgress }: DemoDataServiceProps) => {
+export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setCategories, setDemoDataProgress, userId }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
     try {
-      const { error } = await supabase.rpc('clear_all_app_data'); // Use RPC for full data clear
+      const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
       setTransactions([]);
       setVendors([]);
       setAccounts([]);
+      setCategories([]); // Clear categories
       showSuccess("All application data cleared successfully!");
       refetchAllPayees();
     } catch (error: any) {
@@ -114,12 +118,18 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
   };
 
   const generateDiverseDemoData = async () => {
-    const totalStages = 5; // Clear, Accounts, Vendors, Currencies, Transactions
+    if (!userId) {
+      showError("User not logged in. Cannot generate demo data.");
+      setDemoDataProgress(null);
+      return;
+    }
+
+    const totalStages = 6; // Clear, Accounts, Vendors, Categories, Currencies, Transactions
     let currentStage = 0;
 
     try {
       setDemoDataProgress({ stage: "Clearing existing data...", progress: ++currentStage, totalStages });
-      await clearAllTransactions(); // Clear existing data first
+      await clearAllTransactions();
 
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
@@ -140,7 +150,15 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
         if (id) createdVendorNames.push(name);
       }
 
-      // Step 3: Pre-fetch all account currencies into a map
+      // Step 3: Pre-create all categories
+      setDemoDataProgress({ stage: "Creating demo categories...", progress: ++currentStage, totalStages });
+      const createdCategoryNames: string[] = [];
+      for (const name of baseCategories) { // Use baseCategories from finance-data
+        const id = await ensureCategoryExists(name, userId);
+        if (id) createdCategoryNames.push(name);
+      }
+
+      // Step 4: Pre-fetch all account currencies into a map
       setDemoDataProgress({ stage: "Fetching account currencies...", progress: ++currentStage, totalStages });
       const accountCurrencyMap = new Map<string, string>();
       const { data: accountCurrencyData, error: currencyError } = await supabase
@@ -161,14 +179,14 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
         }
       });
 
-      // Step 4: Generate transactions using the pre-created names and currency map
+      // Step 5: Generate transactions using the pre-created names and currency map
       setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
 
-      // Step 5: Batch insert transactions
+      // Step 6: Batch insert transactions
       if (demoData.length > 0) {
         const { error } = await supabase.from('transactions').insert(demoData);
         if (error) throw error;
@@ -182,7 +200,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     } finally {
-      setDemoDataProgress(null); // Clear progress on completion or error
+      setDemoDataProgress(null);
     }
   };
 

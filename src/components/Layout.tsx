@@ -13,7 +13,7 @@ import {
   Phone,
   ShoppingCart,
   Newspaper,
-  MessageSquare,
+  MessageSquare, // Keep MessageSquare for now, will change to Tag for categories
   ChevronDown,
   FileText,
   Notebook,
@@ -23,6 +23,7 @@ import {
   User,
   Bell,
   Banknote,
+  Tag, // New icon for Categories
 } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,8 +67,8 @@ import {
 } from "@/components/ui/select";
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useUser } from "@/contexts/UserContext"; // Import useUser
-import { supabase } from "@/integrations/supabase/client"; // Import supabase for logout
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -80,7 +81,7 @@ const navItems = [
 const Layout = () => {
   const { setTheme, theme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { user, userProfile, isLoadingUser } = useUser(); // Use user context
+  const { user, userProfile, isLoadingUser } = useUser();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
@@ -100,6 +101,8 @@ const Layout = () => {
         return "Vendors";
       case "/accounts":
         return "Accounts";
+      case "/categories": // New case for Categories
+        return "Categories";
       default:
         return "Page Not Found";
     }
@@ -179,10 +182,12 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <MessageSquare />
-                  Alerts
-                </SidebarMenuButton>
+                <Link to="/categories" className="w-full"> {/* Updated link */}
+                  <SidebarMenuButton isActive={location.pathname === "/categories"}> {/* Updated isActive */}
+                    <Tag /> {/* New icon */}
+                    Categories {/* New label */}
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <Collapsible asChild>
                 <SidebarMenuItem>

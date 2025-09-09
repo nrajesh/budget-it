@@ -2,67 +2,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pie, PieChart } from "recharts";
 import { type Transaction } from "@/data/finance-data";
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import useCurrency
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import React from "react"; // Added React import
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
 }
 
-const chartConfig = {
-  amount: {
-    label: "Amount",
-  },
-  Groceries: {
-    label: "Groceries",
-    color: "hsl(var(--chart-1))",
-  },
-  Utilities: {
-    label: "Utilities",
-    color: "hsl(var(--chart-2))",
-  },
-  Transport: {
-    label: "Transport",
-    color: "hsl(var(--chart-3))",
-  },
-  Entertainment: {
-    label: "Entertainment",
-    color: "hsl(var(--chart-4))",
-  },
-  Salary: {
-    label: "Salary",
-    color: "hsl(var(--chart-5))",
-  },
-  Shopping: { // Added missing category
-    label: "Shopping",
-    color: "hsl(var(--chart-6))",
-  },
-  Health: { // Added missing category
-    label: "Health",
-    color: "hsl(var(--chart-7))",
-  },
-  "Dining Out": { // Added missing category
-    label: "Dining Out",
-    color: "hsl(var(--chart-8))",
-  },
-  Rent: { // Retained existing category, reusing color
-    label: "Rent",
-    color: "hsl(var(--chart-1))",
-  },
-  Investments: { // Retained existing category, reusing color
-    label: "Investments",
-    color: "hsl(var(--chart-2))",
-  },
-  Other: { // Fallback category
-    label: "Other",
-    color: "hsl(var(--chart-8))",
-  },
-} satisfies ChartConfig;
-
 export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
-  const { formatCurrency, convertAmount } = useCurrency(); // Use currency context
+  const { formatCurrency, convertAmount } = useCurrency();
+  const { categories: allCategories } = useTransactions(); // Get allCategories from context
+
+  const chartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      amount: {
+        label: "Amount",
+      },
+    };
+    allCategories.forEach((category, index) => {
+      const colorIndex = (index % 8) + 1; // Use chart-1 to chart-8 for colors
+      config[category.name] = {
+        label: category.name,
+        color: `hsl(var(--chart-${colorIndex}))`,
+      };
+    });
+    // Add a fallback 'Other' category if needed, or ensure allCategories covers all cases
+    config['Other'] = {
+      label: "Other",
+      color: "hsl(var(--chart-8))",
+    };
+    return config;
+  }, [allCategories]);
 
   const spendingData = transactions.reduce((acc, transaction) => {
-    if (transaction.amount < 0 && transaction.category !== 'Transfer') { // Only consider expenses
+    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
       const category = transaction.category;
       acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
     }
@@ -71,9 +45,8 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
 
   const chartData = Object.entries(spendingData).map(([category, amount]) => ({
     category,
-    amount: convertAmount(amount), // Convert amount
-    // Type assertion here because `category` will always be a key with a `color` property in `chartConfig`
-    fill: (chartConfig[category as keyof typeof chartConfig] as { color: string }).color || chartConfig.Other.color,
+    amount: convertAmount(amount),
+    fill: (chartConfig[category as keyof typeof chartConfig] as { color: string })?.color || chartConfig.Other.color,
   }));
 
   const totalSpending = chartData.reduce((sum, item) => sum + item.amount, 0);
@@ -104,7 +77,6 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
           </PieChart>
         </ChartContainer>
       </CardContent>
-      {/* Removed ChartLegend */}
     </Card>
   );
 }

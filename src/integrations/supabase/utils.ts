@@ -156,8 +156,8 @@ export async function checkIfPayeeIsAccount(name: string): Promise<boolean> {
  * @param accountName The name of the account.
  * @returns The currency code (e.g., 'USD', 'EUR') or 'USD' if not found/error.
  */
-export async function getAccountCurrency(accountName: string): Promise<string> { // Changed return type to string
-  if (!accountName) return 'USD'; // Default to USD if no account name
+export async function getAccountCurrency(accountName: string): Promise<string> {
+  if (!accountName) return 'USD';
   try {
     const { data, error } = await supabase
       .from('vendors')
@@ -169,12 +169,10 @@ export async function getAccountCurrency(accountName: string): Promise<string> {
     if (error && error.code !== 'PGRST116') {
       throw error;
     }
-    // The 'accounts' relationship returns an array, even if single() is used on the parent.
-    // We expect only one account for a given vendor name marked as an account.
-    return data?.accounts?.[0]?.currency || 'USD'; // Default to USD
+    return data?.accounts?.[0]?.currency || 'USD';
   } catch (error: any) {
     console.error(`Error fetching currency for account "${accountName}": ${error.message}`);
-    return 'USD'; // Default to USD on error
+    return 'USD';
   }
 }
 
@@ -196,11 +194,79 @@ export async function getAccountDetails(accountName: string): Promise<{ currency
     if (error && error.code !== 'PGRST116') {
       throw error;
     }
-    // The 'accounts' relationship returns an array, even if single() is used on the parent.
-    // We expect only one account for a given vendor name marked as an account.
     return data?.accounts?.[0] || null;
   } catch (error: any) {
     console.error(`Error fetching details for account "${accountName}": ${error.message}`);
     return null;
+  }
+}
+
+/**
+ * Ensures a category exists in the 'categories' table, creating it if it doesn't.
+ * @param name The name of the category.
+ * @param userId The ID of the user creating/owning the category.
+ * @returns The ID of the existing or newly created category, or null if an error occurred.
+ */
+export async function ensureCategoryExists(name: string, userId: string): Promise<string | null> {
+  if (!name || !userId) {
+    console.warn("ensureCategoryExists called with empty name or userId.");
+    return null;
+  }
+
+  try {
+    // Check if category already exists for this user
+    let { data: existingCategory, error: fetchError } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
+      throw fetchError;
+    }
+
+    if (existingCategory) {
+      return existingCategory.id;
+    } else {
+      // Category does not exist, create it
+      const { data: newCategory, error: insertError } = await supabase
+        .from('categories')
+        .insert({ name, user_id: userId })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+      return newCategory.id;
+    }
+  } catch (error: any) {
+    console.error(`Error in ensureCategoryExists for "${name}":`, error.message);
+    showError(`Error ensuring category "${name}" exists: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Fetches all categories for the current user.
+ * @param userId The ID of the user.
+ * @returns An array of category objects, or an empty array if an error occurs.
+ */
+export async function fetchUserCategories(userId: string): Promise<{ id: string; name: string }[]> {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', userId)
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+    return data || [];
+  } catch (error: any) {
+    console.error(`Error fetching user categories: ${error.message}`);
+    showError(`Failed to fetch categories: ${error.message}`);
+    return [];
   }
 }

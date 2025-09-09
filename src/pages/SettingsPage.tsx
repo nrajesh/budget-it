@@ -8,15 +8,15 @@ import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog"; // Import new component
+import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { generateDiverseDemoData, clearAllTransactions, refetchAllPayees } = useTransactions(); // Get refetchAllPayees
+  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
-  const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false); // New state for progress dialog
+  const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false);
 
   const handleCurrencyChange = (value: string) => {
     setCurrency(value);
@@ -28,7 +28,7 @@ const SettingsPage = () => {
       const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
       
-      clearAllTransactions(); // This now also triggers refetchAllPayees internally
+      clearAllTransactions();
       showSuccess("All application data has been reset.");
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
@@ -38,15 +38,12 @@ const SettingsPage = () => {
   };
 
   const handleGenerateDemoData = async () => {
-    setIsDemoDataProgressDialogOpen(true); // Open progress dialog
+    setIsDemoDataProgressDialogOpen(true);
     try {
-      await generateDiverseDemoData(); // This now also triggers refetchAllPayees internally
-      // showSuccess is called inside generateDiverseDemoData now
+      await generateDiverseDemoData();
     } catch (error: any) {
-      // showError is called inside generateDiverseDemoData now
     } finally {
       setIsGenerateConfirmOpen(false);
-      // The progress dialog will close itself when demoDataProgress becomes null
     }
   };
 

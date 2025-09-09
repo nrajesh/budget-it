@@ -24,7 +24,7 @@ const chartConfigForAccounts = {
 } satisfies ChartConfig;
 
 const Analytics = () => {
-  const { transactions } = useTransactions();
+  const { transactions, categories: allCategories } = useTransactions(); // Get allCategories from context
 
   const availableAccounts = React.useMemo(() => {
     const accounts = new Set<string>();
@@ -36,15 +36,12 @@ const Analytics = () => {
   }, [transactions]);
 
   const availableCategories = React.useMemo(() => {
-    const categories = new Set<string>();
-    transactions.forEach(t => categories.add(t.category));
-    return Array.from(categories).map(category => ({
-      value: slugify(category),
-      label: category,
+    return allCategories.map(category => ({ // Use allCategories from context
+      value: slugify(category.name),
+      label: category.name,
     }));
-  }, [transactions]);
+  }, [allCategories]);
 
-  // Initialize selectedAccounts and selectedCategories to include all available options by default
   const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(
     availableAccounts.map(acc => acc.value)
   );
@@ -52,11 +49,9 @@ const Analytics = () => {
     availableCategories.map(cat => cat.value)
   );
 
-  // Update selectedAccounts/Categories if available options change (e.g., new transactions added)
   React.useEffect(() => {
     setSelectedAccounts(prev => {
       const currentAccountValues = availableAccounts.map(acc => acc.value);
-      // If all were selected, keep all selected. Otherwise, maintain current selections if they still exist.
       if (prev.length === 0 || prev.length === currentAccountValues.length) {
         return currentAccountValues;
       }
@@ -82,8 +77,6 @@ const Analytics = () => {
       filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
     }
 
-    // Note: Category filtering for the table is now handled inside RecentTransactions
-    // This `filtered` list is primarily for charts that need pre-filtered data.
     return filtered;
   }, [transactions, selectedAccounts]);
 

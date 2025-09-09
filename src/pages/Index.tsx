@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
-import { SpendingByVendorChart } from "@/components/SpendingByVendorChart"; // Import new component
+import { SpendingByVendorChart } from "@/components/SpendingByVendorChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils"; // Import cn for conditional class names
+import { cn } from "@/lib/utils";
 
 const chartConfig = {
   income: {
@@ -58,7 +58,6 @@ const Index = () => {
       }
     });
 
-    // Sort months chronologically
     const sortedMonths = Object.keys(summary).sort((a, b) => {
       const [monthA, yearA] = a.split(' ');
       const [monthB, yearB] = b.split(' ');
@@ -180,11 +179,11 @@ const Index = () => {
   const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData, true), [monthlyBalanceData]);
 
   const getChangeColorClass = (isPositive: boolean | null, type: 'income' | 'expenses' | 'balance') => {
-    if (isPositive === null) return "text-muted-foreground"; // N/A or 0%
+    if (isPositive === null) return "text-muted-foreground";
     if (type === 'expenses') {
-      return isPositive ? "text-red-500" : "text-green-500"; // Red for increased expenses, green for decreased
+      return isPositive ? "text-red-500" : "text-green-500";
     }
-    return isPositive ? "text-green-500" : "text-red-500"; // Green for increased income/balance, red for decreased
+    return isPositive ? "text-green-500" : "text-red-500";
   };
 
   return (
@@ -284,7 +283,7 @@ const Index = () => {
       <div className="lg:col-span-1">
         <SpendingCategoriesChart transactions={filteredTransactions} />
       </div>
-      <div className="lg:col-span-1"> {/* New div for the SpendingByVendorChart */}
+      <div className="lg:col-span-1">
         <SpendingByVendorChart transactions={filteredTransactions} />
       </div>
     </div>

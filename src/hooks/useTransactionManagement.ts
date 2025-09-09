@@ -3,11 +3,12 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { DateRange } from "react-day-picker";
 import { slugify, formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
-import { Transaction, categories as allDefinedCategories } from "@/data/finance-data";
+import { Transaction } from "@/data/finance-data";
 import { supabase } from "@/integrations/supabase/client";
-import { ensurePayeeExists } from "@/integrations/supabase/utils";
+import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils"; // Import ensureCategoryExists
 import { showError, showSuccess } from "@/utils/toast";
 import Papa from "papaparse";
+import { useUser } from "@/contexts/UserContext"; // Import useUser
 
 interface TransactionToDelete {
   id: string;
@@ -21,7 +22,9 @@ export const useTransactionManagement = () => {
     accountCurrencyMap,
     fetchTransactions,
     refetchAllPayees,
+    categories: allCategories, // Get categories from context
   } = useTransactions();
+  const { user } = useUser(); // Get user from UserContext
   const { formatCurrency } = useCurrency();
 
   // Pagination states
@@ -69,11 +72,11 @@ export const useTransactionManagement = () => {
   }, [fetchAvailableAccounts]);
 
   const availableCategoryOptions = React.useMemo(() => {
-    return allDefinedCategories.map(category => ({
-      value: slugify(category),
-      label: category,
+    return allCategories.map(category => ({
+      value: slugify(category.name),
+      label: category.name,
     }));
-  }, []);
+  }, [allCategories]);
 
   // Initialize selected filters to "all" by default
   React.useEffect(() => {
@@ -187,6 +190,11 @@ export const useTransactionManagement = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!user) {
+      showError("You must be logged in to import transactions.");
+      setIsImporting(false);
+      return;
+    }
 
     setIsImporting(true);
     Papa.parse(file, {
@@ -229,9 +237,13 @@ export const useTransactionManagement = () => {
             return ensurePayeeExists(name, isTransfer);
           }));
 
-          await refetchAllPayees(); // Refresh all payees (including accounts) to ensure accountCurrencyMap is up-to-date
+          // Step 2: Ensure all categories exist
+          const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
+          await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
-          // Step 2: Prepare transactions for insertion using the now-updated accountCurrencyMap
+          await refetchAllPayees(); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
+
+          // Step 3: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
             const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD';
             if (!accountCurrency) {
@@ -239,14 +251,14 @@ export const useTransactionManagement = () => {
               return null;
             }
             return {
-              date: parseDateFromDDMMYYYY(row.Date).toISOString(), // Parse date from DD-MMM-YYYY
+              date: parseDateFromDDMMYYYY(row.Date).toISOString(),
               account: row.Account,
               vendor: row.Vendor,
               category: row.Category,
               amount: parseFloat(row.Amount) || 0,
               remarks: row.Remarks,
               currency: accountCurrency,
-              transfer_id: row.transfer_id || null, // Include transfer_id from CSV
+              transfer_id: row.transfer_id || null,
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -256,12 +268,12 @@ export const useTransactionManagement = () => {
             return;
           }
 
-          // Step 3: Insert transactions
+          // Step 4: Insert transactions
           const { error } = await supabase.from('transactions').insert(transactionsToInsert);
           if (error) throw error;
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          fetchTransactions(); // Re-fetch transactions to update the display
+          fetchTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
         } finally {
@@ -285,14 +297,14 @@ export const useTransactionManagement = () => {
     }
 
     const dataToExport = transactions.map(t => ({
-      "Date": formatDateToDDMMYYYY(t.date), // Format date to DD-MMM-YYYY for export
+      "Date": formatDateToDDMMYYYY(t.date),
       "Account": t.account,
       "Vendor": t.vendor,
       "Category": t.category,
       "Amount": t.amount,
       "Remarks": t.remarks,
       "Currency": t.currency,
-      "transfer_id": t.transfer_id || null, // Include transfer_id for export
+      "transfer_id": t.transfer_id || null,
     }));
 
     const csv = Papa.unparse(dataToExport, {
@@ -329,7 +341,7 @@ export const useTransactionManagement = () => {
     endIndex,
     currentTransactions,
     numSelected,
-    rowCount,
+    rowCount: currentTransactions.length, // Use currentTransactions.length for rowCount
     accountCurrencyMap,
     formatCurrency,
     isAllSelectedOnPage,
@@ -352,7 +364,7 @@ export const useTransactionManagement = () => {
     handleImportClick,
     handleFileChange,
     handleExportClick,
-    fetchTransactions, // Expose for dialogs if needed
-    refetchAllPayees, // Expose for dialogs if needed
+    fetchTransactions,
+    refetchAllPayees,
   };
 };

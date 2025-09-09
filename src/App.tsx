@@ -16,7 +16,8 @@ const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Login = lazy(() => import("@/pages/Login"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
-const Vendors = lazy(() => import("@/pages/Vendors")); // Correctly importing Vendors
+const Vendors = lazy(() => import("@/pages/Vendors"));
+const Categories = lazy(() => import("@/pages/Categories")); // Lazy load Categories
 
 function App() {
   return (
@@ -32,8 +33,9 @@ function App() {
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Index />} />
                     <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/vendors" element={<Vendors />} /> {/* Using the Vendors component */}
+                    <Route path="/vendors" element={<Vendors />} />
                     <Route path="/accounts" element={<Accounts />} />
+                    <Route path="/categories" element={<Categories />} /> {/* New route for Categories */}
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
