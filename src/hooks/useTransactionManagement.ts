@@ -9,6 +9,7 @@ import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase
 import { showError, showSuccess } from "@/utils/toast";
 import Papa from "papaparse";
 import { useUser } from "@/contexts/UserContext"; // Import useUser
+import { useLocation } from "react-router-dom"; // Import useLocation
 
 interface TransactionToDelete {
   id: string;
@@ -26,6 +27,7 @@ export const useTransactionManagement = () => {
   } = useTransactions();
   const { user } = useUser(); // Get user from UserContext
   const { formatCurrency } = useCurrency();
+  const location = useLocation(); // Get location to access state
 
   // Pagination states
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -90,6 +92,26 @@ export const useTransactionManagement = () => {
       setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
     }
   }, [availableCategoryOptions]);
+
+  // Handle filters from navigation state
+  React.useEffect(() => {
+    if (location.state) {
+      if (location.state.filterVendor) {
+        // Find the vendor in availableAccountOptions and set as selected
+        const vendorOption = availableAccountOptions.find(opt => opt.label === location.state.filterVendor);
+        if (vendorOption) {
+          setSelectedAccounts([vendorOption.value]);
+        }
+      }
+      if (location.state.filterCategory) {
+        // Find the category in availableCategoryOptions and set as selected
+        const categoryOption = availableCategoryOptions.find(opt => opt.label === location.state.filterCategory);
+        if (categoryOption) {
+          setSelectedCategories([categoryOption.value]);
+        }
+      }
+    }
+  }, [location.state, availableAccountOptions, availableCategoryOptions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = transactions;

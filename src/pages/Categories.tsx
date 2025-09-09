@@ -26,6 +26,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 export type Category = {
   id: string;
@@ -54,6 +55,8 @@ const CategoriesPage = () => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   React.useEffect(() => {
     const loadCategories = async () => {
@@ -201,6 +204,16 @@ const CategoriesPage = () => {
     } else if (event.key === 'Escape') {
       setEditingCategoryId(null);
     }
+  };
+
+  // New function to handle transaction count click
+  const handleTransactionCountClick = (categoryName: string) => {
+    // Navigate to Transactions page with category filter
+    navigate('/transactions', {
+      state: {
+        filterCategory: categoryName,
+      }
+    });
   };
 
   const numSelected = selectedRows.length;
@@ -408,7 +421,15 @@ const CategoriesPage = () => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>{categoryTransactionCounts[category.id] || 0}</TableCell> {/* Display transaction count */}
+                      <TableCell>
+                        <button
+                          onClick={() => handleTransactionCountClick(category.name)}
+                          className="text-blue-500 hover:underline cursor-pointer"
+                          disabled={categoryTransactionCounts[category.id] === 0}
+                        >
+                          {categoryTransactionCounts[category.id] || 0}
+                        </button>
+                      </TableCell> {/* Display transaction count as clickable link */}
                       <TableCell className="text-right">
                         {isSavingName && editingCategoryId === category.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />

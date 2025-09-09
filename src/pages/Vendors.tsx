@@ -27,6 +27,7 @@ import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download } from "
 import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 
 const VendorsPage = () => {
   const { vendors, fetchVendors, refetchAllPayees, fetchTransactions } = useTransactions(); // Use vendors, fetchVendors, refetchAllPayees, and fetchTransactions from context
@@ -49,6 +50,8 @@ const VendorsPage = () => {
   const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   // Initial fetch for vendors
   React.useEffect(() => {
@@ -167,6 +170,16 @@ const VendorsPage = () => {
     } else if (event.key === 'Escape') {
       setEditingVendorId(null);
     }
+  };
+
+  // New function to handle transaction count click
+  const handleTransactionCountClick = (vendorName: string) => {
+    // Navigate to Transactions page with vendor filter
+    navigate('/transactions', {
+      state: {
+        filterVendor: vendorName,
+      }
+    });
   };
 
   const numSelected = selectedRows.length;
@@ -367,7 +380,15 @@ const VendorsPage = () => {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>{vendorTransactionCounts[vendor.id] || 0}</TableCell> {/* Display transaction count */}
+                      <TableCell>
+                        <button
+                          onClick={() => handleTransactionCountClick(vendor.name)}
+                          className="text-blue-500 hover:underline cursor-pointer"
+                          disabled={vendorTransactionCounts[vendor.id] === 0}
+                        >
+                          {vendorTransactionCounts[vendor.id] || 0}
+                        </button>
+                      </TableCell> {/* Display transaction count as clickable link */}
                       <TableCell className="text-right">
                         {isSavingName && editingVendorId === vendor.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
