@@ -20,6 +20,9 @@ interface TransactionFiltersProps {
   availableCategoryOptions: Option[];
   selectedCategories: string[];
   setSelectedCategories: (values: string[]) => void;
+  availableVendorOptions: Option[]; // New prop for vendor options
+  selectedVendors: string[]; // New prop for selected vendors
+  setSelectedVendors: (values: string[]) => void; // New prop for setting selected vendors
   dateRange: DateRange | undefined;
   onDateChange: (date: DateRange | undefined) => void;
   onResetFilters: () => void;
@@ -34,6 +37,9 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   availableCategoryOptions,
   selectedCategories,
   setSelectedCategories,
+  availableVendorOptions, // Destructure new props
+  selectedVendors,
+  setSelectedVendors,
   dateRange,
   onDateChange,
   onResetFilters,
@@ -57,6 +63,12 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
         selectedValues={selectedCategories}
         onSelectChange={setSelectedCategories}
         placeholder="Filter by Category"
+      />
+      <MultiSelectDropdown // Add new MultiSelectDropdown for vendors
+        options={availableVendorOptions}
+        selectedValues={selectedVendors}
+        onSelectChange={setSelectedVendors}
+        placeholder="Filter by Vendor"
       />
       <DateRangePicker dateRange={dateRange} onDateChange={onDateChange} />
       <Button variant="outline" size="icon" onClick={onResetFilters} className="shrink-0">

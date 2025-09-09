@@ -27,6 +27,7 @@ const TransactionsPage = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedVendors, // Add selectedVendors
     dateRange,
     isRefreshing,
     isImporting,
@@ -35,6 +36,7 @@ const TransactionsPage = () => {
     fileInputRef,
     availableAccountOptions,
     availableCategoryOptions,
+    availableVendorOptions, // Add availableVendorOptions
     filteredTransactions,
     totalPages,
     startIndex,
@@ -51,6 +53,7 @@ const TransactionsPage = () => {
     setSearchTerm,
     setSelectedAccounts,
     setSelectedCategories,
+    setSelectedVendors, // Add setSelectedVendors
     setDateRange,
     setIsBulkDeleteConfirmOpen,
 
@@ -100,6 +103,9 @@ const TransactionsPage = () => {
               availableCategoryOptions={availableCategoryOptions}
               selectedCategories={selectedCategories}
               setSelectedCategories={setSelectedCategories}
+              availableVendorOptions={availableVendorOptions} // Pass availableVendorOptions
+              selectedVendors={selectedVendors} // Pass selectedVendors
+              setSelectedVendors={setSelectedVendors} // Pass setSelectedVendors
               dateRange={dateRange}
               onDateChange={setDateRange}
               onResetFilters={handleResetFilters}

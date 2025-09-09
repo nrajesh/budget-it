@@ -37,6 +37,7 @@ export const useTransactionManagement = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
+  const [selectedVendors, setSelectedVendors] = React.useState<string[]>([]); // New state for vendor filter
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
   // UI states
@@ -49,6 +50,7 @@ export const useTransactionManagement = () => {
 
   // State for dynamically fetched account options
   const [availableAccountOptions, setAvailableAccountOptions] = React.useState<{ value: string; label: string }[]>([]);
+  const [availableVendorOptions, setAvailableVendorOptions] = React.useState<{ value: string; label: string }[]>([]); // New state for vendor options
 
   // Fetch available accounts dynamically
   const fetchAvailableAccounts = React.useCallback(async () => {
@@ -69,9 +71,29 @@ export const useTransactionManagement = () => {
     }
   }, []);
 
+  // Fetch available vendors dynamically
+  const fetchAvailableVendors = React.useCallback(async () => {
+    const { data, error } = await supabase
+      .from('vendors')
+      .select('name')
+      .eq('is_account', false);
+
+    if (error) {
+      console.error("Error fetching vendor names:", error.message);
+      setAvailableVendorOptions([]);
+    } else {
+      const options = data.map(item => ({
+        value: slugify(item.name),
+        label: item.name,
+      }));
+      setAvailableVendorOptions(options);
+    }
+  }, []);
+
   React.useEffect(() => {
     fetchAvailableAccounts();
-  }, [fetchAvailableAccounts]);
+    fetchAvailableVendors(); // Fetch vendors as well
+  }, [fetchAvailableAccounts, fetchAvailableVendors]);
 
   const availableCategoryOptions = React.useMemo(() => {
     return allCategories.map(category => ({
@@ -92,6 +114,12 @@ export const useTransactionManagement = () => {
       setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
     }
   }, [availableCategoryOptions]);
+
+  React.useEffect(() => {
+    if (availableVendorOptions.length > 0) {
+      setSelectedVendors(availableVendorOptions.map(v => v.value)); // Initialize vendor filter to "all"
+    }
+  }, [availableVendorOptions]);
 
   // Handle filters from navigation state
   React.useEffect(() => {
@@ -136,6 +164,11 @@ export const useTransactionManagement = () => {
       filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
     }
 
+    // Filter by selected vendors
+    if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
+      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
+    }
+
     // Filter by date range
     if (dateRange?.from) {
       const fromDate = dateRange.from;
@@ -147,7 +180,7 @@ export const useTransactionManagement = () => {
     }
 
     return filtered;
-  }, [transactions, searchTerm, selectedAccounts, selectedCategories, dateRange, availableAccountOptions.length, availableCategoryOptions.length]);
+  }, [transactions, searchTerm, selectedAccounts, selectedCategories, selectedVendors, dateRange, availableAccountOptions.length, availableCategoryOptions.length, availableVendorOptions.length]);
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -158,6 +191,7 @@ export const useTransactionManagement = () => {
     setSearchTerm("");
     setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
     setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
+    setSelectedVendors(availableVendorOptions.map(v => v.value)); // Reset vendor filter
     setDateRange(undefined);
   };
 
@@ -349,6 +383,7 @@ export const useTransactionManagement = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedVendors, // Add selectedVendors to the returned object
     dateRange,
     isRefreshing,
     isImporting,
@@ -357,6 +392,7 @@ export const useTransactionManagement = () => {
     fileInputRef,
     availableAccountOptions,
     availableCategoryOptions,
+    availableVendorOptions, // Add availableVendorOptions to the returned object
     filteredTransactions,
     totalPages,
     startIndex,
@@ -374,6 +410,7 @@ export const useTransactionManagement = () => {
     setSearchTerm,
     setSelectedAccounts,
     setSelectedCategories,
+    setSelectedVendors, // Add setSelectedVendors to the returned object
     setDateRange,
     setIsBulkDeleteConfirmOpen,
 
