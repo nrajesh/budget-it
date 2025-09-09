@@ -206,7 +206,13 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
     } finally {
-      setDemoDataProgress(null);
+      // Ensure progress is set to 100% before clearing
+      setDemoDataProgress(prev => prev ? { ...prev, progress: prev.totalStages } : null);
+
+      // Add a small delay to ensure the progress bar reaches 100% before clearing
+      setTimeout(() => {
+        setDemoDataProgress(null);
+      }, 500);
     }
   };
 
