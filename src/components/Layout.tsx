@@ -184,6 +184,12 @@ const Layout = () => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton>
+                  <ShoppingCart />
+                  Bills
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
                   <FileText />
                   Budgets
                 </SidebarMenuButton>
@@ -192,12 +198,6 @@ const Layout = () => {
                 <SidebarMenuButton>
                   <Newspaper />
                   Reports
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <ShoppingCart />
-                  Bills
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
