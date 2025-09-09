@@ -78,10 +78,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     convertAmount,
   }), [setVendors, setAccounts, convertAmount]);
 
+  // Pass transactions to createCategoriesService
   const { fetchCategories } = React.useMemo(() => createCategoriesService({
     setCategories,
     userId: user?.id, // Pass userId to categories service
-  }), [setCategories, user?.id]);
+    transactions, // Pass transactions here
+  }), [setCategories, user?.id, transactions]); // Add transactions to dependency array
 
   // Effect to update accountCurrencyMap when accounts change
   React.useEffect(() => {
@@ -95,7 +97,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [accounts]);
 
   const refetchAllPayees = React.useCallback(async () => {
-    await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories(), fetchTransactions()]); // Also fetch categories
+    // Ensure transactions are fetched first if categories depend on them
+    await fetchTransactions(); // Fetch transactions first
+    await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]); // Then fetch payees and categories
   }, [fetchVendors, fetchAccounts, fetchCategories, fetchTransactions]);
 
   const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
@@ -120,8 +124,25 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   React.useEffect(() => {
     if (user?.id) { // Only fetch data if user is logged in
-      fetchTransactions();
-      refetchAllPayees();
+      // Initial fetch: fetch transactions first, then other data that might depend on them
+      const initialLoad = async () => {
+        await fetchTransactions();
+        await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
+      };
+      initialLoad();
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          // On auth state change, re-fetch everything
+          const authChangeLoad = async () => {
+            await fetchTransactions();
+            await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
+          };
+          authChangeLoad();
+        }
+      });
+
+      return () => subscription.unsubscribe();
     } else {
       // Clear data if user logs out
       setTransactions([]);
@@ -131,7 +152,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setAccountCurrencyMap(new Map());
       setIsLoading(false);
     }
-  }, [fetchTransactions, refetchAllPayees, user?.id]);
+  }, [fetchTransactions, fetchVendors, fetchAccounts, fetchCategories, user?.id]); // Add fetch functions to dependency array
 
   const value = React.useMemo(() => ({
     transactions,
