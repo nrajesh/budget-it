@@ -12,31 +12,51 @@ export const createPayeesService = ({ setVendors, setAccounts, convertAmount }: 
 
   const fetchVendors = async () => {
     const { data, error } = await supabase
-      .from("vendors")
-      .select("*")
-      .eq('is_account', false)
-      .order('name', { ascending: true });
+      .rpc('get_vendors_with_transaction_counts');
 
     if (error) {
       showError(`Failed to fetch vendors: ${error.message}`);
       setVendors([]);
     } else {
-      setVendors(data as Payee[]);
+      // Map the data to include the totalTransactions field
+      const vendorsWithCounts: Payee[] = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        is_account: item.is_account,
+        created_at: item.created_at,
+        account_id: item.account_id,
+        currency: item.currency,
+        starting_balance: item.starting_balance,
+        remarks: item.remarks,
+        running_balance: item.running_balance,
+        totalTransactions: item.total_transactions || 0,
+      }));
+      setVendors(vendorsWithCounts);
     }
   };
 
   const fetchAccounts = async () => {
     const { data, error } = await supabase
-      .from("vendors_with_balance")
-      .select("*")
-      .eq('is_account', true)
-      .order('name', { ascending: true });
+      .rpc('get_accounts_with_transaction_counts');
 
     if (error) {
       showError(`Failed to fetch accounts: ${error.message}`);
       setAccounts([]);
     } else {
-      setAccounts(data as Payee[]);
+      // Map the data to include the totalTransactions field
+      const accountsWithCounts: Payee[] = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        is_account: item.is_account,
+        created_at: item.created_at,
+        account_id: item.account_id,
+        currency: item.currency,
+        starting_balance: item.starting_balance,
+        remarks: item.remarks,
+        running_balance: item.running_balance,
+        totalTransactions: item.total_transactions || 0,
+      }));
+      setAccounts(accountsWithCounts);
     }
   };
 

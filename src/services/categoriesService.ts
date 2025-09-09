@@ -49,16 +49,24 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
       // First, ensure all categories from transactions are in the categories table
       await syncCategoriesFromTransactions(); // Call sync before fetching
 
+      // Fetch categories with transaction counts
       const { data, error } = await supabase
-        .from("categories")
-        .select("id, name, user_id, created_at")
-        .eq('user_id', userId)
-        .order('name', { ascending: true });
+        .rpc('get_categories_with_transaction_counts', { user_id_param: userId });
 
       if (error) {
         throw error;
       }
-      setCategories(data as Category[]);
+
+      // Map the data to include the totalTransactions field
+      const categoriesWithCounts: Category[] = data.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        user_id: item.user_id,
+        created_at: item.created_at,
+        totalTransactions: item.total_transactions || 0,
+      }));
+
+      setCategories(categoriesWithCounts);
     } catch (error: any) {
       showError(`Failed to fetch categories: ${error.message}`);
       setCategories([]);

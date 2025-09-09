@@ -60,6 +60,15 @@ const VendorsPage = () => {
     loadVendors();
   }, [fetchVendors]);
 
+  // Calculate transaction counts for each vendor
+  const vendorTransactionCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    vendors.forEach(vendor => {
+      counts[vendor.id] = vendor.totalTransactions || 0;
+    });
+    return counts;
+  }, [vendors]);
+
   const filteredVendors = React.useMemo(() => {
     return vendors.filter((p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -316,17 +325,18 @@ const VendorsPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Transactions</TableHead> {/* New column for transaction count */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
                       No vendors found.
                     </TableCell>
                   </TableRow>
@@ -357,6 +367,7 @@ const VendorsPage = () => {
                           </div>
                         )}
                       </TableCell>
+                      <TableCell>{vendorTransactionCounts[vendor.id] || 0}</TableCell> {/* Display transaction count */}
                       <TableCell className="text-right">
                         {isSavingName && editingVendorId === vendor.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />

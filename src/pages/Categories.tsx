@@ -32,6 +32,7 @@ export type Category = {
   name: string;
   user_id: string;
   created_at: string;
+  totalTransactions?: number; // Add optional totalTransactions field
 };
 
 const CategoriesPage = () => {
@@ -62,6 +63,15 @@ const CategoriesPage = () => {
     };
     loadCategories();
   }, [fetchCategories]);
+
+  // Calculate transaction counts for each category
+  const categoryTransactionCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    categories.forEach(category => {
+      counts[category.id] = category.totalTransactions || 0;
+    });
+    return counts;
+  }, [categories]);
 
   const filteredCategories = React.useMemo(() => {
     return categories.filter((cat) =>
@@ -356,17 +366,18 @@ const CategoriesPage = () => {
                     />
                   </TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Transactions</TableHead> {/* New column for transaction count */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : currentCategories.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
                       No categories found.
                     </TableCell>
                   </TableRow>
@@ -397,6 +408,7 @@ const CategoriesPage = () => {
                           </div>
                         )}
                       </TableCell>
+                      <TableCell>{categoryTransactionCounts[category.id] || 0}</TableCell> {/* Display transaction count */}
                       <TableCell className="text-right">
                         {isSavingName && editingCategoryId === category.id ? (
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
