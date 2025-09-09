@@ -24,6 +24,7 @@ const generateTransactions = async (
   existingVendorNames: string[],
   existingCategoryNames: string[], // New parameter for categories
   accountCurrencyMap: Map<string, string>,
+  userId: string, // Pass userId here
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -67,6 +68,7 @@ const generateTransactions = async (
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
       category: categoryName,
+      user_id: userId, // Add user_id here
     };
 
     if (isTransfer) {
@@ -88,6 +90,7 @@ const generateTransactions = async (
         amount: Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
+        currency: destinationAccountCurrency,
       };
       sampleTransactions.push(creditTransaction);
     } else {
@@ -182,9 +185,9 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       // Step 5: Generate transactions using the pre-created names and currency map
       setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
 
       // Step 6: Batch insert transactions
       if (demoData.length > 0) {
