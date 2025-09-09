@@ -122,23 +122,6 @@ const Layout = () => {
         </SidebarHeader>
         <SidebarContent className="p-0">
           <SidebarGroup>
-            <SidebarGroupLabel>Apps</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <ShoppingCart />
-                  Bills
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Newspaper />
-                  Reports
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup>
             <SidebarGroupLabel>Dashboards</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -197,6 +180,29 @@ const Layout = () => {
             </SidebarMenu>
           </SidebarGroup>
           <SidebarGroup>
+            <SidebarGroupLabel>Setup</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <ShoppingCart />
+                  Bills
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Newspaper />
+                  Reports
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <FileText />
+                  Budgets
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+          <SidebarGroup>
             <SidebarGroupLabel>User</SidebarGroupLabel>
             <SidebarMenu>
               <Collapsible asChild>
@@ -228,12 +234,6 @@ const Layout = () => {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <FileText />
-                  Budgets
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Mail />
