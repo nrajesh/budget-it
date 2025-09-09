@@ -24,6 +24,7 @@ const generateTransactions = async (
   existingVendorNames: string[],
   existingCategoryNames: string[], // New parameter for categories
   accountCurrencyMap: Map<string, string>,
+  userId: string, // Add userId
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -59,7 +60,7 @@ const generateTransactions = async (
       }
     }
 
-    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
+    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at'> = {
       date: date.toISOString(),
       account: accountName,
       currency: currencyCode,
@@ -67,6 +68,7 @@ const generateTransactions = async (
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
       category: categoryName,
+      user_id: userId, // Add user_id here
     };
 
     if (isTransfer) {
@@ -103,8 +105,12 @@ const generateTransactions = async (
 export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setCategories, setDemoDataProgress, userId }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
+    if (!userId) {
+      showError("User not logged in. Cannot clear data.");
+      return;
+    }
     try {
-      const { error } = await supabase.rpc('clear_all_app_data');
+      const { error } = await supabase.rpc('clear_all_app_data'); // This RPC needs to be updated to filter by user_id
       if (error) throw error;
       setTransactions([]);
       setVendors([]);
@@ -129,7 +135,16 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
 
     try {
       setDemoDataProgress({ stage: "Clearing existing data...", progress: ++currentStage, totalStages });
-      await clearAllTransactions();
+      // Clear only user's data
+      const { error: clearError } = await supabase.from('transactions').delete().eq('user_id', userId);
+      if (clearError) throw clearError;
+      const { error: clearVendorsError } = await supabase.from('vendors').delete().eq('user_id', userId);
+      if (clearVendorsError) throw clearVendorsError;
+      const { error: clearCategoriesError } = await supabase.from('categories').delete().eq('user_id', userId).neq('name', 'Others'); // Keep 'Others'
+      if (clearCategoriesError) throw clearCategoriesError;
+      // Accounts are linked to vendors, so they will be deleted via cascade if vendors are deleted.
+      // We need to ensure 'Others' category is re-created if it was accidentally deleted or not present.
+      await ensureCategoryExists('Others', userId);
 
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
@@ -138,7 +153,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       setDemoDataProgress({ stage: "Creating demo accounts...", progress: ++currentStage, totalStages });
       const createdAccountNames: string[] = [];
       for (const name of baseAccountNames) {
-        const id = await ensurePayeeExists(name, true);
+        const id = await ensurePayeeExists(name, true, userId); // Pass userId
         if (id) createdAccountNames.push(name);
       }
 
@@ -146,7 +161,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       setDemoDataProgress({ stage: "Creating demo vendors...", progress: ++currentStage, totalStages });
       const createdVendorNames: string[] = [];
       for (const name of baseVendorNames) {
-        const id = await ensurePayeeExists(name, false);
+        const id = await ensurePayeeExists(name, false, userId); // Pass userId
         if (id) createdVendorNames.push(name);
       }
 
@@ -164,7 +179,8 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       const { data: accountCurrencyData, error: currencyError } = await supabase
         .from('vendors')
         .select('name, accounts(currency)')
-        .eq('is_account', true);
+        .eq('is_account', true)
+        .eq('user_id', userId); // Filter by user_id
 
       if (currencyError) {
         console.error("Error fetching account currencies:", currencyError.message);
@@ -182,9 +198,9 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       // Step 5: Generate transactions using the pre-created names and currency map
       setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
       const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap));
+      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId)); // Pass userId
+      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId)); // Pass userId
+      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId)); // Pass userId
 
       // Step 6: Batch insert transactions
       if (demoData.length > 0) {

@@ -28,7 +28,7 @@ interface TransactionsContextType {
   accounts: Payee[];
   categories: Category[]; // Add categories to context type
   accountCurrencyMap: Map<string, string>;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id'> & { date: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id'> & { date: string }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
@@ -58,9 +58,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const fetchTransactions = React.useCallback(async () => {
     setIsLoading(true);
+    if (!user?.id) {
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
+      .eq('user_id', user.id) // Filter by user_id
       .order('date', { ascending: false });
 
     if (error) {
@@ -70,20 +76,21 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setTransactions(data as Transaction[]);
     }
     setIsLoading(false);
-  }, []);
+  }, [user?.id]);
 
   const { fetchVendors, fetchAccounts } = React.useMemo(() => createPayeesService({
     setVendors,
     setAccounts,
     convertAmount,
-  }), [setVendors, setAccounts, convertAmount]);
+    userId: user?.id, // Pass userId
+  }), [setVendors, setAccounts, convertAmount, user?.id]);
 
   // Pass a getter function for transactions to createCategoriesService
   const { fetchCategories } = React.useMemo(() => createCategoriesService({
     setCategories,
     userId: user?.id, // Pass userId to categories service
     getTransactions: () => transactions, // Pass getter function for transactions
-  }), [setCategories, user?.id]); // fetchCategories is now stable because `transactions` is not a direct dependency of its creation
+  }), [setCategories, user?.id, transactions]); // fetchCategories is now stable because `transactions` is not a direct dependency of its creation
 
   // Effect to update accountCurrencyMap when accounts change
   React.useEffect(() => {
