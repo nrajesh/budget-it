@@ -125,21 +125,21 @@ export const useTransactionManagement = () => {
   React.useEffect(() => {
     if (location.state) {
       if (location.state.filterVendor) {
-        // Find the vendor in availableAccountOptions and set as selected
-        const vendorOption = availableAccountOptions.find(opt => opt.label === location.state.filterVendor);
+        // Find the vendor in availableVendorOptions and set as selected
+        const vendorOption = availableVendorOptions.find(opt => opt.label === location.state.filterVendor);
         if (vendorOption) {
-          setSelectedAccounts([vendorOption.value]);
+          setSelectedVendors([vendorOption.value]); // Set only the specific vendor
         }
       }
       if (location.state.filterCategory) {
         // Find the category in availableCategoryOptions and set as selected
         const categoryOption = availableCategoryOptions.find(opt => opt.label === location.state.filterCategory);
         if (categoryOption) {
-          setSelectedCategories([categoryOption.value]);
+          setSelectedCategories([categoryOption.value]); // Set only the specific category
         }
       }
     }
-  }, [location.state, availableAccountOptions, availableCategoryOptions]);
+  }, [location.state, availableVendorOptions, availableCategoryOptions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = transactions;
