@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, X } from "lucide-react"; // Import X icon
 import { DateRange } from "react-day-picker";
 
 interface Option {
@@ -72,7 +72,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
       />
       <DateRangePicker dateRange={dateRange} onDateChange={onDateChange} />
       <Button variant="outline" size="icon" onClick={onResetFilters} className="shrink-0">
-        <RotateCcw className="h-4 w-4" />
+        <X className="h-4 w-4" /> {/* Use X icon for reset */}
         <span className="sr-only">Reset Filters</span>
       </Button>
     </div>
