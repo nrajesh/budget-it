@@ -85,12 +85,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     userId: user?.id, // Pass userId
   }), [setVendors, setAccounts, convertAmount, user?.id]);
 
-  // Pass a getter function for transactions to createCategoriesService
+  // Pass a getter function for transactions and convertAmount to createCategoriesService
   const { fetchCategories } = React.useMemo(() => createCategoriesService({
     setCategories,
     userId: user?.id, // Pass userId to categories service
     getTransactions: () => transactions, // Pass getter function for transactions
-  }), [setCategories, user?.id, transactions]); // fetchCategories is now stable because `transactions` is not a direct dependency of its creation
+    convertAmount, // Pass convertAmount here
+  }), [setCategories, user?.id, transactions, convertAmount]); // Add convertAmount to dependencies
 
   // Effect to update accountCurrencyMap when accounts change
   React.useEffect(() => {
