@@ -70,14 +70,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/transactions", label: "Transactions", icon: ArrowRightLeft },
-  { href: "/payees", label: "Payees", icon: Users },
-  { href: "/analytics", label: "Analytics", icon: BarChart2 },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
-
 const Layout = () => {
   const { setTheme, theme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
@@ -130,6 +122,23 @@ const Layout = () => {
         </SidebarHeader>
         <SidebarContent className="p-0">
           <SidebarGroup>
+            <SidebarGroupLabel>Apps</SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <ShoppingCart />
+                  Bills
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Newspaper />
+                  Reports
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+          <SidebarGroup>
             <SidebarGroupLabel>Dashboards</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -159,8 +168,24 @@ const Layout = () => {
             </SidebarMenu>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarGroupLabel>Apps</SidebarGroupLabel>
+            <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <Link to="/accounts" className="w-full">
+                  <SidebarMenuButton isActive={location.pathname === "/accounts"}>
+                    <Banknote />
+                    Accounts
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <Link to="/categories" className="w-full">
+                  <SidebarMenuButton isActive={location.pathname === "/categories"}>
+                    <Tag />
+                    Categories
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link to="/vendors" className="w-full">
                   <SidebarMenuButton isActive={location.pathname === "/vendors"}>
@@ -169,26 +194,11 @@ const Layout = () => {
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <ShoppingCart />
-                  Bills
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Newspaper />
-                  Reports
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/categories" className="w-full"> {/* Updated link */}
-                  <SidebarMenuButton isActive={location.pathname === "/categories"}> {/* Updated isActive */}
-                    <Tag /> {/* New icon */}
-                    Categories {/* New label */}
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel>User</SidebarGroupLabel>
+            <SidebarMenu>
               <Collapsible asChild>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -223,14 +233,6 @@ const Layout = () => {
                   <FileText />
                   Budgets
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/accounts" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/accounts"}>
-                    <Banknote />
-                    Accounts
-                  </SidebarMenuButton>
-                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
