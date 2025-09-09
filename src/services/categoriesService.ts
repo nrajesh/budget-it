@@ -46,6 +46,9 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
       return;
     }
     try {
+      // Ensure 'Others' category exists for the current user
+      await ensureCategoryExists('Others', userId);
+
       // First, ensure all categories from transactions are in the categories table
       await syncCategoriesFromTransactions(); // Call sync before fetching
 

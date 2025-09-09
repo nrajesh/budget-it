@@ -175,7 +175,10 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     disabled: option.value === accountValue,
   }));
 
-  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })); // Use allCategories from context
+  // Filter out 'Transfer' category from options, ensure 'Others' is always present
+  const categoryOptions = allCategories
+    .filter(c => c.name !== 'Transfer')
+    .map(cat => ({ value: cat.name, label: cat.name }));
 
   return (
     <>
@@ -249,7 +252,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {allCategories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                        {categoryOptions.map(cat => <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -190,7 +190,10 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     disabled: option.value === accountValue,
   }));
 
-  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })); // Use allCategories from context
+  // Filter out 'Transfer' category from options, ensure 'Others' is always present
+  const categoryOptions = allCategories
+    .filter(c => c.name !== 'Transfer')
+    .map(cat => ({ value: cat.name, label: cat.name }));
 
   const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
 
