@@ -37,7 +37,7 @@ const generateTransactions = async (
 
     const isTransfer = Math.random() < 0.2;
     const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
-    
+
     const currencyCode = accountCurrencyMap.get(accountName) || 'USD';
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
@@ -139,7 +139,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
 
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
-      
+
       // Step 1: Pre-create all accounts
       setDemoDataProgress({ stage: "Creating demo accounts...", progress: ++currentStage, totalStages });
       const createdAccountNames: string[] = [];
@@ -200,7 +200,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       } else {
         showError("No demo data was generated to insert.");
       }
-      
+
       fetchTransactions();
       refetchAllPayees();
     } catch (error: any) {
