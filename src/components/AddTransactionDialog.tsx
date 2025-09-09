@@ -171,7 +171,17 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   }, [isTransfer, form]);
 
   const onSubmit = (values: AddTransactionFormValues) => {
-    addTransaction(values);
+    // Create a new object that omits user_id as it will be added by the service
+    const transactionData = {
+      date: values.date,
+      account: values.account,
+      vendor: values.vendor,
+      category: values.category,
+      amount: values.amount,
+      remarks: values.remarks,
+      receivingAmount: values.receivingAmount,
+    };
+    addTransaction(transactionData);
     onOpenChange(false);
   };
 
