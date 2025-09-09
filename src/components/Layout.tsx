@@ -184,8 +184,8 @@ const Layout = () => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton>
-                  <ShoppingCart />
-                  Bills
+                  <FileText />
+                  Budgets
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -196,8 +196,8 @@ const Layout = () => {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
-                  <FileText />
-                  Budgets
+                  <ShoppingCart />
+                  Bills
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
