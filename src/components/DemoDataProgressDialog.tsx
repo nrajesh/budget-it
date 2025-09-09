@@ -23,6 +23,19 @@ export const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({
 
   const progressValue = demoDataProgress ? (demoDataProgress.progress / demoDataProgress.totalStages) * 100 : 0;
 
+  // Keep the dialog open until progress reaches 100%
+  const shouldClose = progressValue >= 100;
+
+  React.useEffect(() => {
+    if (shouldClose) {
+      // Use a small timeout to ensure the progress bar reaches 100% before closing
+      const timer = setTimeout(() => {
+        onOpenChange(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldClose, onOpenChange]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
