@@ -365,7 +365,7 @@ const ScheduledTransactionsPage = () => {
       const isoDate = new Date(formData.date).toISOString();
       const frequency = `${formData.frequency_value}${formData.frequency_unit}`;
 
-      const dataForSupabase = {
+      const transactionData = {
         date: isoDate,
         account: formData.account,
         vendor: formData.vendor,
@@ -379,13 +379,14 @@ const ScheduledTransactionsPage = () => {
       if (editingTransaction) {
         const { error } = await supabase
           .from('scheduled_transactions')
-          .update(dataForSupabase)
+          .update(transactionData)
           .eq('id', editingTransaction.id);
         if (error) throw error;
         showSuccess("Scheduled transaction updated successfully!");
       } else {
-        const insertData = { ...dataForSupabase, user_id: user.id };
-        const { error } = await supabase.from('scheduled_transactions').insert(insertData);
+        const { error } = await supabase
+          .from('scheduled_transactions')
+          .insert({ ...transactionData, user_id: user.id });
         if (error) throw error;
         showSuccess("Scheduled transaction added successfully!");
       }
