@@ -25,7 +25,7 @@ import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download, Chevron
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
-import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
+import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY, formatDateToYYYYMMDD } from "@/lib/utils";
 import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
 import {
   Select,
@@ -82,7 +82,7 @@ const ScheduledTransactionsPage = () => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransaction | null>(null);
   const [formData, setFormData] = React.useState<ScheduledTransactionFormData>({
-    date: formatDateToDDMMYYYY(new Date()),
+    date: formatDateToYYYYMMDD(new Date()),
     account: '',
     vendor: '',
     category: '',
@@ -152,7 +152,7 @@ const ScheduledTransactionsPage = () => {
   const handleAddClick = () => {
     setEditingTransaction(null);
     setFormData({
-      date: formatDateToDDMMYYYY(new Date()),
+      date: formatDateToYYYYMMDD(new Date()),
       account: '',
       vendor: '',
       category: '',
@@ -171,7 +171,7 @@ const ScheduledTransactionsPage = () => {
     const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
 
     setFormData({
-      date: formatDateToDDMMYYYY(transaction.date),
+      date: formatDateToYYYYMMDD(transaction.date),
       account: transaction.account,
       vendor: transaction.vendor,
       category: transaction.category,
@@ -362,31 +362,30 @@ const ScheduledTransactionsPage = () => {
       await ensurePayeeExists(formData.vendor, isVendorAnAccount);
       await ensureCategoryExists(formData.category, user.id);
 
-      const isoDate = parseDateFromDDMMYYYY(formData.date).toISOString();
+      const isoDate = new Date(formData.date).toISOString();
       const frequency = `${formData.frequency_value}${formData.frequency_unit}`;
 
-      const transactionData = {
+      const dataForSupabase = {
         date: isoDate,
         account: formData.account,
         vendor: formData.vendor,
         category: formData.category,
         amount: formData.amount,
-        remarks: formData.remarks,
+        remarks: formData.remarks || null,
         frequency: frequency,
-        user_id: user.id,
         last_processed_date: isoDate,
       };
 
       if (editingTransaction) {
-        const { user_id, ...updateData } = transactionData;
         const { error } = await supabase
           .from('scheduled_transactions')
-          .update(updateData)
+          .update(dataForSupabase)
           .eq('id', editingTransaction.id);
         if (error) throw error;
         showSuccess("Scheduled transaction updated successfully!");
       } else {
-        const { error } = await supabase.from('scheduled_transactions').insert(transactionData);
+        const insertData = { ...dataForSupabase, user_id: user.id };
+        const { error } = await supabase.from('scheduled_transactions').insert(insertData);
         if (error) throw error;
         showSuccess("Scheduled transaction added successfully!");
       }
@@ -394,6 +393,7 @@ const ScheduledTransactionsPage = () => {
       fetchScheduledTransactions();
       setIsFormOpen(false);
     } catch (error: any) {
+      console.error("Full error object:", error);
       showError(`Failed to save scheduled transaction: ${error.message}`);
     } finally {
       setIsSubmitting(false);
@@ -645,10 +645,9 @@ const ScheduledTransactionsPage = () => {
                   <Input
                     id="date"
                     name="date"
-                    type="text"
+                    type="date"
                     value={formData.date}
                     onChange={handleFormChange}
-                    placeholder="DD-MMM-YYYY"
                     required
                   />
                 </div>
