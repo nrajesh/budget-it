@@ -461,7 +461,9 @@ const ScheduledTransactionsPage = () => {
 
   const calculateUpcomingDates = (transaction: ScheduledTransaction, count: number = 2): string[] => {
     const dates: string[] = [];
-    let nextDate = new Date(transaction.last_processed_date || transaction.date);
+    let currentCandidateDate = new Date(transaction.date); // Always start from the original scheduled date
+    currentCandidateDate.setHours(0, 0, 0, 0);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -482,13 +484,17 @@ const ScheduledTransactionsPage = () => {
       return newDate;
     };
 
-    while (nextDate <= today) {
-      nextDate = advanceDate(nextDate);
+    // Find the first occurrence that is strictly AFTER today
+    // This loop ensures we only show future dates.
+    while (currentCandidateDate <= today) {
+      currentCandidateDate = advanceDate(currentCandidateDate);
     }
 
+    // Now, currentCandidateDate is the first scheduled date strictly after today.
+    // Add the next 'count' occurrences.
     for (let i = 0; i < count; i++) {
-      dates.push(nextDate.toISOString());
-      nextDate = advanceDate(nextDate);
+      dates.push(currentCandidateDate.toISOString());
+      currentCandidateDate = advanceDate(currentCandidateDate);
     }
 
     return dates;
