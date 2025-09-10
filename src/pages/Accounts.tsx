@@ -30,15 +30,15 @@ import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
 
 const AccountsPage = () => {
-  const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions } = useTransactions(); // Use accounts and fetchAccounts from context
+  const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions, transactions } = useTransactions(); // Use accounts and fetchAccounts from context
   const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
-  
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedAccount, setSelectedAccount] = React.useState<Payee | null>(null);
-  
+
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [accountToDelete, setAccountToDelete] = React.useState<Payee | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
@@ -47,6 +47,36 @@ const AccountsPage = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const { formatCurrency } = useCurrency();
+
+  // Filter transactions to exclude future-dated ones
+  const currentTransactions = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+
+    return transactions.filter(t => {
+      const transactionDate = new Date(t.date);
+      return transactionDate <= today;
+    });
+  }, [transactions]);
+
+  // Calculate running balances for accounts
+  const accountBalances = React.useMemo(() => {
+    const balances: Record<string, number> = {};
+
+    // Initialize all accounts with starting balance
+    accounts.forEach(account => {
+      balances[account.name] = account.starting_balance || 0;
+    });
+
+    // Add transaction amounts to the balances
+    currentTransactions.forEach(transaction => {
+      if (transaction.category !== 'Transfer') {
+        balances[transaction.account] = (balances[transaction.account] || 0) + transaction.amount;
+      }
+    });
+
+    return balances;
+  }, [accounts, currentTransactions]);
 
   // Initial fetch for accounts
   React.useEffect(() => {
@@ -78,7 +108,7 @@ const AccountsPage = () => {
     setSelectedAccount(account);
     setIsDialogOpen(true);
   };
-  
+
   const handleDeleteClick = (account: Payee) => {
     setAccountToDelete(account);
     setIsConfirmOpen(true);
@@ -86,7 +116,7 @@ const AccountsPage = () => {
 
   const confirmDelete = async () => {
     if (!accountToDelete && selectedRows.length === 0) return;
-    
+
     const idsToDelete = accountToDelete ? [accountToDelete.id] : selectedRows;
     const successMessage = accountToDelete ? "Account deleted successfully." : `${selectedRows.length} accounts deleted successfully.`;
 
@@ -318,7 +348,7 @@ const AccountsPage = () => {
                       <TableCell className="font-medium">{account.name}</TableCell>
                       <TableCell>{account.currency || "-"}</TableCell>
                       <TableCell>{formatCurrency(account.starting_balance || 0, account.currency || 'USD')}</TableCell>
-                      <TableCell>{formatCurrency(account.running_balance || 0, account.currency || 'USD')}</TableCell>
+                      <TableCell>{formatCurrency(accountBalances[account.name] || 0, account.currency || 'USD')}</TableCell>
                       <TableCell>{account.remarks || "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => handleEditClick(account)}>

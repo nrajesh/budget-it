@@ -26,14 +26,25 @@ const chartConfigForAccounts = {
 const Analytics = () => {
   const { transactions, categories: allCategories } = useTransactions(); // Get allCategories from context
 
+  // Filter transactions to exclude future-dated ones
+  const currentTransactions = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+
+    return transactions.filter(t => {
+      const transactionDate = new Date(t.date);
+      return transactionDate <= today;
+    });
+  }, [transactions]);
+
   const availableAccounts = React.useMemo(() => {
-    const accounts = new Set<string>();
-    transactions.forEach(t => accounts.add(t.account));
-    return Array.from(accounts).map(account => ({
+    const uniqueAccounts = new Set<string>();
+    currentTransactions.forEach(t => uniqueAccounts.add(t.account));
+    return Array.from(uniqueAccounts).map(account => ({
       value: slugify(account),
       label: account,
     }));
-  }, [transactions]);
+  }, [currentTransactions]);
 
   const availableCategories = React.useMemo(() => {
     return allCategories.map(category => ({ // Use allCategories from context
@@ -69,16 +80,15 @@ const Analytics = () => {
     });
   }, [availableCategories]);
 
-
   const filteredTransactions = React.useMemo(() => {
-    let filtered = transactions;
+    let filtered = currentTransactions;
 
     if (selectedAccounts.length > 0) {
       filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
     }
 
     return filtered;
-  }, [transactions, selectedAccounts]);
+  }, [currentTransactions, selectedAccounts]);
 
   return (
     <div className="space-y-4">

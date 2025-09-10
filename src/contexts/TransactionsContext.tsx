@@ -10,6 +10,7 @@ import { createDemoDataService } from '@/services/demoDataService';
 import { Category } from '@/pages/Categories'; // Import Category type
 import { createCategoriesService } from '@/services/categoriesService'; // Import new service
 import { useUser } from './UserContext'; // Import useUser
+import { createScheduledTransactionsService } from '@/services/scheduledTransactionsService'; // Import new service
 
 interface TransactionToDelete {
   id: string;
@@ -41,6 +42,7 @@ interface TransactionsContextType {
   fetchTransactions: () => Promise<void>;
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   demoDataProgress: DemoDataProgress | null;
+  processScheduledTransactions: () => Promise<void>; // Add processScheduledTransactions to context type
 }
 
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -99,7 +101,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const refetchAllPayees = React.useCallback(async () => {
     // Ensure transactions are fetched first if categories depend on them
     await fetchTransactions(); // Fetch transactions first
-    await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]); // Then fetch payees and categories
+    // Then fetch payees and categories
+    await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
   }, [fetchVendors, fetchAccounts, fetchCategories, fetchTransactions]); // Dependencies are stable functions
 
   const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
@@ -122,6 +125,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     userId: user?.id, // Pass userId
   }), [fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setCategories, setDemoDataProgress, user?.id]);
 
+  // Create scheduled transactions service
+  const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
+    fetchTransactions,
+    userId: user?.id,
+  }), [fetchTransactions, user?.id]);
+
   React.useEffect(() => {
     if (user?.id) { // Only fetch data if user is logged in
       // Initial fetch: fetch transactions first, then other data that might depend on them
@@ -129,6 +138,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await fetchTransactions(); // This updates `transactions` state
         // Now `fetchCategories` is stable, so calling it here won't cause a re-render loop
         await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
+        // Process scheduled transactions after initial load
+        await processScheduledTransactions();
       };
       initialLoad();
 
@@ -137,6 +148,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           const authChangeLoad = async () => {
             await fetchTransactions();
             await Promise.all([fetchVendors(), fetchAccounts(), fetchCategories()]);
+            await processScheduledTransactions();
           };
           authChangeLoad();
         }
@@ -152,7 +164,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setAccountCurrencyMap(new Map());
       setIsLoading(false);
     }
-  }, [fetchTransactions, fetchVendors, fetchAccounts, fetchCategories, user?.id]); // All dependencies are now stable functions or primitive values.
+  }, [fetchTransactions, fetchVendors, fetchAccounts, fetchCategories, processScheduledTransactions, user?.id]); // All dependencies are now stable functions or primitive values.
 
   const value = React.useMemo(() => ({
     transactions,
@@ -173,6 +185,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions,
     setTransactions,
     demoDataProgress,
+    processScheduledTransactions, // Include processScheduledTransactions in context value
   }), [
     transactions,
     vendors,
@@ -192,6 +205,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions,
     setTransactions,
     demoDataProgress,
+    processScheduledTransactions,
   ]);
 
   if (isLoading && user?.id) { // Only show loading spinner if user is logged in and data is being fetched
