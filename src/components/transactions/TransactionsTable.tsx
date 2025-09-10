@@ -33,6 +33,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   isAllSelectedOnPage,
   handleRowClick,
 }) => {
+  const today = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+    return d;
+  }, []);
+
   return (
     <div className="border rounded-md overflow-x-auto">
       <Table className="w-full">
@@ -64,10 +70,16 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             currentTransactions.map((transaction) => {
               const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
               const isScheduled = transaction.isScheduled;
-              const rowClassName = cn("group", isScheduled && "text-muted-foreground italic");
+              const transactionDate = new Date(transaction.date);
+              const isFutureTransaction = transactionDate > today; // Check if date is in the future
+
+              // Only grey out if it's a scheduled transaction AND it's in the future
+              const shouldBeGreyedOut = isScheduled && isFutureTransaction;
+
+              const rowClassName = cn("group", shouldBeGreyedOut && "text-muted-foreground italic");
               const cellClassName = cn(
                 "group-hover:bg-accent/50",
-                !isScheduled && "cursor-pointer"
+                !shouldBeGreyedOut && "cursor-pointer" // Only allow click if not greyed out
               );
 
               return (
@@ -77,29 +89,29 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                       checked={selectedTransactionIds.includes(transaction.id)}
                       onCheckedChange={() => handleSelectOne(transaction.id)}
                       aria-label={`Select transaction ${transaction.id}`}
-                      disabled={isScheduled}
+                      disabled={shouldBeGreyedOut} // Disable checkbox if it's a future scheduled transaction
                     />
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {formatDateToDDMMYYYY(transaction.date)}
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.account}
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.vendor}
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.category}
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cn(
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cn(
                     'text-right',
-                    !isScheduled && (transaction.amount < 0 ? 'text-red-500' : 'text-green-500'),
+                    !shouldBeGreyedOut && (transaction.amount < 0 ? 'text-red-500' : 'text-green-500'),
                     cellClassName
                   )}>
                     {formatCurrency(transaction.amount, currentAccountCurrency)}
                   </TableCell>
-                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.remarks}
                   </TableCell>
                 </TableRow>
