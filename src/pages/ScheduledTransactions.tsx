@@ -35,7 +35,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { DialogDescription } from "@/components/ui/dialog"; // Import DialogDescription
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog"; // Import all necessary Dialog components
 
 type ScheduledTransaction = {
   id: string;
@@ -680,159 +687,159 @@ const ScheduledTransactionsPage = () => {
       </Card>
 
       {/* Add/Edit Form Dialog */}
-      {isFormOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">{editingTransaction ? "Edit" : "Add"} Scheduled Transaction</h3>
-            <DialogDescription className="mb-4">
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingTransaction ? "Edit" : "Add"} Scheduled Transaction</DialogTitle>
+            <DialogDescription>
               Define a recurring transaction. Occurrences up to today will be automatically added to your transactions.
             </DialogDescription>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="date" className="block text-sm font-medium mb-1">Date</label>
-                  <Input
-                    id="date"
-                    name="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={handleFormChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="account" className="block text-sm font-medium mb-1">Account</label>
-                  <Select
-                    name="account"
-                    value={formData.account}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map(account => (
-                        <SelectItem key={account.id} value={account.name}>
-                          {account.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor / Account</label>
-                  <Select
-                    name="vendor"
-                    value={formData.vendor}
-                    onValueChange={(value) => {
-                      const selectedPayee = allPayees.find(p => p.value === value);
-                      const isTransfer = selectedPayee?.isAccount;
-                      setFormData(prev => ({
-                        ...prev,
-                        vendor: value,
-                        category: isTransfer ? 'Transfer' : prev.category === 'Transfer' ? '' : prev.category
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select vendor or account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allPayees.map(payee => (
-                        <SelectItem key={payee.value} value={payee.value}>
-                          {payee.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium mb-1">Category</label>
-                  <Select
-                    name="category"
-                    value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    disabled={allPayees.find(p => p.value === formData.vendor)?.isAccount}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.filter(c => c.name !== 'Transfer').map(category => (
-                        <SelectItem key={category.id} value={category.name}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label htmlFor="amount" className="block text-sm font-medium mb-1">Amount</label>
-                  <Input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={handleFormChange}
-                    required
-                  />
-                </div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-grow">
-                    <label htmlFor="frequency_value" className="block text-sm font-medium mb-1">Frequency</label>
-                    <Input
-                      id="frequency_value"
-                      name="frequency_value"
-                      type="number"
-                      min="1"
-                      value={formData.frequency_value}
-                      onChange={handleFormChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Select
-                      name="frequency_unit"
-                      value={formData.frequency_unit}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, frequency_unit: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="d">Days</SelectItem>
-                        <SelectItem value="w">Weeks</SelectItem>
-                        <SelectItem value="m">Months</SelectItem>
-                        <SelectItem value="y">Years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
+          </DialogHeader>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="remarks" className="block text-sm font-medium mb-1">Remarks</label>
-                <textarea
-                  id="remarks"
-                  name="remarks"
-                  value={formData.remarks}
+                <label htmlFor="date" className="block text-sm font-medium mb-1">Date</label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  value={formData.date}
                   onChange={handleFormChange}
-                  className="w-full p-2 border rounded-md min-h-[100px]"
+                  required
                 />
               </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Save
-                </Button>
+              <div>
+                <label htmlFor="account" className="block text-sm font-medium mb-1">Account</label>
+                <Select
+                  name="account"
+                  value={formData.account}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map(account => (
+                      <SelectItem key={account.id} value={account.name}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+              <div>
+                <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor / Account</label>
+                <Select
+                  name="vendor"
+                  value={formData.vendor}
+                  onValueChange={(value) => {
+                    const selectedPayee = allPayees.find(p => p.value === value);
+                    const isTransfer = selectedPayee?.isAccount;
+                    setFormData(prev => ({
+                      ...prev,
+                      vendor: value,
+                      category: isTransfer ? 'Transfer' : prev.category === 'Transfer' ? '' : prev.category
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vendor or account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allPayees.map(payee => (
+                      <SelectItem key={payee.value} value={payee.value}>
+                        {payee.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium mb-1">Category</label>
+                <Select
+                  name="category"
+                  value={formData.category}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  disabled={allPayees.find(p => p.value === formData.vendor)?.isAccount}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.filter(c => c.name !== 'Transfer').map(category => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label htmlFor="amount" className="block text-sm font-medium mb-1">Amount</label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={handleFormChange}
+                  required
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="flex-grow">
+                  <label htmlFor="frequency_value" className="block text-sm font-medium mb-1">Frequency</label>
+                  <Input
+                    id="frequency_value"
+                    name="frequency_value"
+                    type="number"
+                    min="1"
+                    value={formData.frequency_value}
+                    onChange={handleFormChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Select
+                    name="frequency_unit"
+                    value={formData.frequency_unit}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, frequency_unit: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="d">Days</SelectItem>
+                      <SelectItem value="w">Weeks</SelectItem>
+                      <SelectItem value="m">Months</SelectItem>
+                      <SelectItem value="y">Years</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="remarks" className="block text-sm font-medium mb-1">Remarks</label>
+              <textarea
+                id="remarks"
+                name="remarks"
+                value={formData.remarks}
+                onChange={handleFormChange}
+                className="w-full p-2 border rounded-md min-h-[100px]"
+              />
+            </div>
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmationDialog
         isOpen={isConfirmOpen}
