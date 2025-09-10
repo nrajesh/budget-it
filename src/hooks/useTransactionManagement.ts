@@ -316,10 +316,11 @@ export const useTransactionManagement = () => {
   };
 
   // Reset pagination and selection when filters or itemsPerPage change
+  // This useEffect is crucial for resetting selection when filters change
   React.useEffect(() => {
     setCurrentPage(1);
     setSelectedTransactionIds([]);
-  }, [filteredTransactions, itemsPerPage]);
+  }, [searchTerm, selectedAccounts, selectedCategories, selectedVendors, dateRange, itemsPerPage]);
 
   const numSelected = selectedTransactionIds.length;
   // rowCount is already defined as currentTransactions.length, which is correct for display
