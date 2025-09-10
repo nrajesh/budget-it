@@ -40,6 +40,9 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
     return d;
   }, []);
 
+  console.log("TransactionsTable props - isAllSelectedOnPage:", isAllSelectedOnPage);
+  console.log("TransactionsTable props - selectedTransactionIds:", selectedTransactionIds);
+
   return (
     <div className="border rounded-md overflow-x-auto">
       <Table className="w-full">

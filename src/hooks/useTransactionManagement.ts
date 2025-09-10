@@ -198,6 +198,7 @@ export const useTransactionManagement = () => {
       // Move to the first occurrence that is after today
       while (nextDate <= today) {
         nextDate = advanceDate(nextDate);
+        nextDate.setHours(0, 0, 0, 0); // Normalize after advancing
       }
 
       // Add occurrences up to the future date limit
@@ -280,22 +281,40 @@ export const useTransactionManagement = () => {
 
   // Multi-select handlers
   const handleSelectOne = (id: string) => {
-    setSelectedTransactionIds((prev) =>
-      prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
-    );
+    setSelectedTransactionIds((prev) => {
+      const newSelection = prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id];
+      console.log("handleSelectOne - new selectedTransactionIds:", newSelection);
+      return newSelection;
+    });
   };
 
   const handleSelectAll = (checked: boolean) => {
+    console.log("handleSelectAll called with checked:", checked);
     if (checked) {
-      setSelectedTransactionIds(currentTransactions.filter(t => !t.is_scheduled_origin).map((t) => t.id));
+      const selectableIds = selectableTransactionsOnPage.map((t) => t.id);
+      setSelectedTransactionIds(selectableIds);
+      console.log("handleSelectAll - setting selectedTransactionIds to:", selectableIds);
     } else {
       setSelectedTransactionIds([]);
+      console.log("handleSelectAll - clearing selectedTransactionIds");
     }
   };
 
-  const isAllSelectedOnPage =
-    currentTransactions.filter(t => !t.is_scheduled_origin).length > 0 &&
-    currentTransactions.filter(t => !t.is_scheduled_origin).every((t) => selectedTransactionIds.includes(t.id));
+  // Calculate selectable transactions on the current page
+  const selectableTransactionsOnPage = React.useMemo(() => 
+    currentTransactions.filter(t => !t.is_scheduled_origin), 
+    [currentTransactions]
+  );
+
+  // Determine if all selectable transactions on the current page are currently selected
+  const isAllSelectedOnPage = React.useMemo(() => {
+    const allSelected = selectableTransactionsOnPage.length > 0 && 
+                        selectableTransactionsOnPage.every(t => selectedTransactionIds.includes(t.id));
+    console.log("isAllSelectedOnPage calculated:", allSelected, 
+                "selectable count:", selectableTransactionsOnPage.length, 
+                "selected IDs count:", selectedTransactionIds.length);
+    return allSelected;
+  }, [selectableTransactionsOnPage, selectedTransactionIds]);
 
   const handleBulkDelete = () => {
     const transactionsToDelete = selectedTransactionIds.map(id => {
