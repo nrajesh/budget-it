@@ -10,6 +10,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Transaction } from "@/data/finance-data";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface TransactionsTableProps {
   currentTransactions: Transaction[];
@@ -62,31 +63,43 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           ) : (
             currentTransactions.map((transaction) => {
               const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
+              const isScheduled = transaction.isScheduled;
+              const rowClassName = cn("group", isScheduled && "text-muted-foreground italic");
+              const cellClassName = cn(
+                "group-hover:bg-accent/50",
+                !isScheduled && "cursor-pointer"
+              );
+
               return (
-                <TableRow key={transaction.id} className="group">
+                <TableRow key={transaction.id} className={rowClassName}>
                   <TableCell>
                     <Checkbox
                       checked={selectedTransactionIds.includes(transaction.id)}
                       onCheckedChange={() => handleSelectOne(transaction.id)}
                       aria-label={`Select transaction ${transaction.id}`}
+                      disabled={isScheduled}
                     />
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {formatDateToDDMMYYYY(transaction.date)}
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.account}
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.vendor}
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.category}
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'} cursor-pointer group-hover:bg-accent/50`}>
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cn(
+                    'text-right',
+                    !isScheduled && (transaction.amount < 0 ? 'text-red-500' : 'text-green-500'),
+                    cellClassName
+                  )}>
                     {formatCurrency(transaction.amount, currentAccountCurrency)}
                   </TableCell>
-                  <TableCell onDoubleClick={() => handleRowClick(transaction)} className="cursor-pointer group-hover:bg-accent/50">
+                  <TableCell onDoubleClick={isScheduled ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.remarks}
                   </TableCell>
                 </TableRow>

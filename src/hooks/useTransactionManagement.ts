@@ -16,6 +16,20 @@ interface TransactionToDelete {
   transfer_id?: string;
 }
 
+type ScheduledTransaction = {
+  id: string;
+  date: string;
+  account: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  frequency: string;
+  remarks?: string;
+  user_id: string;
+  created_at: string;
+  last_processed_date?: string;
+};
+
 export const useTransactionManagement = () => {
   const {
     transactions,
@@ -51,6 +65,17 @@ export const useTransactionManagement = () => {
   // State for dynamically fetched account options
   const [availableAccountOptions, setAvailableAccountOptions] = React.useState<{ value: string; label: string }[]>([]);
   const [availableVendorOptions, setAvailableVendorOptions] = React.useState<{ value: string; label: string }[]>([]); // New state for vendor options
+  const [scheduledTransactions, setScheduledTransactions] = React.useState<ScheduledTransaction[]>([]);
+
+  // Fetch scheduled transactions
+  React.useEffect(() => {
+    const fetchScheduled = async () => {
+      if (!user) return;
+      const { data } = await supabase.from('scheduled_transactions').select('*').eq('user_id', user.id);
+      setScheduledTransactions(data || []);
+    };
+    fetchScheduled();
+  }, [user]);
 
   // Fetch available accounts dynamically
   const fetchAvailableAccounts = React.useCallback(async () => {
@@ -141,8 +166,63 @@ export const useTransactionManagement = () => {
     }
   }, [location.state, availableVendorOptions, availableCategoryOptions]);
 
+  const combinedTransactions = React.useMemo(() => {
+    const today = new Date();
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(today.getFullYear() + 1);
+
+    const futureTransactions = scheduledTransactions.flatMap(st => {
+      const occurrences: Transaction[] = [];
+      let nextDate = new Date(st.last_processed_date || st.date);
+
+      const frequencyMatch = st.frequency.match(/^(\d+)([dwmy])$/);
+      if (!frequencyMatch) return [];
+
+      const [, numStr, unit] = frequencyMatch;
+      const num = parseInt(numStr, 10);
+
+      const advanceDate = (date: Date) => {
+        const newDate = new Date(date);
+        switch (unit) {
+          case 'd': newDate.setDate(newDate.getDate() + num); break;
+          case 'w': newDate.setDate(newDate.getDate() + num * 7); break;
+          case 'm': newDate.setMonth(newDate.getMonth() + num); break;
+          case 'y': newDate.setFullYear(newDate.getFullYear() + num); break;
+        }
+        return newDate;
+      };
+
+      // Move to the first occurrence that is after today
+      while (nextDate <= today) {
+        nextDate = advanceDate(nextDate);
+      }
+
+      // Add occurrences for the next year
+      while (nextDate < oneYearFromNow) {
+        occurrences.push({
+          id: `scheduled-${st.id}-${nextDate.toISOString()}`,
+          date: nextDate.toISOString(),
+          account: st.account,
+          vendor: st.vendor,
+          category: st.category,
+          amount: st.amount,
+          remarks: st.remarks,
+          currency: accountCurrencyMap.get(st.account) || 'USD',
+          user_id: st.user_id,
+          created_at: st.created_at,
+          isScheduled: true,
+        });
+        nextDate = advanceDate(nextDate);
+      }
+
+      return occurrences;
+    });
+
+    return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+
   const filteredTransactions = React.useMemo(() => {
-    let filtered = transactions;
+    let filtered = combinedTransactions;
 
     // Filter by search term
     if (searchTerm) {
@@ -180,7 +260,7 @@ export const useTransactionManagement = () => {
     }
 
     return filtered;
-  }, [transactions, searchTerm, selectedAccounts, selectedCategories, selectedVendors, dateRange, availableAccountOptions.length, availableCategoryOptions.length, availableVendorOptions.length]);
+  }, [combinedTransactions, searchTerm, selectedAccounts, selectedCategories, selectedVendors, dateRange, availableAccountOptions.length, availableCategoryOptions.length, availableVendorOptions.length]);
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -204,15 +284,15 @@ export const useTransactionManagement = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTransactionIds(currentTransactions.map((t) => t.id));
+      setSelectedTransactionIds(currentTransactions.filter(t => !t.isScheduled).map((t) => t.id));
     } else {
       setSelectedTransactionIds([]);
     }
   };
 
   const isAllSelectedOnPage =
-    currentTransactions.length > 0 &&
-    currentTransactions.every((t) => selectedTransactionIds.includes(t.id));
+    currentTransactions.filter(t => !t.isScheduled).length > 0 &&
+    currentTransactions.filter(t => !t.isScheduled).every((t) => selectedTransactionIds.includes(t.id));
 
   const handleBulkDelete = () => {
     const transactionsToDelete = selectedTransactionIds.map(id => {
