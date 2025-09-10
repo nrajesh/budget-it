@@ -467,16 +467,16 @@ const ScheduledTransactionsPage = () => {
     });
   };
 
-  const calculateUpcomingDates = (transaction: ScheduledTransaction, count: number = 2): string[] => {
-    const dates: string[] = [];
-    let currentCandidateDate = new Date(transaction.date); // Always start from the original scheduled date
+  const calculateUpcomingDates = (transaction: ScheduledTransaction, count: number = 2): { firstUpcoming: string | null; subsequentUpcoming: string[] } => {
+    const subsequentUpcoming: string[] = [];
+    let currentCandidateDate = new Date(transaction.last_processed_date || transaction.date);
     currentCandidateDate.setHours(0, 0, 0, 0);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const frequencyMatch = transaction.frequency.match(/^(\d+)([dwmy])$/);
-    if (!frequencyMatch) return dates;
+    if (!frequencyMatch) return { firstUpcoming: null, subsequentUpcoming: [] };
 
     const [, numStr, unit] = frequencyMatch;
     const num = parseInt(numStr, 10);
@@ -493,19 +493,24 @@ const ScheduledTransactionsPage = () => {
     };
 
     // Find the first occurrence that is strictly AFTER today
-    // This loop ensures we only show future dates.
     while (currentCandidateDate <= today) {
       currentCandidateDate = advanceDate(currentCandidateDate);
+      currentCandidateDate.setHours(0, 0, 0, 0); // Normalize after advancing
     }
 
-    // Now, currentCandidateDate is the first scheduled date strictly after today.
-    // Add the next 'count' occurrences.
+    const firstUpcoming = currentCandidateDate.toISOString();
+
+    // Generate subsequent occurrences
+    let nextDate = advanceDate(new Date(firstUpcoming)); // Start from the date *after* the first upcoming
+    nextDate.setHours(0, 0, 0, 0);
+
     for (let i = 0; i < count; i++) {
-      dates.push(currentCandidateDate.toISOString());
-      currentCandidateDate = advanceDate(currentCandidateDate);
+      subsequentUpcoming.push(nextDate.toISOString());
+      nextDate = advanceDate(nextDate);
+      nextDate.setHours(0, 0, 0, 0); // Normalize after advancing
     }
 
-    return dates;
+    return { firstUpcoming, subsequentUpcoming };
   };
 
   return (
@@ -577,7 +582,7 @@ const ScheduledTransactionsPage = () => {
                       aria-label="Select all"
                     />
                   </TableHead>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Next Due Date</TableHead> {/* Updated column header */}
                   <TableHead>Account</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead>Category</TableHead>
@@ -600,8 +605,8 @@ const ScheduledTransactionsPage = () => {
                   </TableRow>
                 ) : (
                   currentTransactions.map((transaction) => {
+                    const { firstUpcoming, subsequentUpcoming } = calculateUpcomingDates(transaction);
                     const isExpanded = expandedRows.has(transaction.id);
-                    const upcomingDates = calculateUpcomingDates(transaction);
 
                     return (
                       <React.Fragment key={transaction.id}>
@@ -623,7 +628,7 @@ const ScheduledTransactionsPage = () => {
                               >
                                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                               </Button>
-                              {formatDateToDDMMYYYY(transaction.date)}
+                              {firstUpcoming ? formatDateToDDMMYYYY(firstUpcoming) : 'N/A'}
                             </div>
                           </TableCell>
                           <TableCell>{transaction.account}</TableCell>
@@ -642,8 +647,8 @@ const ScheduledTransactionsPage = () => {
                           </TableCell>
                         </TableRow>
 
-                        {/* Expanded rows for upcoming dates */}
-                        {isExpanded && upcomingDates.map((date, index) => (
+                        {/* Expanded rows for subsequent upcoming dates */}
+                        {isExpanded && subsequentUpcoming.map((date, index) => (
                           <TableRow key={`${transaction.id}-upcoming-${index}`} className="bg-muted/50">
                             <TableCell colSpan={2} className="pl-12">
                               {formatDateToDDMMYYYY(date)}
