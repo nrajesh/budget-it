@@ -253,16 +253,20 @@ const ScheduledTransactionsPage = () => {
           await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
           // Prepare transactions for insertion
-          const transactionsToInsert = parsedData.map(row => ({
-            date: parseDateFromDDMMYYYY(row.Date).toISOString(),
-            account: row.Account,
-            vendor: row.Vendor,
-            category: row.Category,
-            amount: parseFloat(row.Amount) || 0,
-            frequency: row.Frequency,
-            remarks: row.Remarks || null,
-            user_id: user.id,
-          }));
+          const transactionsToInsert = parsedData.map(row => {
+            const isoDate = parseDateFromDDMMYYYY(row.Date).toISOString();
+            return {
+              date: isoDate,
+              account: row.Account,
+              vendor: row.Vendor,
+              category: row.Category,
+              amount: parseFloat(row.Amount) || 0,
+              frequency: row.Frequency,
+              remarks: row.Remarks || null,
+              user_id: user.id,
+              last_processed_date: isoDate,
+            };
+          });
 
           // Insert transactions
           const { error } = await supabase.from('scheduled_transactions').insert(transactionsToInsert);
@@ -327,10 +331,12 @@ const ScheduledTransactionsPage = () => {
       await ensurePayeeExists(formData.vendor, false);
       await ensureCategoryExists(formData.category, user.id);
 
+      const isoDate = parseDateFromDDMMYYYY(formData.date).toISOString();
       const transactionData = {
         ...formData,
-        date: parseDateFromDDMMYYYY(formData.date).toISOString(),
+        date: isoDate,
         user_id: user.id,
+        last_processed_date: isoDate,
       };
 
       const { error } = await supabase.from('scheduled_transactions').insert(transactionData);
