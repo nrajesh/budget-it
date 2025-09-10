@@ -617,8 +617,7 @@ const ScheduledTransactionsPage = () => {
                               onCheckedChange={(checked) => handleRowSelect(transaction.id, Boolean(checked))}
                               aria-label="Select row"
                             />
-                          </TableCell>
-                          <TableCell>
+                          </TableCell><TableCell>
                             <div className="flex items-center">
                               <Button
                                 variant="ghost"
@@ -630,14 +629,7 @@ const ScheduledTransactionsPage = () => {
                               </Button>
                               {firstUpcoming ? formatDateToDDMMYYYY(firstUpcoming) : 'N/A'}
                             </div>
-                          </TableCell>
-                          <TableCell>{transaction.account}</TableCell>
-                          <TableCell>{transaction.vendor}</TableCell>
-                          <TableCell>{transaction.category}</TableCell>
-                          <TableCell>{transaction.amount.toFixed(2)}</TableCell>
-                          <TableCell>{transaction.frequency}</TableCell>
-                          <TableCell>{transaction.remarks || '-'}</TableCell>
-                          <TableCell className="text-right">
+                          </TableCell><TableCell>{transaction.account}</TableCell><TableCell>{transaction.vendor}</TableCell><TableCell>{transaction.category}</TableCell><TableCell>{transaction.amount.toFixed(2)}</TableCell><TableCell>{transaction.frequency}</TableCell><TableCell>{transaction.remarks || '-'}</TableCell><TableCell className="text-right">
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -652,8 +644,7 @@ const ScheduledTransactionsPage = () => {
                           <TableRow key={`${transaction.id}-upcoming-${index}`} className="bg-muted/50">
                             <TableCell colSpan={2} className="pl-12">
                               {formatDateToDDMMYYYY(date)}
-                            </TableCell>
-                            <TableCell colSpan={7} className="text-muted-foreground">
+                            </TableCell><TableCell colSpan={7} className="text-muted-foreground">
                               Upcoming transaction
                             </TableCell>
                           </TableRow>
