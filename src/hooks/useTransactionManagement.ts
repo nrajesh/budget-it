@@ -278,24 +278,32 @@ export const useTransactionManagement = () => {
     setDateRange(undefined);
   };
 
+  // Memoize selectable transactions on the current page
+  const selectableTransactionsOnPage = React.useMemo(() => {
+    return currentTransactions.filter(t => !t.is_scheduled_origin);
+  }, [currentTransactions]);
+
   // Multi-select handlers
-  const handleSelectOne = (id: string) => {
+  const handleSelectOne = React.useCallback((id: string) => {
     setSelectedTransactionIds((prev) =>
       prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
     );
-  };
+  }, []); // No dependencies needed as prev is used
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = React.useCallback((checked: boolean) => {
     if (checked) {
-      setSelectedTransactionIds(currentTransactions.filter(t => !t.is_scheduled_origin).map((t) => t.id));
+      setSelectedTransactionIds(selectableTransactionsOnPage.map((t) => t.id));
     } else {
       setSelectedTransactionIds([]);
     }
-  };
+  }, [selectableTransactionsOnPage]); // Dependency on selectableTransactionsOnPage
 
-  const isAllSelectedOnPage =
-    currentTransactions.filter(t => !t.is_scheduled_origin).length > 0 &&
-    currentTransactions.filter(t => !t.is_scheduled_origin).every((t) => selectedTransactionIds.includes(t.id));
+  const isAllSelectedOnPage = React.useMemo(() => {
+    if (selectableTransactionsOnPage.length === 0) {
+      return false; // No selectable transactions, so "select all" is not applicable
+    }
+    return selectableTransactionsOnPage.every((t) => selectedTransactionIds.includes(t.id));
+  }, [selectableTransactionsOnPage, selectedTransactionIds]);
 
   const handleBulkDelete = () => {
     const transactionsToDelete = selectedTransactionIds.map(id => {
@@ -314,7 +322,7 @@ export const useTransactionManagement = () => {
   }, [filteredTransactions, itemsPerPage]);
 
   const numSelected = selectedTransactionIds.length;
-  const rowCount = currentTransactions.length;
+  // rowCount is already defined as currentTransactions.length, which is correct for display
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
