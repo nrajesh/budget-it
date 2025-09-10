@@ -353,7 +353,7 @@ const ScheduledTransactionsPage = () => {
     setIsSubmitting(true);
 
     // 1. Create a clean data object from the current form state.
-    const submissionData = { ...formData };
+    const { date, account, vendor, category, amount, frequency_value, frequency_unit, remarks } = formData;
 
     // 2. Validate the data object.
     if (!user) {
@@ -361,45 +361,48 @@ const ScheduledTransactionsPage = () => {
       setIsSubmitting(false);
       return;
     }
-    if (!submissionData.account || !submissionData.vendor || !submissionData.category) {
+    if (!account || !vendor || !category) {
       showError("Please fill in all required fields: Account, Vendor, and Category.");
       setIsSubmitting(false);
       return;
     }
-    if (!submissionData.frequency_unit || !['d', 'w', 'm', 'y'].includes(submissionData.frequency_unit)) {
-      showError("Please select a valid frequency unit (Days, Weeks, etc.).");
+    if (typeof frequency_value !== 'number' || isNaN(frequency_value) || frequency_value < 1) {
+      showError("Invalid frequency value. Please enter a positive number.");
       setIsSubmitting(false);
       return;
     }
-    if (submissionData.frequency_value < 1) {
-      showError("Frequency value must be at least 1.");
+    if (!['d', 'w', 'm', 'y'].includes(frequency_unit)) {
+      showError("Invalid frequency unit. Please select from Days, Weeks, Months, Years.");
       setIsSubmitting(false);
       return;
     }
 
     try {
       // 3. Perform async pre-flight checks.
-      const isTransfer = allPayees.find(p => p.value === submissionData.vendor)?.isAccount || false;
-      await ensurePayeeExists(submissionData.account, true);
-      await ensurePayeeExists(submissionData.vendor, isTransfer);
-      if (submissionData.category !== 'Transfer') {
-        await ensureCategoryExists(submissionData.category, user.id);
+      const isVendorAnAccount = allPayees.find(p => p.value === vendor)?.isAccount || false;
+      await ensurePayeeExists(account, true);
+      await ensurePayeeExists(vendor, isVendorAnAccount);
+      if (category !== 'Transfer') { // Only ensure category exists if it's not the special 'Transfer' category
+        await ensureCategoryExists(category, user.id);
       }
 
       // 4. Construct the final object for Supabase.
-      const isoDate = new Date(submissionData.date).toISOString();
-      const frequency = `${submissionData.frequency_value}${submissionData.frequency_unit}`;
+      const isoDate = new Date(date).toISOString();
+      const frequency = `${frequency_value}${frequency_unit}`;
 
       const dbPayload = {
         date: isoDate,
-        account: submissionData.account,
-        vendor: submissionData.vendor,
-        category: submissionData.category,
-        amount: submissionData.amount,
-        remarks: submissionData.remarks || null,
-        frequency: frequency,
+        account,
+        vendor,
+        category,
+        amount,
+        remarks: remarks || null,
+        frequency,
         last_processed_date: isoDate,
       };
+
+      // Log the exact payload being sent for debugging
+      console.log("Submitting scheduled transaction with payload:", dbPayload);
 
       // 5. Perform the database operation.
       if (editingTransaction) {
@@ -422,19 +425,26 @@ const ScheduledTransactionsPage = () => {
       setIsFormOpen(false);
 
     } catch (error: any) {
-      console.error("Error saving scheduled transaction:", error);
-      showError(`Failed to save: ${error.message}`);
+      console.error("Error saving scheduled transaction:", error); // Log the full error object
+      showError(`Failed to save scheduled transaction: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : (name === 'frequency_value' ? parseInt(value, 10) || 1 : value),
-    }));
+    setFormData(prev => {
+      if (name === 'amount') {
+        return { ...prev, [name]: parseFloat(value) || 0 };
+      } else if (name === 'frequency_value') {
+        // Ensure frequency_value is always a positive integer, default to 1 if invalid
+        const parsedValue = parseInt(value, 10);
+        return { ...prev, [name]: isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue };
+      } else {
+        return { ...prev, [name]: value };
+      }
+    });
   };
 
   const toggleRowExpansion = (id: string) => {
