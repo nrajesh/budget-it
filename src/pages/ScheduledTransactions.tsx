@@ -21,14 +21,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download } from "lucide-react";
+import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download, ChevronDown, ChevronUp } from "lucide-react";
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
 import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
 import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
-
-type Frequency = '1d' | '2w' | '1m' | '2m' | '3m' | '6m' | '1y';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 type ScheduledTransaction = {
   id: string;
@@ -37,24 +43,15 @@ type ScheduledTransaction = {
   vendor: string;
   category: string;
   amount: number;
-  frequency: Frequency;
+  frequency: string; // Changed to string to support custom frequencies
   remarks?: string;
   user_id: string;
   created_at: string;
 };
 
-const frequencyOptions: { value: Frequency; label: string }[] = [
-  { value: '1d', label: 'Daily' },
-  { value: '2w', label: 'Every 2 weeks' },
-  { value: '1m', label: 'Monthly' },
-  { value: '2m', label: 'Every 2 months' },
-  { value: '3m', label: 'Every 3 months' },
-  { value: '6m', label: 'Every 6 months' },
-  { value: '1y', label: 'Yearly' },
-];
-
 const ScheduledTransactionsPage = () => {
   const { user } = useUser();
+  const { accounts, vendors, categories } = useTransactions();
   const [scheduledTransactions, setScheduledTransactions] = React.useState<ScheduledTransaction[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -81,6 +78,9 @@ const ScheduledTransactionsPage = () => {
     remarks: '',
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // State for expanded rows
+  const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
   // Fetch scheduled transactions
   const fetchScheduledTransactions = React.useCallback(async () => {
@@ -146,7 +146,7 @@ const ScheduledTransactionsPage = () => {
       vendor: transaction.vendor,
       category: transaction.category,
       amount: transaction.amount,
-      frequency: transaction.frequency as Frequency,
+      frequency: transaction.frequency,
       remarks: transaction.remarks || '',
     });
     setIsFormOpen(true);
@@ -242,14 +242,6 @@ const ScheduledTransactionsPage = () => {
         }
 
         try {
-          // Validate frequency values
-          const invalidFrequencies = parsedData.filter(row => !frequencyOptions.some(f => f.value === row.Frequency));
-          if (invalidFrequencies.length > 0) {
-            showError(`Invalid frequency values found: ${invalidFrequencies.map(r => r.Frequency).join(", ")}. Valid options are: ${frequencyOptions.map(f => f.value).join(", ")}`);
-            setIsImporting(false);
-            return;
-          }
-
           // Ensure all payees and categories exist
           const uniqueAccounts = [...new Set(parsedData.map(row => row.Account))];
           await Promise.all(uniqueAccounts.map(name => ensurePayeeExists(name, true)));
@@ -267,7 +259,7 @@ const ScheduledTransactionsPage = () => {
             vendor: row.Vendor,
             category: row.Category,
             amount: parseFloat(row.Amount) || 0,
-            frequency: row.Frequency as Frequency,
+            frequency: row.Frequency,
             remarks: row.Remarks || null,
             user_id: user.id,
           }));
@@ -362,6 +354,59 @@ const ScheduledTransactionsPage = () => {
     }));
   };
 
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // Function to calculate upcoming dates based on frequency
+  const calculateUpcomingDates = (startDate: string, frequency: string, count: number = 2): string[] => {
+    const dates: string[] = [];
+    const baseDate = new Date(startDate);
+    const frequencyMatch = frequency.match(/^(\d+)([dwmy])$/);
+
+    if (!frequencyMatch) {
+      // Handle invalid frequency format
+      return dates;
+    }
+
+    const [, numStr, unit] = frequencyMatch;
+    const num = parseInt(numStr, 10);
+
+    for (let i = 1; i <= count; i++) {
+      const newDate = new Date(baseDate);
+
+      switch (unit) {
+        case 'd': // Days
+          newDate.setDate(newDate.getDate() + num * i);
+          break;
+        case 'w': // Weeks
+          newDate.setDate(newDate.getDate() + num * i * 7);
+          break;
+        case 'm': // Months
+          newDate.setMonth(newDate.getMonth() + num * i);
+          break;
+        case 'y': // Years
+          newDate.setFullYear(newDate.getFullYear() + num * i);
+          break;
+        default:
+          // Invalid unit, skip
+          continue;
+      }
+
+      dates.push(newDate.toISOString());
+    }
+
+    return dates;
+  };
+
   return (
     <div className="flex-1 space-y-4">
       <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing scheduled transactions..." : "Refreshing scheduled transactions..."} />
@@ -453,32 +498,63 @@ const ScheduledTransactionsPage = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  currentTransactions.map((transaction) => (
-                    <TableRow key={transaction.id} data-state={selectedRows.includes(transaction.id) && "selected"}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedRows.includes(transaction.id)}
-                          onCheckedChange={(checked) => handleRowSelect(transaction.id, Boolean(checked))}
-                          aria-label="Select row"
-                        />
-                      </TableCell>
-                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell>
-                      <TableCell>{transaction.account}</TableCell>
-                      <TableCell>{transaction.vendor}</TableCell>
-                      <TableCell>{transaction.category}</TableCell>
-                      <TableCell>{transaction.amount.toFixed(2)}</TableCell>
-                      <TableCell>{frequencyOptions.find(f => f.value === transaction.frequency)?.label || transaction.frequency}</TableCell>
-                      <TableCell>{transaction.remarks || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  currentTransactions.map((transaction) => {
+                    const isExpanded = expandedRows.has(transaction.id);
+                    const upcomingDates = calculateUpcomingDates(transaction.date, transaction.frequency);
+
+                    return (
+                      <React.Fragment key={transaction.id}>
+                        <TableRow data-state={selectedRows.includes(transaction.id) && "selected"}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedRows.includes(transaction.id)}
+                              onCheckedChange={(checked) => handleRowSelect(transaction.id, Boolean(checked))}
+                              aria-label="Select row"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleRowExpansion(transaction.id)}
+                                className="mr-2 h-6 w-6"
+                              >
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                              {formatDateToDDMMYYYY(transaction.date)}
+                            </div>
+                          </TableCell>
+                          <TableCell>{transaction.account}</TableCell>
+                          <TableCell>{transaction.vendor}</TableCell>
+                          <TableCell>{transaction.category}</TableCell>
+                          <TableCell>{transaction.amount.toFixed(2)}</TableCell>
+                          <TableCell>{transaction.frequency}</TableCell>
+                          <TableCell>{transaction.remarks || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(transaction)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded rows for upcoming dates */}
+                        {isExpanded && upcomingDates.map((date, index) => (
+                          <TableRow key={`${transaction.id}-upcoming-${index}`} className="bg-muted/50">
+                            <TableCell colSpan={2} className="pl-12">
+                              {formatDateToDDMMYYYY(date)}
+                            </TableCell>
+                            <TableCell colSpan={7} className="text-muted-foreground">
+                              Upcoming transaction
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -530,36 +606,63 @@ const ScheduledTransactionsPage = () => {
                 </div>
                 <div>
                   <label htmlFor="account" className="block text-sm font-medium mb-1">Account</label>
-                  <Input
-                    id="account"
+                  <Select
                     name="account"
-                    type="text"
                     value={formData.account}
-                    onChange={handleFormChange}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map(account => (
+                        <SelectItem key={account.id} value={account.name}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor</label>
-                  <Input
-                    id="vendor"
+                  <Select
                     name="vendor"
-                    type="text"
                     value={formData.vendor}
-                    onChange={handleFormChange}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, vendor: value }))}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vendors.map(vendor => (
+                        <SelectItem key={vendor.id} value={vendor.name}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium mb-1">Category</label>
-                  <Input
-                    id="category"
+                  <Select
                     name="category"
-                    type="text"
                     value={formData.category}
-                    onChange={handleFormChange}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label htmlFor="amount" className="block text-sm font-medium mb-1">Amount</label>
@@ -575,18 +678,15 @@ const ScheduledTransactionsPage = () => {
                 </div>
                 <div>
                   <label htmlFor="frequency" className="block text-sm font-medium mb-1">Frequency</label>
-                  <select
+                  <Input
                     id="frequency"
                     name="frequency"
+                    type="text"
                     value={formData.frequency}
                     onChange={handleFormChange}
-                    className="w-full p-2 border rounded-md"
+                    placeholder="e.g., 10d, 1w, 2m, 3y"
                     required
-                  >
-                    {frequencyOptions.map(freq => (
-                      <option key={freq.value} value={freq.value}>{freq.label}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <div>
