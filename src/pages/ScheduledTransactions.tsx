@@ -113,6 +113,9 @@ const ScheduledTransactionsPage = () => {
     return uniquePayees.sort((a, b) => a.label.localeCompare(b.label));
   }, [accounts, vendors]);
 
+  // Get today's date in YYYY-MM-DD format for the min attribute of the date input
+  const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(new Date()), []);
+
   // Fetch scheduled transactions
   const fetchScheduledTransactions = React.useCallback(async () => {
     if (!user) {
@@ -160,7 +163,7 @@ const ScheduledTransactionsPage = () => {
   const handleAddClick = () => {
     setEditingTransaction(null);
     setFormData({
-      date: formatDateToYYYYMMDD(new Date()),
+      date: todayDateString, // Default to today's date
       account: '',
       vendor: '',
       category: '',
@@ -291,11 +294,25 @@ const ScheduledTransactionsPage = () => {
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category))];
           await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Normalize to start of day
+          let pastDatesFoundInImport = false;
+
           // Prepare transactions for insertion
           const transactionsToInsert = parsedData.map(row => {
-            const isoDate = parseDateFromDDMMYYYY(row.Date).toISOString();
+            const parsedDate = parseDateFromDDMMYYYY(row.Date);
+            parsedDate.setHours(0, 0, 0, 0); // Normalize parsed date
+
+            const isoDate = parsedDate.toISOString();
+            let lastProcessedDateForDb = isoDate;
+
+            if (parsedDate < today) {
+                pastDatesFoundInImport = true;
+                lastProcessedDateForDb = today.toISOString(); // Set to today if original date is in the past
+            }
+
             return {
-              date: isoDate,
+              date: isoDate, // Keep the original scheduled date
               account: row.Account,
               vendor: row.Vendor,
               category: row.Category,
@@ -303,7 +320,7 @@ const ScheduledTransactionsPage = () => {
               frequency: row.Frequency,
               remarks: row.Remarks || null,
               user_id: user.id,
-              last_processed_date: isoDate,
+              last_processed_date: lastProcessedDateForDb, // Use the adjusted last_processed_date
             };
           });
 
@@ -312,6 +329,9 @@ const ScheduledTransactionsPage = () => {
           if (error) throw error;
 
           showSuccess(`${transactionsToInsert.length} scheduled transactions imported successfully!`);
+          if (pastDatesFoundInImport) {
+            showError("Some imported scheduled transactions had past dates. Their processing will start from today.");
+          }
           fetchScheduledTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
@@ -701,6 +721,7 @@ const ScheduledTransactionsPage = () => {
                   type="date"
                   value={formData.date}
                   onChange={handleFormChange}
+                  min={todayDateString} // Restrict past date selection
                   required
                 />
               </div>
