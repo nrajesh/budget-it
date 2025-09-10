@@ -168,8 +168,11 @@ export const useTransactionManagement = () => {
 
   const combinedTransactions = React.useMemo(() => {
     const today = new Date();
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(today.getFullYear() + 1);
+    
+    // Read the setting from localStorage, default to 2 months
+    const futureMonthsToShow = parseInt(localStorage.getItem('futureMonths') || '2', 10);
+    const futureDateLimit = new Date();
+    futureDateLimit.setMonth(today.getMonth() + futureMonthsToShow);
 
     const futureTransactions = scheduledTransactions.flatMap(st => {
       const occurrences: Transaction[] = [];
@@ -197,8 +200,8 @@ export const useTransactionManagement = () => {
         nextDate = advanceDate(nextDate);
       }
 
-      // Add occurrences for the next year
-      while (nextDate < oneYearFromNow) {
+      // Add occurrences up to the future date limit
+      while (nextDate < futureDateLimit) {
         occurrences.push({
           id: `scheduled-${st.id}-${nextDate.toISOString()}`,
           date: nextDate.toISOString(),

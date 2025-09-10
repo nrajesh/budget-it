@@ -2,6 +2,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input"; // Import Input component
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
@@ -17,10 +18,26 @@ const SettingsPage = () => {
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
   const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false);
+  const [futureMonths, setFutureMonths] = React.useState<number>(2);
+
+  React.useEffect(() => {
+    const savedMonths = localStorage.getItem('futureMonths');
+    if (savedMonths) {
+      setFutureMonths(parseInt(savedMonths, 10));
+    }
+  }, []);
 
   const handleCurrencyChange = (value: string) => {
     setCurrency(value);
     showSuccess(`Default currency set to ${value}.`);
+  };
+
+  const handleFutureMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setFutureMonths(value);
+      localStorage.setItem('futureMonths', value.toString());
+    }
   };
 
   const handleResetData = async () => {
@@ -71,6 +88,29 @@ const SettingsPage = () => {
                 ))}
               </SelectContent>
             </Select>
+          </CardContent>
+        </Card>
+
+        {/* Future Transactions Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Future Transactions</CardTitle>
+            <CardDescription>
+              Define how many months of future scheduled transactions to show.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                value={futureMonths}
+                onChange={handleFutureMonthsChange}
+                onBlur={() => showSuccess(`Future transaction view set to ${futureMonths} months.`)}
+                min="0"
+                className="w-[100px]"
+              />
+              <span className="text-sm text-muted-foreground">months</span>
+            </div>
           </CardContent>
         </Card>
 
