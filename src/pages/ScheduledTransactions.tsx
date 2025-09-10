@@ -350,6 +350,9 @@ const ScheduledTransactionsPage = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Destructure form data at the beginning to ensure we have a consistent snapshot
+    const { date, account, vendor, category, amount, frequency_value, frequency_unit, remarks } = formData;
+
     if (!user) {
       showError("You must be logged in to save scheduled transactions.");
       return;
@@ -357,40 +360,45 @@ const ScheduledTransactionsPage = () => {
 
     setIsSubmitting(true);
     try {
-      const isVendorAnAccount = accounts.some(acc => acc.name === formData.vendor);
-      await ensurePayeeExists(formData.account, true);
-      await ensurePayeeExists(formData.vendor, isVendorAnAccount);
-      await ensureCategoryExists(formData.category, user.id);
+      // Step 1: Ensure payees and category exist (if not a transfer)
+      const isVendorAnAccount = allPayees.find(p => p.value === vendor)?.isAccount || false;
+      await ensurePayeeExists(account, true);
+      await ensurePayeeExists(vendor, isVendorAnAccount);
+      if (category !== 'Transfer') {
+        await ensureCategoryExists(category, user.id);
+      }
 
-      const isoDate = new Date(formData.date).toISOString();
-      const frequency = `${formData.frequency_value}${formData.frequency_unit}`;
+      // Step 2: Prepare data for Supabase
+      const isoDate = new Date(date).toISOString();
+      const frequency = `${frequency_value}${frequency_unit}`;
 
-      const transactionData = {
+      const dataForSupabase = {
         date: isoDate,
-        account: formData.account,
-        vendor: formData.vendor,
-        category: formData.category,
-        amount: formData.amount,
-        remarks: formData.remarks || null,
-        frequency: frequency,
+        account,
+        vendor,
+        category,
+        amount,
+        remarks: remarks || null,
+        frequency,
         last_processed_date: isoDate,
       };
 
+      // Step 3: Insert or Update
       if (editingTransaction) {
         const { error } = await supabase
           .from('scheduled_transactions')
-          .update(transactionData)
+          .update(dataForSupabase)
           .eq('id', editingTransaction.id);
         if (error) throw error;
         showSuccess("Scheduled transaction updated successfully!");
       } else {
-        const { error } = await supabase
-          .from('scheduled_transactions')
-          .insert({ ...transactionData, user_id: user.id });
+        const insertData = { ...dataForSupabase, user_id: user.id };
+        const { error } = await supabase.from('scheduled_transactions').insert(insertData);
         if (error) throw error;
         showSuccess("Scheduled transaction added successfully!");
       }
       
+      // Step 4: Clean up
       fetchScheduledTransactions();
       setIsFormOpen(false);
     } catch (error: any) {
