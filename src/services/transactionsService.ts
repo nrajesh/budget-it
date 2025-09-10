@@ -19,7 +19,7 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id'> & { date: string; receivingAmount?: number }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       return;
@@ -47,6 +47,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         currency: accountCurrency,
         date: newDateISO,
         user_id: userId, // This is where user_id is added
+        is_scheduled_origin: false, // Manually added transactions are not from scheduled origin
       };
 
       if (isTransfer) {
@@ -99,7 +100,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       return;
     }
     try {
-      const accountCurrency = transactions.find(t => t.id === updatedTransaction.id)?.currency || 'USD';
+      // Fetch the original transaction to preserve is_scheduled_origin if not explicitly provided
+      const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
+      const isScheduledOrigin = originalTransaction?.is_scheduled_origin || false;
+
+      const accountCurrency = originalTransaction?.currency || 'USD'; // Use original currency or default
 
       const newDateISO = new Date(updatedTransaction.date).toISOString();
 
@@ -113,8 +118,9 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         category: updatedTransaction.category,
         amount: updatedTransaction.amount,
         remarks: updatedTransaction.remarks,
-        currency: accountCurrency,
+        currency: accountCurrency, // Keep original account currency
         transfer_id: updatedTransaction.transfer_id || null,
+        is_scheduled_origin: isScheduledOrigin, // Preserve the flag
       }).eq('id', updatedTransaction.id);
 
       if (error) {
@@ -123,7 +129,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
 
       showSuccess("Transaction updated successfully!");
       setTransactions(prevTransactions =>
-        prevTransactions.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
+        prevTransactions.map(t => (t.id === updatedTransaction.id ? { ...updatedTransaction, is_scheduled_origin: isScheduledOrigin } : t))
       );
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);

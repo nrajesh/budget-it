@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { DialogDescription } from "@/components/ui/dialog"; // Import DialogDescription
 
 type ScheduledTransaction = {
   id: string;
@@ -683,6 +684,9 @@ const ScheduledTransactionsPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">{editingTransaction ? "Edit" : "Add"} Scheduled Transaction</h3>
+            <DialogDescription className="mb-4">
+              Define a recurring transaction. Occurrences up to today will be automatically added to your transactions.
+            </DialogDescription>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
