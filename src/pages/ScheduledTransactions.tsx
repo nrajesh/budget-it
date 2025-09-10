@@ -96,6 +96,15 @@ const ScheduledTransactionsPage = () => {
   // State for expanded rows
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
+  const allPayees = React.useMemo(() => {
+    const payeeOptions = [
+      ...accounts.map(p => ({ value: p.name, label: p.name, isAccount: true })),
+      ...vendors.map(p => ({ value: p.name, label: p.name, isAccount: false }))
+    ];
+    const uniquePayees = Array.from(new Map(payeeOptions.map(item => [item.value, item])).values());
+    return uniquePayees.sort((a, b) => a.label.localeCompare(b.label));
+  }, [accounts, vendors]);
+
   // Fetch scheduled transactions
   const fetchScheduledTransactions = React.useCallback(async () => {
     if (!user) {
@@ -348,35 +357,35 @@ const ScheduledTransactionsPage = () => {
 
     setIsSubmitting(true);
     try {
+      const isVendorAnAccount = accounts.some(acc => acc.name === formData.vendor);
       await ensurePayeeExists(formData.account, true);
-      await ensurePayeeExists(formData.vendor, false);
+      await ensurePayeeExists(formData.vendor, isVendorAnAccount);
       await ensureCategoryExists(formData.category, user.id);
 
       const isoDate = parseDateFromDDMMYYYY(formData.date).toISOString();
-      const { frequency_value, frequency_unit, ...restOfFormData } = formData;
-      const frequency = `${frequency_value}${frequency_unit}`;
+      const frequency = `${formData.frequency_value}${formData.frequency_unit}`;
+
+      const transactionData = {
+        date: isoDate,
+        account: formData.account,
+        vendor: formData.vendor,
+        category: formData.category,
+        amount: formData.amount,
+        remarks: formData.remarks,
+        frequency: frequency,
+        user_id: user.id,
+        last_processed_date: isoDate,
+      };
 
       if (editingTransaction) {
-        const transactionData = {
-          ...restOfFormData,
-          frequency,
-          date: isoDate,
-          last_processed_date: isoDate,
-        };
+        const { user_id, ...updateData } = transactionData;
         const { error } = await supabase
           .from('scheduled_transactions')
-          .update(transactionData)
+          .update(updateData)
           .eq('id', editingTransaction.id);
         if (error) throw error;
         showSuccess("Scheduled transaction updated successfully!");
       } else {
-        const transactionData = {
-          ...restOfFormData,
-          frequency,
-          date: isoDate,
-          user_id: user.id,
-          last_processed_date: isoDate,
-        };
         const { error } = await supabase.from('scheduled_transactions').insert(transactionData);
         if (error) throw error;
         showSuccess("Scheduled transaction added successfully!");
@@ -663,19 +672,27 @@ const ScheduledTransactionsPage = () => {
                   </Select>
                 </div>
                 <div>
-                  <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor</label>
+                  <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor / Account</label>
                   <Select
                     name="vendor"
                     value={formData.vendor}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, vendor: value }))}
+                    onValueChange={(value) => {
+                      const selectedPayee = allPayees.find(p => p.value === value);
+                      const isTransfer = selectedPayee?.isAccount;
+                      setFormData(prev => ({
+                        ...prev,
+                        vendor: value,
+                        category: isTransfer ? 'Transfer' : prev.category === 'Transfer' ? '' : prev.category
+                      }));
+                    }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select vendor" />
+                      <SelectValue placeholder="Select vendor or account" />
                     </SelectTrigger>
                     <SelectContent>
-                      {vendors.map(vendor => (
-                        <SelectItem key={vendor.id} value={vendor.name}>
-                          {vendor.name}
+                      {allPayees.map(payee => (
+                        <SelectItem key={payee.value} value={payee.value}>
+                          {payee.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -687,12 +704,13 @@ const ScheduledTransactionsPage = () => {
                     name="category"
                     value={formData.category}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                    disabled={allPayees.find(p => p.value === formData.vendor)?.isAccount}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map(category => (
+                      {categories.filter(c => c.name !== 'Transfer').map(category => (
                         <SelectItem key={category.id} value={category.name}>
                           {category.name}
                         </SelectItem>
