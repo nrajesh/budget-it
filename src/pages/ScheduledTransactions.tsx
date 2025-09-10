@@ -43,10 +43,11 @@ type ScheduledTransaction = {
   vendor: string;
   category: string;
   amount: number;
-  frequency: string; // Changed to string to support custom frequencies
+  frequency: string;
   remarks?: string;
   user_id: string;
   created_at: string;
+  last_processed_date?: string;
 };
 
 const ScheduledTransactionsPage = () => {
@@ -372,42 +373,36 @@ const ScheduledTransactionsPage = () => {
     });
   };
 
-  // Function to calculate upcoming dates based on frequency
-  const calculateUpcomingDates = (startDate: string, frequency: string, count: number = 2): string[] => {
+  const calculateUpcomingDates = (transaction: ScheduledTransaction, count: number = 2): string[] => {
     const dates: string[] = [];
-    const baseDate = new Date(startDate);
-    const frequencyMatch = frequency.match(/^(\d+)([dwmy])$/);
+    let nextDate = new Date(transaction.last_processed_date || transaction.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (!frequencyMatch) {
-      // Handle invalid frequency format
-      return dates;
-    }
+    const frequencyMatch = transaction.frequency.match(/^(\d+)([dwmy])$/);
+    if (!frequencyMatch) return dates;
 
     const [, numStr, unit] = frequencyMatch;
     const num = parseInt(numStr, 10);
 
-    for (let i = 1; i <= count; i++) {
-      const newDate = new Date(baseDate);
-
+    const advanceDate = (date: Date) => {
+      const newDate = new Date(date);
       switch (unit) {
-        case 'd': // Days
-          newDate.setDate(newDate.getDate() + num * i);
-          break;
-        case 'w': // Weeks
-          newDate.setDate(newDate.getDate() + num * i * 7);
-          break;
-        case 'm': // Months
-          newDate.setMonth(newDate.getMonth() + num * i);
-          break;
-        case 'y': // Years
-          newDate.setFullYear(newDate.getFullYear() + num * i);
-          break;
-        default:
-          // Invalid unit, skip
-          continue;
+        case 'd': newDate.setDate(newDate.getDate() + num); break;
+        case 'w': newDate.setDate(newDate.getDate() + num * 7); break;
+        case 'm': newDate.setMonth(newDate.getMonth() + num); break;
+        case 'y': newDate.setFullYear(newDate.getFullYear() + num); break;
       }
+      return newDate;
+    };
 
-      dates.push(newDate.toISOString());
+    while (nextDate <= today) {
+      nextDate = advanceDate(nextDate);
+    }
+
+    for (let i = 0; i < count; i++) {
+      dates.push(nextDate.toISOString());
+      nextDate = advanceDate(nextDate);
     }
 
     return dates;
@@ -506,7 +501,7 @@ const ScheduledTransactionsPage = () => {
                 ) : (
                   currentTransactions.map((transaction) => {
                     const isExpanded = expandedRows.has(transaction.id);
-                    const upcomingDates = calculateUpcomingDates(transaction.date, transaction.frequency);
+                    const upcomingDates = calculateUpcomingDates(transaction);
 
                     return (
                       <React.Fragment key={transaction.id}>
