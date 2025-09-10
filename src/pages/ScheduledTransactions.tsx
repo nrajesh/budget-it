@@ -582,7 +582,7 @@ const ScheduledTransactionsPage = () => {
                       aria-label="Select all"
                     />
                   </TableHead>
-                  <TableHead>Next Due Date</TableHead> {/* Updated column header */}
+                  <TableHead>Next Due Date</TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead>Category</TableHead>
