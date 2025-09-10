@@ -350,60 +350,80 @@ const ScheduledTransactionsPage = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Destructure form data at the beginning to ensure we have a consistent snapshot
-    const { date, account, vendor, category, amount, frequency_value, frequency_unit, remarks } = formData;
+    setIsSubmitting(true);
 
+    // 1. Create a clean data object from the current form state.
+    const submissionData = { ...formData };
+
+    // 2. Validate the data object.
     if (!user) {
-      showError("You must be logged in to save scheduled transactions.");
+      showError("You must be logged in.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!submissionData.account || !submissionData.vendor || !submissionData.category) {
+      showError("Please fill in all required fields: Account, Vendor, and Category.");
+      setIsSubmitting(false);
+      return;
+    }
+    if (!submissionData.frequency_unit || !['d', 'w', 'm', 'y'].includes(submissionData.frequency_unit)) {
+      showError("Please select a valid frequency unit (Days, Weeks, etc.).");
+      setIsSubmitting(false);
+      return;
+    }
+    if (submissionData.frequency_value < 1) {
+      showError("Frequency value must be at least 1.");
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      // Step 1: Ensure payees and category exist (if not a transfer)
-      const isVendorAnAccount = allPayees.find(p => p.value === vendor)?.isAccount || false;
-      await ensurePayeeExists(account, true);
-      await ensurePayeeExists(vendor, isVendorAnAccount);
-      if (category !== 'Transfer') {
-        await ensureCategoryExists(category, user.id);
+      // 3. Perform async pre-flight checks.
+      const isTransfer = allPayees.find(p => p.value === submissionData.vendor)?.isAccount || false;
+      await ensurePayeeExists(submissionData.account, true);
+      await ensurePayeeExists(submissionData.vendor, isTransfer);
+      if (submissionData.category !== 'Transfer') {
+        await ensureCategoryExists(submissionData.category, user.id);
       }
 
-      // Step 2: Prepare data for Supabase
-      const isoDate = new Date(date).toISOString();
-      const frequency = `${frequency_value}${frequency_unit}`;
+      // 4. Construct the final object for Supabase.
+      const isoDate = new Date(submissionData.date).toISOString();
+      const frequency = `${submissionData.frequency_value}${submissionData.frequency_unit}`;
 
-      const dataForSupabase = {
+      const dbPayload = {
         date: isoDate,
-        account,
-        vendor,
-        category,
-        amount,
-        remarks: remarks || null,
-        frequency,
+        account: submissionData.account,
+        vendor: submissionData.vendor,
+        category: submissionData.category,
+        amount: submissionData.amount,
+        remarks: submissionData.remarks || null,
+        frequency: frequency,
         last_processed_date: isoDate,
       };
 
-      // Step 3: Insert or Update
+      // 5. Perform the database operation.
       if (editingTransaction) {
         const { error } = await supabase
           .from('scheduled_transactions')
-          .update(dataForSupabase)
+          .update(dbPayload)
           .eq('id', editingTransaction.id);
         if (error) throw error;
         showSuccess("Scheduled transaction updated successfully!");
       } else {
-        const insertData = { ...dataForSupabase, user_id: user.id };
-        const { error } = await supabase.from('scheduled_transactions').insert(insertData);
+        const { error } = await supabase
+          .from('scheduled_transactions')
+          .insert({ ...dbPayload, user_id: user.id });
         if (error) throw error;
         showSuccess("Scheduled transaction added successfully!");
       }
       
-      // Step 4: Clean up
+      // 6. Cleanup and refresh.
       fetchScheduledTransactions();
       setIsFormOpen(false);
+
     } catch (error: any) {
-      console.error("Full error object:", error);
-      showError(`Failed to save scheduled transaction: ${error.message}`);
+      console.error("Error saving scheduled transaction:", error);
+      showError(`Failed to save: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
