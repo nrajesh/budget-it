@@ -58,7 +58,7 @@ export type Transaction = {
   category: string;
   created_at: string;
   user_id: string; // Added user_id here
-  isScheduled?: boolean; // Added optional property
+  is_scheduled_origin?: boolean; // Added optional property to reflect DB column
 };
 
 // Base categories for seeding and initial demo data generation.

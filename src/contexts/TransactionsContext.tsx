@@ -62,7 +62,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setIsLoading(true);
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('*, is_scheduled_origin') // Select the new column
       .order('date', { ascending: false });
 
     if (error) {

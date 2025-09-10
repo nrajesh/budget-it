@@ -96,7 +96,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                     remarks: st.remarks || undefined,
                     currency: currencyMap.get(st.account) || 'USD',
                     user_id: userId,
-                    // Do NOT add isScheduled: true here. These are actual transactions.
+                    is_scheduled_origin: true, // Mark as originating from a scheduled transaction
                 });
                 newLastProcessedDateCandidate = nextDateToProcess; // Update candidate
             }

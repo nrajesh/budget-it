@@ -213,7 +213,7 @@ export const useTransactionManagement = () => {
           currency: accountCurrencyMap.get(st.account) || 'USD',
           user_id: st.user_id,
           created_at: st.created_at,
-          isScheduled: true,
+          is_scheduled_origin: true, // Use the new flag for consistency
         });
         nextDate = advanceDate(nextDate);
       }
@@ -287,15 +287,15 @@ export const useTransactionManagement = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTransactionIds(currentTransactions.filter(t => !t.isScheduled).map((t) => t.id));
+      setSelectedTransactionIds(currentTransactions.filter(t => !t.is_scheduled_origin).map((t) => t.id));
     } else {
       setSelectedTransactionIds([]);
     }
   };
 
   const isAllSelectedOnPage =
-    currentTransactions.filter(t => !t.isScheduled).length > 0 &&
-    currentTransactions.filter(t => !t.isScheduled).every((t) => selectedTransactionIds.includes(t.id));
+    currentTransactions.filter(t => !t.is_scheduled_origin).length > 0 &&
+    currentTransactions.filter(t => !t.is_scheduled_origin).every((t) => selectedTransactionIds.includes(t.id));
 
   const handleBulkDelete = () => {
     const transactionsToDelete = selectedTransactionIds.map(id => {
@@ -398,6 +398,7 @@ export const useTransactionManagement = () => {
               remarks: row.Remarks,
               currency: accountCurrency,
               transfer_id: row.transfer_id || null,
+              is_scheduled_origin: false, // Imported transactions are not from scheduled origin
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -444,6 +445,7 @@ export const useTransactionManagement = () => {
       "Remarks": t.remarks,
       "Currency": t.currency,
       "transfer_id": t.transfer_id || null,
+      "is_scheduled_origin": t.is_scheduled_origin || false,
     }));
 
     const csv = Papa.unparse(dataToExport, {

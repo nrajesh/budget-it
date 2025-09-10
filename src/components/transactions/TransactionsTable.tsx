@@ -70,12 +70,12 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
           ) : (
             currentTransactions.map((transaction) => {
               const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
-              const isScheduled = transaction.isScheduled;
+              const isScheduledOrigin = transaction.is_scheduled_origin; // Use the new flag
               const transactionDate = new Date(transaction.date);
               const isFutureTransaction = transactionDate > today; // Check if date is in the future
 
-              // Only grey out if it's a scheduled transaction AND it's in the future
-              const shouldBeGreyedOut = isScheduled && isFutureTransaction;
+              // Only grey out if it's from a scheduled origin AND it's in the future
+              const shouldBeGreyedOut = isScheduledOrigin && isFutureTransaction;
 
               const rowClassName = cn("group", shouldBeGreyedOut && "text-muted-foreground italic");
               const cellClassName = cn(
@@ -95,7 +95,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     <div className="flex items-center gap-1">
-                      {isScheduled && <CalendarCheck className="h-4 w-4 text-muted-foreground" />}
+                      {isScheduledOrigin && <CalendarCheck className="h-4 w-4 text-muted-foreground" />}
                       {formatDateToDDMMYYYY(transaction.date)}
                     </div>
                   </TableCell>
