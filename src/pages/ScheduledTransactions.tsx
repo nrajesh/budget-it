@@ -50,6 +50,17 @@ type ScheduledTransaction = {
   last_processed_date?: string;
 };
 
+type ScheduledTransactionFormData = {
+  date: string;
+  account: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  frequency_value: number;
+  frequency_unit: string;
+  remarks: string;
+};
+
 const ScheduledTransactionsPage = () => {
   const { user } = useUser();
   const { accounts, vendors, categories } = useTransactions();
@@ -69,13 +80,15 @@ const ScheduledTransactionsPage = () => {
 
   // Form state for adding/editing
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [formData, setFormData] = React.useState<Omit<ScheduledTransaction, 'id' | 'user_id' | 'created_at'>>({
+  const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransaction | null>(null);
+  const [formData, setFormData] = React.useState<ScheduledTransactionFormData>({
     date: formatDateToDDMMYYYY(new Date()),
     account: '',
     vendor: '',
     category: '',
     amount: 0,
-    frequency: '1m',
+    frequency_value: 1,
+    frequency_unit: 'm',
     remarks: '',
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -128,26 +141,34 @@ const ScheduledTransactionsPage = () => {
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
   const handleAddClick = () => {
+    setEditingTransaction(null);
     setFormData({
       date: formatDateToDDMMYYYY(new Date()),
       account: '',
       vendor: '',
       category: '',
       amount: 0,
-      frequency: '1m',
+      frequency_value: 1,
+      frequency_unit: 'm',
       remarks: '',
     });
     setIsFormOpen(true);
   };
 
   const handleEditClick = (transaction: ScheduledTransaction) => {
+    setEditingTransaction(transaction);
+    const frequencyMatch = transaction.frequency.match(/^(\d+)([dwmy])$/);
+    const frequency_value = frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1;
+    const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
+
     setFormData({
       date: formatDateToDDMMYYYY(transaction.date),
       account: transaction.account,
       vendor: transaction.vendor,
       category: transaction.category,
       amount: transaction.amount,
-      frequency: transaction.frequency,
+      frequency_value,
+      frequency_unit,
       remarks: transaction.remarks || '',
     });
     setIsFormOpen(true);
@@ -327,23 +348,40 @@ const ScheduledTransactionsPage = () => {
 
     setIsSubmitting(true);
     try {
-      // Ensure payee and category exist
       await ensurePayeeExists(formData.account, true);
       await ensurePayeeExists(formData.vendor, false);
       await ensureCategoryExists(formData.category, user.id);
 
       const isoDate = parseDateFromDDMMYYYY(formData.date).toISOString();
-      const transactionData = {
-        ...formData,
-        date: isoDate,
-        user_id: user.id,
-        last_processed_date: isoDate,
-      };
+      const { frequency_value, frequency_unit, ...restOfFormData } = formData;
+      const frequency = `${frequency_value}${frequency_unit}`;
 
-      const { error } = await supabase.from('scheduled_transactions').insert(transactionData);
-      if (error) throw error;
-
-      showSuccess("Scheduled transaction added successfully!");
+      if (editingTransaction) {
+        const transactionData = {
+          ...restOfFormData,
+          frequency,
+          date: isoDate,
+          last_processed_date: isoDate,
+        };
+        const { error } = await supabase
+          .from('scheduled_transactions')
+          .update(transactionData)
+          .eq('id', editingTransaction.id);
+        if (error) throw error;
+        showSuccess("Scheduled transaction updated successfully!");
+      } else {
+        const transactionData = {
+          ...restOfFormData,
+          frequency,
+          date: isoDate,
+          user_id: user.id,
+          last_processed_date: isoDate,
+        };
+        const { error } = await supabase.from('scheduled_transactions').insert(transactionData);
+        if (error) throw error;
+        showSuccess("Scheduled transaction added successfully!");
+      }
+      
       fetchScheduledTransactions();
       setIsFormOpen(false);
     } catch (error: any) {
@@ -353,11 +391,11 @@ const ScheduledTransactionsPage = () => {
     }
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value,
+      [name]: name === 'amount' ? parseFloat(value) || 0 : (name === 'frequency_value' ? parseInt(value, 10) || 1 : value),
     }));
   };
 
@@ -590,7 +628,7 @@ const ScheduledTransactionsPage = () => {
       {isFormOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Add Scheduled Transaction</h3>
+            <h3 className="text-lg font-semibold mb-4">{editingTransaction ? "Edit" : "Add"} Scheduled Transaction</h3>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -611,7 +649,6 @@ const ScheduledTransactionsPage = () => {
                     name="account"
                     value={formData.account}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
-                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select account" />
@@ -631,7 +668,6 @@ const ScheduledTransactionsPage = () => {
                     name="vendor"
                     value={formData.vendor}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, vendor: value }))}
-                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select vendor" />
@@ -651,7 +687,6 @@ const ScheduledTransactionsPage = () => {
                     name="category"
                     value={formData.category}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -677,17 +712,36 @@ const ScheduledTransactionsPage = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label htmlFor="frequency" className="block text-sm font-medium mb-1">Frequency</label>
-                  <Input
-                    id="frequency"
-                    name="frequency"
-                    type="text"
-                    value={formData.frequency}
-                    onChange={handleFormChange}
-                    placeholder="e.g., 10d, 1w, 2m, 3y"
-                    required
-                  />
+                <div className="flex items-end gap-2">
+                  <div className="flex-grow">
+                    <label htmlFor="frequency_value" className="block text-sm font-medium mb-1">Frequency</label>
+                    <Input
+                      id="frequency_value"
+                      name="frequency_value"
+                      type="number"
+                      min="1"
+                      value={formData.frequency_value}
+                      onChange={handleFormChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Select
+                      name="frequency_unit"
+                      value={formData.frequency_unit}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, frequency_unit: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="d">Days</SelectItem>
+                        <SelectItem value="w">Weeks</SelectItem>
+                        <SelectItem value="m">Months</SelectItem>
+                        <SelectItem value="y">Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               <div>
