@@ -13,7 +13,7 @@ import {
   Phone,
   ShoppingCart,
   Newspaper,
-  MessageSquare, // Keep MessageSquare for now, will change to Tag for categories
+  MessageSquare,
   ChevronDown,
   FileText,
   Notebook,
@@ -23,7 +23,8 @@ import {
   User,
   Bell,
   Banknote,
-  Tag, // New icon for Categories
+  Tag,
+  Calendar, // Import Calendar icon
 } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -93,8 +94,10 @@ const Layout = () => {
         return "Vendors";
       case "/accounts":
         return "Accounts";
-      case "/categories": // New case for Categories
+      case "/categories":
         return "Categories";
+      case "/scheduled": // Update case for Scheduled
+        return "Scheduled Transactions";
       default:
         return "Page Not Found";
     }
@@ -183,10 +186,12 @@ const Layout = () => {
             <SidebarGroupLabel>Setup</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <ShoppingCart />
-                  Bills
-                </SidebarMenuButton>
+                <Link to="/scheduled" className="w-full"> {/* Update link to Scheduled */}
+                  <SidebarMenuButton isActive={location.pathname === "/scheduled"}>
+                    <Calendar /> {/* Use Calendar icon */}
+                    Scheduled {/* Update text to Scheduled */}
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
