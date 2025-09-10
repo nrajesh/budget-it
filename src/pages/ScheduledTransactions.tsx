@@ -295,7 +295,7 @@ const ScheduledTransactionsPage = () => {
               frequency: row.Frequency,
               remarks: row.Remarks || null,
               user_id: user.id,
-              last_processed_date: isoDate,
+              last_processed_date: null, // Initialize to null for new imports
             };
           });
 
@@ -398,7 +398,9 @@ const ScheduledTransactionsPage = () => {
         amount,
         remarks: remarks || null,
         frequency,
-        last_processed_date: isoDate,
+        // For new scheduled transactions, last_processed_date should be null
+        // For edits, it should retain its existing value or be explicitly set if needed
+        last_processed_date: editingTransaction ? editingTransaction.last_processed_date : null,
       };
 
       // Log the exact payload being sent for debugging
