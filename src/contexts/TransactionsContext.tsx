@@ -59,10 +59,16 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
   const fetchTransactions = React.useCallback(async () => {
+    if (!user?.id) { // Add check for user.id here
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const { data, error } = await supabase
       .from('transactions')
       .select('*, is_scheduled_origin') // Select the new column
+      .eq('user_id', user.id) // Filter by user.id
       .order('date', { ascending: false });
 
     if (error) {
@@ -72,7 +78,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setTransactions(data as Transaction[]);
     }
     setIsLoading(false);
-  }, []);
+  }, [user?.id]); // Dependency on user.id
 
   const { fetchVendors, fetchAccounts } = React.useMemo(() => createPayeesService({
     setVendors,
