@@ -19,9 +19,10 @@ This application provides a comprehensive financial analytics dashboard, allowin
     *   Handle transfers between accounts, including cross-currency conversions with editable receiving amounts.
     *   CSV Import/Export: Easily import new transactions from a CSV file or export existing transactions.
     *   Bulk Delete: Delete multiple selected transactions at once.
+*   **Scheduled Transactions**: Define recurring transactions with custom frequencies (daily, weekly, monthly, yearly). The system automatically processes and adds these transactions to your records on their due dates, with options to view upcoming occurrences.
 *   **Payee Management (Vendors & Accounts)**:
     *   Dedicated pages for managing Vendors and Accounts.
-    *   Add, edit, and delete individual vendors and accounts.
+        *   Add, edit, and delete individual vendors and accounts.
     *   Inline editing for vendor names.
     *   CSV Import/Export: Import new vendors/accounts from CSV or export existing ones.
     *   Bulk Delete: Delete multiple selected vendors or accounts.
