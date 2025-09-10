@@ -73,43 +73,43 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       const updatesToMake: { id: string; last_processed_date: string }[] = [];
 
       for (const st of scheduledTransactions) {
-        // Determine the starting point for generating new transactions
-        // If last_processed_date exists, start from the next occurrence after it.
-        // Otherwise, start from the scheduled transaction's initial date.
-        let currentOccurrenceDate = st.last_processed_date
-          ? new Date(calculateNextOccurrence(st.last_processed_date, st.frequency))
-          : new Date(st.date);
+        let nextDateToProcess = new Date(st.date); // Always start from the original scheduled date
+        nextDateToProcess.setHours(0, 0, 0, 0);
 
-        // Normalize currentOccurrenceDate to start of day for consistent comparison
-        currentOccurrenceDate.setHours(0, 0, 0, 0);
-
-        let newLastProcessedDateForThisST = st.last_processed_date ? new Date(st.last_processed_date) : new Date(st.date);
-        newLastProcessedDateForThisST.setHours(0,0,0,0); // Normalize
-
-        // Loop to add all occurrences that should have happened up to and including today
-        while (currentOccurrenceDate <= today) {
-          transactionsToAdd.push({
-            date: currentOccurrenceDate.toISOString(),
-            account: st.account,
-            vendor: st.vendor,
-            category: st.category,
-            amount: st.amount,
-            remarks: st.remarks || undefined,
-            currency: currencyMap.get(st.account) || 'USD',
-            user_id: userId,
-          });
-          newLastProcessedDateForThisST = currentOccurrenceDate; // Update the last processed date to this occurrence
-          currentOccurrenceDate = new Date(calculateNextOccurrence(currentOccurrenceDate.toISOString(), st.frequency));
-          currentOccurrenceDate.setHours(0,0,0,0); // Normalize
+        let latestProcessedDateForThisST = st.last_processed_date ? new Date(st.last_processed_date) : null;
+        if (latestProcessedDateForThisST) {
+            latestProcessedDateForThisST.setHours(0, 0, 0, 0);
         }
 
-        // Only update if newLastProcessedDateForThisST is actually later than the original st.last_processed_date
-        const originalLastProcessedDate = st.last_processed_date ? new Date(st.last_processed_date) : null;
-        if (newLastProcessedDateForThisST && (!originalLastProcessedDate || newLastProcessedDateForThisST > originalLastProcessedDate)) {
-          updatesToMake.push({
-            id: st.id,
-            last_processed_date: newLastProcessedDateForThisST.toISOString(),
-          });
+        let newLastProcessedDateCandidate = latestProcessedDateForThisST;
+
+        // Loop to find all occurrences that should have been processed up to today
+        while (nextDateToProcess <= today) {
+            // Only add if this occurrence hasn't been processed yet
+            if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
+                transactionsToAdd.push({
+                    date: nextDateToProcess.toISOString(),
+                    account: st.account,
+                    vendor: st.vendor,
+                    category: st.category,
+                    amount: st.amount,
+                    remarks: st.remarks || undefined,
+                    currency: currencyMap.get(st.account) || 'USD',
+                    user_id: userId,
+                    isScheduled: true, // Mark as scheduled transaction
+                });
+                newLastProcessedDateCandidate = nextDateToProcess; // Update candidate
+            }
+            nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));
+            nextDateToProcess.setHours(0, 0, 0, 0);
+        }
+
+        // If new transactions were added or the last_processed_date needs to be updated
+        if (newLastProcessedDateCandidate && (!latestProcessedDateForThisST || newLastProcessedDateCandidate > latestProcessedDateForThisST)) {
+            updatesToMake.push({
+                id: st.id,
+                last_processed_date: newLastProcessedDateCandidate.toISOString(),
+            });
         }
       }
 

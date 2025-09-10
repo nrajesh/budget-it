@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Transaction } from "@/data/finance-data";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { CalendarCheck } from "lucide-react"; // Import CalendarCheck icon
 
 interface TransactionsTableProps {
   currentTransactions: Transaction[];
@@ -93,7 +94,10 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     />
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    {formatDateToDDMMYYYY(transaction.date)}
+                    <div className="flex items-center gap-1">
+                      {isScheduled && <CalendarCheck className="h-4 w-4 text-muted-foreground" />}
+                      {formatDateToDDMMYYYY(transaction.date)}
+                    </div>
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
                     {transaction.account}
