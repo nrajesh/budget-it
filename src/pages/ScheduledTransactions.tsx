@@ -134,6 +134,12 @@ const ScheduledTransactionsPage = () => {
     return formatDateToYYYYMMDD(tomorrow);
   }, [todayDate]);
 
+  const dayAfterTomorrowDateString = React.useMemo(() => {
+    const dayAfterTomorrow = new Date(todayDate);
+    dayAfterTomorrow.setDate(todayDate.getDate() + 2);
+    return formatDateToYYYYMMDD(dayAfterTomorrow);
+  }, [todayDate]);
+
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
     fetchTransactions: refetchMainTransactions,
@@ -768,11 +774,25 @@ const ScheduledTransactionsPage = () => {
                       <FormControl>
                         <Input
                           type="date"
-                          min={form.watch("date")} // End date cannot be before start date
+                          min={
+                            form.watch("date")
+                              ? formatDateToYYYYMMDD(
+                                  new Date(
+                                    Math.max(
+                                      new Date(form.watch("date")).getTime(),
+                                      new Date(dayAfterTomorrowDateString).getTime()
+                                    )
+                                  )
+                                )
+                              : dayAfterTomorrowDateString // If start date is not yet selected, default min to day after tomorrow
+                          }
                           {...field}
                           value={field.value || ''} // Ensure controlled component
                         />
                       </FormControl>
+                      <FormDescription>
+                        The end date must be at least the start date, and at least day after tomorrow.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
