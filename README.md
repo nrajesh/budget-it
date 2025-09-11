@@ -4,9 +4,9 @@ This application provides a comprehensive financial analytics dashboard, allowin
 
 ## Key Features:
 
+*   **Enhanced Data Management with React Query**: The application now leverages `react-query` for efficient data fetching, caching, and synchronization across the entire app. This leads to a more performant and responsive user experience with streamlined loading states, automatic data refetching, and robust error handling.
 *   **User Authentication & Profile Management**: Secure user login, profile editing (first name, last name, email), password change functionality, and avatar upload.
 *   **Supabase Integration**: All transaction, account, and vendor data is stored and managed in a Supabase database, ensuring data persistence and scalability.
-*   **Enhanced Data Management with React Query**: The application now leverages `react-query` for efficient data fetching, caching, and synchronization, leading to a more performant and responsive user experience with streamlined loading states and error handling.
 *   **Financial Overview**: Displays total income, total expenses, net balance, and total transaction count on the Dashboard, along with monthly percentage changes.
 *   **Account Filtering**: Filter all metrics, charts, and transactions by specific accounts.
 *   **Category Filtering**: Filter transactions by specific categories.
@@ -21,7 +21,7 @@ This application provides a comprehensive financial analytics dashboard, allowin
     *   CSV Import/Export: Easily import new transactions from a CSV file or export existing transactions.
     *   Bulk Delete: Delete multiple selected transactions at once.
     *   **Enhanced Filtering**: All transaction filters (search text, account, category, vendor, and date range dropdowns) are now fully functional and responsive, allowing for precise data analysis. The "All" option in multi-select dropdowns correctly toggles selections.
-*   **Scheduled Transactions**: Define recurring transactions with custom frequencies (daily, weekly, monthly, yearly). The system automatically processes and adds these transactions to your records on their due dates, with options to view upcoming occurrences. The add/edit form for scheduled transactions has been refactored using `react-hook-form` for improved validation and user experience.
+*   **Scheduled Transactions**: Define recurring transactions with custom frequencies (daily, weekly, monthly, yearly) and optional end dates. The system automatically processes and adds these transactions to your main records on their due dates, with options to view upcoming occurrences. The add/edit form for scheduled transactions has been refactored using `react-hook-form` for improved validation and user experience.
 *   **Payee Management (Vendors & Accounts)**:
     *   Dedicated pages for managing Vendors and Accounts.
         *   Add, edit, and delete individual vendors and accounts.
