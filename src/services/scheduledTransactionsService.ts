@@ -20,6 +20,7 @@ export type ScheduledTransaction = {
   user_id: string;
   created_at: string;
   last_processed_date?: string;
+  recurrence_end_date?: string; // Added recurrence_end_date
 };
 
 export const createScheduledTransactionsService = ({ fetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
@@ -98,8 +99,16 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
 
         let newLastProcessedDateCandidate = latestProcessedDateForThisST;
 
+        const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
+        if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999); // Normalize to end of day
+
         // Loop to find all occurrences that should have been processed up to today
         while (nextDateToProcess <= today) {
+            // If an end date exists and the next date to process is beyond it, break
+            if (recurrenceEndDate && nextDateToProcess > recurrenceEndDate) {
+                break;
+            }
+
             // Only add if this occurrence hasn't been processed yet
             if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
                 transactionsToAdd.push({
@@ -163,7 +172,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
     if (!userId) return [];
     const { data, error } = await supabase
       .from('scheduled_transactions')
-      .select('*')
+      .select('*, recurrence_end_date') // Select recurrence_end_date
       .eq('user_id', userId)
       .order('date', { ascending: true });
 

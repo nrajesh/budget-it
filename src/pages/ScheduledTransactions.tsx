@@ -99,6 +99,7 @@ const ScheduledTransactionsPage = () => {
     frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
     frequency_unit: z.string().min(1, "Frequency unit is required"),
     remarks: z.string().optional(),
+    recurrence_end_date: z.string().optional(), // Added recurrence_end_date
   }).refine(data => {
     const isVendorAnAccount = (payees: { value: string; label: string; isAccount: boolean }[]) => {
       return payees.find(p => p.value === data.vendor)?.isAccount;
@@ -144,6 +145,7 @@ const ScheduledTransactionsPage = () => {
       frequency_value: 1,
       frequency_unit: 'm',
       remarks: '',
+      recurrence_end_date: '', // Added recurrence_end_date
     },
     mode: "onChange", // Validate on change
   });
@@ -163,6 +165,7 @@ const ScheduledTransactionsPage = () => {
         frequency_value,
         frequency_unit,
         remarks: editingTransaction.remarks || '',
+        recurrence_end_date: editingTransaction.recurrence_end_date ? formatDateToYYYYMMDD(editingTransaction.recurrence_end_date) : '', // Added recurrence_end_date
       });
     } else if (isFormOpen && !editingTransaction) {
       form.reset({
@@ -174,6 +177,7 @@ const ScheduledTransactionsPage = () => {
         frequency_value: 1,
         frequency_unit: 'm',
         remarks: '',
+        recurrence_end_date: '', // Added recurrence_end_date
       });
     }
   }, [isFormOpen, editingTransaction, form, todayDateString]);
@@ -298,7 +302,7 @@ const ScheduledTransactionsPage = () => {
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Frequency", "Remarks"];
+        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Frequency", "Remarks", "End Date"]; // Added End Date
         const actualHeaders = results.meta.fields || [];
         const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
 
@@ -352,6 +356,7 @@ const ScheduledTransactionsPage = () => {
               remarks: row.Remarks || null,
               user_id: user.id,
               last_processed_date: lastProcessedDateForDb,
+              recurrence_end_date: row["End Date"] ? parseDateFromDDMMYYYY(row["End Date"]).toISOString() : null, // Added End Date
             };
           });
 
@@ -390,6 +395,7 @@ const ScheduledTransactionsPage = () => {
       "Amount": t.amount,
       "Frequency": t.frequency,
       "Remarks": t.remarks || '',
+      "End Date": t.recurrence_end_date ? formatDateToDDMMYYYY(t.recurrence_end_date) : '', // Added End Date
     }));
 
     const csv = Papa.unparse(dataToExport);
@@ -427,6 +433,7 @@ const ScheduledTransactionsPage = () => {
         remarks: data.remarks || null,
         frequency,
         last_processed_date: isoDate, // Initial last_processed_date is the scheduled date
+        recurrence_end_date: data.recurrence_end_date ? new Date(data.recurrence_end_date).toISOString() : null, // Added recurrence_end_date
       };
 
       if (editingTransaction) {
@@ -504,11 +511,17 @@ const ScheduledTransactionsPage = () => {
 
     const firstUpcoming = currentCandidateDate.toISOString();
 
-    // Generate subsequent occurrences
+    // Generate subsequent occurrences, respecting recurrence_end_date
     let nextDate = advanceDate(new Date(firstUpcoming));
     nextDate.setHours(0, 0, 0, 0);
 
+    const endDate = transaction.recurrence_end_date ? new Date(transaction.recurrence_end_date) : null;
+    if (endDate) endDate.setHours(23, 59, 59, 999); // Normalize to end of day
+
     for (let i = 0; i < count; i++) {
+      if (endDate && nextDate > endDate) {
+        break; // Stop if we've passed the end date
+      }
       subsequentUpcoming.push(nextDate.toISOString());
       nextDate = advanceDate(nextDate);
       nextDate.setHours(0, 0, 0, 0);
@@ -595,6 +608,7 @@ const ScheduledTransactionsPage = () => {
                   <TableHead>Category</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Frequency</TableHead>
+                  <TableHead>End Date</TableHead> {/* Added End Date */}
                   <TableHead>Remarks</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -602,11 +616,11 @@ const ScheduledTransactionsPage = () => {
               <TableBody>
                 {isLoadingScheduledTransactions ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={10} className="text-center">Loading...</TableCell> {/* Adjusted colspan */}
                   </TableRow>
                 ) : currentTransactions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-4 text-muted-foreground"> {/* Adjusted colspan */}
                       No scheduled transactions found.
                     </TableCell>
                   </TableRow>
@@ -636,7 +650,8 @@ const ScheduledTransactionsPage = () => {
                               </Button>
                               {firstUpcoming ? formatDateToDDMMYYYY(firstUpcoming) : 'N/A'}
                             </div>
-                          </TableCell><TableCell>{transaction.account}</TableCell><TableCell>{transaction.vendor}</TableCell><TableCell>{transaction.category}</TableCell><TableCell>{transaction.amount.toFixed(2)}</TableCell><TableCell>{transaction.frequency}</TableCell><TableCell>{transaction.remarks || '-'}</TableCell><TableCell className="text-right">
+                          </TableCell><TableCell>{transaction.account}</TableCell><TableCell>{transaction.vendor}</TableCell><TableCell>{transaction.category}</TableCell><TableCell>{transaction.amount.toFixed(2)}</TableCell><TableCell>{transaction.frequency}</TableCell><TableCell>{transaction.recurrence_end_date ? formatDateToDDMMYYYY(transaction.recurrence_end_date) : '-'}</TableCell> {/* Display End Date */}
+                          <TableCell>{transaction.remarks || '-'}</TableCell><TableCell className="text-right">
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -650,7 +665,7 @@ const ScheduledTransactionsPage = () => {
                           <TableRow key={`${transaction.id}-upcoming-${index}`} className="bg-muted/50">
                             <TableCell colSpan={2} className="pl-12">
                               {formatDateToDDMMYYYY(date)}
-                            </TableCell><TableCell colSpan={7} className="text-muted-foreground">
+                            </TableCell><TableCell colSpan={8} className="text-muted-foreground"> {/* Adjusted colspan */}
                               Upcoming transaction
                             </TableCell>
                           </TableRow>
@@ -705,12 +720,30 @@ const ScheduledTransactionsPage = () => {
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel>Start Date</FormLabel> {/* Changed label to Start Date */}
                       <FormControl>
                         <Input
                           type="date"
                           min={todayDateString}
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="recurrence_end_date" // Added End Date field
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          min={form.watch("date")} // End date cannot be before start date
+                          {...field}
+                          value={field.value || ''} // Ensure controlled component
                         />
                       </FormControl>
                       <FormMessage />

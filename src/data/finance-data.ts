@@ -61,7 +61,7 @@ export type Transaction = {
   is_scheduled_origin?: boolean; // Added optional property to reflect DB column
   recurrence_id?: string | null; // Added recurrence fields
   recurrence_frequency?: string | null;
-  recurrence_end_date?: string | null;
+  recurrence_end_date?: string | null; // Added recurrence_end_date
 };
 
 // Base categories for seeding and initial demo data generation.

@@ -77,11 +77,19 @@ export const useTransactionData = ({
         return newDate;
       };
 
+      // Advance nextDate past today if it's still in the past
       while (nextDate <= today) {
         nextDate = advanceDate(nextDate);
       }
 
+      const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
+      if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999); // Normalize to end of day
+
       while (nextDate < futureDateLimit) {
+        if (recurrenceEndDate && nextDate > recurrenceEndDate) {
+          break; // Stop if we've passed the recurrence end date
+        }
+
         occurrences.push({
           id: `scheduled-${st.id}-${nextDate.toISOString()}`,
           date: nextDate.toISOString(),
@@ -94,6 +102,9 @@ export const useTransactionData = ({
           user_id: st.user_id,
           created_at: st.created_at,
           is_scheduled_origin: true,
+          recurrence_id: st.id, // Link to the scheduled transaction ID
+          recurrence_frequency: st.frequency,
+          recurrence_end_date: st.recurrence_end_date,
         });
         nextDate = advanceDate(nextDate);
       }
