@@ -126,7 +126,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                 };
 
                 // If category is 'Transfer', create two transactions
-                if (st.category === 'Transfer') {
+                if (st.category === 'Transfer') { // Simplified condition
                     const transfer_id = `transfer_scheduled_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
                     const newAmount = Math.abs(st.amount);
 
