@@ -54,7 +54,7 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertAmount, convertBetweenCurrencies } = useCurrency();
-  const { user, isLoadingUser } = useUser();
+  const { user, isLoadingUser } = useUser(); // Keep this for enabling queries
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
@@ -225,9 +225,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   ]);
 
-  if (isLoadingUser || isLoadingTransactions || isLoadingVendors || isLoadingAccounts || isLoadingCategories) {
-    return <div className="flex items-center justify-center min-h-screen">Loading application data...</div>;
-  }
+  // Removed the conditional return for the loading spinner.
+  // The main application loading is handled by ProtectedRoute and individual pages.
 
   return (
     <TransactionsContext.Provider value={value}>
