@@ -12,7 +12,7 @@ interface Option {
 }
 
 export const useTransactionFilters = () => {
-  const { categories: allCategories } = useTransactions(); // Corrected to 'categories'
+  const { categories: allCategories } = useTransactions();
   const { user } = useUser();
   const location = useLocation();
 
@@ -26,6 +26,9 @@ export const useTransactionFilters = () => {
   // State for dynamically fetched options
   const [availableAccountOptions, setAvailableAccountOptions] = React.useState<Option[]>([]);
   const [availableVendorOptions, setAvailableVendorOptions] = React.useState<Option[]>([]);
+
+  // Ref to track if initial defaults have been set for each filter type
+  const initialDefaultsSetRef = React.useRef({ accounts: false, categories: false, vendors: false });
 
   // Fetch available accounts dynamically
   const fetchAvailableAccounts = React.useCallback(async () => {
@@ -85,24 +88,37 @@ export const useTransactionFilters = () => {
     }));
   }, [allCategories]);
 
-  // Initialize selected filters to "all" by default
+  // Initialize selected filters to "all" by default, only once per session/login
   React.useEffect(() => {
-    if (availableAccountOptions.length > 0) {
+    if (availableAccountOptions.length > 0 && !initialDefaultsSetRef.current.accounts) {
       setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
+      initialDefaultsSetRef.current.accounts = true;
     }
   }, [availableAccountOptions]);
 
   React.useEffect(() => {
-    if (availableCategoryOptions.length > 0) {
+    if (availableCategoryOptions.length > 0 && !initialDefaultsSetRef.current.categories) {
       setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
+      initialDefaultsSetRef.current.categories = true;
     }
   }, [availableCategoryOptions]);
 
   React.useEffect(() => {
-    if (availableVendorOptions.length > 0) {
+    if (availableVendorOptions.length > 0 && !initialDefaultsSetRef.current.vendors) {
       setSelectedVendors(availableVendorOptions.map(v => v.value));
+      initialDefaultsSetRef.current.vendors = true;
     }
   }, [availableVendorOptions]);
+
+  // Reset initialDefaultsSetRef and clear selections on user logout/login
+  React.useEffect(() => {
+    if (!user?.id) {
+      initialDefaultsSetRef.current = { accounts: false, categories: false, vendors: false };
+      setSelectedAccounts([]); // Clear selections on logout
+      setSelectedCategories([]);
+      setSelectedVendors([]);
+    }
+  }, [user?.id]);
 
   // Handle filters from navigation state
   React.useEffect(() => {
@@ -127,10 +143,12 @@ export const useTransactionFilters = () => {
 
   const handleResetFilters = React.useCallback(() => {
     setSearchTerm("");
+    // Re-select all available options
     setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
     setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
     setSelectedVendors(availableVendorOptions.map(v => v.value));
     setDateRange(undefined);
+    // Note: Clearing selectedTransactionIds will be handled in useTransactionManagement's handleResetFilters
   }, [availableAccountOptions, availableCategoryOptions, availableVendorOptions]);
 
   return {
