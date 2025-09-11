@@ -1,36 +1,80 @@
-# Welcome to your Dyad app
+# My React Application
 
-This application provides a comprehensive financial analytics dashboard, allowing users to track income, expenses, and balances with detailed insights. It is powered by **Supabase** for data persistence and authentication.
+This is a React application built with TypeScript, React Router, Tailwind CSS, and Shadcn/ui components. It integrates with Supabase for backend services including authentication and database management.
 
-## Key Features:
+## Features
 
-*   **Enhanced Data Management with React Query**: The application now leverages `react-query` for efficient data fetching, caching, and synchronization across the entire app. This leads to a more performant and responsive user experience with streamlined loading states, automatic data refetching, and robust error handling.
-*   **User Authentication & Profile Management**: Secure user login, profile editing (first name, last name, email), password change functionality, and avatar upload.
-*   **Supabase Integration**: All transaction, account, and vendor data is stored and managed in a Supabase database, ensuring data persistence and scalability.
-*   **Financial Overview**: Displays total income, total expenses, net balance, and total transaction count on the Dashboard, along with monthly percentage changes.
-*   **Account Filtering**: Filter all metrics, charts, and transactions by specific accounts.
-*   **Category Filtering**: Filter transactions by specific categories.
-*   **Date Range Filtering**: Filter transactions by a custom date range on the Transactions page.
-*   **Balance Over Time Chart**: Visualizes the cumulative balance of selected accounts over time.
-*   **Spending Categories Chart**: Breaks down expenses by category, showing where your money goes.
-*   **Spending by Vendor Chart**: Visualizes expenses by individual vendors, highlighting top spending areas.
-*   **Recent Transactions Table**: A paginated table displaying recent transactions with a running balance, filtered by selected accounts and categories.
-*   **Transaction Management**:
-    *   Add, edit, and delete individual transactions.
-    *   Handle transfers between accounts, including cross-currency conversions with editable receiving amounts.
-    *   CSV Import/Export: Easily import new transactions from a CSV file or export existing transactions.
-    *   Bulk Delete: Delete multiple selected transactions at once.
-    *   **Enhanced Filtering**: All transaction filters (search text, account, category, vendor, and date range dropdowns) are now fully functional and responsive, allowing for precise data analysis. The "All" option in multi-select dropdowns correctly toggles selections.
-*   **Scheduled Transactions**: Define recurring transactions with custom frequencies (daily, weekly, monthly, yearly) and optional end dates. The system automatically processes and adds these transactions to your main records on their due dates, with options to view upcoming occurrences. The add/edit form for scheduled transactions has been refactored using `react-hook-form` for improved validation and user experience.
-*   **Payee Management (Vendors & Accounts)**:
-    *   Dedicated pages for managing Vendors and Accounts.
-        *   Add, edit, and delete individual vendors and accounts.
-    *   Inline editing for vendor names.
-    *   CSV Import/Export: Import new vendors/accounts from CSV or export existing ones.
-    *   Bulk Delete: Delete multiple selected vendors or accounts.
-*   **Transfer Exclusion**: All financial metrics and charts correctly exclude 'Transfer' transactions for accurate reporting.
-*   **Currency Selection**: Users can select their preferred display currency, with all financial figures converting dynamically based on mock exchange rates.
-*   **Data Management**: Options to reset all transaction data or generate a large set of diverse demo data (over 1000 transactions) with a progress indicator.
-*   **Responsive Design**: Optimized for seamless viewing and interaction across mobile, tablet, and desktop displays.
-*   **Optimized Page Load**: Utilizes lazy loading for page components to improve initial loading performance.
-*   **Loading Overlays**: Provides visual feedback during data-intensive operations like imports, exports, and data generation.
+### Authentication
+*   User registration and login.
+*   Session management.
+*   User profiles with `first_name`, `last_name`, `avatar_url`, and `email`.
+*   Automatic creation of default categories for new users.
+
+### Transactions Management
+*   View, add, edit, and delete financial transactions.
+*   Categorize transactions.
+*   Manage accounts and vendors.
+*   Import and export transactions via CSV.
+
+### Scheduled Transactions (New!)
+*   **View and Manage**: Users can view, add, edit, and delete recurring scheduled transactions.
+*   **Recurrence Options**: Define transactions with a specific start date, frequency (daily, weekly, monthly, yearly), and an optional end date.
+*   **Date Restrictions**:
+    *   **Start Date**: Must be tomorrow or any future date. Today's date is not selectable.
+    *   **End Date**: Must be at least the selected Start Date, and also at least the day after tomorrow.
+*   **Import/Export**: Easily import scheduled transactions from a CSV file or export existing ones.
+*   **Automatic Processing**: Scheduled transactions with past due dates are automatically processed and added to your main transactions, with their `last_processed_date` updated to today.
+*   **Dynamic Category**: The category for a scheduled transaction automatically defaults to 'Transfer' if the selected vendor is an account, and cannot be 'Transfer' otherwise.
+
+## Getting Started
+
+### Prerequisites
+*   Node.js (LTS version recommended)
+*   npm or yarn
+
+### Installation
+1.  Clone the repository:
+    ```bash
+    git clone <your-repo-url>
+    cd <your-repo-name>
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    # or yarn install
+    ```
+3.  Set up Supabase:
+    *   Create a Supabase project.
+    *   Update `src/integrations/supabase/client.ts` with your Supabase URL and Publishable Key.
+    *   Apply the necessary SQL migrations for `user_profile`, `categories`, `vendors`, `accounts`, `transactions`, and `scheduled_transactions` tables, including RLS policies and the `handle_new_user` function. (These are typically handled by the Dyad AI editor during development).
+
+### Running the Application
+```bash
+npm run dev
+# or yarn dev
+```
+The application will be available at `http://localhost:3000`.
+
+## Project Structure
+
+*   `src/pages/`: Contains the main application pages.
+*   `src/components/`: Reusable UI components.
+*   `src/contexts/`: React Context API for global state management.
+*   `src/integrations/supabase/`: Supabase client and utility functions.
+*   `src/lib/`: Utility functions and helper modules.
+*   `src/services/`: Business logic and data fetching services.
+*   `src/utils/`: General utility functions (e.g., toast notifications).
+
+## Technologies Used
+
+*   **React**: Frontend library
+*   **TypeScript**: Type-safe JavaScript
+*   **React Router**: Declarative routing
+*   **Tailwind CSS**: Utility-first CSS framework
+*   **Shadcn/ui**: Reusable UI components built with Radix UI and Tailwind CSS
+*   **Supabase**: Backend-as-a-Service (database, authentication, edge functions)
+*   **React Hook Form**: Form management with validation
+*   **Zod**: Schema validation
+*   **React Query**: Data fetching, caching, and synchronization
+*   **PapaParse**: CSV parsing and unparsing
+*   **Lucide React**: Icon library
