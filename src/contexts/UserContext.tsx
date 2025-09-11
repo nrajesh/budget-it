@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
 import { showError } from '@/utils/toast';
+import { User } from '@supabase/supabase-js'; // Import User type
 
 interface UserProfile {
   id: string;
@@ -49,6 +49,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error("Error fetching user profile:", error.message);
+        // If profile not found, create a basic one with available user info
         setUserProfile({
           id: authUser.id,
           first_name: null,
@@ -64,7 +65,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUserProfile(null);
     }
     setIsLoadingUser(false);
-  }, []);
+  }, []); // Dependencies removed, as it only uses stable supabase client and state setters
 
   useEffect(() => {
     fetchUserProfile();
