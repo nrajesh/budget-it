@@ -53,6 +53,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -748,8 +749,12 @@ const ScheduledTransactionsPage = () => {
                         <Input
                           type="date"
                           {...field}
+                          min={todayDateString} // Only allow today or future dates
                         />
                       </FormControl>
+                      <FormDescription>
+                        Only today's date or future dates can be selected.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
