@@ -58,44 +58,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
 
-// Define Zod schema for form validation
-const formSchema = z.object({
-  date: z.string().min(1, "Date is required"),
-  account: z.string().min(1, "Account is required"),
-  vendor: z.string().min(1, "Vendor is required"),
-  category: z.string().min(1, "Category is required"),
-  amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
-  frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
-  frequency_unit: z.string().min(1, "Frequency unit is required"),
-  remarks: z.string().optional(),
-}).refine((data, ctx) => { // Add ctx parameter to access context
-  const allPayees = ctx.path[0] as { value: string; label: string; isAccount: boolean }[]; // Access allPayees from context
-  const isVendorAnAccount = (payees: { value: string; label: string; isAccount: boolean }[]) => {
-    return payees.find(p => p.value === data.vendor)?.isAccount;
-  };
-  if (isVendorAnAccount(allPayees) && data.category !== 'Transfer') {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Category must be 'Transfer' if vendor is an account.",
-      path: ["category"],
-    });
-    return false;
-  }
-  if (!isVendorAnAccount(allPayees) && data.category === 'Transfer') {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Category cannot be 'Transfer' if vendor is not an account.",
-      path: ["category"],
-    });
-    return false;
-  }
-  return true;
-}, {
-  message: "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
-  path: ["category"],
-});
-
-type ScheduledTransactionFormData = z.infer<typeof formSchema>;
 
 const ScheduledTransactionsPage = () => {
   const { user, isLoadingUser } = useUser();
@@ -134,6 +96,34 @@ const ScheduledTransactionsPage = () => {
     ].sort((a, b) => a.label.localeCompare(b.label));
   }, [accounts, vendors]);
 
+  // Define Zod schema for form validation inside the component
+  const formSchema = React.useMemo(() => z.object({
+    date: z.string().min(1, "Date is required"),
+    account: z.string().min(1, "Account is required"),
+    vendor: z.string().min(1, "Vendor is required"),
+    category: z.string().min(1, "Category is required"),
+    amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
+    frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
+    frequency_unit: z.string().min(1, "Frequency unit is required"),
+    remarks: z.string().optional(),
+  }).refine(data => {
+    const isVendorAnAccount = (payees: { value: string; label: string; isAccount: boolean }[]) => {
+      return payees.find(p => p.value === data.vendor)?.isAccount;
+    };
+    if (allPayeesMemo.current && isVendorAnAccount(allPayeesMemo.current) && data.category !== 'Transfer') {
+      return false; // If vendor is an account, category must be 'Transfer'
+    }
+    if (allPayeesMemo.current && !isVendorAnAccount(allPayeesMemo.current) && data.category === 'Transfer') {
+      return false; // If vendor is not an account, category cannot be 'Transfer'
+    }
+    return true;
+  }, {
+    message: "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
+    path: ["category"],
+  }), [allPayeesMemo.current]); // Re-create schema if allPayeesMemo.current changes
+
+  type ScheduledTransactionFormData = z.infer<typeof formSchema>; // Moved here
+
   // Get today's date in YYYY-MM-DD format for the min attribute of the date input
   const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(new Date()), []);
 
@@ -150,9 +140,7 @@ const ScheduledTransactionsPage = () => {
   });
 
   const form = useForm<ScheduledTransactionFormData>({
-    resolver: zodResolver(formSchema, {
-      context: allPayeesMemo.current, // Pass allPayeesMemo.current as context
-    }),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       date: todayDateString,
       account: '',
@@ -714,7 +702,7 @@ const ScheduledTransactionsPage = () => {
             <DialogDescription>
               Define a recurring transaction. Occurrences up to today will be automatically added to your transactions.
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

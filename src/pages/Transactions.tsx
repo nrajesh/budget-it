@@ -109,7 +109,7 @@ const TransactionsPage = () => {
               selectedAccounts={selectedAccounts}
               setSelectedAccounts={setSelectedAccounts}
               availableCategoryOptions={availableCategoryOptions}
-              selectedCategories={selectedCategories} {/* Corrected: pass state value */}
+              selectedCategories={selectedCategories}
               setSelectedCategories={setSelectedCategories}
               availableVendorOptions={availableVendorOptions}
               selectedVendors={selectedVendors}

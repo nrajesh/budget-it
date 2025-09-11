@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/data/finance-data";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { ScheduledTransaction, createScheduledTransactionsService } from '@/services/scheduledTransactionsService'; // Import ScheduledTransaction type
+import { useQuery } from '@tanstack/react-query';
+import { ScheduledTransaction, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
 
 interface Option {
   value: string;
@@ -34,12 +34,12 @@ export const useTransactionData = ({
   availableCategoryOptions,
   availableVendorOptions,
 }: UseTransactionDataProps) => {
-  const { transactions, accountCurrencyMap } = useTransactions();
+  const { transactions, accountCurrencyMap, fetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
 
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions } = createScheduledTransactionsService({
-    fetchTransactions: () => Promise.resolve(), // Dummy refetch, as this hook doesn't trigger main transactions refetch
+    fetchTransactions: refetchMainTransactions, // Pass the actual refetch function
     userId: user?.id,
   });
 
@@ -102,7 +102,7 @@ export const useTransactionData = ({
     });
 
     return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+  }, [transactions, scheduledTransactions, accountCurrencyMap, refetchMainTransactions]);
 
   const filteredTransactions = React.useMemo(() => {
     // console.log("--- Filtering Transactions (useMemo re-run) ---");
