@@ -65,6 +65,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
 
       if (fetchError) throw fetchError;
       if (!scheduledTransactions || scheduledTransactions.length === 0) {
+        console.log("No scheduled transactions found for user:", userId);
         return;
       }
 
@@ -84,11 +85,19 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      console.log("Current 'today' for processing:", today.toISOString());
 
       const transactionsToAdd: Omit<Transaction, 'id' | 'created_at'>[] = [];
       const updatesToMake: { id: string; last_processed_date: string }[] = [];
 
       for (const st of scheduledTransactions) {
+        console.log("\n--- Processing Scheduled Transaction ---");
+        console.log("Scheduled Transaction ID:", st.id);
+        console.log("  st.date (Start Date):", st.date);
+        console.log("  st.last_processed_date (Last Processed):", st.last_processed_date);
+        console.log("  st.recurrence_end_date (End Date):", st.recurrence_end_date);
+        console.log("  st.frequency:", st.frequency);
+
         let nextDateToProcess = new Date(st.date);
         nextDateToProcess.setHours(0, 0, 0, 0);
 
@@ -96,18 +105,27 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
         if (latestProcessedDateForThisST) {
             latestProcessedDateForThisST.setHours(0, 0, 0, 0);
         }
+        console.log("  Initial nextDateToProcess:", nextDateToProcess.toISOString());
+        console.log("  LatestProcessedDateForThisST:", latestProcessedDateForThisST ? latestProcessedDateForThisST.toISOString() : "N/A");
+
 
         let newLastProcessedDateCandidate = latestProcessedDateForThisST;
 
         const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
         if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999);
 
+        let iterationCount = 0;
         while (nextDateToProcess <= today) {
+            iterationCount++;
+            console.log(`  Iteration ${iterationCount}: Checking nextDateToProcess: ${nextDateToProcess.toISOString()}`);
+
             if (recurrenceEndDate && nextDateToProcess > recurrenceEndDate) {
+                console.log("    Recurrence end date reached. Breaking loop.");
                 break;
             }
 
             if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
+                console.log("    Condition met: Adding transaction for date:", nextDateToProcess.toISOString());
                 const baseTransactionFields = {
                     date: nextDateToProcess.toISOString(),
                     account: st.account,
@@ -149,32 +167,49 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                         remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (From ${st.account})` : `Transfer from ${st.account}`,
                         currency: destinationAccountCurrency,
                     });
+                    console.log("    Added two transfer transactions.");
                 } else {
                     transactionsToAdd.push(baseTransactionFields);
+                    console.log("    Added single transaction.");
                 }
                 newLastProcessedDateCandidate = nextDateToProcess;
+            } else {
+                console.log("    Condition NOT met: nextDateToProcess is not greater than latestProcessedDateForThisST. Skipping.");
             }
             nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));
             nextDateToProcess.setHours(0, 0, 0, 0);
         }
+        console.log("  Loop finished for scheduled transaction ID:", st.id);
+
 
         if (newLastProcessedDateCandidate && (!latestProcessedDateForThisST || newLastProcessedDateCandidate > latestProcessedDateForThisST)) {
             updatesToMake.push({
                 id: st.id,
                 last_processed_date: newLastProcessedDateCandidate.toISOString(),
             });
+            console.log("  Updating last_processed_date for ST ID:", st.id, "to:", newLastProcessedDateCandidate.toISOString());
+        } else {
+            console.log("  No update to last_processed_date needed for ST ID:", st.id);
         }
       }
 
       if (transactionsToAdd.length > 0) {
+        console.log("\n--- Inserting Generated Transactions ---");
+        console.log("Total transactions to insert:", transactionsToAdd.length);
         const { error: insertError } = await supabase.from('transactions').insert(transactionsToAdd);
         if (insertError) {
           console.error("Failed to insert scheduled transactions:", insertError.message);
           showError(`Failed to add some scheduled transactions: ${insertError.message}`);
+        } else {
+            console.log("Successfully inserted generated transactions.");
         }
+      } else {
+          console.log("No new transactions to insert.");
       }
 
       if (updatesToMake.length > 0) {
+        console.log("\n--- Updating Scheduled Transactions last_processed_date ---");
+        console.log("Total scheduled transactions to update:", updatesToMake.length);
         const updatePromises = updatesToMake.map(update =>
           supabase
             .from('scheduled_transactions')
@@ -182,9 +217,13 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
             .eq('id', update.id)
         );
         await Promise.all(updatePromises);
+        console.log("Successfully updated last_processed_date for scheduled transactions.");
+      } else {
+          console.log("No scheduled transactions to update last_processed_date.");
       }
 
       if (transactionsToAdd.length > 0) {
+        console.log("Refetching main transactions after processing scheduled transactions.");
         await fetchTransactions();
       }
     } catch (error: any) {
