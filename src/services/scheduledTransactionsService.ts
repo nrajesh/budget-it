@@ -1,11 +1,26 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import { Transaction } from '@/data/finance-data';
+import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
 
 interface ScheduledTransactionsServiceProps {
-  fetchTransactions: () => Promise<void>;
+  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
   userId: string | undefined;
 }
+
+export type ScheduledTransaction = {
+  id: string;
+  date: string;
+  account: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  frequency: string;
+  remarks?: string;
+  user_id: string;
+  created_at: string;
+  last_processed_date?: string;
+};
 
 export const createScheduledTransactionsService = ({ fetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
 
@@ -96,9 +111,9 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                     remarks: st.remarks || undefined,
                     currency: currencyMap.get(st.account) || 'USD',
                     user_id: userId,
-                    is_scheduled_origin: true, // Mark as originating from a scheduled transaction
+                    is_scheduled_origin: true,
                 });
-                newLastProcessedDateCandidate = nextDateToProcess; // Update candidate
+                newLastProcessedDateCandidate = nextDateToProcess;
             }
             nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));
             nextDateToProcess.setHours(0, 0, 0, 0);
@@ -134,15 +149,30 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       }
 
       if (transactionsToAdd.length > 0) {
-        await fetchTransactions();
+        await fetchTransactions(); // Refetch transactions via react-query
       }
     } catch (error: any) {
       console.error("Error processing scheduled transactions:", error.message);
       showError(`Failed to process scheduled transactions: ${error.message}`);
+      throw error;
     }
+  };
+
+  // This function is for react-query's queryFn
+  const fetchScheduledTransactions = async () => {
+    if (!userId) return [];
+    const { data, error } = await supabase
+      .from('scheduled_transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+
+    if (error) throw error;
+    return data as ScheduledTransaction[];
   };
 
   return {
     processScheduledTransactions,
+    fetchScheduledTransactions,
   };
 };

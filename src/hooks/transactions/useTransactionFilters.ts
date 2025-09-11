@@ -5,15 +5,34 @@ import { DateRange } from "react-day-picker";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
 
 interface Option {
   value: string;
   label: string;
 }
 
+// Helper function to fetch vendor names (accounts or regular vendors)
+const fetchVendorNames = async (isAccount: boolean, userId: string | undefined): Promise<Option[]> => {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('vendors')
+    .select('name')
+    .eq('is_account', isAccount);
+
+  if (error) {
+    console.error(`Error fetching ${isAccount ? 'account' : 'vendor'} names:`, error.message);
+    throw error;
+  }
+  return data.map(item => ({
+    value: slugify(item.name),
+    label: item.name,
+  }));
+};
+
 export const useTransactionFilters = () => {
   const { categories: allCategories } = useTransactions();
-  const { user } = useUser();
+  const { user, isLoadingUser } = useUser();
   const location = useLocation();
 
   // Filter states
@@ -23,74 +42,19 @@ export const useTransactionFilters = () => {
   const [selectedVendors, setSelectedVendors] = React.useState<string[]>([]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
-  // State for dynamically fetched options
-  const [availableAccountOptions, setAvailableAccountOptions] = React.useState<Option[]>([]);
-  const [availableVendorOptions, setAvailableVendorOptions] = React.useState<Option[]>([]);
+  // Fetch available account options using react-query
+  const { data: availableAccountOptions = [] } = useQuery<Option[], Error>({
+    queryKey: ['availableAccountOptions', user?.id],
+    queryFn: () => fetchVendorNames(true, user?.id),
+    enabled: !!user?.id && !isLoadingUser,
+  });
 
-  // Fetch available accounts dynamically
-  const fetchAvailableAccounts = React.useCallback(async () => {
-    if (!user?.id) {
-      setAvailableAccountOptions([]);
-      return;
-    }
-    const { data, error } = await supabase
-      .from('vendors')
-      .select('name')
-      .eq('is_account', true);
-
-    if (error) {
-      console.error("Error fetching account names:", error.message);
-      setAvailableAccountOptions([]);
-    } else {
-      const newOptions = data.map(item => ({
-        value: slugify(item.name),
-        label: item.name,
-      }));
-      // Only update state if options have actually changed to prevent unnecessary re-renders
-      setAvailableAccountOptions(prevOptions => {
-        if (prevOptions.length === newOptions.length &&
-            prevOptions.every((opt, i) => opt.value === newOptions[i].value && opt.label === newOptions[i].label)) {
-          return prevOptions; // No change, return existing reference
-        }
-        return newOptions;
-      });
-    }
-  }, [user?.id]);
-
-  // Fetch available vendors dynamically
-  const fetchAvailableVendors = React.useCallback(async () => {
-    if (!user?.id) {
-      setAvailableVendorOptions([]);
-      return;
-    }
-    const { data, error } = await supabase
-      .from('vendors')
-      .select('name')
-      .eq('is_account', false);
-
-    if (error) {
-      console.error("Error fetching vendor names:", error.message);
-      setAvailableVendorOptions([]);
-    } else {
-      const newOptions = data.map(item => ({
-        value: slugify(item.name),
-        label: item.name,
-      }));
-      // Only update state if options have actually changed to prevent unnecessary re-renders
-      setAvailableVendorOptions(prevOptions => {
-        if (prevOptions.length === newOptions.length &&
-            prevOptions.every((opt, i) => opt.value === newOptions[i].value && opt.label === newOptions[i].label)) {
-          return prevOptions; // No change, return existing reference
-        }
-        return newOptions;
-      });
-    }
-  }, [user?.id]);
-
-  React.useEffect(() => {
-    fetchAvailableAccounts();
-    fetchAvailableVendors();
-  }, [fetchAvailableAccounts, fetchAvailableVendors]);
+  // Fetch available vendor options using react-query
+  const { data: availableVendorOptions = [] } = useQuery<Option[], Error>({
+    queryKey: ['availableVendorOptions', user?.id],
+    queryFn: () => fetchVendorNames(false, user?.id),
+    enabled: !!user?.id && !isLoadingUser,
+  });
 
   const availableCategoryOptions = React.useMemo(() => {
     return allCategories.map(category => ({
@@ -130,36 +94,35 @@ export const useTransactionFilters = () => {
 
 
   const handleResetFilters = React.useCallback(() => {
-    console.log("Resetting filters...");
+    // console.log("Resetting filters...");
     setSearchTerm("");
     // Re-select all available options
     setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
     setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
     setSelectedVendors(availableVendorOptions.map(v => v.value));
     setDateRange(undefined);
-    // Note: Clearing selectedTransactionIds will be handled in useTransactionManagement's handleResetFilters
   }, [availableAccountOptions, availableCategoryOptions, availableVendorOptions]);
 
   // Add console logs to track state changes
-  React.useEffect(() => {
-    console.log("Filter State - Search Term:", searchTerm);
-  }, [searchTerm]);
+  // React.useEffect(() => {
+  //   console.log("Filter State - Search Term:", searchTerm);
+  // }, [searchTerm]);
 
-  React.useEffect(() => {
-    console.log("Filter State - Selected Accounts:", selectedAccounts);
-  }, [selectedAccounts]);
+  // React.useEffect(() => {
+  //   console.log("Filter State - Selected Accounts:", selectedAccounts);
+  // }, [selectedAccounts]);
 
-  React.useEffect(() => {
-    console.log("Filter State - Selected Categories:", selectedCategories);
-  }, [selectedCategories]);
+  // React.useEffect(() => {
+  //   console.log("Filter State - Selected Categories:", selectedCategories);
+  // }, [selectedCategories]);
 
-  React.useEffect(() => {
-    console.log("Filter State - Selected Vendors:", selectedVendors);
-  }, [selectedVendors]);
+  // React.useEffect(() => {
+  //   console.log("Filter State - Selected Vendors:", selectedVendors);
+  // }, [selectedVendors]);
 
-  React.useEffect(() => {
-    console.log("Filter State - Date Range:", dateRange);
-  }, [dateRange]);
+  // React.useEffect(() => {
+  //   console.log("Filter State - Date Range:", dateRange);
+  // }, [dateRange]);
 
 
   return {

@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2, Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
@@ -37,6 +37,8 @@ import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import LoadingOverlay from "./LoadingOverlay";
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { useUser } from '@/contexts/UserContext'; // Import useUser
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -61,15 +63,29 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   onOpenChange,
   transaction,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories } = useTransactions(); // Get allCategories from context
+  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies } = useCurrency();
+  const { user, isLoadingUser } = useUser();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
-  const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
-  const [allVendors, setAllVendors] = React.useState<string[]>([]);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
   const [isSaving, setIsSaving] = React.useState(false);
+
+  // Fetch all payees (accounts and vendors) using react-query
+  const { data: allPayees = [], isLoading: isLoadingPayees } = useQuery({
+    queryKey: ['allPayees', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase.from('vendors').select('name, is_account');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !isLoadingUser,
+  });
+
+  const allAccounts = React.useMemo(() => allPayees.filter(p => p.is_account).map(p => p.name), [allPayees]);
+  const allVendors = React.useMemo(() => allPayees.filter(p => !p.is_account).map(p => p.name), [allPayees]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -79,28 +95,15 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     },
   });
 
-  const fetchPayees = React.useCallback(async () => {
-    const { data, error } = await supabase.from('vendors').select('name, is_account');
-    if (error) {
-      console.error("Error fetching payees:", error.message);
-      return;
-    }
-    const accounts = data.filter(p => p.is_account).map(p => p.name);
-    const vendors = data.filter(p => !p.is_account).map(p => p.name);
-    setAllAccounts(accounts);
-    setAllVendors(vendors);
-  }, []);
-
   React.useEffect(() => {
     if (isOpen) {
-      fetchPayees();
       form.reset({
         ...transaction,
         date: formatDateToYYYYMMDD(transaction.date),
       });
       setIsSaving(false);
     }
-  }, [transaction, form, isOpen, fetchPayees]);
+  }, [transaction, form, isOpen]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
@@ -175,136 +178,144 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     disabled: option.value === accountValue,
   }));
 
-  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })); // Use allCategories from context
+  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name }));
+
+  const isFormLoading = isLoadingPayees || isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent>
-          <LoadingOverlay isLoading={isSaving} message="Saving changes..." />
+          <LoadingOverlay isLoading={isSaving || isFormLoading} message={isSaving ? "Saving changes..." : "Loading form data..."} />
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="account"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Account</FormLabel>
-                    <Combobox
-                      options={filteredAccountOptions}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Select an account"
-                      searchPlaceholder="Search accounts..."
-                      emptyPlaceholder="No account found."
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="vendor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vendor</FormLabel>
-                    <Combobox
-                      options={filteredCombinedVendorOptions}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Select a vendor or account"
-                      searchPlaceholder="Search..."
-                      emptyPlaceholder="No results found."
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isTransfer}>
+          {isFormLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
+                        <Input type="date" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {allCategories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount (Sending)</FormLabel>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                        {accountCurrencySymbol}
-                      </span>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} className="pl-8" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="account"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account</FormLabel>
+                      <Combobox
+                        options={filteredAccountOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select an account"
+                        searchPlaceholder="Search accounts..."
+                        emptyPlaceholder="No account found."
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="vendor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vendor</FormLabel>
+                      <Combobox
+                        options={filteredCombinedVendorOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select a vendor or account"
+                        searchPlaceholder="Search..."
+                        emptyPlaceholder="No results found."
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isTransfer}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {allCategories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (Sending)</FormLabel>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {accountCurrencySymbol}
+                        </span>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} className="pl-8" />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="remarks"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Remarks</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-              />
-              <DialogFooter className="sm:justify-between pt-4">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  disabled={isSaving}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save changes
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                <FormField
+                  control={form.control}
+                  name="remarks"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Remarks</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter className="sm:justify-between pt-4">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    disabled={isSaving}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
         </DialogContent>
       </Dialog>
       <ConfirmationDialog

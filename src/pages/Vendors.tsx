@@ -24,14 +24,16 @@ import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { PlusCircle, Trash2, Edit, Loader2, RotateCcw, Upload, Download } from "lucide-react";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
-import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import LoadingOverlay from "@/components/LoadingOverlay";
+import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from '@tanstack/react-query'; // Import react-query hooks
+import { createPayeesService } from '@/services/payeesService'; // Import service for mutation logic
 
 const VendorsPage = () => {
-  const { vendors, fetchVendors, refetchAllPayees, fetchTransactions } = useTransactions(); // Use vendors, fetchVendors, refetchAllPayees, and fetchTransactions from context
-  const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
+  const { vendors, isLoadingVendors, fetchVendors: refetchVendors, refetchAllPayees, fetchTransactions } = useTransactions();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -47,21 +49,10 @@ const VendorsPage = () => {
   const [editedName, setEditedName] = React.useState<string>("");
   const [isSavingName, setIsSavingName] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const navigate = useNavigate(); // Initialize useNavigate
-
-  // Initial fetch for vendors
-  React.useEffect(() => {
-    const loadVendors = async () => {
-      setIsLoading(true);
-      await fetchVendors();
-      setIsLoading(false);
-    };
-    loadVendors();
-  }, [fetchVendors]);
+  const navigate = useNavigate();
 
   const filteredVendors = React.useMemo(() => {
     return vendors.filter((p) =>
@@ -79,32 +70,35 @@ const VendorsPage = () => {
     setIsDialogOpen(true);
   };
 
+  // Mutation for deleting payees
+  const deletePayeesMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.rpc('delete_payees_batch', {
+        p_vendor_ids: ids,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess(vendorToDelete ? "Vendor deleted successfully." : `${selectedRows.length} items deleted successfully.`);
+      await refetchAllPayees(); // Invalidate all relevant queries
+      await fetchTransactions(); // Refetch transactions
+      setIsConfirmOpen(false);
+      setVendorToDelete(null);
+      setSelectedRows([]);
+    },
+    onError: (error: any) => {
+      showError(`Failed to delete: ${error.message}`);
+    },
+  });
+
   const handleDeleteClick = (vendor: Payee) => {
     setVendorToDelete(vendor);
     setIsConfirmOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!vendorToDelete && selectedRows.length === 0) return;
-
+  const confirmDelete = () => {
     const idsToDelete = vendorToDelete ? [vendorToDelete.id] : selectedRows;
-    const successMessage = vendorToDelete ? "Vendor deleted successfully." : `${selectedRows.length} items deleted successfully.`;
-
-    try {
-      const { error } = await supabase.rpc('delete_payees_batch', {
-        p_vendor_ids: idsToDelete,
-      });
-      if (error) throw error;
-      showSuccess(successMessage);
-      refetchAllPayees(); // Re-fetch all payees after deletion
-      fetchTransactions(); // Re-fetch transactions to update any affected entries
-    } catch (error: any) {
-      showError(`Failed to delete: ${error.message}`);
-    } finally {
-      setIsConfirmOpen(false);
-      setVendorToDelete(null);
-      setSelectedRows([]);
-    }
+    deletePayeesMutation.mutate(idsToDelete);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -123,6 +117,28 @@ const VendorsPage = () => {
     }
   };
 
+  // Mutation for updating vendor name
+  const updateVendorNameMutation = useMutation({
+    mutationFn: async ({ vendorId, newName }: { vendorId: string; newName: string }) => {
+      const { error } = await supabase.rpc('update_vendor_name', {
+        p_vendor_id: vendorId,
+        p_new_name: newName,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess("Vendor name updated successfully!");
+      await refetchAllPayees(); // Invalidate all relevant queries
+      await fetchTransactions(); // Refetch transactions
+      setIsSavingName(false);
+      setEditingVendorId(null);
+    },
+    onError: (error: any) => {
+      showError(`Failed to update vendor name: ${error.message}`);
+      setIsSavingName(false);
+    },
+  });
+
   const startEditing = (vendor: Payee) => {
     setEditingVendorId(vendor.id);
     setEditedName(vendor.name);
@@ -136,23 +152,8 @@ const VendorsPage = () => {
       setEditingVendorId(null);
       return;
     }
-
     setIsSavingName(true);
-    try {
-      const { error } = await supabase.rpc('update_vendor_name', {
-        p_vendor_id: vendorId,
-        p_new_name: editedName.trim(),
-      });
-      if (error) throw error;
-      showSuccess("Vendor name updated successfully!");
-      refetchAllPayees(); // Re-fetch all payees to update the list
-      fetchTransactions(); // Re-fetch transactions to update any affected entries
-    } catch (error: any) {
-      showError(`Failed to update vendor name: ${error.message}`);
-    } finally {
-      setIsSavingName(false);
-      setEditingVendorId(null);
-    }
+    updateVendorNameMutation.mutate({ vendorId, newName: editedName.trim() });
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, vendor: Payee) => {
@@ -163,9 +164,7 @@ const VendorsPage = () => {
     }
   };
 
-  // New function to handle vendor name click
   const handleVendorNameClick = (vendorName: string) => {
-    // Navigate to Transactions page with vendor filter
     navigate('/transactions', {
       state: {
         filterVendor: vendorName,
@@ -176,15 +175,31 @@ const VendorsPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentVendors.length;
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchVendors();
-    setIsRefreshing(false);
-  };
-
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+
+  // Mutation for batch upserting vendors
+  const batchUpsertVendorsMutation = useMutation({
+    mutationFn: async (vendorNames: string[]) => {
+      const { error } = await supabase.rpc('batch_upsert_vendors', {
+        p_names: vendorNames,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} vendors imported successfully!`);
+      await refetchAllPayees(); // Invalidate all relevant queries
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (error: any) => {
+      showError(`Import failed: ${error.message}`);
+      setIsImporting(false);
+    },
+  });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -213,23 +228,7 @@ const VendorsPage = () => {
           return;
         }
 
-        try {
-          const { error } = await supabase.rpc('batch_upsert_vendors', {
-            p_names: vendorNames,
-          });
-
-          if (error) throw error;
-
-          showSuccess(`${vendorNames.length} vendors imported successfully!`);
-          await refetchAllPayees();
-        } catch (error: any) {
-          showError(`Import failed: ${error.message}`);
-        } finally {
-          setIsImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
+        batchUpsertVendorsMutation.mutate(vendorNames);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
@@ -261,18 +260,18 @@ const VendorsPage = () => {
 
   return (
     <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing vendors..." : "Refreshing vendors..."} />
+      <LoadingOverlay isLoading={isLoadingVendors || isImporting || deletePayeesMutation.isPending || updateVendorNameMutation.isPending} message={isImporting ? "Importing vendors..." : "Loading vendors..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Vendors</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)} disabled={deletePayeesMutation.isPending}>
+              {deletePayeesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
           )}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button onClick={handleImportClick} variant="outline" disabled={isImporting || batchUpsertVendorsMutation.isPending}>
+            {isImporting || batchUpsertVendorsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
           </Button>
           <Button onClick={handleExportClick} variant="outline">
@@ -285,10 +284,10 @@ const VendorsPage = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
+            onClick={() => refetchVendors()}
+            disabled={isLoadingVendors}
           >
-            {isRefreshing ? (
+            {isLoadingVendors ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RotateCcw className="h-4 w-4" />
@@ -333,7 +332,7 @@ const VendorsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isLoadingVendors ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>
@@ -417,7 +416,7 @@ const VendorsPage = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         payee={selectedVendor}
-        onSuccess={refetchAllPayees} // Call refetchAllPayees on success
+        onSuccess={async () => await refetchAllPayees()}
       />
       <ConfirmationDialog
         isOpen={isConfirmOpen}

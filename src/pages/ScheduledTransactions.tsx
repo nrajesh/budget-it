@@ -1,4 +1,7 @@
 import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Table,
   TableBody,
@@ -42,109 +45,167 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog"; // Import all necessary Dialog components
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
 
-type ScheduledTransaction = {
-  id: string;
-  date: string;
-  account: string;
-  vendor: string;
-  category: string;
-  amount: number;
-  frequency: string;
-  remarks?: string;
-  user_id: string;
-  created_at: string;
-  last_processed_date?: string;
-};
+// Define Zod schema for form validation
+const formSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  account: z.string().min(1, "Account is required"),
+  vendor: z.string().min(1, "Vendor is required"),
+  category: z.string().min(1, "Category is required"),
+  amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
+  frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
+  frequency_unit: z.string().min(1, "Frequency unit is required"),
+  remarks: z.string().optional(),
+}).refine((data, ctx) => { // Add ctx parameter to access context
+  const allPayees = ctx.path[0] as { value: string; label: string; isAccount: boolean }[]; // Access allPayees from context
+  const isVendorAnAccount = (payees: { value: string; label: string; isAccount: boolean }[]) => {
+    return payees.find(p => p.value === data.vendor)?.isAccount;
+  };
+  if (isVendorAnAccount(allPayees) && data.category !== 'Transfer') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Category must be 'Transfer' if vendor is an account.",
+      path: ["category"],
+    });
+    return false;
+  }
+  if (!isVendorAnAccount(allPayees) && data.category === 'Transfer') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Category cannot be 'Transfer' if vendor is not an account.",
+      path: ["category"],
+    });
+    return false;
+  }
+  return true;
+}, {
+  message: "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
+  path: ["category"],
+});
 
-type ScheduledTransactionFormData = {
-  date: string;
-  account: string;
-  vendor: string;
-  category: string;
-  amount: number;
-  frequency_value: number;
-  frequency_unit: string;
-  remarks: string;
-};
+type ScheduledTransactionFormData = z.infer<typeof formSchema>;
 
 const ScheduledTransactionsPage = () => {
-  const { user } = useUser();
-  const { accounts, vendors, categories } = useTransactions();
-  const [scheduledTransactions, setScheduledTransactions] = React.useState<ScheduledTransaction[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { user, isLoadingUser } = useUser();
+  const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchAllPayees, fetchTransactions: refetchMainTransactions } = useTransactions();
+  const queryClient = useQueryClient();
+
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
 
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [transactionToDelete, setTransactionToDelete] = React.useState<ScheduledTransaction | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = React.useState<ScheduledTransactionType | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
 
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Form state for adding/editing
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransaction | null>(null);
-  const [formData, setFormData] = React.useState<ScheduledTransactionFormData>({
-    date: formatDateToYYYYMMDD(new Date()),
-    account: '',
-    vendor: '',
-    category: '',
-    amount: 0,
-    frequency_value: 1,
-    frequency_unit: 'm',
-    remarks: '',
-  });
+  const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransactionType | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // State for expanded rows
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
-  const allPayees = React.useMemo(() => {
-    const payeeOptions = [
+  // Memoize allPayees to prevent re-renders and ensure stable reference for Zod refinement
+  const allPayeesMemo = React.useRef(
+    [
       ...accounts.map(p => ({ value: p.name, label: p.name, isAccount: true })),
       ...vendors.map(p => ({ value: p.name, label: p.name, isAccount: false }))
-    ];
-    const uniquePayees = Array.from(new Map(payeeOptions.map(item => [item.value, item])).values());
-    return uniquePayees.sort((a, b) => a.label.localeCompare(b.label));
+    ].sort((a, b) => a.label.localeCompare(b.label))
+  );
+
+  React.useEffect(() => {
+    allPayeesMemo.current = [
+      ...accounts.map(p => ({ value: p.name, label: p.name, isAccount: true })),
+      ...vendors.map(p => ({ value: p.name, label: p.name, isAccount: false }))
+    ].sort((a, b) => a.label.localeCompare(b.label));
   }, [accounts, vendors]);
 
   // Get today's date in YYYY-MM-DD format for the min attribute of the date input
   const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(new Date()), []);
 
-  // Fetch scheduled transactions
-  const fetchScheduledTransactions = React.useCallback(async () => {
-    if (!user) {
-      setScheduledTransactions([]);
-      setIsLoading(false);
-      return;
-    }
+  // Fetch scheduled transactions using react-query
+  const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
+    fetchTransactions: refetchMainTransactions,
+    userId: user?.id,
+  });
 
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('scheduled_transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: true });
+  const { data: scheduledTransactions = [], isLoading: isLoadingScheduledTransactions, refetch: refetchScheduledTransactions } = useQuery<ScheduledTransactionType[], Error>({
+    queryKey: ['scheduledTransactions', user?.id],
+    queryFn: fetchScheduledTransactions,
+    enabled: !!user?.id && !isLoadingUser,
+  });
 
-      if (error) throw error;
-      setScheduledTransactions(data as ScheduledTransaction[]);
-    } catch (error: any) {
-      showError(`Failed to fetch scheduled transactions: ${error.message}`);
-      setScheduledTransactions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+  const form = useForm<ScheduledTransactionFormData>({
+    resolver: zodResolver(formSchema, {
+      context: allPayeesMemo.current, // Pass allPayeesMemo.current as context
+    }),
+    defaultValues: {
+      date: todayDateString,
+      account: '',
+      vendor: '',
+      category: '',
+      amount: 0,
+      frequency_value: 1,
+      frequency_unit: 'm',
+      remarks: '',
+    },
+    mode: "onChange", // Validate on change
+  });
 
   React.useEffect(() => {
-    fetchScheduledTransactions();
-  }, [fetchScheduledTransactions]);
+    if (isFormOpen && editingTransaction) {
+      const frequencyMatch = editingTransaction.frequency.match(/^(\d+)([dwmy])$/);
+      const frequency_value = frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1;
+      const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
+
+      form.reset({
+        date: formatDateToYYYYMMDD(editingTransaction.date),
+        account: editingTransaction.account,
+        vendor: editingTransaction.vendor,
+        category: editingTransaction.category,
+        amount: editingTransaction.amount,
+        frequency_value,
+        frequency_unit,
+        remarks: editingTransaction.remarks || '',
+      });
+    } else if (isFormOpen && !editingTransaction) {
+      form.reset({
+        date: todayDateString,
+        account: '',
+        vendor: '',
+        category: '',
+        amount: 0,
+        frequency_value: 1,
+        frequency_unit: 'm',
+        remarks: '',
+      });
+    }
+  }, [isFormOpen, editingTransaction, form, todayDateString]);
+
+  // Watch vendor field to dynamically set category for transfers
+  const watchedVendor = form.watch("vendor");
+  React.useEffect(() => {
+    const selectedPayee = allPayeesMemo.current.find(p => p.value === watchedVendor);
+    if (selectedPayee?.isAccount) {
+      form.setValue("category", "Transfer", { shouldValidate: true });
+    } else if (form.getValues("category") === "Transfer") {
+      form.setValue("category", "", { shouldValidate: true });
+    }
+  }, [watchedVendor, form]);
 
   const filteredTransactions = React.useMemo(() => {
     return scheduledTransactions.filter((t) =>
@@ -162,70 +223,45 @@ const ScheduledTransactionsPage = () => {
 
   const handleAddClick = () => {
     setEditingTransaction(null);
-    setFormData({
-      date: todayDateString, // Default to today's date
-      account: '',
-      vendor: '',
-      category: '',
-      amount: 0,
-      frequency_value: 1,
-      frequency_unit: 'm',
-      remarks: '',
-    });
     setIsFormOpen(true);
   };
 
-  const handleEditClick = (transaction: ScheduledTransaction) => {
+  const handleEditClick = (transaction: ScheduledTransactionType) => {
     setEditingTransaction(transaction);
-    const frequencyMatch = transaction.frequency.match(/^(\d+)([dwmy])$/);
-    const frequency_value = frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1;
-    const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
-
-    setFormData({
-      date: formatDateToYYYYMMDD(transaction.date),
-      account: transaction.account,
-      vendor: transaction.vendor,
-      category: transaction.category,
-      amount: transaction.amount,
-      frequency_value,
-      frequency_unit,
-      remarks: transaction.remarks || '',
-    });
     setIsFormOpen(true);
   };
 
-  const handleDeleteClick = (transaction: ScheduledTransaction) => {
+  const handleDeleteClick = (transaction: ScheduledTransactionType) => {
     setTransactionToDelete(transaction);
     setIsConfirmOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!user) {
-      showError("You must be logged in to delete scheduled transactions.");
-      setIsConfirmOpen(false);
-      return;
-    }
-
-    const idsToDelete = transactionToDelete ? [transactionToDelete.id] : selectedRows;
-    const successMessage = transactionToDelete ? "Scheduled transaction deleted successfully." : `${selectedRows.length} scheduled transactions deleted successfully.`;
-
-    try {
+  // Mutation for deleting scheduled transactions
+  const deleteScheduledTransactionMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!user) throw new Error("User not logged in.");
       const { error } = await supabase
         .from('scheduled_transactions')
         .delete()
-        .in('id', idsToDelete)
+        .in('id', ids)
         .eq('user_id', user.id);
-
       if (error) throw error;
-      showSuccess(successMessage);
-      fetchScheduledTransactions();
-    } catch (error: any) {
-      showError(`Failed to delete: ${error.message}`);
-    } finally {
+    },
+    onSuccess: async () => {
+      showSuccess(transactionToDelete ? "Scheduled transaction deleted successfully." : `${selectedRows.length} scheduled transactions deleted successfully.`);
+      await refetchScheduledTransactions(); // Refetch scheduled transactions
       setIsConfirmOpen(false);
       setTransactionToDelete(null);
       setSelectedRows([]);
-    }
+    },
+    onError: (error: any) => {
+      showError(`Failed to delete: ${error.message}`);
+    },
+  });
+
+  const confirmDelete = () => {
+    const idsToDelete = transactionToDelete ? [transactionToDelete.id] : selectedRows;
+    deleteScheduledTransactionMutation.mutate(idsToDelete);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -247,15 +283,29 @@ const ScheduledTransactionsPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentTransactions.length;
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchScheduledTransactions();
-    setIsRefreshing(false);
-  };
-
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+
+  // Mutation for batch upserting scheduled transactions
+  const batchUpsertScheduledTransactionsMutation = useMutation({
+    mutationFn: async (transactionsToInsert: any[]) => {
+      const { error } = await supabase.from('scheduled_transactions').insert(transactionsToInsert);
+      if (error) throw error;
+    },
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} scheduled transactions imported successfully!`);
+      await refetchScheduledTransactions(); // Refetch scheduled transactions
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (error: any) => {
+      showError(`Import failed: ${error.message}`);
+      setIsImporting(false);
+    },
+  });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -295,24 +345,23 @@ const ScheduledTransactionsPage = () => {
           await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
           const today = new Date();
-          today.setHours(0, 0, 0, 0); // Normalize to start of day
+          today.setHours(0, 0, 0, 0);
           let pastDatesFoundInImport = false;
 
-          // Prepare transactions for insertion
           const transactionsToInsert = parsedData.map(row => {
             const parsedDate = parseDateFromDDMMYYYY(row.Date);
-            parsedDate.setHours(0, 0, 0, 0); // Normalize parsed date
+            parsedDate.setHours(0, 0, 0, 0);
 
             const isoDate = parsedDate.toISOString();
             let lastProcessedDateForDb = isoDate;
 
             if (parsedDate < today) {
                 pastDatesFoundInImport = true;
-                lastProcessedDateForDb = today.toISOString(); // Set to today if original date is in the past
+                lastProcessedDateForDb = today.toISOString();
             }
 
             return {
-              date: isoDate, // Keep the original scheduled date
+              date: isoDate,
               account: row.Account,
               vendor: row.Vendor,
               category: row.Category,
@@ -320,23 +369,19 @@ const ScheduledTransactionsPage = () => {
               frequency: row.Frequency,
               remarks: row.Remarks || null,
               user_id: user.id,
-              last_processed_date: lastProcessedDateForDb, // Use the adjusted last_processed_date
+              last_processed_date: lastProcessedDateForDb,
             };
           });
 
-          // Insert transactions
-          const { error } = await supabase.from('scheduled_transactions').insert(transactionsToInsert);
-          if (error) throw error;
+          batchUpsertScheduledTransactionsMutation.mutate(transactionsToInsert);
 
-          showSuccess(`${transactionsToInsert.length} scheduled transactions imported successfully!`);
           if (pastDatesFoundInImport) {
             showError("Some imported scheduled transactions had past dates. Their processing will start from today.");
           }
-          fetchScheduledTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
-        } finally {
           setIsImporting(false);
+        } finally {
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
           }
@@ -376,103 +421,60 @@ const ScheduledTransactionsPage = () => {
     document.body.removeChild(link);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Mutation for adding/updating a single scheduled transaction
+  const saveScheduledTransactionMutation = useMutation({
+    mutationFn: async (data: ScheduledTransactionFormData) => {
+      if (!user) throw new Error("User not logged in.");
 
-    // 1. Create a clean data object from the current form state.
-    const { date, account, vendor, category, amount, frequency_value, frequency_unit, remarks } = formData;
-
-    // 2. Validate the data object.
-    if (!user) {
-      showError("You must be logged in.");
-      setIsSubmitting(false);
-      return;
-    }
-    if (!account || !vendor || !category) {
-      showError("Please fill in all required fields: Account, Vendor, and Category.");
-      setIsSubmitting(false);
-      return;
-    }
-    if (typeof frequency_value !== 'number' || isNaN(frequency_value) || frequency_value < 1) {
-      showError("Invalid frequency value. Please enter a positive number.");
-      setIsSubmitting(false);
-      return;
-    }
-    if (!['d', 'w', 'm', 'y'].includes(frequency_unit)) {
-      showError("Invalid frequency unit. Please select from Days, Weeks, Months, Years.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      // 3. Perform async pre-flight checks.
-      const isVendorAnAccount = allPayees.find(p => p.value === vendor)?.isAccount || false;
-      await ensurePayeeExists(account, true);
-      await ensurePayeeExists(vendor, isVendorAnAccount);
-      if (category !== 'Transfer') { // Only ensure category exists if it's not the special 'Transfer' category
-        await ensureCategoryExists(category, user.id);
+      const isVendorAnAccount = allPayeesMemo.current.find(p => p.value === data.vendor)?.isAccount || false;
+      await ensurePayeeExists(data.account, true);
+      await ensurePayeeExists(data.vendor, isVendorAnAccount);
+      if (data.category !== 'Transfer') {
+        await ensureCategoryExists(data.category, user.id);
       }
 
-      // 4. Construct the final object for Supabase.
-      const isoDate = new Date(date).toISOString();
-      const frequency = `${frequency_value}${frequency_unit}`;
+      const isoDate = new Date(data.date).toISOString();
+      const frequency = `${data.frequency_value}${data.frequency_unit}`;
 
       const dbPayload = {
         date: isoDate,
-        account,
-        vendor,
-        category,
-        amount,
-        remarks: remarks || null,
+        account: data.account,
+        vendor: data.vendor,
+        category: data.category,
+        amount: data.amount,
+        remarks: data.remarks || null,
         frequency,
-        last_processed_date: isoDate,
+        last_processed_date: isoDate, // Initial last_processed_date is the scheduled date
       };
 
-      // Log the exact payload being sent for debugging
-      console.log("Submitting scheduled transaction with payload:", dbPayload);
-
-      // 5. Perform the database operation.
       if (editingTransaction) {
         const { error } = await supabase
           .from('scheduled_transactions')
           .update(dbPayload)
           .eq('id', editingTransaction.id);
         if (error) throw error;
-        showSuccess("Scheduled transaction updated successfully!");
       } else {
         const { error } = await supabase
           .from('scheduled_transactions')
           .insert({ ...dbPayload, user_id: user.id });
         if (error) throw error;
-        showSuccess("Scheduled transaction added successfully!");
       }
-      
-      // 6. Cleanup and refresh.
-      fetchScheduledTransactions();
+    },
+    onSuccess: async () => {
+      showSuccess(editingTransaction ? "Scheduled transaction updated successfully!" : "Scheduled transaction added successfully!");
+      await refetchScheduledTransactions(); // Refetch scheduled transactions
       setIsFormOpen(false);
-
-    } catch (error: any) {
-      console.error("Error saving scheduled transaction:", error); // Log the full error object
-      showError(`Failed to save scheduled transaction: ${error.message}`);
-    } finally {
       setIsSubmitting(false);
-    }
-  };
+    },
+    onError: (error: any) => {
+      showError(`Failed to save scheduled transaction: ${error.message}`);
+      setIsSubmitting(false);
+    },
+  });
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => {
-      if (name === 'amount') {
-        return { ...prev, [name]: parseFloat(value) || 0 };
-      } else if (name === 'frequency_value') {
-        // Ensure frequency_value is always a positive integer, default to 1 if invalid
-        const parsedValue = parseInt(value, 10);
-        return { ...prev, [name]: isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue };
-      } else {
-        return { ...prev, [name]: value };
-      }
-    });
+  const handleFormSubmit = async (values: ScheduledTransactionFormData) => {
+    setIsSubmitting(true);
+    saveScheduledTransactionMutation.mutate(values);
   };
 
   const toggleRowExpansion = (id: string) => {
@@ -487,7 +489,7 @@ const ScheduledTransactionsPage = () => {
     });
   };
 
-  const calculateUpcomingDates = (transaction: ScheduledTransaction, count: number = 2): { firstUpcoming: string | null; subsequentUpcoming: string[] } => {
+  const calculateUpcomingDates = React.useCallback((transaction: ScheduledTransactionType, count: number = 2): { firstUpcoming: string | null; subsequentUpcoming: string[] } => {
     const subsequentUpcoming: string[] = [];
     let currentCandidateDate = new Date(transaction.last_processed_date || transaction.date);
     currentCandidateDate.setHours(0, 0, 0, 0);
@@ -515,54 +517,57 @@ const ScheduledTransactionsPage = () => {
     // Find the first occurrence that is strictly AFTER today
     while (currentCandidateDate <= today) {
       currentCandidateDate = advanceDate(currentCandidateDate);
-      currentCandidateDate.setHours(0, 0, 0, 0); // Normalize after advancing
+      currentCandidateDate.setHours(0, 0, 0, 0);
     }
 
     const firstUpcoming = currentCandidateDate.toISOString();
 
     // Generate subsequent occurrences
-    let nextDate = advanceDate(new Date(firstUpcoming)); // Start from the date *after* the first upcoming
+    let nextDate = advanceDate(new Date(firstUpcoming));
     nextDate.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < count; i++) {
       subsequentUpcoming.push(nextDate.toISOString());
       nextDate = advanceDate(nextDate);
-      nextDate.setHours(0, 0, 0, 0); // Normalize after advancing
+      nextDate.setHours(0, 0, 0, 0);
     }
 
     return { firstUpcoming, subsequentUpcoming };
-  };
+  }, []);
+
+  const isPageLoading = isLoadingScheduledTransactions || isLoadingAccounts || isLoadingVendors || isLoadingCategories || isLoadingUser;
 
   return (
     <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing scheduled transactions..." : "Refreshing scheduled transactions..."} />
+      <LoadingOverlay isLoading={isPageLoading || isImporting || deleteScheduledTransactionMutation.isPending || batchUpsertScheduledTransactionsMutation.isPending || saveScheduledTransactionMutation.isPending} message={isImporting ? "Importing scheduled transactions..." : "Loading scheduled transactions..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Scheduled Transactions</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)} disabled={deleteScheduledTransactionMutation.isPending}>
+              {deleteScheduledTransactionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
           )}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button onClick={handleImportClick} variant="outline" disabled={isImporting || batchUpsertScheduledTransactionsMutation.isPending}>
+            {isImporting || batchUpsertScheduledTransactionsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
           </Button>
           <Button onClick={handleExportClick} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={handleAddClick}>
+          <Button onClick={handleAddClick} disabled={saveScheduledTransactionMutation.isPending}>
+            {saveScheduledTransactionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <PlusCircle className="mr-2 h-4 w-4" /> Add Scheduled Transaction
           </Button>
           <Button
             variant="outline"
             size="icon"
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
+            onClick={async () => await refetchScheduledTransactions()}
+            disabled={isLoadingScheduledTransactions}
           >
-            {isRefreshing ? (
+            {isLoadingScheduledTransactions ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RotateCcw className="h-4 w-4" />
@@ -613,7 +618,7 @@ const ScheduledTransactionsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isLoadingScheduledTransactions ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center">Loading...</TableCell>
                   </TableRow>
@@ -659,7 +664,6 @@ const ScheduledTransactionsPage = () => {
                           </TableCell>
                         </TableRow>
 
-                        {/* Expanded rows for subsequent upcoming dates */}
                         {isExpanded && subsequentUpcoming.map((date, index) => (
                           <TableRow key={`${transaction.id}-upcoming-${index}`} className="bg-muted/50">
                             <TableCell colSpan={2} className="pl-12">
@@ -710,151 +714,202 @@ const ScheduledTransactionsPage = () => {
             <DialogDescription>
               Define a recurring transaction. Occurrences up to today will be automatically added to your transactions.
             </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="date" className="block text-sm font-medium mb-1">Date</label>
-                <Input
-                  id="date"
+          </DialogDescription>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={handleFormChange}
-                  min={todayDateString} // Restrict past date selection
-                  required
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          min={todayDateString}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div>
-                <label htmlFor="account" className="block text-sm font-medium mb-1">Account</label>
-                <Select
+                <FormField
+                  control={form.control}
                   name="account"
-                  value={formData.account}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, account: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map(account => (
-                      <SelectItem key={account.id} value={account.name}>
-                        {account.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label htmlFor="vendor" className="block text-sm font-medium mb-1">Vendor / Account</label>
-                <Select
-                  name="vendor"
-                  value={formData.vendor}
-                  onValueChange={(value) => {
-                    const selectedPayee = allPayees.find(p => p.value === value);
-                    const isTransfer = selectedPayee?.isAccount;
-                    setFormData(prev => ({
-                      ...prev,
-                      vendor: value,
-                      category: isTransfer ? 'Transfer' : prev.category === 'Transfer' ? '' : prev.category
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vendor or account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allPayees.map(payee => (
-                      <SelectItem key={payee.value} value={payee.value}>
-                        {payee.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium mb-1">Category</label>
-                <Select
-                  name="category"
-                  value={formData.category}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                  disabled={allPayees.find(p => p.value === formData.vendor)?.isAccount}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.filter(c => c.name !== 'Transfer').map(category => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label htmlFor="amount" className="block text-sm font-medium mb-1">Amount</label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={handleFormChange}
-                  required
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoadingAccounts}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select account" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {accounts.map(account => (
+                            <SelectItem key={account.id} value={account.name}>
+                              {account.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="flex items-end gap-2">
-                <div className="flex-grow">
-                  <label htmlFor="frequency_value" className="block text-sm font-medium mb-1">Frequency</label>
-                  <Input
-                    id="frequency_value"
+                <FormField
+                  control={form.control}
+                  name="vendor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vendor / Account</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoadingVendors || isLoadingAccounts}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select vendor or account" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {allPayeesMemo.current.map(payee => (
+                            <SelectItem key={payee.value} value={payee.value}>
+                              {payee.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={allPayeesMemo.current.find(p => p.value === form.getValues("vendor"))?.isAccount || isLoadingCategories}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.filter(c => c.name !== 'Transfer').map(category => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          {...field}
+                          onChange={e => field.onChange(parseFloat(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex items-end gap-2">
+                  <FormField
+                    control={form.control}
                     name="frequency_value"
-                    type="number"
-                    min="1"
-                    value={formData.frequency_value}
-                    onChange={handleFormChange}
-                    required
+                    render={({ field }) => (
+                      <FormItem className="flex-grow">
+                        <FormLabel>Frequency</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            {...field}
+                            onChange={e => field.onChange(parseInt(e.target.value, 10))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="frequency_unit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="d">Days</SelectItem>
+                            <SelectItem value="w">Weeks</SelectItem>
+                            <SelectItem value="m">Months</SelectItem>
+                            <SelectItem value="y">Years</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div>
-                  <Select
-                    name="frequency_unit"
-                    value={formData.frequency_unit}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, frequency_unit: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="d">Days</SelectItem>
-                      <SelectItem value="w">Weeks</SelectItem>
-                      <SelectItem value="m">Months</SelectItem>
-                      <SelectItem value="y">Years</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
-            </div>
-            <div>
-              <label htmlFor="remarks" className="block text-sm font-medium mb-1">Remarks</label>
-              <textarea
-                id="remarks"
+              <FormField
+                control={form.control}
                 name="remarks"
-                value={formData.remarks}
-                onChange={handleFormChange}
-                className="w-full p-2 border rounded-md min-h-[100px]"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Optional notes about the scheduled transaction"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Save
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter className="pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

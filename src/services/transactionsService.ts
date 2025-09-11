@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils'; // Import ensureCategoryExists
+import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
+import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
 
 interface TransactionToDelete {
   id: string;
@@ -9,12 +10,12 @@ interface TransactionToDelete {
 }
 
 interface TransactionsServiceProps {
-  fetchTransactions: () => Promise<void>;
-  refetchAllPayees: () => Promise<void>;
-  transactions: Transaction[];
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
+  refetchAllPayees: () => Promise<void>; // Updated return type
+  transactions: Transaction[]; // Still needed for finding original transaction for update
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Keep for direct manipulation if needed, but discouraged
   convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
-  userId: string | undefined; // Add userId
+  userId: string | undefined;
 }
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
@@ -22,7 +23,7 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
-      return;
+      throw new Error("User not logged in.");
     }
     const { receivingAmount, ...restOfTransaction } = transaction;
     const newDateISO = new Date(restOfTransaction.date).toISOString();
@@ -46,8 +47,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         ...restOfTransaction,
         currency: accountCurrency,
         date: newDateISO,
-        user_id: userId, // This is where user_id is added
-        is_scheduled_origin: false, // Manually added transactions are not from scheduled origin
+        user_id: userId,
+        is_scheduled_origin: false,
       };
 
       if (isTransfer) {
@@ -87,17 +88,18 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
-      fetchTransactions();
-      refetchAllPayees();
+      await fetchTransactions(); // Refetch transactions via react-query
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
+      throw error;
     }
   };
 
   const updateTransaction = async (updatedTransaction: Transaction) => {
     if (!userId) {
       showError("User not logged in. Cannot update transaction.");
-      return;
+      throw new Error("User not logged in.");
     }
     try {
       // Fetch the original transaction to preserve is_scheduled_origin if not explicitly provided
@@ -128,11 +130,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       }
 
       showSuccess("Transaction updated successfully!");
-      setTransactions(prevTransactions =>
-        prevTransactions.map(t => (t.id === updatedTransaction.id ? { ...updatedTransaction, is_scheduled_origin: isScheduledOrigin } : t))
-      );
+      await fetchTransactions(); // Refetch transactions via react-query
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
+      throw error;
     }
   };
 
@@ -147,10 +149,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (error) throw error;
         showSuccess("Transaction deleted successfully!");
       }
-      fetchTransactions();
-      refetchAllPayees();
+      await fetchTransactions(); // Refetch transactions via react-query
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
+      throw error;
     }
   };
 
@@ -178,10 +181,11 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       }
 
       showSuccess(`${transactionsToDelete.length} transactions deleted successfully!`);
-      fetchTransactions();
-      refetchAllPayees();
+      await fetchTransactions(); // Refetch transactions via react-query
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to delete multiple transactions: ${error.message}`);
+      throw error;
     }
   };
 

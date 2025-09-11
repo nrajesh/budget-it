@@ -26,20 +26,22 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useUser } from "@/contexts/UserContext";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from '@tanstack/react-query'; // Import react-query hooks
+import { createCategoriesService } from '@/services/categoriesService'; // Import service for mutation logic
 
 export type Category = {
   id: string;
   name: string;
   user_id: string;
   created_at: string;
-  totalTransactions?: number; // Add optional totalTransactions field
+  totalTransactions?: number;
 };
 
 const CategoriesPage = () => {
-  const { categories, fetchCategories, fetchTransactions } = useTransactions();
+  const { categories, isLoadingCategories, fetchCategories: refetchCategories, fetchTransactions } = useTransactions();
   const { user } = useUser();
-  const [isLoading, setIsLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -52,20 +54,10 @@ const CategoriesPage = () => {
   const [editedName, setEditedName] = React.useState<string>("");
   const [isSavingName, setIsSavingName] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const navigate = useNavigate(); // Initialize useNavigate
-
-  React.useEffect(() => {
-    const loadCategories = async () => {
-      setIsLoading(true);
-      await fetchCategories();
-      setIsLoading(false);
-    };
-    loadCategories();
-  }, [fetchCategories]);
+  const navigate = useNavigate();
 
   const filteredCategories = React.useMemo(() => {
     return categories.filter((cat) =>
@@ -78,60 +70,64 @@ const CategoriesPage = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentCategories = filteredCategories.slice(startIndex, endIndex);
 
-  const handleAddClick = async () => {
-    if (!user) {
-      showError("You must be logged in to add a category.");
-      return;
-    }
+  // Mutation for adding a category
+  const addCategoryMutation = useMutation({
+    mutationFn: async (newCategoryName: string) => {
+      if (!user) throw new Error("User not logged in.");
+      const { error } = await supabase.from('categories').insert({
+        name: newCategoryName.trim(),
+        user_id: user.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess("Category added successfully!");
+      await refetchCategories(); // Refetch categories
+    },
+    onError: (error: any) => {
+      showError(`Failed to add category: ${error.message}`);
+    },
+  });
+
+  const handleAddClick = () => {
     const newCategoryName = prompt("Enter new category name:");
     if (newCategoryName && newCategoryName.trim() !== "") {
-      try {
-        const { error } = await supabase.from('categories').insert({
-          name: newCategoryName.trim(),
-          user_id: user.id,
-        });
-        if (error) throw error;
-        showSuccess("Category added successfully!");
-        fetchCategories();
-      } catch (error: any) {
-        showError(`Failed to add category: ${error.message}`);
-      }
+      addCategoryMutation.mutate(newCategoryName);
     }
   };
+
+  // Mutation for deleting categories
+  const deleteCategoriesMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!user) throw new Error("User not logged in.");
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .in('id', ids)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess(categoryToDelete ? "Category deleted successfully." : `${selectedRows.length} categories deleted successfully.`);
+      await refetchCategories(); // Refetch categories
+      await fetchTransactions(); // Refetch transactions
+      setIsConfirmOpen(false);
+      setCategoryToDelete(null);
+      setSelectedRows([]);
+    },
+    onError: (error: any) => {
+      showError(`Failed to delete: ${error.message}`);
+    },
+  });
 
   const handleDeleteClick = (category: Category) => {
     setCategoryToDelete(category);
     setIsConfirmOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!user) {
-      showError("You must be logged in to delete categories.");
-      setIsConfirmOpen(false);
-      return;
-    }
-
+  const confirmDelete = () => {
     const idsToDelete = categoryToDelete ? [categoryToDelete.id] : selectedRows;
-    const successMessage = categoryToDelete ? "Category deleted successfully." : `${selectedRows.length} categories deleted successfully.`;
-
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .in('id', idsToDelete)
-        .eq('user_id', user.id); // Ensure user can only delete their own categories
-
-      if (error) throw error;
-      showSuccess(successMessage);
-      fetchCategories();
-      fetchTransactions(); // Re-fetch transactions to update any affected entries
-    } catch (error: any) {
-      showError(`Failed to delete: ${error.message}`);
-    } finally {
-      setIsConfirmOpen(false);
-      setCategoryToDelete(null);
-      setSelectedRows([]);
-    }
+    deleteCategoriesMutation.mutate(idsToDelete);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -150,6 +146,30 @@ const CategoriesPage = () => {
     }
   };
 
+  // Mutation for updating category name
+  const updateCategoryNameMutation = useMutation({
+    mutationFn: async ({ categoryId, newName }: { categoryId: string; newName: string }) => {
+      if (!user) throw new Error("User not logged in.");
+      const { error } = await supabase
+        .from('categories')
+        .update({ name: newName.trim() })
+        .eq('id', categoryId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess("Category name updated successfully!");
+      await refetchCategories(); // Refetch categories
+      await fetchTransactions(); // Refetch transactions
+      setIsSavingName(false);
+      setEditingCategoryId(null);
+    },
+    onError: (error: any) => {
+      showError(`Failed to update category name: ${error.message}`);
+      setIsSavingName(false);
+    },
+  });
+
   const startEditing = (category: Category) => {
     setEditingCategoryId(category.id);
     setEditedName(category.name);
@@ -159,34 +179,12 @@ const CategoriesPage = () => {
   };
 
   const handleSaveName = async (categoryId: string, originalName: string) => {
-    if (!user) {
-      showError("You must be logged in to edit categories.");
-      setEditingCategoryId(null);
-      return;
-    }
     if (editedName.trim() === "" || editedName === originalName) {
       setEditingCategoryId(null);
       return;
     }
-
     setIsSavingName(true);
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ name: editedName.trim() })
-        .eq('id', categoryId)
-        .eq('user_id', user.id); // Ensure user can only update their own categories
-
-      if (error) throw error;
-      showSuccess("Category name updated successfully!");
-      fetchCategories();
-      fetchTransactions(); // Re-fetch transactions to update any affected entries
-    } catch (error: any) {
-      showError(`Failed to update category name: ${error.message}`);
-    } finally {
-      setIsSavingName(false);
-      setEditingCategoryId(null);
-    }
+    updateCategoryNameMutation.mutate({ categoryId, newName: editedName.trim() });
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, category: Category) => {
@@ -197,9 +195,7 @@ const CategoriesPage = () => {
     }
   };
 
-  // New function to handle category name click
   const handleCategoryNameClick = (categoryName: string) => {
-    // Navigate to Transactions page with category filter
     navigate('/transactions', {
       state: {
         filterCategory: categoryName,
@@ -210,23 +206,38 @@ const CategoriesPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentCategories.length;
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchCategories();
-    setIsRefreshing(false);
-  };
-
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
 
+  // Mutation for batch upserting categories
+  const batchUpsertCategoriesMutation = useMutation({
+    mutationFn: async (categoryNames: string[]) => {
+      if (!user) throw new Error("User not logged in.");
+      const categoriesToInsert = categoryNames.map((name: string) => ({
+        name: name.trim(),
+        user_id: user.id,
+      }));
+      const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} categories imported successfully!`);
+      await refetchCategories(); // Refetch categories
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (error: any) => {
+      showError(`Import failed: ${error.message}`);
+      setIsImporting(false);
+    },
+  });
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-    if (!user) {
-      showError("You must be logged in to import categories.");
-      return;
-    }
+    if (!file || !user) return;
 
     setIsImporting(true);
     Papa.parse(file, {
@@ -251,26 +262,7 @@ const CategoriesPage = () => {
           return;
         }
 
-        try {
-          const categoriesToInsert = categoryNames.map((name: string) => ({
-            name: name.trim(),
-            user_id: user.id,
-          }));
-
-          const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
-
-          if (error) throw error;
-
-          showSuccess(`${categoriesToInsert.length} categories imported successfully!`);
-          await fetchCategories();
-        } catch (error: any) {
-          showError(`Import failed: ${error.message}`);
-        } finally {
-          setIsImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
+        batchUpsertCategoriesMutation.mutate(categoryNames);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
@@ -302,34 +294,35 @@ const CategoriesPage = () => {
 
   return (
     <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing categories..." : "Refreshing categories..."} />
+      <LoadingOverlay isLoading={isLoadingCategories || isImporting || deleteCategoriesMutation.isPending || updateCategoryNameMutation.isPending || addCategoryMutation.isPending} message={isImporting ? "Importing categories..." : "Loading categories..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)} disabled={deleteCategoriesMutation.isPending}>
+              {deleteCategoriesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
           )}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button onClick={handleImportClick} variant="outline" disabled={isImporting || batchUpsertCategoriesMutation.isPending}>
+            {isImporting || batchUpsertCategoriesMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
           </Button>
           <Button onClick={handleExportClick} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={handleAddClick}>
+          <Button onClick={handleAddClick} disabled={addCategoryMutation.isPending}>
+            {addCategoryMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <PlusCircle className="mr-2 h-4 w-4" /> Add Category
           </Button>
           <Button
             variant="outline"
             size="icon"
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
+            onClick={async () => await refetchCategories()}
+            disabled={isLoadingCategories}
           >
-            {isRefreshing ? (
+            {isLoadingCategories ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RotateCcw className="h-4 w-4" />
@@ -374,7 +367,7 @@ const CategoriesPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isLoadingCategories ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center">Loading...</TableCell>
                   </TableRow>

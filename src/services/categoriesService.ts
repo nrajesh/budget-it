@@ -1,60 +1,32 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { Category } from '@/pages/Categories'; // Import the Category type
-import { ensureCategoryExists } from '@/integrations/supabase/utils'; // Import ensureCategoryExists
-import { Transaction } from '@/data/finance-data'; // Import Transaction type
+import { Category } from '@/pages/Categories';
+import { ensureCategoryExists } from '@/integrations/supabase/utils';
+import { Transaction } from '@/data/finance-data';
 
 interface CategoriesServiceProps {
-  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  // No longer need setCategories as react-query will manage state
   userId: string | undefined;
-  getTransactions: () => Transaction[]; // Changed to a getter function
+  // getTransactions is no longer needed here as categories are fetched independently
 }
 
-export const createCategoriesService = ({ setCategories, userId, getTransactions }: CategoriesServiceProps) => {
+export const createCategoriesService = ({ userId }: CategoriesServiceProps) => {
 
-  const syncCategoriesFromTransactions = async () => {
-    if (!userId) {
-      return;
-    }
-    const currentTransactions = getTransactions(); // Get latest transactions here
-
-    if (currentTransactions.length === 0) {
-      return;
-    }
-
-    try {
-      const uniqueTransactionCategories = new Set<string>();
-      currentTransactions.forEach(t => { // Use currentTransactions
-        if (t.category && t.category !== 'Transfer') { // Exclude 'Transfer' as it's a special category
-          uniqueTransactionCategories.add(t.category);
-        }
-      });
-
-      // Ensure each category from transactions exists in the categories table
-      await Promise.all(Array.from(uniqueTransactionCategories).map(categoryName =>
-        ensureCategoryExists(categoryName, userId)
-      ));
-    } catch (error: any) {
-      console.error("Error syncing categories from transactions:", error.message);
-      showError("Failed to synchronize categories from transactions.");
-    }
-  };
-
+  // This function is now primarily for react-query's queryFn, not direct state manipulation
   const fetchCategories = async () => {
     if (!userId) {
-      setCategories([]);
-      return;
+      return []; // Return empty array if no user
     }
     try {
-      // First, ensure all categories from transactions are in the categories table
-      await syncCategoriesFromTransactions(); // Call sync before fetching
+      // Ensure default categories for the new user
+      await supabase.rpc('ensure_default_categories_for_user', { p_user_id: userId });
 
       // Fetch categories with transaction counts
       const { data, error } = await supabase
         .rpc('get_categories_with_transaction_counts', { user_id_param: userId });
 
       if (error) {
-        throw error;
+        throw error; // Throw error for react-query to catch
       }
 
       // Map the data to include the totalTransactions field
@@ -66,17 +38,17 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
         totalTransactions: item.total_transactions || 0,
       }));
 
-      setCategories(categoriesWithCounts);
+      return categoriesWithCounts;
     } catch (error: any) {
-      showError(`Failed to fetch categories: ${error.message}`);
-      setCategories([]);
+      console.error(`Failed to fetch categories: ${error.message}`);
+      throw error; // Re-throw for react-query
     }
   };
 
   const batchUpsertCategories = async (categoryNames: string[]) => {
     if (!userId) {
       showError("User not logged in. Cannot import categories.");
-      return;
+      throw new Error("User not logged in.");
     }
     if (categoryNames.length === 0) return;
 
@@ -90,9 +62,10 @@ export const createCategoriesService = ({ setCategories, userId, getTransactions
 
       if (error) throw error;
       showSuccess(`${categoriesToInsert.length} categories imported/updated successfully!`);
-      fetchCategories(); // Re-fetch to update the list
+      // No direct fetchCategories() call here, react-query will handle invalidation
     } catch (error: any) {
       showError(`Failed to batch upsert categories: ${error.message}`);
+      throw error;
     }
   };
 

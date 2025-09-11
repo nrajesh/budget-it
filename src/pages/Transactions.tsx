@@ -5,6 +5,7 @@ import {
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
+  PaginationLink,
 } from "@/components/ui/pagination";
 import { Transaction } from "@/data/finance-data";
 import EditTransactionDialog from "@/components/EditTransactionDialog";
@@ -17,7 +18,8 @@ import { useTransactionManagement } from "@/hooks/useTransactionManagement";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters.tsx";
 import { TransactionActions } from "@/components/transactions/TransactionActions.tsx";
 import { TransactionsTable } from "@/components/transactions/TransactionsTable.tsx";
-import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
+import LoadingOverlay from "@/components/LoadingOverlay";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
 
 const TransactionsPage = () => {
   const {
@@ -27,7 +29,7 @@ const TransactionsPage = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
-    selectedVendors, // Add selectedVendors
+    selectedVendors,
     dateRange,
     isRefreshing,
     isImporting,
@@ -36,7 +38,7 @@ const TransactionsPage = () => {
     fileInputRef,
     availableAccountOptions,
     availableCategoryOptions,
-    availableVendorOptions, // Add availableVendorOptions
+    availableVendorOptions,
     filteredTransactions,
     totalPages,
     startIndex,
@@ -53,7 +55,7 @@ const TransactionsPage = () => {
     setSearchTerm,
     setSelectedAccounts,
     setSelectedCategories,
-    setSelectedVendors, // Add setSelectedVendors
+    setSelectedVendors,
     setDateRange,
     setIsBulkDeleteConfirmOpen,
 
@@ -68,6 +70,9 @@ const TransactionsPage = () => {
     handleExportClick,
   } = useTransactionManagement();
 
+  // Destructure loading states directly from useTransactions
+  const { isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories } = useTransactions();
+
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
 
@@ -76,8 +81,11 @@ const TransactionsPage = () => {
     setIsDialogOpen(true);
   };
 
+  const isPageLoading = isLoadingTransactions || isLoadingVendors || isLoadingAccounts || isLoadingCategories;
+
   return (
     <div className="flex-1 space-y-4">
+      <LoadingOverlay isLoading={isPageLoading} message="Loading transactions data..." />
       <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
       <div>
         <Card>
@@ -101,11 +109,11 @@ const TransactionsPage = () => {
               selectedAccounts={selectedAccounts}
               setSelectedAccounts={setSelectedAccounts}
               availableCategoryOptions={availableCategoryOptions}
-              selectedCategories={selectedCategories}
+              selectedCategories={selectedCategories} {/* Corrected: pass state value */}
               setSelectedCategories={setSelectedCategories}
-              availableVendorOptions={availableVendorOptions} // Pass availableVendorOptions
-              selectedVendors={selectedVendors} // Pass selectedVendors
-              setSelectedVendors={setSelectedVendors} // Pass setSelectedVendors
+              availableVendorOptions={availableVendorOptions}
+              selectedVendors={selectedVendors}
+              setSelectedVendors={setSelectedVendors}
               dateRange={dateRange}
               onDateChange={setDateRange}
               onResetFilters={handleResetFilters}

@@ -5,20 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/data/finance-data";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-
-type ScheduledTransaction = {
-  id: string;
-  date: string;
-  account: string;
-  vendor: string;
-  category: string;
-  amount: number;
-  frequency: string;
-  remarks?: string;
-  user_id: string;
-  created_at: string;
-  last_processed_date?: string;
-};
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { ScheduledTransaction, createScheduledTransactionsService } from '@/services/scheduledTransactionsService'; // Import ScheduledTransaction type
 
 interface Option {
   value: string;
@@ -47,19 +35,19 @@ export const useTransactionData = ({
   availableVendorOptions,
 }: UseTransactionDataProps) => {
   const { transactions, accountCurrencyMap } = useTransactions();
-  const { user } = useUser();
+  const { user, isLoadingUser } = useUser();
 
-  const [scheduledTransactions, setScheduledTransactions] = React.useState<ScheduledTransaction[]>([]);
+  // Fetch scheduled transactions using react-query
+  const { fetchScheduledTransactions } = createScheduledTransactionsService({
+    fetchTransactions: () => Promise.resolve(), // Dummy refetch, as this hook doesn't trigger main transactions refetch
+    userId: user?.id,
+  });
 
-  // Fetch scheduled transactions
-  React.useEffect(() => {
-    const fetchScheduled = async () => {
-      if (!user) return;
-      const { data } = await supabase.from('scheduled_transactions').select('*').eq('user_id', user.id);
-      setScheduledTransactions(data || []);
-    };
-    fetchScheduled();
-  }, [user]);
+  const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({
+    queryKey: ['scheduledTransactions', user?.id],
+    queryFn: fetchScheduledTransactions,
+    enabled: !!user?.id && !isLoadingUser,
+  });
 
   const combinedTransactions = React.useMemo(() => {
     const today = new Date();
@@ -117,16 +105,16 @@ export const useTransactionData = ({
   }, [transactions, scheduledTransactions, accountCurrencyMap]);
 
   const filteredTransactions = React.useMemo(() => {
-    console.log("--- Filtering Transactions (useMemo re-run) ---");
-    console.log("Initial Combined Transactions Count:", combinedTransactions.length);
-    console.log("Search Term:", searchTerm);
-    console.log("Selected Accounts:", selectedAccounts);
-    console.log("Available Account Options Length:", availableAccountOptions.length);
-    console.log("Selected Categories:", selectedCategories);
-    console.log("Available Category Options Length:", availableCategoryOptions.length);
-    console.log("Selected Vendors:", selectedVendors);
-    console.log("Available Vendor Options Length:", availableVendorOptions.length);
-    console.log("Date Range:", dateRange);
+    // console.log("--- Filtering Transactions (useMemo re-run) ---");
+    // console.log("Initial Combined Transactions Count:", combinedTransactions.length);
+    // console.log("Search Term:", searchTerm);
+    // console.log("Selected Accounts:", selectedAccounts);
+    // console.log("Available Account Options Length:", availableAccountOptions.length);
+    // console.log("Selected Categories:", selectedCategories);
+    // console.log("Available Category Options Length:", availableCategoryOptions.length);
+    // console.log("Selected Vendors:", selectedVendors);
+    // console.log("Available Vendor Options Length:", availableVendorOptions.length);
+    // console.log("Date Range:", dateRange);
 
     let filtered = combinedTransactions;
 
@@ -137,28 +125,28 @@ export const useTransactionData = ({
           t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
           (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
       );
-      console.log("After Search Term Filter:", filtered.length, "transactions");
+      // console.log("After Search Term Filter:", filtered.length, "transactions");
     }
 
     // Account filtering
     // Only filter if specific accounts are selected (i.e., not all accounts are selected)
     if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
       filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
-      console.log("After Account Filter:", filtered.length, "transactions");
+      // console.log("After Account Filter:", filtered.length, "transactions");
     }
 
     // Category filtering
     // Only filter if specific categories are selected (i.e., not all categories are selected)
     if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
       filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
-      console.log("After Category Filter:", filtered.length, "transactions");
+      // console.log("After Category Filter:", filtered.length, "transactions");
     }
 
     // Vendor filtering
     // Only filter if specific vendors are selected (i.e., not all vendors are selected)
     if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
       filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
-      console.log("After Vendor Filter:", filtered.length, "transactions");
+      // console.log("After Vendor Filter:", filtered.length, "transactions");
     }
 
     // Date range filtering
@@ -170,10 +158,10 @@ export const useTransactionData = ({
         const transactionDate = new Date(t.date);
         return transactionDate >= fromDate && transactionDate <= toDate;
       });
-      console.log("After Date Range Filter:", filtered.length, "transactions");
+      // console.log("After Date Range Filter:", filtered.length, "transactions");
     }
 
-    console.log("Final Filtered Transactions Count:", filtered.length);
+    // console.log("Final Filtered Transactions Count:", filtered.length);
     return filtered;
   }, [
     combinedTransactions,

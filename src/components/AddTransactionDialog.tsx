@@ -27,6 +27,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { useUser } from '@/contexts/UserContext'; // Import useUser
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 interface AddTransactionFormValues {
   date: string;
@@ -60,10 +63,25 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const { addTransaction, accountCurrencyMap, categories: allCategories } = useTransactions(); // Get allCategories from context
+  const { addTransaction, accountCurrencyMap, categories: allCategories, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
-  const [allAccounts, setAllAccounts] = React.useState<string[]>([]);
-  const [allVendors, setAllVendors] = React.useState<string[]>([]);
+  const { user, isLoadingUser } = useUser();
+
+  // Fetch all payees (accounts and vendors) using react-query
+  const { data: allPayees = [], isLoading: isLoadingPayees } = useQuery({
+    queryKey: ['allPayees', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase.from('vendors').select('name, is_account');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id && !isLoadingUser,
+  });
+
+  const allAccounts = React.useMemo(() => allPayees.filter(p => p.is_account).map(p => p.name), [allPayees]);
+  const allVendors = React.useMemo(() => allPayees.filter(p => !p.is_account).map(p => p.name), [allPayees]);
+
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
@@ -81,21 +99,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     },
   });
 
-  const fetchPayees = React.useCallback(async () => {
-    const { data, error } = await supabase.from('vendors').select('name, is_account');
-    if (error) {
-      console.error("Error fetching payees:", error.message);
-      return;
-    }
-    const accounts = data.filter(p => p.is_account).map(p => p.name);
-    const vendors = data.filter(p => !p.is_account).map(p => p.name);
-    setAllAccounts(accounts);
-    setAllVendors(vendors);
-  }, []);
-
   React.useEffect(() => {
     if (isOpen) {
-      fetchPayees();
       form.reset({
         date: formatDateToYYYYMMDD(new Date()),
         account: "",
@@ -109,7 +114,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       setDestinationAccountCurrency(null);
       setAutoCalculatedReceivingAmount(0);
     }
-  }, [isOpen, form, fetchPayees]);
+  }, [isOpen, form]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
@@ -171,7 +176,6 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   }, [isTransfer, form]);
 
   const onSubmit = (values: AddTransactionFormValues) => {
-    // Create a new object that omits user_id as it will be added by the service
     const transactionData = {
       date: values.date,
       account: values.account,
@@ -200,9 +204,11 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     disabled: option.value === accountValue,
   }));
 
-  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })); // Use allCategories from context
+  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name }));
 
   const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
+
+  const isFormLoading = isLoadingPayees || isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -213,145 +219,151 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
             Quickly add a new transaction to your records.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="account"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Account (Sending)</FormLabel>
-                  <Combobox
-                    options={filteredAccountOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select an account..."
-                    searchPlaceholder="Search accounts..."
-                    emptyPlaceholder="No account found."
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="vendor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vendor / Account (Receiving)</FormLabel>
-                   <Combobox
-                    options={filteredCombinedVendorOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select a vendor or account..."
-                    searchPlaceholder="Search..."
-                    emptyPlaceholder="No results found."
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                   <Combobox
-                    options={categoryOptions}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Select a category..."
-                    searchPlaceholder="Search categories..."
-                    emptyPlaceholder="No category found."
-                    disabled={isTransfer}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (Sending)</FormLabel>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                      {accountCurrencySymbol}
-                    </span>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {showReceivingValueField && (
+        {isFormLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="receivingAmount"
+                name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount (Receiving)</FormLabel>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                        {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
-                      </span>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...field}
-                          value={field.value === 0 ? "" : field.value}
-                          onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                          placeholder={autoCalculatedReceivingAmount.toFixed(2)}
-                          className="pl-8"
-                        />
-                      </FormControl>
-                    </div>
-                    <FormDescription>
-                      This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
-                    </FormDescription>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
+              <FormField
+                control={form.control}
+                name="account"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account (Sending)</FormLabel>
+                    <Combobox
+                      options={filteredAccountOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select an account..."
+                      searchPlaceholder="Search accounts..."
+                      emptyPlaceholder="No account found."
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vendor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor / Account (Receiving)</FormLabel>
+                    <Combobox
+                      options={filteredCombinedVendorOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a vendor or account..."
+                      searchPlaceholder="Search..."
+                      emptyPlaceholder="No results found."
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Combobox
+                      options={categoryOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a category..."
+                      searchPlaceholder="Search categories..."
+                      emptyPlaceholder="No category found."
+                      disabled={isTransfer}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount (Sending)</FormLabel>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                        {accountCurrencySymbol}
+                      </span>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remarks</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {showReceivingValueField && (
+                <FormField
+                  control={form.control}
+                  name="receivingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (Receiving)</FormLabel>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                        </span>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...field}
+                            value={field.value === 0 ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                            placeholder={autoCalculatedReceivingAmount.toFixed(2)}
+                            className="pl-8"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormDescription>
+                        This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-            <DialogFooter>
-              <Button type="submit">Add Transaction</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit">Add Transaction</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );

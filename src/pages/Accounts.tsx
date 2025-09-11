@@ -23,15 +23,16 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Edit, Upload, Download } from "lucide-react";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
-import { RotateCcw, Loader2 } from "lucide-react"; // Import RotateCcw and Loader2 icons
+import { PlusCircle, Trash2, Edit, Upload, Download, Loader2, RotateCcw } from "lucide-react";
+import { useTransactions } from "@/contexts/TransactionsContext";
 import Papa from "papaparse";
-import LoadingOverlay from "@/components/LoadingOverlay"; // Import LoadingOverlay
+import LoadingOverlay from "@/components/LoadingOverlay";
+import { useMutation, useQueryClient } from '@tanstack/react-query'; // Import react-query hooks
+import { createPayeesService } from '@/services/payeesService'; // Import service for mutation logic
 
 const AccountsPage = () => {
-  const { accounts, fetchAccounts, refetchAllPayees, fetchTransactions, transactions } = useTransactions(); // Use accounts and fetchAccounts from context
-  const [isLoading, setIsLoading] = React.useState(true); // Keep local loading for initial fetch
+  const { accounts, isLoadingAccounts, fetchAccounts: refetchAccounts, refetchAllPayees, transactions, fetchTransactions } = useTransactions();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage] = React.useState(10);
@@ -42,7 +43,6 @@ const AccountsPage = () => {
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [accountToDelete, setAccountToDelete] = React.useState<Payee | null>(null);
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  const [isRefreshing, setIsRefreshing] = React.useState(false); // New state for refresh loading
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -51,7 +51,7 @@ const AccountsPage = () => {
   // Filter transactions to exclude future-dated ones
   const currentTransactions = React.useMemo(() => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    today.setHours(0, 0, 0, 0);
 
     return transactions.filter(t => {
       const transactionDate = new Date(t.date);
@@ -63,12 +63,10 @@ const AccountsPage = () => {
   const accountBalances = React.useMemo(() => {
     const balances: Record<string, number> = {};
 
-    // Initialize all accounts with starting balance
     accounts.forEach(account => {
       balances[account.name] = account.starting_balance || 0;
     });
 
-    // Add transaction amounts to the balances
     currentTransactions.forEach(transaction => {
       if (transaction.category !== 'Transfer') {
         balances[transaction.account] = (balances[transaction.account] || 0) + transaction.amount;
@@ -77,16 +75,6 @@ const AccountsPage = () => {
 
     return balances;
   }, [accounts, currentTransactions]);
-
-  // Initial fetch for accounts
-  React.useEffect(() => {
-    const loadAccounts = async () => {
-      setIsLoading(true);
-      await fetchAccounts();
-      setIsLoading(false);
-    };
-    loadAccounts();
-  }, [fetchAccounts]);
 
   const filteredAccounts = React.useMemo(() => {
     return accounts.filter((acc) =>
@@ -109,32 +97,35 @@ const AccountsPage = () => {
     setIsDialogOpen(true);
   };
 
+  // Mutation for deleting payees
+  const deletePayeesMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.rpc('delete_payees_batch', {
+        p_vendor_ids: ids,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess(accountToDelete ? "Account deleted successfully." : `${selectedRows.length} accounts deleted successfully.`);
+      await refetchAllPayees(); // Invalidate all relevant queries
+      await fetchTransactions(); // Refetch transactions
+      setIsConfirmOpen(false);
+      setAccountToDelete(null);
+      setSelectedRows([]);
+    },
+    onError: (error: any) => {
+      showError(`Failed to delete: ${error.message}`);
+    },
+  });
+
   const handleDeleteClick = (account: Payee) => {
     setAccountToDelete(account);
     setIsConfirmOpen(true);
   };
 
-  const confirmDelete = async () => {
-    if (!accountToDelete && selectedRows.length === 0) return;
-
+  const confirmDelete = () => {
     const idsToDelete = accountToDelete ? [accountToDelete.id] : selectedRows;
-    const successMessage = accountToDelete ? "Account deleted successfully." : `${selectedRows.length} accounts deleted successfully.`;
-
-    try {
-      const { error } = await supabase.rpc('delete_payees_batch', {
-        p_vendor_ids: idsToDelete,
-      });
-      if (error) throw error;
-      showSuccess(successMessage);
-      refetchAllPayees(); // Re-fetch all payees after deletion
-      fetchTransactions(); // Re-fetch transactions to update any affected entries
-    } catch (error: any) {
-      showError(`Failed to delete: ${error.message}`);
-    } finally {
-      setIsConfirmOpen(false);
-      setAccountToDelete(null);
-      setSelectedRows([]);
-    }
+    deletePayeesMutation.mutate(idsToDelete);
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -156,15 +147,31 @@ const AccountsPage = () => {
   const numSelected = selectedRows.length;
   const rowCount = currentAccounts.length;
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAccounts();
-    setIsRefreshing(false);
-  };
-
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+
+  // Mutation for batch upserting accounts
+  const batchUpsertAccountsMutation = useMutation({
+    mutationFn: async (accountsToUpsert: { name: string; currency: string; starting_balance: number; remarks: string }[]) => {
+      const { error } = await supabase.rpc('batch_upsert_accounts', {
+        p_accounts: accountsToUpsert,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} accounts imported/updated successfully!`);
+      await refetchAllPayees(); // Invalidate all relevant queries
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    onError: (error: any) => {
+      showError(`Import failed: ${error.message}`);
+      setIsImporting(false);
+    },
+  });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -190,7 +197,7 @@ const AccountsPage = () => {
           currency: row["Currency"],
           starting_balance: parseFloat(row["Starting Balance"]) || 0,
           remarks: row["Remarks"],
-        })).filter(acc => acc.name); // Filter out rows without an account name
+        })).filter(acc => acc.name);
 
         if (accountsToUpsert.length === 0) {
           showError("No valid account data found in the CSV file.");
@@ -198,23 +205,7 @@ const AccountsPage = () => {
           return;
         }
 
-        try {
-          const { error } = await supabase.rpc('batch_upsert_accounts', {
-            p_accounts: accountsToUpsert,
-          });
-
-          if (error) throw error;
-
-          showSuccess(`${accountsToUpsert.length} accounts imported/updated successfully!`);
-          await refetchAllPayees();
-        } catch (error: any) {
-          showError(`Import failed: ${error.message}`);
-        } finally {
-          setIsImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
+        batchUpsertAccountsMutation.mutate(accountsToUpsert);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
@@ -249,18 +240,18 @@ const AccountsPage = () => {
 
   return (
     <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isImporting || isRefreshing} message={isImporting ? "Importing accounts..." : "Refreshing accounts..."} />
+      <LoadingOverlay isLoading={isLoadingAccounts || isImporting || deletePayeesMutation.isPending || batchUpsertAccountsMutation.isPending} message={isImporting ? "Importing accounts..." : "Loading accounts..."} />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Accounts</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)} disabled={deletePayeesMutation.isPending}>
+              {deletePayeesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
           )}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button onClick={handleImportClick} variant="outline" disabled={isImporting || batchUpsertAccountsMutation.isPending}>
+            {isImporting || batchUpsertAccountsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
           </Button>
           <Button onClick={handleExportClick} variant="outline">
@@ -273,10 +264,10 @@ const AccountsPage = () => {
           <Button
             variant="outline"
             size="icon"
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
+            onClick={async () => await refetchAccounts()}
+            disabled={isLoadingAccounts}
           >
-            {isRefreshing ? (
+            {isLoadingAccounts ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RotateCcw className="h-4 w-4" />
@@ -325,7 +316,7 @@ const AccountsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isLoadingAccounts ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center">Loading...</TableCell>
                   </TableRow>
@@ -393,12 +384,12 @@ const AccountsPage = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         payee={selectedAccount}
-        onSuccess={refetchAllPayees} // Call refetchAllPayees on success
+        onSuccess={async () => await refetchAllPayees()}
         isAccountOnly={true}
       />
       <ConfirmationDialog
         isOpen={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
+        onOpenChange={setIsConfirmOpen} // Corrected here
         onConfirm={confirmDelete}
         title={`Are you sure?`}
         description="This will permanently delete the selected account(s) and may affect related transactions. This action cannot be undone."

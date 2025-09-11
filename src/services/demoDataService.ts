@@ -1,19 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction, baseCategories } from '@/data/finance-data'; // Use baseCategories
+import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase/utils';
+import { Transaction, baseCategories } from '@/data/finance-data';
 import { availableCurrencies } from '@/contexts/CurrencyContext';
-import { Category } from '@/pages/Categories'; // Import Category type
+import { Category } from '@/pages/Categories';
+import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
 
 interface DemoDataServiceProps {
-  fetchTransactions: () => Promise<void>;
-  refetchAllPayees: () => Promise<void>;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-  setVendors: React.Dispatch<React.SetStateAction<any[]>>;
-  setAccounts: React.Dispatch<React.SetStateAction<any[]>>;
-  setCategories: React.Dispatch<React.SetStateAction<Category[]>>; // Add setCategories
+  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Now react-query's refetch function
+  refetchAllPayees: () => Promise<void>; // Now react-query's invalidateQueries function
+  // setTransactions, setVendors, setAccounts, setCategories are no longer needed
   setDemoDataProgress: React.Dispatch<React.SetStateAction<{ stage: string; progress: number; totalStages: number } | null>>;
-  userId: string | undefined; // Add userId
+  userId: string | undefined;
 }
 
 // Helper function to generate sample transactions for a given month, account, and currency
@@ -22,9 +20,9 @@ const generateTransactions = async (
   count: number,
   existingAccountNames: string[],
   existingVendorNames: string[],
-  existingCategoryNames: string[], // New parameter for categories
+  existingCategoryNames: string[],
   accountCurrencyMap: Map<string, string>,
-  userId: string, // Pass userId here
+  userId: string,
 ): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
   const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
   const now = new Date();
@@ -41,10 +39,10 @@ const generateTransactions = async (
     const currencyCode = accountCurrencyMap.get(accountName) || 'USD';
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
-    let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)]; // Use dynamic categories
+    let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
 
-    let destinationAccountCurrency: string = 'USD'; // Initialize here
+    let destinationAccountCurrency: string = 'USD';
 
     if (isTransfer) {
       let destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
@@ -54,7 +52,7 @@ const generateTransactions = async (
       vendorName = destAccount;
       categoryName = 'Transfer';
       amountValue = Math.abs(amountValue);
-      destinationAccountCurrency = accountCurrencyMap.get(destAccount) || 'USD'; // Define for transfers
+      destinationAccountCurrency = accountCurrencyMap.get(destAccount) || 'USD';
     } else {
       if (Math.random() < 0.6 && categoryName !== 'Salary') {
         amountValue = -amountValue;
@@ -71,7 +69,7 @@ const generateTransactions = async (
       amount: amountValue,
       remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
       category: categoryName,
-      user_id: userId, // Add user_id here
+      user_id: userId,
     };
 
     if (isTransfer) {
@@ -93,7 +91,7 @@ const generateTransactions = async (
         amount: Math.abs(baseTransactionDetails.amount),
         category: 'Transfer',
         remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
-        currency: destinationAccountCurrency, // Now correctly defined
+        currency: destinationAccountCurrency,
       };
       sampleTransactions.push(creditTransaction);
     } else {
@@ -106,20 +104,17 @@ const generateTransactions = async (
   return sampleTransactions;
 };
 
-export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setTransactions, setVendors, setAccounts, setCategories, setDemoDataProgress, userId }: DemoDataServiceProps) => {
+export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setDemoDataProgress, userId }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
     try {
       const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
-      setTransactions([]);
-      setVendors([]);
-      setAccounts([]);
-      setCategories([]); // Clear categories
       showSuccess("All application data cleared successfully!");
-      refetchAllPayees();
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to clear transactions: ${error.message}`);
+      throw error; // Re-throw for react-query
     }
   };
 
@@ -127,10 +122,10 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
     if (!userId) {
       showError("User not logged in. Cannot generate demo data.");
       setDemoDataProgress(null);
-      return;
+      throw new Error("User not logged in.");
     }
 
-    const totalStages = 6; // Clear, Accounts, Vendors, Categories, Currencies, Transactions
+    const totalStages = 6;
     let currentStage = 0;
 
     try {
@@ -159,7 +154,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       // Step 3: Pre-create all categories
       setDemoDataProgress({ stage: "Creating demo categories...", progress: ++currentStage, totalStages });
       const createdCategoryNames: string[] = [];
-      for (const name of baseCategories) { // Use baseCategories from finance-data
+      for (const name of baseCategories) {
         const id = await ensureCategoryExists(name, userId);
         if (id) createdCategoryNames.push(name);
       }
@@ -176,7 +171,7 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
         console.error("Error fetching account currencies:", currencyError.message);
         showError("Failed to fetch account currencies for demo data generation.");
         setDemoDataProgress(null);
-        return;
+        throw currencyError;
       }
 
       accountCurrencyData.forEach(item => {
@@ -201,15 +196,13 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
         showError("No demo data was generated to insert.");
       }
 
-      fetchTransactions();
-      refetchAllPayees();
+      await fetchTransactions(); // Refetch transactions via react-query
+      await refetchAllPayees(); // Invalidate queries
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
+      throw error;
     } finally {
-      // Ensure progress is set to 100% before clearing
       setDemoDataProgress(prev => prev ? { ...prev, progress: prev.totalStages } : null);
-
-      // Add a small delay to ensure the progress bar reaches 100% before clearing
       setTimeout(() => {
         setDemoDataProgress(null);
       }, 500);
