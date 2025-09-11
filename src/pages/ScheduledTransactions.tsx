@@ -846,7 +846,7 @@ const ScheduledTransactionsPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(category => ( // Include 'Transfer' in options
+                          {categories.map(category => (
                             <SelectItem key={category.id} value={category.name}>
                               {category.name}
                             </SelectItem>

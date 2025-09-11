@@ -78,9 +78,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       if (currencyError) throw currencyError;
 
       const currencyMap = new Map<string, string>();
-      const isAccountMap = new Map<string, boolean>();
       vendorAccountData?.forEach(item => {
-        isAccountMap.set(item.name, item.is_account);
         if (item.is_account && item.accounts && item.accounts.length > 0) {
           currencyMap.set(item.name, item.accounts[0].currency);
         }
@@ -127,7 +125,8 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                     is_scheduled_origin: true,
                 };
 
-                if (st.category === 'Transfer' && isAccountMap.get(st.vendor)) {
+                // If category is 'Transfer', create two transactions
+                if (st.category === 'Transfer') {
                     const transfer_id = `transfer_scheduled_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
                     const newAmount = Math.abs(st.amount);
 
@@ -159,6 +158,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                         currency: destinationAccountCurrency,
                     });
                 } else {
+                    // For non-transfer categories, add a single transaction
                     transactionsToAdd.push(baseTransactionFields);
                 }
                 newLastProcessedDateCandidate = nextDateToProcess;
