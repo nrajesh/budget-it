@@ -47,19 +47,9 @@ const formSchema = z.object({
   amount: z.coerce.number(),
   remarks: z.string().optional(),
   category: z.string().min(1, "Category is required"),
-  recurrenceFrequency: z.string().optional(),
-  recurrenceEndDate: z.string().optional(),
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
-}).refine(data => {
-  if (data.recurrenceFrequency && data.recurrenceFrequency !== 'None') {
-    return data.recurrenceEndDate !== undefined && data.recurrenceEndDate !== '';
-  }
-  return true;
-}, {
-  message: "End date is required when recurrence frequency is set",
-  path: ["recurrenceEndDate"],
 });
 
 interface EditTransactionDialogProps {
@@ -102,8 +92,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     defaultValues: {
       ...transaction,
       date: formatDateToYYYYMMDD(transaction.date),
-      recurrenceFrequency: transaction.recurrence_frequency || "None",
-      recurrenceEndDate: transaction.recurrence_end_date ? formatDateToYYYYMMDD(transaction.recurrence_end_date) : "",
     },
   });
 
@@ -112,8 +100,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       form.reset({
         ...transaction,
         date: formatDateToYYYYMMDD(transaction.date),
-        recurrenceFrequency: transaction.recurrence_frequency || "None",
-        recurrenceEndDate: transaction.recurrence_end_date ? formatDateToYYYYMMDD(transaction.recurrence_end_date) : "",
       });
       setIsSaving(false);
     }
@@ -122,7 +108,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const amountValue = form.watch("amount");
-  const recurrenceFrequency = form.watch("recurrenceFrequency");
   const isTransfer = allAccounts.includes(vendorValue);
 
   React.useEffect(() => {
@@ -149,6 +134,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     fetchDestinationCurrency();
   }, [vendorValue, isTransfer, accountCurrencyMap]);
 
+
   React.useEffect(() => {
     if (isTransfer) {
       form.setValue("category", "Transfer");
@@ -165,8 +151,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         ...values,
         date: new Date(values.date).toISOString(),
         currency: accountCurrencyMap.get(values.account) || transaction.currency,
-        recurrence_frequency: values.recurrenceFrequency === "None" ? null : values.recurrenceFrequency,
-        recurrence_end_date: values.recurrenceEndDate ? new Date(values.recurrenceEndDate).toISOString() : null,
       });
       onOpenChange(false);
     } finally {
@@ -314,56 +298,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                     </FormItem>
                   )}
                 />
-
-                {/* Recurrence Fields */}
-                <FormField
-                  control={form.control}
-                  name="recurrenceFrequency"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recurrence Frequency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select recurrence frequency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="None">None</SelectItem>
-                          <SelectItem value="Daily">Daily</SelectItem>
-                          <SelectItem value="Weekly">Weekly</SelectItem>
-                          <SelectItem value="Monthly">Monthly</SelectItem>
-                          <SelectItem value="Quarterly">Quarterly</SelectItem>
-                          <SelectItem value="Yearly">Yearly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Set how often this transaction should repeat.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {recurrenceFrequency && recurrenceFrequency !== 'None' && (
-                  <FormField
-                    control={form.control}
-                    name="recurrenceEndDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Recurrence End Date</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          The date after which this transaction will no longer recur.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 <DialogFooter className="sm:justify-between pt-4">
                   <Button
                     type="button"

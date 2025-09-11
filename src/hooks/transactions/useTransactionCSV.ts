@@ -38,7 +38,7 @@ export const useTransactionCSV = () => {
       skipEmptyLines: true,
       delimiter: ';',
       complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency", "Frequency", "End Date"];
+        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency"];
         const actualHeaders = results.meta.fields || [];
         const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
 
@@ -86,18 +86,6 @@ export const useTransactionCSV = () => {
               console.warn(`Could not determine currency for account: ${row.Account}. Skipping row.`);
               return null;
             }
-
-            // Parse frequency and end date
-            let recurrenceId: string | null = null;
-            let recurrenceFrequency: string | null = null;
-            let recurrenceEndDate: string | null = null;
-
-            if (row.Frequency && row.Frequency !== 'None') {
-              recurrenceId = `recurrence_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-              recurrenceFrequency = row.Frequency;
-              recurrenceEndDate = row["End Date"] ? parseDateFromDDMMYYYY(row["End Date"]).toISOString() : null;
-            }
-
             return {
               date: parseDateFromDDMMYYYY(row.Date).toISOString(),
               account: row.Account,
@@ -108,9 +96,6 @@ export const useTransactionCSV = () => {
               currency: accountCurrency,
               transfer_id: row.transfer_id || null,
               is_scheduled_origin: false,
-              recurrence_id: recurrenceId,
-              recurrence_frequency: recurrenceFrequency,
-              recurrence_end_date: recurrenceEndDate,
             };
           }).filter((t): t is NonNullable<typeof t> => t !== null);
 
@@ -158,8 +143,6 @@ export const useTransactionCSV = () => {
       "Currency": t.currency,
       "transfer_id": t.transfer_id || null,
       "is_scheduled_origin": t.is_scheduled_origin || false,
-      "Frequency": t.recurrence_frequency || "None",
-      "End Date": t.recurrence_end_date ? formatDateToDDMMYYYY(t.recurrence_end_date) : "",
     }));
 
     const csv = Papa.unparse(dataToExport, {

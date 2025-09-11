@@ -20,12 +20,12 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       throw new Error("User not logged in.");
     }
-    const { receivingAmount, recurrenceFrequency, recurrenceEndDate, ...restOfTransaction } = transaction;
+    const { receivingAmount, ...restOfTransaction } = transaction;
     const newDateISO = new Date(restOfTransaction.date).toISOString();
     const baseRemarks = restOfTransaction.remarks || "";
 
@@ -43,21 +43,12 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       // Ensure category exists
       await ensureCategoryExists(restOfTransaction.category, userId);
 
-      // Generate recurrence ID if frequency is set
-      let recurrenceId: string | null = null;
-      if (recurrenceFrequency && recurrenceFrequency !== 'None') {
-        recurrenceId = `recurrence_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      }
-
       const commonTransactionFields = {
         ...restOfTransaction,
         currency: accountCurrency,
         date: newDateISO,
         user_id: userId,
         is_scheduled_origin: false,
-        recurrence_id: recurrenceId,
-        recurrence_frequency: recurrenceFrequency && recurrenceFrequency !== 'None' ? recurrenceFrequency : null,
-        recurrence_end_date: recurrenceEndDate ? new Date(recurrenceEndDate).toISOString() : null,
       };
 
       if (isTransfer) {
@@ -122,18 +113,6 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       // Ensure category exists before updating
       await ensureCategoryExists(updatedTransaction.category, userId);
 
-      // Handle recurrence fields
-      let recurrenceId = updatedTransaction.recurrence_id;
-      let recurrenceFrequency = updatedTransaction.recurrence_frequency;
-      let recurrenceEndDate = updatedTransaction.recurrence_end_date;
-
-      // If recurrence frequency is set to "None", clear all recurrence fields
-      if (recurrenceFrequency === "None") {
-        recurrenceId = null;
-        recurrenceFrequency = null;
-        recurrenceEndDate = null;
-      }
-
       const { error } = await supabase.from('transactions').update({
         date: newDateISO,
         account: updatedTransaction.account,
@@ -144,9 +123,6 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         currency: accountCurrency, // Keep original account currency
         transfer_id: updatedTransaction.transfer_id || null,
         is_scheduled_origin: isScheduledOrigin, // Preserve the flag
-        recurrence_id: recurrenceId,
-        recurrence_frequency: recurrenceFrequency,
-        recurrence_end_date: recurrenceEndDate,
       }).eq('id', updatedTransaction.id);
 
       if (error) {

@@ -29,7 +29,7 @@ interface TransactionsContextType {
   accounts: Payee[];
   categories: Category[];
   accountCurrencyMap: Map<string, string>;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
@@ -67,7 +67,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from('transactions')
-        .select('*, is_scheduled_origin, recurrence_id, recurrence_frequency, recurrence_end_date')
+        .select('*, is_scheduled_origin')
         .eq('user_id', user.id)
         .order('date', { ascending: false });
       if (error) throw error;
