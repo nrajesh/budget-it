@@ -81,16 +81,9 @@ const ScheduledTransactionsPage = () => {
 
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
-  // Memoize allPayees to prevent re-renders and ensure stable reference for Zod refinement
-  const allPayeesMemo = React.useRef(
-    [
-      ...accounts.map(p => ({ value: p.name, label: p.name, isAccount: true })),
-      ...vendors.map(p => ({ value: p.name, label: p.name, isAccount: false }))
-    ].sort((a, b) => a.label.localeCompare(b.label))
-  );
-
-  React.useEffect(() => {
-    allPayeesMemo.current = [
+  // Refactor allPayees from useRef to useMemo
+  const allPayees = React.useMemo(() => {
+    return [
       ...accounts.map(p => ({ value: p.name, label: p.name, isAccount: true })),
       ...vendors.map(p => ({ value: p.name, label: p.name, isAccount: false }))
     ].sort((a, b) => a.label.localeCompare(b.label));
@@ -110,17 +103,18 @@ const ScheduledTransactionsPage = () => {
     const isVendorAnAccount = (payees: { value: string; label: string; isAccount: boolean }[]) => {
       return payees.find(p => p.value === data.vendor)?.isAccount;
     };
-    if (allPayeesMemo.current && isVendorAnAccount(allPayeesMemo.current) && data.category !== 'Transfer') {
+    // Use the memoized allPayees directly here
+    if (allPayees && isVendorAnAccount(allPayees) && data.category !== 'Transfer') {
       return false; // If vendor is an account, category must be 'Transfer'
     }
-    if (allPayeesMemo.current && !isVendorAnAccount(allPayeesMemo.current) && data.category === 'Transfer') {
+    if (allPayees && !isVendorAnAccount(allPayees) && data.category === 'Transfer') {
       return false; // If vendor is not an account, category cannot be 'Transfer'
     }
     return true;
   }, {
     message: "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
     path: ["category"],
-  }), [allPayeesMemo.current]); // Re-create schema if allPayeesMemo.current changes
+  }), [allPayees]); // Dependency on allPayees
 
   type ScheduledTransactionFormData = z.infer<typeof formSchema>; // Moved here
 
@@ -187,13 +181,13 @@ const ScheduledTransactionsPage = () => {
   // Watch vendor field to dynamically set category for transfers
   const watchedVendor = form.watch("vendor");
   React.useEffect(() => {
-    const selectedPayee = allPayeesMemo.current.find(p => p.value === watchedVendor);
+    const selectedPayee = allPayees.find(p => p.value === watchedVendor); // Use allPayees here
     if (selectedPayee?.isAccount) {
       form.setValue("category", "Transfer", { shouldValidate: true });
     } else if (form.getValues("category") === "Transfer") {
       form.setValue("category", "", { shouldValidate: true });
     }
-  }, [watchedVendor, form]);
+  }, [watchedVendor, form, allPayees]); // Add allPayees to dependencies
 
   const filteredTransactions = React.useMemo(() => {
     return scheduledTransactions.filter((t) =>
@@ -414,7 +408,7 @@ const ScheduledTransactionsPage = () => {
     mutationFn: async (data: ScheduledTransactionFormData) => {
       if (!user) throw new Error("User not logged in.");
 
-      const isVendorAnAccount = allPayeesMemo.current.find(p => p.value === data.vendor)?.isAccount || false;
+      const isVendorAnAccount = allPayees.find(p => p.value === data.vendor)?.isAccount || false; // Use allPayees here
       await ensurePayeeExists(data.account, true);
       await ensurePayeeExists(data.vendor, isVendorAnAccount);
       if (data.category !== 'Transfer') {
@@ -768,7 +762,7 @@ const ScheduledTransactionsPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {allPayeesMemo.current.map(payee => (
+                          {allPayees.map(payee => (
                             <SelectItem key={payee.value} value={payee.value}>
                               {payee.label}
                             </SelectItem>
@@ -788,7 +782,7 @@ const ScheduledTransactionsPage = () => {
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={allPayeesMemo.current.find(p => p.value === form.getValues("vendor"))?.isAccount || isLoadingCategories}
+                        disabled={allPayees.find(p => p.value === form.getValues("vendor"))?.isAccount || isLoadingCategories}
                       >
                         <FormControl>
                           <SelectTrigger>
