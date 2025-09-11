@@ -1,10 +1,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
 import { Transaction } from '@/data/finance-data';
-import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
+import { QueryObserverResult } from '@tanstack/react-query';
+import { getAccountCurrency } from '@/integrations/supabase/utils'; // Import getAccountCurrency
+import { useCurrency } from '@/contexts/CurrencyContext'; // Import useCurrency to get convertBetweenCurrencies
 
 interface ScheduledTransactionsServiceProps {
-  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
+  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   userId: string | undefined;
 }
 
@@ -20,10 +22,11 @@ export type ScheduledTransaction = {
   user_id: string;
   created_at: string;
   last_processed_date?: string;
-  recurrence_end_date?: string; // Added recurrence_end_date
+  recurrence_end_date?: string;
 };
 
 export const createScheduledTransactionsService = ({ fetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
+  const { convertBetweenCurrencies } = useCurrency(); // Use useCurrency hook here
 
   // Function to calculate the next occurrence date based on frequency
   const calculateNextOccurrence = (baseDateISO: string, frequency: string): string => {
@@ -67,18 +70,19 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       }
 
       // Get currencies for all relevant accounts in one go
-      const accountNames = [...new Set(scheduledTransactions.map(st => st.account))];
-      const { data: accountData, error: currencyError } = await supabase
+      const accountNames = [...new Set(scheduledTransactions.flatMap(st => [st.account, st.vendor]))]; // Include vendors as they might be destination accounts
+      const { data: vendorAccountData, error: currencyError } = await supabase
         .from('vendors')
-        .select('name, accounts(currency)')
-        .in('name', accountNames)
-        .eq('is_account', true);
+        .select('name, is_account, accounts(currency)')
+        .in('name', accountNames);
       if (currencyError) throw currencyError;
 
       const currencyMap = new Map<string, string>();
-      accountData?.forEach(acc => {
-        if (acc.accounts && acc.accounts.length > 0) {
-          currencyMap.set(acc.name, acc.accounts[0].currency);
+      const isAccountMap = new Map<string, boolean>();
+      vendorAccountData?.forEach(item => {
+        isAccountMap.set(item.name, item.is_account);
+        if (item.is_account && item.accounts && item.accounts.length > 0) {
+          currencyMap.set(item.name, item.accounts[0].currency);
         }
       });
 
@@ -111,7 +115,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
 
             // Only add if this occurrence hasn't been processed yet
             if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
-                transactionsToAdd.push({
+                const baseTransactionFields = {
                     date: nextDateToProcess.toISOString(),
                     account: st.account,
                     vendor: st.vendor,
@@ -121,7 +125,42 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                     currency: currencyMap.get(st.account) || 'USD',
                     user_id: userId,
                     is_scheduled_origin: true,
-                });
+                };
+
+                if (st.category === 'Transfer' && isAccountMap.get(st.vendor)) {
+                    const transfer_id = `transfer_scheduled_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                    const newAmount = Math.abs(st.amount);
+
+                    const sourceAccountCurrency = currencyMap.get(st.account) || 'USD';
+                    const destinationAccountCurrency = currencyMap.get(st.vendor) || 'USD';
+
+                    const convertedReceivingAmount = convertBetweenCurrencies(
+                      newAmount,
+                      sourceAccountCurrency,
+                      destinationAccountCurrency
+                    );
+
+                    // Debit transaction
+                    transactionsToAdd.push({
+                        ...baseTransactionFields,
+                        transfer_id: transfer_id,
+                        amount: -newAmount,
+                        remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (To ${st.vendor})` : `Transfer to ${st.vendor}`,
+                    });
+
+                    // Credit transaction
+                    transactionsToAdd.push({
+                        ...baseTransactionFields,
+                        transfer_id: transfer_id,
+                        account: st.vendor, // Destination account
+                        vendor: st.account, // Source account
+                        amount: convertedReceivingAmount,
+                        remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (From ${st.account})` : `Transfer from ${st.account}`,
+                        currency: destinationAccountCurrency,
+                    });
+                } else {
+                    transactionsToAdd.push(baseTransactionFields);
+                }
                 newLastProcessedDateCandidate = nextDateToProcess;
             }
             nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));

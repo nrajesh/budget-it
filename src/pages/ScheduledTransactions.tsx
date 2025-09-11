@@ -200,14 +200,17 @@ const ScheduledTransactionsPage = () => {
 
   // Watch vendor field to dynamically set category for transfers
   const watchedVendor = form.watch("vendor");
+  const isVendorAnAccount = React.useMemo(() => {
+    return allPayees.find(p => p.value === watchedVendor)?.isAccount || false;
+  }, [watchedVendor, allPayees]);
+
   React.useEffect(() => {
-    const selectedPayee = allPayees.find(p => p.value === watchedVendor); // Use allPayees here
-    if (selectedPayee?.isAccount) {
+    if (isVendorAnAccount) {
       form.setValue("category", "Transfer", { shouldValidate: true });
     } else if (form.getValues("category") === "Transfer") {
       form.setValue("category", "", { shouldValidate: true });
     }
-  }, [watchedVendor, form, allPayees]); // Add allPayees to dependencies
+  }, [isVendorAnAccount, form]);
 
   const filteredTransactions = React.useMemo(() => {
     return scheduledTransactions.filter((t) =>
@@ -341,7 +344,11 @@ const ScheduledTransactionsPage = () => {
           await Promise.all(uniqueAccounts.map(name => ensurePayeeExists(name, true)));
 
           const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor))];
-          await Promise.all(uniqueVendors.map(name => ensurePayeeExists(name, false)));
+          await Promise.all(uniqueVendors.map(name => {
+            const row = parsedData.find(r => r.Vendor === name);
+            const isTransfer = row?.Category === 'Transfer'; // Check if it's a transfer from CSV
+            return ensurePayeeExists(name, isTransfer);
+          }));
 
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category))];
           await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
@@ -831,7 +838,7 @@ const ScheduledTransactionsPage = () => {
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={allPayees.find(p => p.value === form.getValues("vendor"))?.isAccount || isLoadingCategories}
+                        disabled={isVendorAnAccount || isLoadingCategories} // Disable if vendor is an account
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -839,7 +846,7 @@ const ScheduledTransactionsPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.filter(c => c.name !== 'Transfer').map(category => (
+                          {categories.map(category => ( // Include 'Transfer' in options
                             <SelectItem key={category.id} value={category.name}>
                               {category.name}
                             </SelectItem>
