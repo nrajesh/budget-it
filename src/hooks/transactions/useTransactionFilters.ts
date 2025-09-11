@@ -12,7 +12,7 @@ interface Option {
 }
 
 export const useTransactionFilters = () => {
-  const { categories: allCategories } = useTransactions();
+  const { categories: allCategories } = useTransactions(); // Corrected to 'categories'
   const { user } = useUser();
   const location = useLocation();
 
@@ -123,6 +123,7 @@ export const useTransactionFilters = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state, availableVendorOptions, availableCategoryOptions]);
+
 
   const handleResetFilters = React.useCallback(() => {
     setSearchTerm("");

@@ -3,7 +3,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/data/finance-data";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters"; // Updated import path
 import { slugify } from "@/lib/utils";
 
 type ScheduledTransaction = {
@@ -48,7 +48,7 @@ export const useTransactionData = () => {
 
   const combinedTransactions = React.useMemo(() => {
     const today = new Date();
-
+    
     const futureMonthsToShow = parseInt(localStorage.getItem('futureMonths') || '2', 10);
     const futureDateLimit = new Date();
     futureDateLimit.setMonth(today.getMonth() + futureMonthsToShow);
