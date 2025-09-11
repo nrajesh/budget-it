@@ -127,6 +127,12 @@ const ScheduledTransactionsPage = () => {
   }, []);
   const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(todayDate), [todayDate]);
 
+  const tomorrowDateString = React.useMemo(() => {
+    const tomorrow = new Date(todayDate);
+    tomorrow.setDate(todayDate.getDate() + 1);
+    return formatDateToYYYYMMDD(tomorrow);
+  }, [todayDate]);
+
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
     fetchTransactions: refetchMainTransactions,
@@ -142,7 +148,7 @@ const ScheduledTransactionsPage = () => {
   const form = useForm<ScheduledTransactionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: todayDateString,
+      date: tomorrowDateString, // Default to tomorrow for new transactions
       account: '',
       vendor: '',
       category: '',
@@ -166,7 +172,7 @@ const ScheduledTransactionsPage = () => {
         const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
 
         form.reset({
-          date: transactionDate < todayDate ? todayDateString : formatDateToYYYYMMDD(editingTransaction.date), // Set to today if original date is in the past
+          date: transactionDate < todayDate ? tomorrowDateString : formatDateToYYYYMMDD(editingTransaction.date), // Set to tomorrow if original date is in the past
           account: editingTransaction.account,
           vendor: editingTransaction.vendor,
           category: editingTransaction.category,
@@ -178,7 +184,7 @@ const ScheduledTransactionsPage = () => {
         });
       } else {
         form.reset({
-          date: todayDateString,
+          date: tomorrowDateString, // Default to tomorrow for new transactions
           account: '',
           vendor: '',
           category: '',
@@ -190,7 +196,7 @@ const ScheduledTransactionsPage = () => {
         });
       }
     }
-  }, [isFormOpen, editingTransaction, form, todayDateString, todayDate]);
+  }, [isFormOpen, editingTransaction, form, todayDateString, todayDate, tomorrowDateString]);
 
   // Watch vendor field to dynamically set category for transfers
   const watchedVendor = form.watch("vendor");
@@ -734,7 +740,7 @@ const ScheduledTransactionsPage = () => {
                       <FormControl>
                         <Input
                           type="date"
-                          min={todayDateString}
+                          min={tomorrowDateString} // Set min to tomorrow's date
                           {...field}
                         />
                       </FormControl>
