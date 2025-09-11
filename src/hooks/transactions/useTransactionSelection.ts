@@ -45,10 +45,9 @@ export const useTransactionSelection = (currentTransactions: Transaction[], allT
 
   const numSelected = selectedTransactionIds.length;
 
-  // Reset selection when currentTransactions change (e.g., due to pagination or filters)
-  React.useEffect(() => {
+  const clearSelection = React.useCallback(() => {
     setSelectedTransactionIds([]);
-  }, [currentTransactions]);
+  }, []);
 
   return {
     selectedTransactionIds,
@@ -60,5 +59,6 @@ export const useTransactionSelection = (currentTransactions: Transaction[], allT
     isAllSelectedOnPage,
     handleBulkDelete,
     numSelected,
+    clearSelection,
   };
 };

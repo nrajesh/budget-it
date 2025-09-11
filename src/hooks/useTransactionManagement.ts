@@ -27,7 +27,7 @@ export const useTransactionManagement = () => {
     availableAccountOptions,
     availableCategoryOptions,
     availableVendorOptions,
-    handleResetFilters,
+    handleResetFilters: resetFilterStates, // Rename to avoid conflict
   } = useTransactionFilters();
 
   // 2. Data (combines and filters transactions)
@@ -55,6 +55,7 @@ export const useTransactionManagement = () => {
     isAllSelectedOnPage,
     handleBulkDelete,
     numSelected,
+    clearSelection, // Import clearSelection
   } = useTransactionSelection(currentTransactions, allTransactions);
 
   // 5. CSV Operations
@@ -68,6 +69,12 @@ export const useTransactionManagement = () => {
 
   // 6. UI States & Actions
   const { isRefreshing, handleRefresh } = useTransactionUI();
+
+  // Combined reset handler
+  const handleResetFilters = React.useCallback(() => {
+    resetFilterStates(); // Call the filter-specific reset
+    clearSelection();    // Clear transaction selections
+  }, [resetFilterStates, clearSelection]);
 
   return {
     // States

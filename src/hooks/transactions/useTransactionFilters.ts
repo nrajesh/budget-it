@@ -27,9 +27,6 @@ export const useTransactionFilters = () => {
   const [availableAccountOptions, setAvailableAccountOptions] = React.useState<Option[]>([]);
   const [availableVendorOptions, setAvailableVendorOptions] = React.useState<Option[]>([]);
 
-  // Ref to track if initial defaults have been set for each filter type
-  const initialDefaultsSetRef = React.useRef({ accounts: false, categories: false, vendors: false });
-
   // Fetch available accounts dynamically
   const fetchAvailableAccounts = React.useCallback(async () => {
     if (!user?.id) {
@@ -88,33 +85,29 @@ export const useTransactionFilters = () => {
     }));
   }, [allCategories]);
 
-  // Initialize selected filters to "all" by default, only once per session/login
+  // Initialize selected filters to "all" by default, only if currently empty
   React.useEffect(() => {
-    if (availableAccountOptions.length > 0 && !initialDefaultsSetRef.current.accounts) {
+    if (availableAccountOptions.length > 0 && selectedAccounts.length === 0) {
       setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-      initialDefaultsSetRef.current.accounts = true;
     }
-  }, [availableAccountOptions]);
+  }, [availableAccountOptions, selectedAccounts]);
 
   React.useEffect(() => {
-    if (availableCategoryOptions.length > 0 && !initialDefaultsSetRef.current.categories) {
+    if (availableCategoryOptions.length > 0 && selectedCategories.length === 0) {
       setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-      initialDefaultsSetRef.current.categories = true;
     }
-  }, [availableCategoryOptions]);
+  }, [availableCategoryOptions, selectedCategories]);
 
   React.useEffect(() => {
-    if (availableVendorOptions.length > 0 && !initialDefaultsSetRef.current.vendors) {
+    if (availableVendorOptions.length > 0 && selectedVendors.length === 0) {
       setSelectedVendors(availableVendorOptions.map(v => v.value));
-      initialDefaultsSetRef.current.vendors = true;
     }
-  }, [availableVendorOptions]);
+  }, [availableVendorOptions, selectedVendors]);
 
-  // Reset initialDefaultsSetRef and clear selections on user logout/login
+  // Clear selections on user logout
   React.useEffect(() => {
     if (!user?.id) {
-      initialDefaultsSetRef.current = { accounts: false, categories: false, vendors: false };
-      setSelectedAccounts([]); // Clear selections on logout
+      setSelectedAccounts([]);
       setSelectedCategories([]);
       setSelectedVendors([]);
     }
