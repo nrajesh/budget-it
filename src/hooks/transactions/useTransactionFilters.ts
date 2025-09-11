@@ -42,11 +42,18 @@ export const useTransactionFilters = () => {
       console.error("Error fetching account names:", error.message);
       setAvailableAccountOptions([]);
     } else {
-      const options = data.map(item => ({
+      const newOptions = data.map(item => ({
         value: slugify(item.name),
         label: item.name,
       }));
-      setAvailableAccountOptions(options);
+      // Only update state if options have actually changed to prevent unnecessary re-renders
+      setAvailableAccountOptions(prevOptions => {
+        if (prevOptions.length === newOptions.length &&
+            prevOptions.every((opt, i) => opt.value === newOptions[i].value && opt.label === newOptions[i].label)) {
+          return prevOptions; // No change, return existing reference
+        }
+        return newOptions;
+      });
     }
   }, [user?.id]);
 
@@ -65,11 +72,18 @@ export const useTransactionFilters = () => {
       console.error("Error fetching vendor names:", error.message);
       setAvailableVendorOptions([]);
     } else {
-      const options = data.map(item => ({
+      const newOptions = data.map(item => ({
         value: slugify(item.name),
         label: item.name,
       }));
-      setAvailableVendorOptions(options);
+      // Only update state if options have actually changed to prevent unnecessary re-renders
+      setAvailableVendorOptions(prevOptions => {
+        if (prevOptions.length === newOptions.length &&
+            prevOptions.every((opt, i) => opt.value === newOptions[i].value && opt.label === newOptions[i].label)) {
+          return prevOptions; // No change, return existing reference
+        }
+        return newOptions;
+      });
     }
   }, [user?.id]);
 
