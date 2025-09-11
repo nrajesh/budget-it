@@ -102,7 +102,7 @@ export const useTransactionData = () => {
   }, [transactions, scheduledTransactions, accountCurrencyMap]);
 
   const filteredTransactions = React.useMemo(() => {
-    console.log("--- Filtering Transactions ---");
+    console.log("--- Filtering Transactions (useMemo re-run) ---");
     console.log("Initial Combined Transactions Count:", combinedTransactions.length);
     console.log("Search Term:", searchTerm);
     console.log("Selected Accounts:", selectedAccounts);
@@ -167,9 +167,9 @@ export const useTransactionData = () => {
     selectedCategories,
     selectedVendors,
     dateRange,
-    availableAccountOptions.length,
-    availableCategoryOptions.length,
-    availableVendorOptions.length,
+    availableAccountOptions.length, // Dependency for re-running if options change
+    availableCategoryOptions.length, // Dependency for re-running if options change
+    availableVendorOptions.length, // Dependency for re-running if options change
   ]);
 
   return {

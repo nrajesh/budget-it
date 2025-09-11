@@ -99,25 +99,6 @@ export const useTransactionFilters = () => {
     }));
   }, [allCategories]);
 
-  // Initialize selected filters to "all" by default, only if currently empty
-  React.useEffect(() => {
-    if (availableAccountOptions.length > 0 && selectedAccounts.length === 0) {
-      setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
-    }
-  }, [availableAccountOptions, selectedAccounts]);
-
-  React.useEffect(() => {
-    if (availableCategoryOptions.length > 0 && selectedCategories.length === 0) {
-      setSelectedCategories(availableCategoryOptions.map(cat => cat.value));
-    }
-  }, [availableCategoryOptions, selectedCategories]);
-
-  React.useEffect(() => {
-    if (availableVendorOptions.length > 0 && selectedVendors.length === 0) {
-      setSelectedVendors(availableVendorOptions.map(v => v.value));
-    }
-  }, [availableVendorOptions, selectedVendors]);
-
   // Clear selections on user logout
   React.useEffect(() => {
     if (!user?.id) {
@@ -149,6 +130,7 @@ export const useTransactionFilters = () => {
 
 
   const handleResetFilters = React.useCallback(() => {
+    console.log("Resetting filters...");
     setSearchTerm("");
     // Re-select all available options
     setSelectedAccounts(availableAccountOptions.map(acc => acc.value));
@@ -157,6 +139,28 @@ export const useTransactionFilters = () => {
     setDateRange(undefined);
     // Note: Clearing selectedTransactionIds will be handled in useTransactionManagement's handleResetFilters
   }, [availableAccountOptions, availableCategoryOptions, availableVendorOptions]);
+
+  // Add console logs to track state changes
+  React.useEffect(() => {
+    console.log("Filter State - Search Term:", searchTerm);
+  }, [searchTerm]);
+
+  React.useEffect(() => {
+    console.log("Filter State - Selected Accounts:", selectedAccounts);
+  }, [selectedAccounts]);
+
+  React.useEffect(() => {
+    console.log("Filter State - Selected Categories:", selectedCategories);
+  }, [selectedCategories]);
+
+  React.useEffect(() => {
+    console.log("Filter State - Selected Vendors:", selectedVendors);
+  }, [selectedVendors]);
+
+  React.useEffect(() => {
+    console.log("Filter State - Date Range:", dateRange);
+  }, [dateRange]);
+
 
   return {
     searchTerm,

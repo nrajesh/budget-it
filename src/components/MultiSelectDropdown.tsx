@@ -42,7 +42,9 @@ export function MultiSelectDropdown({
 
   const allOption: Option = { value: 'all', label: 'All' };
   const allActualValues = React.useMemo(() => options.map(o => o.value), [options]);
-  const isAllSelected = selectedValues.length === allActualValues.length && options.length > 0;
+  
+  // isAllSelected should be true if all actual options are selected, and there's at least one option
+  const isAllSelected = options.length > 0 && selectedValues.length === allActualValues.length;
 
   const handleSelect = (value: string) => {
     if (value === allOption.value) {
@@ -65,6 +67,8 @@ export function MultiSelectDropdown({
         <Button variant="outline" className="w-full sm:w-[200px] justify-between">
           {isAllSelected && options.length > 0 ? (
             <span>{allOption.label} ({options.length})</span>
+          ) : selectedValues.length > 0 ? (
+            <span>{selectedValues.length} selected</span>
           ) : (
             <span>{placeholder}</span>
           )}
@@ -77,9 +81,10 @@ export function MultiSelectDropdown({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {options.length > 0 && ( // Only show 'All' if there are actual options
+              {options.length > 0 && ( // Removed outer parentheses here
                 <CommandItem
                   key={allOption.value}
+                  value={allOption.value} // Added value prop here
                   onSelect={() => handleSelect(allOption.value)}
                 >
                   <Check
@@ -94,6 +99,7 @@ export function MultiSelectDropdown({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
+                  value={option.value} // Added value prop here
                   onSelect={() => handleSelect(option.value)}
                 >
                   <Check
