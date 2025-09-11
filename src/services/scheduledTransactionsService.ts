@@ -151,14 +151,16 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                       destinationAccountCurrency
                     );
 
-                    transactionsToAdd.push({
+                    const debitTransaction = {
                         ...baseTransactionFields,
                         transfer_id: transfer_id,
                         amount: -newAmount,
                         remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (To ${st.vendor})` : `Transfer to ${st.vendor}`,
-                    });
+                    };
+                    transactionsToAdd.push(debitTransaction);
+                    console.log("    Pushed debit transaction:", JSON.stringify(debitTransaction));
 
-                    transactionsToAdd.push({
+                    const creditTransaction = {
                         ...baseTransactionFields,
                         transfer_id: transfer_id,
                         account: st.vendor,
@@ -166,11 +168,13 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
                         amount: convertedReceivingAmount,
                         remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (From ${st.account})` : `Transfer from ${st.account}`,
                         currency: destinationAccountCurrency,
-                    });
-                    console.log("    Added two transfer transactions.");
+                    };
+                    transactionsToAdd.push(creditTransaction);
+                    console.log("    Pushed credit transaction:", JSON.stringify(creditTransaction));
+                    console.log("    Current transactionsToAdd length:", transactionsToAdd.length);
                 } else {
                     transactionsToAdd.push(baseTransactionFields);
-                    console.log("    Added single transaction.");
+                    console.log("    Added single transaction:", JSON.stringify(baseTransactionFields));
                 }
                 newLastProcessedDateCandidate = nextDateToProcess;
             } else {
@@ -196,6 +200,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       if (transactionsToAdd.length > 0) {
         console.log("\n--- Inserting Generated Transactions ---");
         console.log("Total transactions to insert:", transactionsToAdd.length);
+        console.log("Transactions to insert:", JSON.stringify(transactionsToAdd, null, 2)); // Log the full array
         const { error: insertError } = await supabase.from('transactions').insert(transactionsToAdd);
         if (insertError) {
           console.error("Failed to insert scheduled transactions:", insertError.message);
