@@ -148,7 +148,7 @@ const ScheduledTransactionsPage = () => {
   const form = useForm<ScheduledTransactionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: tomorrowDateString, // Default to tomorrow for new transactions
+      date: todayDateString, // Default to today for new transactions
       account: '',
       vendor: '',
       category: '',
@@ -172,7 +172,7 @@ const ScheduledTransactionsPage = () => {
         const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
 
         form.reset({
-          date: transactionDate < todayDate ? tomorrowDateString : formatDateToYYYYMMDD(editingTransaction.date), // Set to tomorrow if original date is in the past
+          date: formatDateToYYYYMMDD(editingTransaction.date),
           account: editingTransaction.account,
           vendor: editingTransaction.vendor,
           category: editingTransaction.category,
@@ -184,7 +184,7 @@ const ScheduledTransactionsPage = () => {
         });
       } else {
         form.reset({
-          date: tomorrowDateString, // Default to tomorrow for new transactions
+          date: todayDateString, // Default to today for new transactions
           account: '',
           vendor: '',
           category: '',
@@ -747,7 +747,6 @@ const ScheduledTransactionsPage = () => {
                       <FormControl>
                         <Input
                           type="date"
-                          min={tomorrowDateString} // Set min to tomorrow's date
                           {...field}
                         />
                       </FormControl>
