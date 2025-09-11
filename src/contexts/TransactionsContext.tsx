@@ -169,28 +169,19 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     userId: user?.id,
   }), [refetchTransactions, user?.id]);
 
-  // --- Initial Data Load and Auth State Change Handling ---
-  React.useEffect(() => {
-    if (user?.id && !isLoadingUser) {
-      // Initial fetch for all data
-      queryClient.invalidateQueries(); // Invalidate all to ensure fresh data on login
-      processScheduledTransactions(); // Process scheduled transactions after initial load
-    } else if (!user?.id && !isLoadingUser) {
-      // Clear data if user logs out
-      queryClient.clear(); // Clear all react-query cache
-      setAccountCurrencyMap(new Map());
-    }
-  }, [user?.id, isLoadingUser, queryClient, processScheduledTransactions]);
-
-  // Handle auth state changes for react-query
+  // --- Auth State Change Handling ---
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        queryClient.invalidateQueries(); // Invalidate all queries on auth change
+      if (event === 'SIGNED_IN') {
+        queryClient.invalidateQueries(); // Invalidate all queries on sign-in
+        processScheduledTransactions(); // Process scheduled transactions on sign-in
+      } else if (event === 'SIGNED_OUT') {
+        queryClient.clear(); // Clear all react-query cache on sign-out
+        setAccountCurrencyMap(new Map());
       }
     });
     return () => subscription.unsubscribe();
-  }, [queryClient]);
+  }, [queryClient, processScheduledTransactions]); // Add processScheduledTransactions to dependencies
 
   const value = React.useMemo(() => ({
     transactions,
@@ -224,9 +215,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     demoDataProgress, processScheduledTransactions,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   ]);
-
-  // Removed the conditional return for the loading spinner.
-  // The main application loading is handled by ProtectedRoute and individual pages.
 
   return (
     <TransactionsContext.Provider value={value}>
