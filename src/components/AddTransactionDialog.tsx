@@ -27,8 +27,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { useUser } from '@/contexts/UserContext'; // Import useUser
 import { Loader2 } from 'lucide-react'; // Import Loader2
 import {
   Select,
@@ -82,24 +80,11 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const { addTransaction, accountCurrencyMap, categories: allCategories, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
+  const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
-  const { user, isLoadingUser } = useUser();
 
-  // Fetch all payees (accounts and vendors) using react-query
-  const { data: allPayees = [], isLoading: isLoadingPayees } = useQuery({
-    queryKey: ['allPayees', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase.from('vendors').select('name, is_account');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id && !isLoadingUser,
-  });
-
-  const allAccounts = React.useMemo(() => allPayees.filter(p => p.is_account).map(p => p.name), [allPayees]);
-  const allVendors = React.useMemo(() => allPayees.filter(p => !p.is_account).map(p => p.name), [allPayees]);
+  const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
+  const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
 
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
@@ -233,7 +218,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
 
-  const isFormLoading = isLoadingPayees || isLoadingAccounts || isLoadingVendors || isLoadingCategories;
+  const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

@@ -64,7 +64,7 @@ export function MultiSelectDropdown({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full sm:w-[200px] justify-between">
+        <Button variant="outline" className="w-full sm:w-[200px] justify-between" id={id}>
           {isAllSelected && options.length > 0 ? (
             <span>{allOption.label} ({options.length})</span>
           ) : selectedValues.length > 0 ? (

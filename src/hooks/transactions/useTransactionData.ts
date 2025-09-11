@@ -113,7 +113,7 @@ export const useTransactionData = ({
     });
 
     return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, scheduledTransactions, accountCurrencyMap, refetchMainTransactions]);
+  }, [transactions, scheduledTransactions, accountCurrencyMap]); // Removed refetchMainTransactions
 
   const filteredTransactions = React.useMemo(() => {
     // console.log("--- Filtering Transactions (useMemo re-run) ---");

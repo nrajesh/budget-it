@@ -37,8 +37,6 @@ import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import LoadingOverlay from "./LoadingOverlay";
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
-import { useUser } from '@/contexts/UserContext'; // Import useUser
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -73,29 +71,16 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   onOpenChange,
   transaction,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
+  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies } = useCurrency();
-  const { user, isLoadingUser } = useUser();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Fetch all payees (accounts and vendors) using react-query
-  const { data: allPayees = [], isLoading: isLoadingPayees } = useQuery({
-    queryKey: ['allPayees', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase.from('vendors').select('name, is_account');
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id && !isLoadingUser,
-  });
-
-  const allAccounts = React.useMemo(() => allPayees.filter(p => p.is_account).map(p => p.name), [allPayees]);
-  const allVendors = React.useMemo(() => allPayees.filter(p => !p.is_account).map(p => p.name), [allPayees]);
+  const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
+  const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -196,7 +181,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name }));
 
-  const isFormLoading = isLoadingPayees || isLoadingAccounts || isLoadingVendors || isLoadingCategories;
+  const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <>

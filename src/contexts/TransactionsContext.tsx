@@ -40,7 +40,6 @@ interface TransactionsContextType {
   fetchCategories: () => Promise<QueryObserverResult<Category[], Error>>; // Updated return type
   refetchAllPayees: () => Promise<void>;
   fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Keep for direct manipulation if needed
   demoDataProgress: DemoDataProgress | null;
   processScheduledTransactions: () => Promise<void>;
   isLoadingTransactions: boolean; // New loading state from react-query
@@ -151,7 +150,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchTransactions: refetchTransactions, // Pass react-query's refetch
     refetchAllPayees: invalidateAllTransactionRelatedQueries, // Invalidate all relevant queries
     transactions,
-    setTransactions: () => {}, // No longer directly setting transactions state here
     convertBetweenCurrencies,
     userId: user?.id,
   }), [refetchTransactions, invalidateAllTransactionRelatedQueries, transactions, convertBetweenCurrencies, user?.id]);
@@ -200,7 +198,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     fetchCategories: refetchCategories,
     refetchAllPayees: invalidateAllTransactionRelatedQueries,
     fetchTransactions: refetchTransactions,
-    setTransactions: () => {}, // Placeholder, direct state setting is discouraged
     demoDataProgress,
     processScheduledTransactions,
     isLoadingTransactions,

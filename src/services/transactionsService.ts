@@ -13,12 +13,11 @@ interface TransactionsServiceProps {
   fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
   refetchAllPayees: () => Promise<void>; // Updated return type
   transactions: Transaction[]; // Still needed for finding original transaction for update
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>; // Keep for direct manipulation if needed, but discouraged
   convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
   userId: string | undefined;
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, setTransactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
+export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
     if (!userId) {
