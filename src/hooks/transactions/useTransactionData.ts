@@ -3,8 +3,8 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/data/finance-data";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 type ScheduledTransaction = {
   id: string;
@@ -20,19 +20,34 @@ type ScheduledTransaction = {
   last_processed_date?: string;
 };
 
-export const useTransactionData = () => {
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface UseTransactionDataProps {
+  searchTerm: string;
+  selectedAccounts: string[];
+  selectedCategories: string[];
+  selectedVendors: string[];
+  dateRange: DateRange | undefined;
+  availableAccountOptions: Option[];
+  availableCategoryOptions: Option[];
+  availableVendorOptions: Option[];
+}
+
+export const useTransactionData = ({
+  searchTerm,
+  selectedAccounts,
+  selectedCategories,
+  selectedVendors,
+  dateRange,
+  availableAccountOptions,
+  availableCategoryOptions,
+  availableVendorOptions,
+}: UseTransactionDataProps) => {
   const { transactions, accountCurrencyMap } = useTransactions();
   const { user } = useUser();
-  const {
-    searchTerm,
-    selectedAccounts,
-    selectedCategories,
-    selectedVendors,
-    dateRange,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
-  } = useTransactionFilters();
 
   const [scheduledTransactions, setScheduledTransactions] = React.useState<ScheduledTransaction[]>([]);
 
@@ -167,9 +182,9 @@ export const useTransactionData = () => {
     selectedCategories,
     selectedVendors,
     dateRange,
-    availableAccountOptions.length, // Dependency for re-running if options change
-    availableCategoryOptions.length, // Dependency for re-running if options change
-    availableVendorOptions.length, // Dependency for re-running if options change
+    availableAccountOptions.length,
+    availableCategoryOptions.length,
+    availableVendorOptions.length,
   ]);
 
   return {

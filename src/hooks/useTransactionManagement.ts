@@ -31,7 +31,16 @@ export const useTransactionManagement = () => {
   } = useTransactionFilters();
 
   // 2. Data (combines and filters transactions)
-  const { filteredTransactions } = useTransactionData();
+  const { filteredTransactions } = useTransactionData({
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    selectedVendors,
+    dateRange,
+    availableAccountOptions,
+    availableCategoryOptions,
+    availableVendorOptions,
+  });
 
   // 3. Pagination
   const {
