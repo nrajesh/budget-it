@@ -149,7 +149,7 @@ const ScheduledTransactionsPage = () => {
   const form = useForm<ScheduledTransactionFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: todayDateString, // Default to today for new transactions
+      date: tomorrowDateString, // Default to tomorrow for new transactions
       account: '',
       vendor: '',
       category: '',
@@ -185,7 +185,7 @@ const ScheduledTransactionsPage = () => {
         });
       } else {
         form.reset({
-          date: todayDateString, // Default to today for new transactions
+          date: tomorrowDateString, // Default to tomorrow for new transactions
           account: '',
           vendor: '',
           category: '',
@@ -749,11 +749,11 @@ const ScheduledTransactionsPage = () => {
                         <Input
                           type="date"
                           {...field}
-                          min={todayDateString} // Only allow today or future dates
+                          min={tomorrowDateString} // Only allow tomorrow or future dates
                         />
                       </FormControl>
                       <FormDescription>
-                        Only today's date or future dates can be selected.
+                        Only future dates (from tomorrow onwards) can be selected.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
