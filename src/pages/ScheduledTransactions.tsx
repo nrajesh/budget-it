@@ -120,7 +120,12 @@ const ScheduledTransactionsPage = () => {
   type ScheduledTransactionFormData = z.infer<typeof formSchema>; // Moved here
 
   // Get today's date in YYYY-MM-DD format for the min attribute of the date input
-  const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(new Date()), []);
+  const todayDate = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const todayDateString = React.useMemo(() => formatDateToYYYYMMDD(todayDate), [todayDate]);
 
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
@@ -151,36 +156,41 @@ const ScheduledTransactionsPage = () => {
   });
 
   React.useEffect(() => {
-    if (isFormOpen && editingTransaction) {
-      const frequencyMatch = editingTransaction.frequency.match(/^(\d+)([dwmy])$/);
-      const frequency_value = frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1;
-      const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
+    if (isFormOpen) {
+      if (editingTransaction) {
+        const transactionDate = new Date(editingTransaction.date);
+        transactionDate.setHours(0, 0, 0, 0);
 
-      form.reset({
-        date: formatDateToYYYYMMDD(editingTransaction.date),
-        account: editingTransaction.account,
-        vendor: editingTransaction.vendor,
-        category: editingTransaction.category,
-        amount: editingTransaction.amount,
-        frequency_value,
-        frequency_unit,
-        remarks: editingTransaction.remarks || '',
-        recurrence_end_date: editingTransaction.recurrence_end_date ? formatDateToYYYYMMDD(editingTransaction.recurrence_end_date) : '', // Added recurrence_end_date
-      });
-    } else if (isFormOpen && !editingTransaction) {
-      form.reset({
-        date: todayDateString,
-        account: '',
-        vendor: '',
-        category: '',
-        amount: 0,
-        frequency_value: 1,
-        frequency_unit: 'm',
-        remarks: '',
-        recurrence_end_date: '', // Added recurrence_end_date
-      });
+        const frequencyMatch = editingTransaction.frequency.match(/^(\d+)([dwmy])$/);
+        const frequency_value = frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1;
+        const frequency_unit = frequencyMatch ? frequencyMatch[2] : 'm';
+
+        form.reset({
+          date: transactionDate < todayDate ? todayDateString : formatDateToYYYYMMDD(editingTransaction.date), // Set to today if original date is in the past
+          account: editingTransaction.account,
+          vendor: editingTransaction.vendor,
+          category: editingTransaction.category,
+          amount: editingTransaction.amount,
+          frequency_value,
+          frequency_unit,
+          remarks: editingTransaction.remarks || '',
+          recurrence_end_date: editingTransaction.recurrence_end_date ? formatDateToYYYYMMDD(editingTransaction.recurrence_end_date) : '',
+        });
+      } else {
+        form.reset({
+          date: todayDateString,
+          account: '',
+          vendor: '',
+          category: '',
+          amount: 0,
+          frequency_value: 1,
+          frequency_unit: 'm',
+          remarks: '',
+          recurrence_end_date: '',
+        });
+      }
     }
-  }, [isFormOpen, editingTransaction, form, todayDateString]);
+  }, [isFormOpen, editingTransaction, form, todayDateString, todayDate]);
 
   // Watch vendor field to dynamically set category for transfers
   const watchedVendor = form.watch("vendor");
