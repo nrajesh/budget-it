@@ -46,22 +46,28 @@ function Login() {
               default: {
                 colors: {
                   brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
+                  brandAccent: 'hsl(var(--primary) / 0.9)',
+                  brandButtonText: 'hsl(var(--primary-foreground))',
+                  defaultButtonBackground: 'hsl(var(--secondary))',
+                  defaultButtonBackgroundHover: 'hsl(var(--secondary) / 0.9)',
+                  defaultButtonBorder: 'hsl(var(--border))',
+                  defaultButtonText: 'hsl(var(--secondary-foreground))',
+                  dividerBackground: 'hsl(var(--border))',
+                  inputBackground: 'hsl(var(--input))',
+                  inputBorder: 'hsl(var(--border))',
+                  inputBorderHover: 'hsl(var(--ring))',
+                  inputBorderFocus: 'hsl(var(--ring))',
                   inputText: 'hsl(var(--foreground))',
-                  inputLabelText: 'hsl(var(--foreground))',
-                },
-              },
-              dark: {
-                colors: {
-                  brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
-                  inputText: 'hsl(var(--foreground))',
-                  inputLabelText: 'hsl(var(--foreground))',
+                  inputLabelText: 'hsl(var(--muted-foreground))',
+                  inputPlaceholder: 'hsl(var(--muted-foreground))',
+                  messageText: 'hsl(var(--muted-foreground))',
+                  messageTextDanger: 'hsl(var(--destructive))',
+                  anchorTextColor: 'hsl(var(--foreground))',
+                  anchorTextHoverColor: 'hsl(var(--primary))',
                 },
               },
             },
           }}
-          theme={theme === 'dark' ? 'dark' : 'light'}
         />
       </div>
     </div>
