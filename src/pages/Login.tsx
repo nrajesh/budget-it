@@ -7,6 +7,8 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Moon } from 'lucide-react';
 
+const NO_PROVIDERS: [] = [];
+
 function Login() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -68,7 +70,7 @@ function Login() {
         <h2 className="text-2xl font-bold text-center text-foreground">Welcome to Budget It!</h2>
         <Auth
           supabaseClient={supabase}
-          providers={[]}
+          providers={NO_PROVIDERS}
           appearance={appearance}
         />
       </div>
