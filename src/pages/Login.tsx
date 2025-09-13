@@ -1,15 +1,12 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
-import { Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 function Login() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -18,59 +15,56 @@ function Login() {
       }
     });
 
+    // This logic ensures the Supabase Auth component's theme matches the app's theme.
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    });
+
+    // Set initial theme
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'dark' : 'light');
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
     return () => {
       subscription.unsubscribe();
+      observer.disconnect();
     };
   }, [navigate]);
 
-  const appearance = useMemo(() => ({
-    theme: ThemeSupa,
-    variables: {
-      default: {
-        colors: {
-          brand: 'hsl(var(--primary))',
-          brandAccent: 'hsl(var(--primary) / 0.9)',
-          brandButtonText: 'hsl(var(--primary-foreground))',
-          defaultButtonBackground: 'hsl(var(--secondary))',
-          defaultButtonBackgroundHover: 'hsl(var(--secondary) / 0.9)',
-          defaultButtonBorder: 'hsl(var(--border))',
-          defaultButtonText: 'hsl(var(--secondary-foreground))',
-          dividerBackground: 'hsl(var(--border))',
-          inputBackground: 'hsl(var(--input))',
-          inputBorder: 'hsl(var(--border))',
-          inputBorderHover: 'hsl(var(--ring))',
-          inputBorderFocus: 'hsl(var(--ring))',
-          inputText: 'hsl(var(--foreground))',
-          inputLabelText: 'hsl(var(--muted-foreground))',
-          inputPlaceholder: 'hsl(var(--muted-foreground))',
-          messageText: 'hsl(var(--muted-foreground))',
-          messageTextDanger: 'hsl(var(--destructive))',
-          anchorTextColor: 'hsl(var(--foreground))',
-          anchorTextHoverColor: 'hsl(var(--primary))',
-        },
-      },
-    },
-  }), []);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        >
-          <Moon className="size-5" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md p-8 space-y-6 bg-card rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-center text-foreground">Welcome to Budget It!</h2>
         <Auth
           supabaseClient={supabase}
           providers={[]}
-          appearance={appearance}
-          // Removed the explicit 'theme' prop here
+          appearance={{
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: 'hsl(var(--primary))',
+                  brandAccent: 'hsl(var(--primary-foreground))',
+                  inputText: 'hsl(var(--foreground))',
+                  inputLabelText: 'hsl(var(--foreground))',
+                },
+              },
+              dark: {
+                colors: {
+                  brand: 'hsl(var(--primary))',
+                  brandAccent: 'hsl(var(--primary-foreground))',
+                  inputText: 'hsl(var(--foreground))',
+                  inputLabelText: 'hsl(var(--foreground))',
+                },
+              },
+            },
+          }}
+          theme={theme}
         />
       </div>
     </div>
