@@ -70,6 +70,7 @@ function Login() {
           supabaseClient={supabase}
           providers={[]}
           appearance={appearance}
+          // Removed the explicit 'theme' prop here
         />
       </div>
     </div>
