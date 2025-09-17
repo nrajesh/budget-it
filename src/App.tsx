@@ -6,9 +6,9 @@ import { TransactionsProvider } from "./contexts/TransactionsContext";
 import { UserProvider } from "./contexts/UserContext";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-const queryClient = new QueryClient(); // Create a new QueryClient instance
+const queryClient = new QueryClient();
 
 // Lazy load page components
 const Index = lazy(() => import("@/pages/Index"));
@@ -22,10 +22,12 @@ const Accounts = lazy(() => import("@/pages/Accounts"));
 const Vendors = lazy(() => import("@/pages/Vendors"));
 const Categories = lazy(() => import("@/pages/Categories"));
 const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions"));
+const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
+const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}> {/* Wrap with QueryClientProvider */}
+    <QueryClientProvider client={queryClient}>
       <UserProvider>
         <TransactionsProvider>
           <Router>
@@ -42,6 +44,8 @@ function App() {
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/scheduled" element={<ScheduledTransactions />} />
                     <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/reports/essential" element={<EssentialReports />} />
+                    <Route path="/reports/advanced" element={<AdvancedReports />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="*" element={<NotFound />} />

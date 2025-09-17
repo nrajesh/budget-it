@@ -24,7 +24,7 @@ import {
   Bell,
   Banknote,
   Tag,
-  Calendar, // Import Calendar icon
+  Calendar,
 } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -79,6 +79,8 @@ const Layout = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   const getPageTitle = (pathname: string) => {
+    if (pathname.startsWith("/reports/essential")) return "Essential Reports";
+    if (pathname.startsWith("/reports/advanced")) return "Advanced Reports";
     switch (pathname) {
       case "/":
         return "Dashboard";
@@ -96,7 +98,7 @@ const Layout = () => {
         return "Accounts";
       case "/categories":
         return "Categories";
-      case "/scheduled": // Update case for Scheduled
+      case "/scheduled":
         return "Scheduled Transactions";
       default:
         return "Page Not Found";
@@ -186,23 +188,46 @@ const Layout = () => {
             <SidebarGroupLabel>Setup</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link to="/scheduled" className="w-full"> {/* Update link to Scheduled */}
+                <Link to="/scheduled" className="w-full">
                   <SidebarMenuButton isActive={location.pathname === "/scheduled"}>
-                    <Calendar /> {/* Use Calendar icon */}
-                    Scheduled {/* Update text to Scheduled */}
+                    <Calendar />
+                    Scheduled
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
+              <Collapsible asChild>
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={location.pathname.startsWith("/reports")}>
+                      <Newspaper />
+                      Reports
+                      <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <Link to="/reports/essential" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/reports/essential"}>
+                            Essential
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <Link to="/reports/advanced" className="w-full">
+                          <SidebarMenuSubButton isActive={location.pathname === "/reports/advanced"}>
+                            Advanced
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <FileText />
                   Budgets
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Newspaper />
-                  Reports
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -280,7 +305,6 @@ const Layout = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={async () => {
                 await supabase.auth.signOut();
-                // Optionally redirect to login page
               }}>
                 Log out
               </DropdownMenuItem>
@@ -295,7 +319,6 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Currency Dropdown */}
             <Select value={selectedCurrency} onValueChange={setCurrency}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue placeholder="Currency" />
@@ -342,7 +365,6 @@ const Layout = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                   await supabase.auth.signOut();
-                  // Optionally redirect to login page
                 }}>
                   Log out
                 </DropdownMenuItem>
