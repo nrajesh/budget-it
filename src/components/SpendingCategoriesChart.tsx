@@ -3,16 +3,16 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Pie, PieChart } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
-import React from "react"; // Added React import
+import { useTransactions } from "@/contexts/TransactionsContext";
+import React from "react";
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
 }
 
 export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
-  const { formatCurrency, convertAmount } = useCurrency();
-  const { categories: allCategories } = useTransactions(); // Get allCategories from context
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { categories: allCategories } = useTransactions();
 
   const chartConfig = React.useMemo(() => {
     const config: ChartConfig = {
@@ -21,13 +21,12 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
       },
     };
     allCategories.forEach((category, index) => {
-      const colorIndex = (index % 8) + 1; // Use chart-1 to chart-8 for colors
+      const colorIndex = (index % 8) + 1;
       config[category.name] = {
         label: category.name,
         color: `hsl(var(--chart-${colorIndex}))`,
       };
     });
-    // Add a fallback 'Other' category if needed, or ensure allCategories covers all cases
     config['Other'] = {
       label: "Other",
       color: "hsl(var(--chart-8))",
@@ -38,14 +37,15 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
   const spendingData = transactions.reduce((acc, transaction) => {
     if (transaction.amount < 0 && transaction.category !== 'Transfer') {
       const category = transaction.category;
-      acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
+      acc[category] = (acc[category] || 0) + convertedAmount;
     }
     return acc;
   }, {} as Record<string, number>);
 
   const chartData = Object.entries(spendingData).map(([category, amount]) => ({
     category,
-    amount: convertAmount(amount),
+    amount: amount,
     fill: (chartConfig[category as keyof typeof chartConfig] as { color: string })?.color || chartConfig.Other.color,
   }));
 

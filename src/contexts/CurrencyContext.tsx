@@ -3,30 +3,29 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 interface CurrencyContextType {
   selectedCurrency: string;
   setCurrency: (currency: string) => void;
-  convertAmount: (amount: number) => number;
   formatCurrency: (amount: number, currencyCode?: string) => string;
   currencySymbols: { [key: string]: string };
   availableCurrencies: { code: string; name: string }[];
-  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number; // New function
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// Mock exchange rates relative to USD (assuming all base data is in USD)
+// Exchange rates relative to a base currency (USD)
 const exchangeRates: { [key: string]: number } = {
   USD: 1.0,
-  EUR: 0.92, // 1 USD = 0.92 EUR
-  GBP: 0.79, // 1 USD = 0.79 GBP
-  JPY: 155.0, // 1 USD = 155 JPY
-  CAD: 1.37, // 1 USD = 1.37 CAD
-  AUD: 1.51, // 1 USD = 1.51 AUD
-  CHF: 0.90, // 1 USD = 0.90 CHF
-  INR: 83.5, // 1 USD = 83.5 INR
-  BRL: 5.15, // 1 USD = 5.15 BRL
-  CNY: 7.25, // 1 USD = 7.25 CNY
+  EUR: 0.92,
+  GBP: 0.79,
+  JPY: 155.0,
+  CAD: 1.37,
+  AUD: 1.51,
+  CHF: 0.90,
+  INR: 83.5,
+  BRL: 5.15,
+  CNY: 7.25,
 };
 
-export const currencySymbols: { [key: string]: string } = { // Exported
+export const currencySymbols: { [key: string]: string } = {
   USD: '$',
   EUR: '€',
   GBP: '£',
@@ -39,7 +38,7 @@ export const currencySymbols: { [key: string]: string } = { // Exported
   CNY: '¥',
 };
 
-export const availableCurrencies = [ // Exported
+export const availableCurrencies = [
   { code: 'USD', name: 'US Dollar' },
   { code: 'EUR', name: 'Euro' },
   { code: 'GBP', name: 'British Pound' },
@@ -69,15 +68,6 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const convertAmount = useCallback((amount: number): number => {
-    const rate = exchangeRates[selectedCurrency];
-    if (rate === undefined) {
-      console.warn(`Exchange rate for ${selectedCurrency} not found. Returning original amount.`);
-      return amount;
-    }
-    return amount * rate;
-  }, [selectedCurrency]);
-
   const convertBetweenCurrencies = useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
     if (fromCurrency === toCurrency) {
       return amount;
@@ -86,18 +76,13 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const fromRate = exchangeRates[fromCurrency];
     const toRate = exchangeRates[toCurrency];
 
-    if (fromRate === undefined) {
-      console.warn(`Exchange rate for source currency ${fromCurrency} not found. Cannot convert.`);
-      return amount;
-    }
-    if (toRate === undefined) {
-      console.warn(`Exchange rate for target currency ${toCurrency} not found. Cannot convert.`);
+    if (fromRate === undefined || toRate === undefined) {
+      console.warn(`Exchange rate not found for conversion from ${fromCurrency} to ${toCurrency}.`);
       return amount;
     }
 
-    // Convert from source currency to USD, then from USD to target currency
-    const amountInUSD = amount / fromRate;
-    return amountInUSD * toRate;
+    const amountInBase = amount / fromRate;
+    return amountInBase * toRate;
   }, []);
 
   const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
@@ -109,12 +94,11 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const value = React.useMemo(() => ({
     selectedCurrency,
     setCurrency,
-    convertAmount,
     formatCurrency,
     currencySymbols,
     availableCurrencies,
-    convertBetweenCurrencies, // Include new function
-  }), [selectedCurrency, setCurrency, convertAmount, formatCurrency, convertBetweenCurrencies]);
+    convertBetweenCurrencies,
+  }), [selectedCurrency, setCurrency, formatCurrency, convertBetweenCurrencies]);
 
   return (
     <CurrencyContext.Provider value={value}>

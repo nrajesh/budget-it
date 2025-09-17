@@ -23,7 +23,7 @@ const chartConfig = {
 
 const Index = () => {
   const { transactions } = useTransactions();
-  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -62,10 +62,12 @@ const Index = () => {
         summary[month] = { income: 0, expenses: 0 };
       }
 
+      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+
       if (transaction.amount > 0 && transaction.category !== 'Transfer') {
-        summary[month].income += transaction.amount;
+        summary[month].income += convertedAmount;
       } else if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-        summary[month].expenses += Math.abs(transaction.amount);
+        summary[month].expenses += Math.abs(convertedAmount);
       }
     });
 
@@ -79,40 +81,37 @@ const Index = () => {
 
     return sortedMonths.map(month => ({
       month,
-      income: convertAmount(summary[month].income),
-      expenses: convertAmount(summary[month].expenses),
+      income: summary[month].income,
+      expenses: summary[month].expenses,
     }));
-  }, [currentTransactions, convertAmount]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const totalBalance = useMemo(() => {
-    const balance = currentTransactions.reduce((acc, t) => {
+    return currentTransactions.reduce((acc, t) => {
       if (t.category !== 'Transfer') {
-        return acc + t.amount;
+        return acc + convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
       }
       return acc;
     }, 0);
-    return convertAmount(balance);
-  }, [currentTransactions, convertAmount]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const totalIncome = useMemo(() => {
-    const income = currentTransactions.reduce((acc, t) => {
+    return currentTransactions.reduce((acc, t) => {
       if (t.amount > 0 && t.category !== 'Transfer') {
-        return acc + t.amount;
+        return acc + convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
       }
       return acc;
     }, 0);
-    return convertAmount(income);
-  }, [currentTransactions, convertAmount]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const totalExpenses = useMemo(() => {
-    const expenses = currentTransactions.reduce((acc, t) => {
+    return currentTransactions.reduce((acc, t) => {
       if (t.amount < 0 && t.category !== 'Transfer') {
-        return acc + Math.abs(t.amount);
+        return acc + Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
       }
       return acc;
     }, 0);
-    return convertAmount(expenses);
-  }, [currentTransactions, convertAmount]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const numberOfActiveAccounts = useMemo(() => {
     const activeAccounts = new Set<string>();
@@ -151,11 +150,11 @@ const Index = () => {
       if (transaction.amount < 0 && transaction.category !== 'Transfer') {
         const date = new Date(transaction.date);
         const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + Math.abs(transaction.amount);
+        data[yearMonth] = (data[yearMonth] || 0) + Math.abs(convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency));
       }
     });
     return data;
-  }, [currentTransactions]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const monthlyIncomeData = useMemo(() => {
     const data: { [key: string]: number } = {};
@@ -163,11 +162,11 @@ const Index = () => {
       if (transaction.amount > 0 && transaction.category !== 'Transfer') {
         const date = new Date(transaction.date);
         const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + transaction.amount;
+        data[yearMonth] = (data[yearMonth] || 0) + convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
       }
     });
     return data;
-  }, [currentTransactions]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const monthlyBalanceData = useMemo(() => {
     const data: { [key: string]: number } = {};
@@ -176,14 +175,14 @@ const Index = () => {
     let runningBalance = 0;
     sortedTransactions.forEach(transaction => {
       if (transaction.category !== 'Transfer') {
-        runningBalance += transaction.amount;
+        runningBalance += convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
       }
       const date = new Date(transaction.date);
       const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       data[yearMonth] = runningBalance;
     });
     return data;
-  }, [currentTransactions]);
+  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
   const expensesChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
   const incomeChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);

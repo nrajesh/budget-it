@@ -22,7 +22,7 @@ interface RecentTransactionsProps {
 
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
   const { transactions: allTransactions, accountCurrencyMap } = useTransactions();
-  const { formatCurrency, convertAmount } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
@@ -35,7 +35,8 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .forEach(t => {
         if (t.category !== 'Transfer') {
-          runningBalance += t.amount;
+          const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+          runningBalance += convertedAmount;
         }
         balanceMap.set(t.id, runningBalance);
       });
@@ -48,7 +49,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
       }))
       // Sort for display, most recent first
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [allTransactions, transactions]);
+  }, [allTransactions, transactions, selectedCurrency, convertBetweenCurrencies]);
 
   // Filter transactions for display based on selected categories
   const displayTransactions = React.useMemo(() => {
@@ -106,7 +107,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                       </TableCell><TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(transaction.amount, currentAccountCurrency)}
                       </TableCell><TableCell className="text-right font-medium">
-                        {formatCurrency(transaction.runningBalance, currentAccountCurrency)}
+                        {formatCurrency(transaction.runningBalance)}
                       </TableCell>
                     </TableRow>
                   );

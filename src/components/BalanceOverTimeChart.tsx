@@ -5,7 +5,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateToDDMMYYYY } from "@/lib/utils"; // Import formatDateToDDMMYYYY
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -19,7 +19,7 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
-  const { formatCurrency, convertAmount } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -50,9 +50,11 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
 
+    const initialBalances: { [account: string]: number } = {};
     allDefinedAccounts.forEach(account => {
-      dailyBalances['initial'] = { ...dailyBalances['initial'], [account]: 0 };
+      initialBalances[account] = 0;
     });
+    dailyBalances['initial'] = initialBalances;
 
     sortedTransactions.forEach(transaction => {
       const date = new Date(transaction.date).toISOString().split('T')[0];
@@ -62,7 +64,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       }
 
       if (dailyBalances[date][transaction.account] !== undefined) {
-        dailyBalances[date][transaction.account] += transaction.amount;
+        const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+        dailyBalances[date][transaction.account] += convertedAmount;
       }
     });
 
@@ -70,15 +73,15 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       .filter(([date]) => date !== 'initial')
       .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
       .map(([date, balances]) => {
-        const obj: { date: string; [key: string]: number | string } = { date: formatDateToDDMMYYYY(date) }; // Format date here
+        const obj: { date: string; [key: string]: number | string } = { date: formatDateToDDMMYYYY(date) };
         accountsToDisplay.forEach(account => {
-          obj[account] = convertAmount(balances[account] || 0);
+          obj[account] = balances[account] || 0;
         });
         return obj;
       });
 
     return formattedData;
-  }, [transactions, convertAmount, accountsToDisplay, allDefinedAccounts]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
   const totalBalance = React.useMemo(() => {
     if (chartData.length === 0) return 0;
@@ -132,7 +135,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => value} // Display formatted date directly
+              tickFormatter={(value) => value}
             />
             <YAxis
               tickLine={false}

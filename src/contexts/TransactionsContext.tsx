@@ -52,7 +52,7 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const { convertAmount, convertBetweenCurrencies } = useCurrency();
+  const { convertBetweenCurrencies } = useCurrency();
   const { user, isLoadingUser } = useUser(); // Keep this for enabling queries
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
