@@ -1,18 +1,18 @@
-import React from 'react';
-import { useTransactions } from '@/contexts/TransactionsContext';
+import * as React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 export const useTransactionUI = () => {
-  const { refetchTransactions } = useTransactions();
+  const { fetchTransactions } = useTransactions();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  const handleRefresh = async () => {
+  const handleRefresh = React.useCallback(async () => {
     setIsRefreshing(true);
-    try {
-      await refetchTransactions();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+    await fetchTransactions();
+    setIsRefreshing(false);
+  }, [fetchTransactions]);
 
-  return { isRefreshing, handleRefresh };
+  return {
+    isRefreshing,
+    handleRefresh,
+  };
 };

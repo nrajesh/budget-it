@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
-import { Payee } from '@/data/finance-data';
+import { Payee } from '@/components/AddEditPayeeDialog';
 
 interface PayeesServiceProps {
   // No longer need setVendors, setAccounts as react-query will manage state

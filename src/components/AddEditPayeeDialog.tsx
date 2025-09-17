@@ -1,18 +1,16 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useTransactions } from '@/contexts/TransactionsContext';
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { Payee } from '@/data/finance-data';
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -20,121 +18,139 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
-import { Loader2 } from 'lucide-react';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+
+export type Payee = {
+  id: string;
+  name: string;
+  is_account: boolean;
+  created_at: string;
+  account_id: string | null;
+  currency: string | null;
+  starting_balance: number | null;
+  remarks: string | null;
+  running_balance: number | null;
+  totalTransactions?: number;
+};
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  is_account: z.boolean(),
   currency: z.string().optional(),
   starting_balance: z.coerce.number().optional(),
   remarks: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
 interface AddEditPayeeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   payee: Payee | null;
-  isAccount: boolean;
+  onSuccess: () => void;
+  isAccountOnly?: boolean;
 }
 
-const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({ isOpen, onOpenChange, payee, isAccount }) => {
+const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
+  isOpen,
+  onOpenChange,
+  payee,
+  onSuccess,
+  isAccountOnly = false,
+}) => {
   const { availableCurrencies } = useCurrency();
-  const { refetchAllPayees } = useTransactions();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const form = useForm<FormValues>({
+  const { refetchAllPayees, fetchTransactions } = useTransactions(); // Use refetchAllPayees and fetchTransactions from context
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      currency: 'USD',
+      name: "",
+      is_account: isAccountOnly ? true : false,
+      currency: "EUR",
       starting_balance: 0,
-      remarks: '',
+      remarks: "",
     },
   });
 
+  const isAccount = form.watch("is_account");
+
   React.useEffect(() => {
-    if (isOpen) {
-      if (payee) {
-        form.reset({
-          name: payee.name,
-          currency: payee.currency || 'USD',
-          starting_balance: payee.starting_balance || 0,
-          remarks: payee.remarks || '',
-        });
-      } else {
-        form.reset({
-          name: '',
-          currency: 'USD',
-          starting_balance: 0,
-          remarks: '',
-        });
-      }
+    if (payee) {
+      form.reset({
+        name: payee.name,
+        is_account: payee.is_account,
+        currency: payee.currency || "EUR",
+        starting_balance: payee.starting_balance || 0,
+        remarks: payee.remarks || "",
+      });
+    } else {
+      form.reset({
+        name: "",
+        is_account: isAccountOnly ? true : false,
+        currency: "EUR",
+        starting_balance: 0,
+        remarks: "",
+      });
     }
-  }, [isOpen, payee, form]);
+  }, [payee, form, isOpen, isAccountOnly]);
 
-  const dialogTitle = payee ? `Edit ${isAccount ? 'Account' : 'Vendor'}` : `Add New ${isAccount ? 'Account' : 'Vendor'}`;
-  const dialogDescription = `Fill in the details for the ${isAccount ? 'account' : 'vendor'}.`;
-
-  const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (payee) {
-        // Update logic
-        if (isAccount && payee.account_id) {
-          const { error: accountError } = await supabase
-            .from('accounts')
+        if (payee.name !== values.name) {
+          const { error: rpcError } = await supabase.rpc('update_vendor_name', {
+            p_vendor_id: payee.id,
+            p_new_name: values.name,
+          });
+          if (rpcError) throw rpcError;
+        }
+        if (payee.is_account && payee.account_id) {
+          const { error } = await supabase
+            .from("accounts")
             .update({
               currency: values.currency,
               starting_balance: values.starting_balance,
               remarks: values.remarks,
             })
-            .eq('id', payee.account_id);
-          if (accountError) throw accountError;
+            .eq("id", payee.account_id);
+          if (error) throw error;
         }
-        // Update vendor name if it has changed
-        if (payee.name !== values.name) {
-            const { error: vendorError } = await supabase
-            .rpc('update_vendor_name', { p_vendor_id: payee.id, p_new_name: values.name });
-            if (vendorError) throw vendorError;
-        }
-        showSuccess(`${isAccount ? 'Account' : 'Vendor'} updated successfully!`);
+        showSuccess("Payee updated successfully!");
       } else {
-        // Insert logic
-        if (isAccount) {
-            const { error } = await supabase.rpc('batch_upsert_accounts', {
-                p_accounts: [{
-                    name: values.name,
-                    currency: values.currency,
-                    starting_balance: values.starting_balance,
-                    remarks: values.remarks
-                }]
-            });
-            if (error) throw error;
+        if (values.is_account) {
+          const { data: accountData, error: accountError } = await supabase
+            .from("accounts")
+            .insert({
+              currency: values.currency,
+              starting_balance: values.starting_balance,
+              remarks: values.remarks,
+            })
+            .select()
+            .single();
+          if (accountError) throw accountError;
+
+          const { error: vendorError } = await supabase.from("vendors").insert({
+            name: values.name,
+            is_account: true,
+            account_id: accountData.id,
+          });
+          if (vendorError) throw vendorError;
         } else {
-            const { error } = await supabase.rpc('batch_upsert_vendors', { p_names: [values.name] });
-            if (error) throw error;
+          const { error } = await supabase.from("vendors").insert({ name: values.name });
+          if (error) throw error;
         }
-        showSuccess(`${isAccount ? 'Account' : 'Vendor'} added successfully!`);
+        showSuccess("Payee added successfully!");
       }
-      await refetchAllPayees();
+      onSuccess();
+      refetchAllPayees(); // Call refetchAllPayees after any successful add/edit
+      fetchTransactions(); // Also refetch transactions to update any affected entries
       onOpenChange(false);
     } catch (error: any) {
-      showError(`Failed to save: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
+      showError(`Error: ${error.message}`);
     }
   };
 
@@ -142,8 +158,10 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({ isOpen, onOpenC
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
+          <DialogTitle>{payee ? "Edit" : "Add"} Payee</DialogTitle>
+          <DialogDescription>
+            {payee ? "Update the details of the payee." : "Add a new vendor or account to your list."}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -154,32 +172,43 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({ isOpen, onOpenC
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="e.g., SuperMart, Salary, etc." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {!(payee && payee.is_account) && ( // Only render if not editing an account
+              <FormField
+                control={form.control}
+                name="is_account"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!!payee || isAccountOnly}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Is this an account?</FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            )}
             {isAccount && (
-              <>
+              <div className="space-y-4 p-4 border rounded-md">
                 <FormField
                   control={form.control}
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {availableCurrencies.map(c => (
-                            <SelectItem key={c.code} value={c.code}>{c.code} - {c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select {...field} className="w-full p-2 border rounded-md">
+                        {availableCurrencies.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
+                      </select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -191,7 +220,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({ isOpen, onOpenC
                     <FormItem>
                       <FormLabel>Starting Balance</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" step="0.01" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -204,20 +233,16 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({ isOpen, onOpenC
                     <FormItem>
                       <FormLabel>Remarks</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Textarea placeholder="Optional notes about the account" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </>
+              </div>
             )}
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
-              </Button>
+              <Button type="submit">Save</Button>
             </DialogFooter>
           </form>
         </Form>

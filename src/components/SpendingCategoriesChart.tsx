@@ -1,40 +1,82 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { PieChart, Pie, Cell } from "recharts";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Pie, PieChart } from "recharts";
+import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import React from "react"; // Added React import
 
-const SpendingCategoriesChart = ({ transactions }: { transactions: any[] }) => {
-  const { formatCurrency, selectedCurrency, convertAmount } = useCurrency();
+interface SpendingCategoriesChartProps {
+  transactions: Transaction[];
+}
 
-  const { chartData, totalSpending } = React.useMemo(() => {
-    // ... calculation logic
-    return { chartData: [], totalSpending: 0 };
-  }, [transactions]);
+export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
+  const { formatCurrency, convertAmount } = useCurrency();
+  const { categories: allCategories } = useTransactions(); // Get allCategories from context
 
-  const convertedTotalSpending = convertAmount(totalSpending);
+  const chartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      amount: {
+        label: "Amount",
+      },
+    };
+    allCategories.forEach((category, index) => {
+      const colorIndex = (index % 8) + 1; // Use chart-1 to chart-8 for colors
+      config[category.name] = {
+        label: category.name,
+        color: `hsl(var(--chart-${colorIndex}))`,
+      };
+    });
+    // Add a fallback 'Other' category if needed, or ensure allCategories covers all cases
+    config['Other'] = {
+      label: "Other",
+      color: "hsl(var(--chart-8))",
+    };
+    return config;
+  }, [allCategories]);
+
+  const spendingData = transactions.reduce((acc, transaction) => {
+    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
+      const category = transaction.category;
+      acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const chartData = Object.entries(spendingData).map(([category, amount]) => ({
+    category,
+    amount: convertAmount(amount),
+    fill: (chartConfig[category as keyof typeof chartConfig] as { color: string })?.color || chartConfig.Other.color,
+  }));
+
+  const totalSpending = chartData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex flex-col h-full">
+      <CardHeader className="items-center pb-0">
         <CardTitle>Spending by Category</CardTitle>
-        <CardDescription>Total spending: {formatCurrency(convertedTotalSpending, selectedCurrency)}</CardDescription>
+        <CardDescription>Total spending: {formatCurrency(totalSpending)}</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={{}} className="mx-auto aspect-square max-h-[300px]">
+      <CardContent className="flex-1 pb-0">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto aspect-square max-h-[250px]"
+        >
           <PieChart>
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel formatter={(value) => formatCurrency(convertAmount(Number(value)), selectedCurrency)} />}
+              content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
             />
-            <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60} strokeWidth={5}>
-              {/* ... cells */}
-            </Pie>
+            <Pie
+              data={chartData}
+              dataKey="amount"
+              nameKey="category"
+              innerRadius={60}
+              strokeWidth={5}
+            />
           </PieChart>
         </ChartContainer>
       </CardContent>
     </Card>
   );
-};
-
-export default SpendingCategoriesChart;
+}

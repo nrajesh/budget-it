@@ -1,50 +1,193 @@
-import { useMemo } from 'react';
+import * as React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useUser } from "@/contexts/UserContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Transaction } from "@/data/finance-data";
+import { slugify } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 import { useQuery } from '@tanstack/react-query';
-import { useTransactions } from '@/contexts/TransactionsContext';
-import { useUser } from '@/contexts/UserContext';
-import { fetchScheduledTransactions, ScheduledTransaction } from '@/services/scheduledTransactionsService';
+import { ScheduledTransaction, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
 
-interface UseTransactionDataProps {
-  // Props if any, currently empty
+interface Option {
+  value: string;
+  label: string;
 }
 
-export const useTransactionData = ({}: UseTransactionDataProps = {}) => {
-  const { transactions, accountCurrencyMap, refetchTransactions } = useTransactions();
+interface UseTransactionDataProps {
+  searchTerm: string;
+  selectedAccounts: string[];
+  selectedCategories: string[];
+  selectedVendors: string[];
+  dateRange: DateRange | undefined;
+  availableAccountOptions: Option[];
+  availableCategoryOptions: Option[];
+  availableVendorOptions: Option[];
+}
+
+export const useTransactionData = ({
+  searchTerm,
+  selectedAccounts,
+  selectedCategories,
+  selectedVendors,
+  dateRange,
+  availableAccountOptions,
+  availableCategoryOptions,
+  availableVendorOptions,
+}: UseTransactionDataProps) => {
+  const { transactions, accountCurrencyMap, fetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
 
-  const { data: scheduledTransactions = [], isLoading: isLoadingScheduled, refetch: refetchScheduled } = useQuery({
-    queryKey: ['scheduledTransactions', user?.id],
-    queryFn: () => fetchScheduledTransactions(user!.id),
-    enabled: !!user && !isLoadingUser,
+  // Fetch scheduled transactions using react-query
+  const { fetchScheduledTransactions } = createScheduledTransactionsService({
+    fetchTransactions: refetchMainTransactions, // Pass the actual refetch function
+    userId: user?.id,
   });
 
-  const combinedTransactions = useMemo(() => {
-    const upcomingTransactions = scheduledTransactions.map((st: ScheduledTransaction) => ({
-      id: `scheduled-${st.id}`,
-      date: st.date,
-      account: st.account,
-      vendor: st.vendor,
-      category: st.category,
-      amount: st.amount,
-      remarks: st.remarks,
-      currency: accountCurrencyMap[st.account] || 'USD',
-      user_id: st.user_id,
-      isScheduled: true,
-    }));
+  const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({
+    queryKey: ['scheduledTransactions', user?.id],
+    queryFn: fetchScheduledTransactions,
+    enabled: !!user?.id && !isLoadingUser,
+  });
 
-    const allTransactions = [...transactions, ...upcomingTransactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+  const combinedTransactions = React.useMemo(() => {
+    const today = new Date();
     
-    return allTransactions;
-  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+    const futureMonthsToShow = parseInt(localStorage.getItem('futureMonths') || '2', 10);
+    const futureDateLimit = new Date();
+    futureDateLimit.setMonth(today.getMonth() + futureMonthsToShow);
+
+    const futureTransactions = scheduledTransactions.flatMap(st => {
+      const occurrences: Transaction[] = [];
+      let nextDate = new Date(st.last_processed_date || st.date);
+
+      const frequencyMatch = st.frequency.match(/^(\d+)([dwmy])$/);
+      if (!frequencyMatch) return [];
+
+      const [, numStr, unit] = frequencyMatch;
+      const num = parseInt(numStr, 10);
+
+      const advanceDate = (date: Date) => {
+        const newDate = new Date(date);
+        switch (unit) {
+          case 'd': newDate.setDate(newDate.getDate() + num); break;
+          case 'w': newDate.setDate(newDate.getDate() + num * 7); break;
+          case 'm': newDate.setMonth(newDate.getMonth() + num); break;
+          case 'y': newDate.setFullYear(newDate.getFullYear() + num); break;
+        }
+        return newDate;
+      };
+
+      // Advance nextDate past today if it's still in the past
+      while (nextDate <= today) {
+        nextDate = advanceDate(nextDate);
+      }
+
+      const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
+      if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999); // Normalize to end of day
+
+      while (nextDate < futureDateLimit) {
+        if (recurrenceEndDate && nextDate > recurrenceEndDate) {
+          break; // Stop if we've passed the recurrence end date
+        }
+
+        occurrences.push({
+          id: `scheduled-${st.id}-${nextDate.toISOString()}`,
+          date: nextDate.toISOString(),
+          account: st.account,
+          vendor: st.vendor,
+          category: st.category,
+          amount: st.amount,
+          remarks: st.remarks,
+          currency: accountCurrencyMap.get(st.account) || 'USD',
+          user_id: st.user_id,
+          created_at: st.created_at,
+          is_scheduled_origin: true,
+          recurrence_id: st.id, // Link to the scheduled transaction ID
+          recurrence_frequency: st.frequency,
+          recurrence_end_date: st.recurrence_end_date,
+        });
+        nextDate = advanceDate(nextDate);
+      }
+
+      return occurrences;
+    });
+
+    return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, scheduledTransactions, accountCurrencyMap]); // Removed refetchMainTransactions
+
+  const filteredTransactions = React.useMemo(() => {
+    // console.log("--- Filtering Transactions (useMemo re-run) ---");
+    // console.log("Initial Combined Transactions Count:", combinedTransactions.length);
+    // console.log("Search Term:", searchTerm);
+    // console.log("Selected Accounts:", selectedAccounts);
+    // console.log("Available Account Options Length:", availableAccountOptions.length);
+    // console.log("Selected Categories:", selectedCategories);
+    // console.log("Available Category Options Length:", availableCategoryOptions.length);
+    // console.log("Selected Vendors:", selectedVendors);
+    // console.log("Available Vendor Options Length:", availableVendorOptions.length);
+    // console.log("Date Range:", dateRange);
+
+    let filtered = combinedTransactions;
+
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (t) =>
+          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
+          (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
+      );
+      // console.log("After Search Term Filter:", filtered.length, "transactions");
+    }
+
+    // Account filtering
+    // Only filter if specific accounts are selected (i.e., not all accounts are selected)
+    if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
+      filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
+      // console.log("After Account Filter:", filtered.length, "transactions");
+    }
+
+    // Category filtering
+    // Only filter if specific categories are selected (i.e., not all categories are selected)
+    if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
+      filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
+      // console.log("After Category Filter:", filtered.length, "transactions");
+    }
+
+    // Vendor filtering
+    // Only filter if specific vendors are selected (i.e., not all vendors are selected)
+    if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
+      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
+      // console.log("After Vendor Filter:", filtered.length, "transactions");
+    }
+
+    // Date range filtering
+    if (dateRange?.from) {
+      const fromDate = dateRange.from;
+      const toDate = dateRange.to || new Date();
+      toDate.setHours(23, 59, 59, 999); // Normalize to end of day to include transactions on the 'to' date
+      filtered = filtered.filter((t) => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= fromDate && transactionDate <= toDate;
+      });
+      // console.log("After Date Range Filter:", filtered.length, "transactions");
+    }
+
+    // console.log("Final Filtered Transactions Count:", filtered.length);
+    return filtered;
+  }, [
+    combinedTransactions,
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    selectedVendors,
+    dateRange,
+    availableAccountOptions.length,
+    availableCategoryOptions.length,
+    availableVendorOptions.length,
+  ]);
 
   return {
-    allTransactions: combinedTransactions,
-    isLoading: isLoadingUser || isLoadingScheduled,
-    refetchAllTransactions: () => {
-      refetchTransactions();
-      refetchScheduled();
-    },
+    filteredTransactions,
+    combinedTransactions,
   };
 };

@@ -8,11 +8,26 @@ interface TrendsAndAnalyticsProps {
 }
 
 const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions }) => {
-  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
+  const { formatCurrency } = useCurrency();
 
   const monthlyData = React.useMemo(() => {
-    // ... calculation logic
-    return [];
+    const dataByMonth: Record<string, { income: number; expenses: number }> = {};
+
+    transactions.forEach(t => {
+      const month = new Date(t.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      if (!dataByMonth[month]) {
+        dataByMonth[month] = { income: 0, expenses: 0 };
+      }
+      if (t.category !== 'Transfer') {
+        if (t.amount > 0) {
+          dataByMonth[month].income += t.amount;
+        } else {
+          dataByMonth[month].expenses += Math.abs(t.amount);
+        }
+      }
+    });
+
+    return Object.entries(dataByMonth).map(([month, values]) => ({ month, ...values })).reverse();
   }, [transactions]);
 
   return (
@@ -26,8 +41,8 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions })
           <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
-            <YAxis tickFormatter={(value) => formatCurrency(convertAmount(Number(value)), selectedCurrency)} />
-            <Tooltip formatter={(value) => formatCurrency(convertAmount(Number(value)), selectedCurrency)} />
+            <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
             <Legend />
             <Bar dataKey="income" fill="#22c55e" name="Income" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
