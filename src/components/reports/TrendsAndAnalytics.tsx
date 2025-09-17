@@ -8,7 +8,7 @@ interface TrendsAndAnalyticsProps {
 }
 
 const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions }) => {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const monthlyData = React.useMemo(() => {
     const dataByMonth: Record<string, { income: number; expenses: number }> = {};
@@ -19,16 +19,17 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions })
         dataByMonth[month] = { income: 0, expenses: 0 };
       }
       if (t.category !== 'Transfer') {
-        if (t.amount > 0) {
-          dataByMonth[month].income += t.amount;
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        if (convertedAmount > 0) {
+          dataByMonth[month].income += convertedAmount;
         } else {
-          dataByMonth[month].expenses += Math.abs(t.amount);
+          dataByMonth[month].expenses += Math.abs(convertedAmount);
         }
       }
     });
 
     return Object.entries(dataByMonth).map(([month, values]) => ({ month, ...values })).reverse();
-  }, [transactions]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>

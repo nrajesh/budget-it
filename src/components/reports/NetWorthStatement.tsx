@@ -1,7 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
 
@@ -11,26 +9,31 @@ interface NetWorthStatementProps {
 }
 
 const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, accounts }) => {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const { assets, liabilities, netWorth } = React.useMemo(() => {
     const accountBalances: Record<string, number> = {};
 
+    // Initialize balances by converting each account's starting balance to the selected currency
     accounts.forEach(account => {
-      accountBalances[account.name] = account.starting_balance || 0;
+      const startingBalance = account.starting_balance || 0;
+      const accountCurrency = account.currency || 'USD'; // Assume USD if currency is not specified
+      accountBalances[account.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
     });
 
+    // Adjust balances with each transaction, converting transaction amounts
     transactions.forEach(transaction => {
       if (transaction.category !== 'Transfer') {
-        accountBalances[transaction.account] = (accountBalances[transaction.account] || 0) + transaction.amount;
+        const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+        accountBalances[transaction.account] = (accountBalances[transaction.account] || 0) + convertedAmount;
       }
     });
 
     let totalAssets = 0;
     let totalLiabilities = 0;
 
-    accounts.forEach(account => {
-      const balance = accountBalances[account.name] || 0;
+    // Sum up the final balances
+    Object.values(accountBalances).forEach(balance => {
       if (balance >= 0) {
         totalAssets += balance;
       } else {
@@ -43,10 +46,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
       liabilities: totalLiabilities,
       netWorth: totalAssets - totalLiabilities,
     };
-  }, [transactions, accounts]);
-
-  const assetAccounts = accounts.filter(acc => (acc.starting_balance || 0) >= 0);
-  const liabilityAccounts = accounts.filter(acc => (acc.starting_balance || 0) < 0);
+  }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>

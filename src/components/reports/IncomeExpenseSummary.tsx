@@ -8,7 +8,7 @@ interface IncomeExpenseSummaryProps {
 }
 
 const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transactions }) => {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const summary = React.useMemo(() => {
     const incomeByCategory: Record<string, number> = {};
@@ -18,18 +18,19 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
 
     transactions.forEach(t => {
       if (t.category !== 'Transfer') {
-        if (t.amount > 0) {
-          totalIncome += t.amount;
-          incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + t.amount;
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        if (convertedAmount > 0) {
+          totalIncome += convertedAmount;
+          incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + convertedAmount;
         } else {
-          totalExpenses += Math.abs(t.amount);
-          expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + Math.abs(t.amount);
+          totalExpenses += Math.abs(convertedAmount);
+          expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + Math.abs(convertedAmount);
         }
       }
     });
 
     return { incomeByCategory, expensesByCategory, totalIncome, totalExpenses };
-  }, [transactions]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>
