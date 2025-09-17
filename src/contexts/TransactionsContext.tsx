@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from './UserContext';
 import { showSuccess, showError } from '@/utils/toast';
-import { generateDiverseDemoData as demoDataGenerator } from '@/services/demoDataService';
+import { generateDiverseDemoData as generateDiverseDemoDataService, clearAllTransactions as clearAllTransactionsService } from '@/services/demoDataService';
 
 interface TransactionsContextType {
   transactions: any[];
@@ -23,7 +23,7 @@ interface TransactionsContextType {
   accountCurrencyMap: Record<string, string>;
   generateDiverseDemoData: () => Promise<void>;
   clearAllTransactions: () => Promise<void>;
-  demoDataProgress: { progress: number; message: string };
+  demoDataProgress: { stage: string; progress: number; totalStages: number } | null;
   refetchTransactions: () => void;
   refetchAccounts: () => void;
   refetchVendors: () => void;
@@ -36,7 +36,7 @@ const TransactionsContext = createContext<TransactionsContextType | undefined>(u
 export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
   const { user, isLoadingUser } = useUser();
-  const [demoDataProgress, setDemoDataProgress] = useState({ progress: 0, message: '' });
+  const [demoDataProgress, setDemoDataProgress] = useState<{ stage: string; progress: number; totalStages: number } | null>(null);
 
   const enabled = !!user && !isLoadingUser;
 
@@ -93,7 +93,7 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       showSuccess('Transaction added successfully!');
     },
-    onError: (err) => showError(err.message),
+    onError: (err: any) => showError(err.message),
   });
 
   const { mutateAsync: updateTransaction } = useMutation({
@@ -102,7 +102,7 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       showSuccess('Transaction updated successfully!');
     },
-    onError: (err) => showError(err.message),
+    onError: (err: any) => showError(err.message),
   });
 
   const { mutateAsync: deleteTransaction } = useMutation({
@@ -111,7 +111,7 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       showSuccess('Transaction deleted successfully!');
     },
-    onError: (err) => showError(err.message),
+    onError: (err: any) => showError(err.message),
   });
 
   const { mutateAsync: deleteMultipleTransactions } = useMutation({
@@ -123,30 +123,26 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       showSuccess(`${'Transactions'} deleted successfully!`);
     },
-    onError: (err) => showError(err.message),
+    onError: (err: any) => showError(err.message),
   });
 
   const { mutateAsync: generateDiverseDemoData } = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("User not found");
-      await demoDataGenerator(user.id, (progress, message) => setDemoDataProgress({ progress, message }));
+      await generateDiverseDemoDataService(user.id, setDemoDataProgress);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(); // Invalidate all queries
-      showSuccess('Demo data generated successfully!');
     },
     onError: (err: any) => showError(err.message),
-    onSettled: () => setDemoDataProgress({ progress: 0, message: '' }),
   });
 
   const { mutateAsync: clearAllTransactions } = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('clear_all_app_data');
-      if (error) throw error;
+      await clearAllTransactionsService();
     },
     onSuccess: () => {
       queryClient.invalidateQueries(); // Invalidate all queries
-      showSuccess('All application data cleared!');
     },
     onError: (err: any) => showError(err.message),
   });

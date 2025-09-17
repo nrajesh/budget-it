@@ -1,10 +1,11 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig } from "@/components/ui/chart";
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
-import { RecentTransactions } from "@/components/RecentTransactions";
+import BalanceOverTimeChart from "@/components/BalanceOverTimeChart";
+import SpendingCategoriesChart from "@/components/SpendingCategoriesChart";
+import RecentTransactions from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { slugify } from "@/lib/utils";
 
@@ -24,7 +25,8 @@ const chartConfigForAccounts = {
 } satisfies ChartConfig;
 
 const Analytics = () => {
-  const { transactions, categories: allCategories } = useTransactions(); // Get allCategories from context
+  const { transactions, accounts, accountCurrencyMap, categories: allCategories } = useTransactions();
+  const { formatCurrency } = useCurrency();
 
   // Filter transactions to exclude future-dated ones
   const currentTransactions = React.useMemo(() => {
@@ -87,8 +89,12 @@ const Analytics = () => {
       filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
     }
 
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(t => selectedCategories.includes(slugify(t.category)));
+    }
+
     return filtered;
-  }, [currentTransactions, selectedAccounts]);
+  }, [currentTransactions, selectedAccounts, selectedCategories]);
 
   return (
     <div className="space-y-4">
@@ -116,13 +122,17 @@ const Analytics = () => {
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <BalanceOverTimeChart transactions={filteredTransactions} />
+          <BalanceOverTimeChart transactions={filteredTransactions} accounts={accounts} />
         </div>
         <div className="lg:col-span-1">
           <SpendingCategoriesChart transactions={filteredTransactions} />
         </div>
       </div>
-      <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories.map(slugify)} />
+      <RecentTransactions
+        currentTransactions={filteredTransactions}
+        accountCurrencyMap={accountCurrencyMap}
+        formatCurrency={formatCurrency}
+      />
     </div>
   );
 };

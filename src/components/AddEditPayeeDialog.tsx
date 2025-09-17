@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { Payee } from '@/data/finance-data';
 // ... other imports
 
 const formSchema = z.object({ /* ... */ });

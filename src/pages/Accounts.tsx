@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { TableCell, TableRow } from '@/components/ui/table';
 // ... other imports
 
 const AccountsPage = () => {

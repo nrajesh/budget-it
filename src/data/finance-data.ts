@@ -64,6 +64,27 @@ export type Transaction = {
   recurrence_end_date?: string | null; // Added recurrence_end_date
 };
 
+export interface Payee {
+  id: string;
+  name: string;
+  is_account: boolean;
+  created_at: string;
+  account_id: string | null;
+  currency: string | null;
+  starting_balance: number | null;
+  remarks: string | null;
+  running_balance: number | null;
+  totalTransactions: number;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  totalTransactions: number;
+}
+
 // Base categories for seeding and initial demo data generation.
 // The actual list in the app will be fetched from the database.
 export const baseCategories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];

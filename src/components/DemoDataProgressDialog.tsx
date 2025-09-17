@@ -10,6 +10,10 @@ interface DemoDataProgressDialogProps {
 const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({ isOpen, onOpenChange }) => {
   const { demoDataProgress } = useTransactions();
 
+  const progressPercentage = demoDataProgress
+    ? (demoDataProgress.progress / demoDataProgress.totalStages) * 100
+    : 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -17,9 +21,9 @@ const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({ isOpen,
           <DialogTitle>Generating Demo Data</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
-          <p>{demoDataProgress.message}</p>
-          <Progress value={demoDataProgress.progress} />
-          <p className="text-sm text-muted-foreground text-center">{Math.round(demoDataProgress.progress)}%</p>
+          <p>{demoDataProgress?.stage || 'Initializing...'}</p>
+          <Progress value={progressPercentage} />
+          <p className="text-sm text-muted-foreground text-center">{Math.round(progressPercentage)}%</p>
         </div>
       </DialogContent>
     </Dialog>
