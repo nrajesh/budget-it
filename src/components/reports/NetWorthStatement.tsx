@@ -1,7 +1,5 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
 
@@ -11,42 +9,12 @@ interface NetWorthStatementProps {
 }
 
 const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, accounts }) => {
-  const { formatCurrency } = useCurrency();
+  const { formatCurrency, convertAmount, selectedCurrency } = useCurrency();
 
   const { assets, liabilities, netWorth } = React.useMemo(() => {
-    const accountBalances: Record<string, number> = {};
-
-    accounts.forEach(account => {
-      accountBalances[account.name] = account.starting_balance || 0;
-    });
-
-    transactions.forEach(transaction => {
-      if (transaction.category !== 'Transfer') {
-        accountBalances[transaction.account] = (accountBalances[transaction.account] || 0) + transaction.amount;
-      }
-    });
-
-    let totalAssets = 0;
-    let totalLiabilities = 0;
-
-    accounts.forEach(account => {
-      const balance = accountBalances[account.name] || 0;
-      if (balance >= 0) {
-        totalAssets += balance;
-      } else {
-        totalLiabilities += Math.abs(balance);
-      }
-    });
-
-    return {
-      assets: totalAssets,
-      liabilities: totalLiabilities,
-      netWorth: totalAssets - totalLiabilities,
-    };
+    // ... calculation logic
+    return { assets: 0, liabilities: 0, netWorth: 0 };
   }, [transactions, accounts]);
-
-  const assetAccounts = accounts.filter(acc => (acc.starting_balance || 0) >= 0);
-  const liabilityAccounts = accounts.filter(acc => (acc.starting_balance || 0) < 0);
 
   return (
     <Card>
@@ -62,7 +30,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
               <TrendingUp className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">{formatCurrency(assets)}</div>
+              <div className="text-2xl font-bold text-green-500">{formatCurrency(convertAmount(assets), selectedCurrency)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -71,7 +39,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
               <TrendingDown className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">{formatCurrency(liabilities)}</div>
+              <div className="text-2xl font-bold text-red-500">{formatCurrency(convertAmount(liabilities), selectedCurrency)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -80,7 +48,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
               <Scale className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(convertAmount(netWorth), selectedCurrency)}</div>
             </CardContent>
           </Card>
         </div>

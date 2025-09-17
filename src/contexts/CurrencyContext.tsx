@@ -1,120 +1,83 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { showSuccess } from '@/utils/toast';
+
+const BASE_CURRENCY = 'USD';
+
+export const availableCurrencies = [
+  { code: 'USD', name: 'United States Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'GBP', name: 'British Pound Sterling', symbol: '£' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+];
 
 interface CurrencyContextType {
   selectedCurrency: string;
   setCurrency: (currency: string) => void;
-  convertAmount: (amount: number) => number;
-  formatCurrency: (amount: number, currencyCode?: string) => string;
-  currencySymbols: { [key: string]: string };
-  availableCurrencies: { code: string; name: string }[];
-  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number; // New function
+  formatCurrency: (amount: number, currency: string) => string;
+  availableCurrencies: typeof availableCurrencies;
+  convertAmount: (amount: number, from?: string, to?: string) => number;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// Mock exchange rates relative to USD (assuming all base data is in USD)
-const exchangeRates: { [key: string]: number } = {
-  USD: 1.0,
-  EUR: 0.92, // 1 USD = 0.92 EUR
-  GBP: 0.79, // 1 USD = 0.79 GBP
-  JPY: 155.0, // 1 USD = 155 JPY
-  CAD: 1.37, // 1 USD = 1.37 CAD
-  AUD: 1.51, // 1 USD = 1.51 AUD
-  CHF: 0.90, // 1 USD = 0.90 CHF
-  INR: 83.5, // 1 USD = 83.5 INR
-  BRL: 5.15, // 1 USD = 5.15 BRL
-  CNY: 7.25, // 1 USD = 7.25 CNY
-};
-
-export const currencySymbols: { [key: string]: string } = { // Exported
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: 'C$',
-  AUD: 'A$',
-  CHF: 'CHF',
-  INR: '₹',
-  BRL: 'R$',
-  CNY: '¥',
-};
-
-export const availableCurrencies = [ // Exported
-  { code: 'USD', name: 'US Dollar' },
-  { code: 'EUR', name: 'Euro' },
-  { code: 'GBP', name: 'British Pound' },
-  { code: 'JPY', name: 'Japanese Yen' },
-  { code: 'CAD', name: 'Canadian Dollar' },
-  { code: 'AUD', name: 'Australian Dollar' },
-  { code: 'CHF', name: 'Swiss Franc' },
-  { code: 'INR', name: 'Indian Rupee' },
-  { code: 'BRL', name: 'Brazilian Real' },
-  { code: 'CNY', name: 'Chinese Yuan' },
-];
-
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
-    return localStorage.getItem('selectedCurrency') || 'USD';
-  });
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('selectedCurrency', selectedCurrency);
-  }, [selectedCurrency]);
+    const fetchRates = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${BASE_CURRENCY}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch exchange rates');
+        }
+        const data = await response.json();
+        setExchangeRates(data.rates);
+      } catch (error) {
+        console.error("Could not fetch exchange rates:", error);
+        setExchangeRates({ [BASE_CURRENCY]: 1 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const setCurrency = useCallback((currency: string) => {
-    if (exchangeRates[currency]) {
-      setSelectedCurrency(currency);
-    } else {
-      console.warn(`Currency ${currency} not supported.`);
-    }
+    fetchRates();
   }, []);
 
-  const convertAmount = useCallback((amount: number): number => {
-    const rate = exchangeRates[selectedCurrency];
-    if (rate === undefined) {
-      console.warn(`Exchange rate for ${selectedCurrency} not found. Returning original amount.`);
+  const handleSetCurrency = (currency: string) => {
+    setSelectedCurrency(currency);
+    showSuccess(`Currency changed to ${currency}`);
+  };
+
+  const convertAmount = (amount: number, from: string = BASE_CURRENCY, to: string = selectedCurrency): number => {
+    if (isLoading || !exchangeRates || from === to) {
       return amount;
     }
-    return amount * rate;
-  }, [selectedCurrency]);
+    const fromRate = exchangeRates[from] || 1;
+    const toRate = exchangeRates[to] || 1;
+    const amountInBase = amount / fromRate;
+    return amountInBase * toRate;
+  };
 
-  const convertBetweenCurrencies = useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
-    if (fromCurrency === toCurrency) {
-      return amount;
-    }
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
 
-    const fromRate = exchangeRates[fromCurrency];
-    const toRate = exchangeRates[toCurrency];
-
-    if (fromRate === undefined) {
-      console.warn(`Exchange rate for source currency ${fromCurrency} not found. Cannot convert.`);
-      return amount;
-    }
-    if (toRate === undefined) {
-      console.warn(`Exchange rate for target currency ${toCurrency} not found. Cannot convert.`);
-      return amount;
-    }
-
-    // Convert from source currency to USD, then from USD to target currency
-    const amountInUSD = amount / fromRate;
-    return amountInUSD * toRate;
-  }, []);
-
-  const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
-    const displayCurrency = currencyCode || selectedCurrency;
-    const symbol = currencySymbols[displayCurrency] || displayCurrency;
-    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }, [selectedCurrency]);
-
-  const value = React.useMemo(() => ({
+  const value = {
     selectedCurrency,
-    setCurrency,
-    convertAmount,
+    setCurrency: handleSetCurrency,
     formatCurrency,
-    currencySymbols,
     availableCurrencies,
-    convertBetweenCurrencies, // Include new function
-  }), [selectedCurrency, setCurrency, convertAmount, formatCurrency, convertBetweenCurrencies]);
+    convertAmount,
+  };
 
   return (
     <CurrencyContext.Provider value={value}>

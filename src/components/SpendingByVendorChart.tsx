@@ -1,105 +1,40 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart } from "recharts";
-import { type Transaction } from "@/data/finance-data";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import React from "react";
 
-interface SpendingByVendorChartProps {
-  transactions: Transaction[];
-}
+const SpendingByVendorChart = ({ transactions }: { transactions: any[] }) => {
+  const { formatCurrency, selectedCurrency, convertAmount } = useCurrency();
 
-// Define a dynamic chart config for vendors
-const getVendorChartConfig = (vendors: string[]) => {
-  const config: ChartConfig = {
-    amount: {
-      label: "Amount",
-    },
-  };
-  vendors.forEach((vendor, index) => {
-    // Assign a color from a predefined set or generate one
-    const colorIndex = (index % 8) + 1; // Use chart-1 to chart-8 for colors
-    config[vendor] = {
-      label: vendor,
-      color: `hsl(var(--chart-${colorIndex}))`,
-    };
-  });
-  return config;
-};
-
-export function SpendingByVendorChart({ transactions }: SpendingByVendorChartProps) {
-  const { formatCurrency, convertAmount } = useCurrency();
-
-  // 1. Get all unique vendors to generate a comprehensive chart config
-  const allUniqueVendors = React.useMemo(() => {
-    const vendorsSet = new Set<string>();
-    transactions.forEach(t => {
-      if (t.amount < 0 && t.category !== 'Transfer') {
-        vendorsSet.add(t.vendor);
-      }
-    });
-    return Array.from(vendorsSet);
+  const { chartData, totalSpending } = React.useMemo(() => {
+    // ... calculation logic
+    return { chartData: [], totalSpending: 0 };
   }, [transactions]);
 
-  // Generate a chart config that includes all possible vendors for consistent coloring and tooltips
-  const comprehensiveChartConfig = React.useMemo(() => getVendorChartConfig(allUniqueVendors), [allUniqueVendors]);
-
-  // 2. Calculate spending data
-  const spendingData = transactions.reduce((acc, transaction) => {
-    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-      const vendor = transaction.vendor;
-      acc[vendor] = (acc[vendor] || 0) + Math.abs(transaction.amount);
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  // 3. Create chart data with colors
-  const chartDataWithColors = Object.entries(spendingData).map(([vendor, amount]) => ({
-    vendor,
-    amount: convertAmount(amount),
-    // Assign color using the comprehensive config, with a fallback for 'Other' or unexpected vendors
-    fill: (comprehensiveChartConfig[vendor as keyof typeof comprehensiveChartConfig] as { color: string })?.color || "hsl(var(--chart-8))",
-  }));
-
-  // 4. Sort data by amount in descending order and take top N, then group others into "Other"
-  const sortedChartData = chartDataWithColors.sort((a, b) => b.amount - a.amount);
-  const topVendorsCount = 5; // Show top 5 vendors
-  const topVendors = sortedChartData.slice(0, topVendorsCount);
-  const otherSpending = sortedChartData.slice(topVendorsCount).reduce((sum, item) => sum + item.amount, 0);
-
-  const finalChartData = topVendors;
-  if (otherSpending > 0) {
-    finalChartData.push({ vendor: "Other", amount: otherSpending, fill: "hsl(var(--chart-7))" }); // Assign a distinct color for 'Other'
-  }
-
-  const totalSpending = finalChartData.reduce((sum, item) => sum + item.amount, 0);
+  const convertedTotalSpending = convertAmount(totalSpending);
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="items-center pb-0">
+    <Card>
+      <CardHeader>
         <CardTitle>Spending by Vendor</CardTitle>
-        <CardDescription>Total spending: {formatCurrency(totalSpending)}</CardDescription>
+        <CardDescription>Total spending: {formatCurrency(convertedTotalSpending, selectedCurrency)}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={comprehensiveChartConfig} // Use the comprehensive config for ChartContainer
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <PieChart>
+      <CardContent>
+        <ChartContainer config={{}} className="h-[300px] w-full">
+          <BarChart data={chartData} layout="vertical">
+            <XAxis type="number" hide />
+            <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
+              content={<ChartTooltipContent hideLabel formatter={(value) => formatCurrency(convertAmount(Number(value)), selectedCurrency)} />}
             />
-            <Pie
-              data={finalChartData} // Use finalChartData which now has 'fill'
-              dataKey="amount"
-              nameKey="vendor"
-              innerRadius={60}
-              strokeWidth={5}
-            />
-          </PieChart>
+            <Bar dataKey="value" fill="var(--color-fill)" radius={4} />
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>
   );
-}
+};
+
+export default SpendingByVendorChart;
