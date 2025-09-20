@@ -1,21 +1,156 @@
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BarChart2, ShoppingCart, Banknote } from 'lucide-react';
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { differenceInDays } from 'date-fns';
 
-const AlertsAndInsights = () => {
+interface AlertsAndInsightsProps {
+  historicalTransactions: any[];
+  futureTransactions: any[];
+  accounts: any[];
+}
+
+const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransactions, futureTransactions, accounts }) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+
+  // 1. Calculate Low Balance Alerts
+  const lowBalanceAlerts = React.useMemo(() => {
+    const alerts: { accountName: string; daysUntilNegative: number; finalBalance: number }[] = [];
+    if (accounts.length === 0) return [];
+
+    // Calculate current balances from historical data
+    const currentBalances: Record<string, number> = {};
+    accounts.forEach(acc => {
+      const startingBalance = acc.starting_balance || 0;
+      const accountCurrency = acc.currency || 'USD';
+      currentBalances[acc.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
+    });
+
+    historicalTransactions.forEach(t => {
+      if (t.category !== 'Transfer') {
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        currentBalances[t.account] = (currentBalances[t.account] || 0) + convertedAmount;
+      }
+    });
+
+    // Project future balances
+    const sortedFutureTx = [...futureTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const projectedBalances = { ...currentBalances };
+    const negativeDateMap: Record<string, Date> = {};
+
+    for (const tx of sortedFutureTx) {
+      const convertedAmount = convertBetweenCurrencies(tx.amount, tx.currency, selectedCurrency);
+      projectedBalances[tx.account] = (projectedBalances[tx.account] || 0) + convertedAmount;
+
+      if (projectedBalances[tx.account] < 0 && !negativeDateMap[tx.account]) {
+        negativeDateMap[tx.account] = new Date(tx.date);
+      }
+    }
+
+    Object.keys(negativeDateMap).forEach(accountName => {
+      const daysUntilNegative = differenceInDays(negativeDateMap[accountName], new Date());
+      alerts.push({
+        accountName,
+        daysUntilNegative: daysUntilNegative >= 0 ? daysUntilNegative : 0,
+        finalBalance: projectedBalances[accountName],
+      });
+    });
+
+    return alerts;
+  }, [historicalTransactions, futureTransactions, accounts, selectedCurrency, convertBetweenCurrencies]);
+
+  // 2. Calculate Key Insights from historical data
+  const keyInsights = React.useMemo(() => {
+    const expenseCategoryCounts: Record<string, number> = {};
+    const expenseVendorCounts: Record<string, number> = {};
+    const accountActivityCounts: Record<string, number> = {};
+
+    historicalTransactions.forEach(t => {
+      // Count account activity for all non-transfer transactions
+      if (t.category !== 'Transfer') {
+        accountActivityCounts[t.account] = (accountActivityCounts[t.account] || 0) + 1;
+      }
+
+      // Count expenses by category and vendor
+      if (t.amount < 0 && t.category !== 'Transfer') {
+        expenseCategoryCounts[t.category] = (expenseCategoryCounts[t.category] || 0) + 1;
+        expenseVendorCounts[t.vendor] = (expenseVendorCounts[t.vendor] || 0) + 1;
+      }
+    });
+
+    const getTopThree = (counts: Record<string, number>) => Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3);
+
+    return {
+      topCategories: getTopThree(expenseCategoryCounts),
+      topVendors: getTopThree(expenseVendorCounts),
+      topAccounts: getTopThree(accountActivityCounts),
+    };
+  }, [historicalTransactions]);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Alerts and Insights</CardTitle>
         <CardDescription>
-          Highlights anomalies, overspending, and provides tailored financial tips.
+          Automated analysis of your financial data based on the selected filters.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-        <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">Coming Soon!</h3>
-        <p className="text-muted-foreground">
-          Get automated insights and alerts to stay on top of your finances.
-        </p>
+      <CardContent className="grid gap-6 md:grid-cols-2">
+        {/* Left Column: Alerts */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold flex items-center">
+            <AlertTriangle className="h-5 w-5 mr-2 text-destructive" />
+            Low Balance Alerts
+          </h3>
+          {lowBalanceAlerts.length > 0 ? (
+            <ul className="space-y-2 list-disc pl-5 text-sm">
+              {lowBalanceAlerts.map(alert => (
+                <li key={alert.accountName}>
+                  <span className="font-semibold">{alert.accountName}</span> is projected to have a negative balance in{' '}
+                  <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No accounts are projected to have a negative balance based on your scheduled transactions. Great job!</p>
+          )}
+        </div>
+
+        {/* Right Column: Key Insights */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Key Insights</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start">
+              <BarChart2 className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Top Spending Categories</p>
+                {keyInsights.topCategories.length > 0 ? (
+                  <p className="text-muted-foreground">{keyInsights.topCategories.map(([name]) => name).join(', ')}</p>
+                ) : <p className="text-muted-foreground">No spending data.</p>}
+              </div>
+            </div>
+            <div className="flex items-start">
+              <ShoppingCart className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Most Frequented Vendors</p>
+                {keyInsights.topVendors.length > 0 ? (
+                  <p className="text-muted-foreground">{keyInsights.topVendors.map(([name]) => name).join(', ')}</p>
+                ) : <p className="text-muted-foreground">No spending data.</p>}
+              </div>
+            </div>
+            <div className="flex items-start">
+              <Banknote className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Most Active Accounts</p>
+                {keyInsights.topAccounts.length > 0 ? (
+                  <p className="text-muted-foreground">{keyInsights.topAccounts.map(([name]) => name).join(', ')}</p>
+                ) : <p className="text-muted-foreground">No transaction data.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

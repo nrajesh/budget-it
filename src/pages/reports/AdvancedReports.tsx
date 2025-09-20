@@ -43,11 +43,13 @@ const AdvancedReports = () => {
     availableVendorOptions,
   });
 
-  // Create a historical-only version for charts that shouldn't show future data
-  const historicalFilteredTransactions = React.useMemo(() => {
+  // Create historical and future-only versions for the new components
+  const { historicalFilteredTransactions, futureFilteredTransactions } = React.useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
-    return combinedFilteredTransactions.filter(t => new Date(t.date) <= today);
+    const historical = combinedFilteredTransactions.filter(t => new Date(t.date) <= today);
+    const future = combinedFilteredTransactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
+    return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
   }, [combinedFilteredTransactions]);
 
   const handlePdfExport = () => showSuccess("PDF export is not yet implemented.");
@@ -94,13 +96,18 @@ const AdvancedReports = () => {
       </Card>
 
       <div className="space-y-4">
+        {/* New Alerts and Insights component at the top */}
+        <AlertsAndInsights 
+          historicalTransactions={historicalFilteredTransactions}
+          futureTransactions={futureFilteredTransactions}
+          accounts={accounts}
+        />
+        
         {/* The forecasting chart receives all data, including future events */}
         <TrendForecastingChart transactions={combinedFilteredTransactions} />
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Other charts receive only historical data */}
-          <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />
-          <AlertsAndInsights />
-        </div>
+        
+        {/* Sankey chart receives only historical data */}
+        <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />
       </div>
     </div>
   );
