@@ -1,27 +1,54 @@
 import React from 'react';
-import { DateRangePicker } from '@/components/DateRangePicker';
 import ExportButtons from '@/components/reports/ExportButtons';
 import NetWorthStatement from '@/components/reports/NetWorthStatement';
 import IncomeExpenseSummary from '@/components/reports/IncomeExpenseSummary';
 import TrendsAndAnalytics from '@/components/reports/TrendsAndAnalytics';
 import { useTransactions } from '@/contexts/TransactionsContext';
-import { DateRange } from 'react-day-picker';
 import { showSuccess } from '@/utils/toast';
+import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
+import { useTransactionData } from '@/hooks/transactions/useTransactionData';
+import { TransactionFilters } from '@/components/transactions/TransactionFilters';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 const EssentialReports = () => {
-  const { transactions, accounts } = useTransactions();
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
+  const { accounts } = useTransactions();
 
-  const filteredTransactions = React.useMemo(() => {
-    if (!dateRange?.from) return transactions;
-    const fromDate = dateRange.from;
-    const toDate = dateRange.to || new Date();
-    toDate.setHours(23, 59, 59, 999);
-    return transactions.filter(t => {
-      const transactionDate = new Date(t.date);
-      return transactionDate >= fromDate && transactionDate <= toDate;
-    });
-  }, [transactions, dateRange]);
+  // Use the filters hook to get all filter states and handlers
+  const {
+    searchTerm,
+    setSearchTerm,
+    selectedAccounts,
+    setSelectedAccounts,
+    selectedCategories,
+    setSelectedCategories,
+    selectedVendors,
+    setSelectedVendors,
+    dateRange,
+    setDateRange,
+    availableAccountOptions,
+    availableCategoryOptions,
+    availableVendorOptions,
+    handleResetFilters,
+  } = useTransactionFilters();
+
+  // Use the central data hook to get transactions combined with future scheduled events
+  const { filteredTransactions: combinedFilteredTransactions } = useTransactionData({
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    selectedVendors,
+    dateRange,
+    availableAccountOptions,
+    availableCategoryOptions,
+    availableVendorOptions,
+  });
+
+  // Essential reports should only be based on historical data
+  const historicalFilteredTransactions = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return combinedFilteredTransactions.filter(t => new Date(t.date) <= today);
+  }, [combinedFilteredTransactions]);
 
   const handlePdfExport = () => showSuccess("PDF export is not yet implemented.");
   const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
@@ -35,7 +62,6 @@ const EssentialReports = () => {
           <p className="text-muted-foreground">Your core financial summaries and trends.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <DateRangePicker dateRange={dateRange} onDateChange={setDateRange} />
           <ExportButtons 
             onPdfExport={handlePdfExport}
             onExcelExport={handleExcelExport}
@@ -44,10 +70,33 @@ const EssentialReports = () => {
         </div>
       </div>
 
+      {/* Filters Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Report Filters</CardTitle>
+          <TransactionFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            availableAccountOptions={availableAccountOptions}
+            selectedAccounts={selectedAccounts}
+            setSelectedAccounts={setSelectedAccounts}
+            availableCategoryOptions={availableCategoryOptions}
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
+            availableVendorOptions={availableVendorOptions}
+            selectedVendors={selectedVendors}
+            setSelectedVendors={setSelectedVendors}
+            dateRange={dateRange}
+            onDateChange={setDateRange}
+            onResetFilters={handleResetFilters}
+          />
+        </CardHeader>
+      </Card>
+
       <div className="space-y-4">
-        <NetWorthStatement transactions={filteredTransactions} accounts={accounts} />
-        <IncomeExpenseSummary transactions={filteredTransactions} />
-        <TrendsAndAnalytics transactions={filteredTransactions} />
+        <NetWorthStatement transactions={historicalFilteredTransactions} accounts={accounts} />
+        <IncomeExpenseSummary transactions={historicalFilteredTransactions} />
+        <TrendsAndAnalytics transactions={historicalFilteredTransactions} />
       </div>
     </div>
   );
