@@ -42,20 +42,28 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     accountNames.forEach(name => addNode(`Account: ${name}`));
     expenseCategories.forEach(name => addNode(`Expense: ${name}`));
 
-    // Define links
+    // Define links, preventing cycles
+    const processedTransferIds = new Set<string>();
+
     transactions.forEach(t => {
       const convertedAmount = Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
 
       if (t.category === 'Transfer') {
-        // This is a transfer between two accounts
-        const sourceNode = `Account: ${t.account}`;
-        const targetNode = `Account: ${t.vendor}`;
-        if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
-          links.push({
-            source: nodeMap.get(sourceNode)!,
-            target: nodeMap.get(targetNode)!,
-            value: convertedAmount,
-          });
+        // Process only the debit side of a transfer to create a single directional link
+        // and prevent cycles. Also, ensure we haven't processed this transfer_id yet.
+        if (t.transfer_id && !processedTransferIds.has(t.transfer_id) && t.amount < 0) {
+          const sourceNode = `Account: ${t.account}`;
+          const targetNode = `Account: ${t.vendor}`;
+          
+          // Ensure source and target are different to prevent self-loops
+          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode) && sourceNode !== targetNode) {
+            links.push({
+              source: nodeMap.get(sourceNode)!,
+              target: nodeMap.get(targetNode)!,
+              value: convertedAmount,
+            });
+            processedTransferIds.add(t.transfer_id);
+          }
         }
       } else if (t.amount > 0) {
         // Income flow
