@@ -16,15 +16,37 @@ This is a React application built with TypeScript, React Router, Tailwind CSS, a
 *   Manage accounts and vendors.
 *   Import and export transactions via CSV.
 
-### Scheduled Transactions (New!)
+### Scheduled Transactions
 *   **View and Manage**: Users can view, add, edit, and delete recurring scheduled transactions.
-*   **Recurrence Options**: Define transactions with a specific start date, frequency (daily, weekly, monthly, yearly), and an optional end date.
-*   **Date Restrictions**:
-    *   **Start Date**: Must be tomorrow or any future date. Today's date is not selectable.
-    *   **End Date**: Must be at least the selected Start Date, and also at least the day after tomorrow.
-*   **Import/Export**: Easily import scheduled transactions from a CSV file or export existing ones.
-*   **Automatic Processing**: Scheduled transactions with past due dates are automatically processed and added to your main transactions, with their `last_processed_date` updated to today.
-*   **Dynamic Category**: The category for a scheduled transaction automatically defaults to 'Transfer' if the selected vendor is an account, and cannot be 'Transfer' otherwise.
+*   **Recurrence Options**: Define transactions with a specific start date, frequency (e.g., every 2 weeks, every 1 month), and an optional end date.
+*   **Automatic Processing**: Scheduled transactions are automatically processed and added to your main transaction list as their due dates pass.
+
+### Entity Management
+*   Dedicated pages to manage **Accounts**, **Vendors**, and **Categories**.
+*   Full CRUD (Create, Read, Update, Delete) functionality for each entity.
+*   Features include bulk deletion, CSV import/export, and quick inline editing.
+
+### Reporting Module
+The reporting module is split into two sections, both equipped with powerful filtering capabilities that allow you to drill down into your data by date range, search term, accounts, categories, and vendors.
+
+#### Essential Reports
+This section provides a clear overview of your current financial standing based on historical data.
+*   **Net Worth Statement**: A snapshot of your financial health, summarizing total assets, liabilities, and your resulting net worth.
+*   **Income & Expense Summary**: A detailed breakdown of your income and expenses, grouped by category.
+*   **Trends and Analytics**: A visual bar chart that compares your monthly income versus expenses, helping you identify financial patterns over time.
+
+#### Advanced Reports
+This section leverages both historical and future scheduled transactions to provide insightful projections.
+*   **Trend Forecasting**: A line chart that analyzes your historical net income to project future trends. It intelligently incorporates the impact of your scheduled transactions to offer a more accurate financial forecast.
+*   **Financial Flow (Sankey Chart)**: A powerful visualization that shows how your money moves—from income sources, through your various accounts, and out to different expense categories.
+*   **Alerts and Insights**: An automated analysis of your data that provides:
+    *   **Low Balance Warnings**: Proactively alerts you if an account is projected to have a negative balance based on upcoming scheduled transactions.
+    *   **Key Insights**: Highlights your top spending categories, most frequented vendors, and most active accounts.
+
+### Settings
+*   **Default Currency**: Set your preferred currency for all reports, summaries, and data displays.
+*   **Future Projections**: Configure how many months into the future the Advanced Reports should project data from your scheduled transactions.
+*   **Data Management**: Easily reset all application data or generate a comprehensive set of demo data to explore the app's features without using your own information.
 
 ## Getting Started
 
@@ -60,6 +82,7 @@ The application will be available at `http://localhost:3000`.
 *   `src/pages/`: Contains the main application pages.
 *   `src/components/`: Reusable UI components.
 *   `src/contexts/`: React Context API for global state management.
+*   `src/hooks/`: Custom hooks for reusable logic (e.g., transaction management).
 *   `src/integrations/supabase/`: Supabase client and utility functions.
 *   `src/lib/`: Utility functions and helper modules.
 *   `src/services/`: Business logic and data fetching services.
@@ -73,8 +96,8 @@ The application will be available at `http://localhost:3000`.
 *   **Tailwind CSS**: Utility-first CSS framework
 *   **Shadcn/ui**: Reusable UI components built with Radix UI and Tailwind CSS
 *   **Supabase**: Backend-as-a-Service (database, authentication, edge functions)
-*   **React Hook Form**: Form management with validation
-*   **Zod**: Schema validation
-*   **React Query**: Data fetching, caching, and synchronization
-*   **PapaParse**: CSV parsing and unparsing
+*   **React Query**: For server state management, caching, and data fetching.
+*   **React Hook Form & Zod**: For robust form handling and validation.
+*   **PapaParse**: For CSV import/export functionality.
+*   **Recharts**: For data visualization and charts.
 *   **Lucide React**: Icon library
