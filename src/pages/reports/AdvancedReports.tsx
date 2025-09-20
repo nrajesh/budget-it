@@ -2,6 +2,7 @@ import React from 'react';
 import ExportButtons from '@/components/reports/ExportButtons';
 import SankeyChart from '@/components/reports/SankeyChart';
 import AlertsAndInsights from '@/components/reports/AlertsAndInsights';
+import TrendForecastingChart from '@/components/reports/TrendForecastingChart'; // Import the new chart
 import { showSuccess } from '@/utils/toast';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
@@ -126,9 +127,12 @@ const AdvancedReports = () => {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <SankeyChart transactions={filteredTransactions} accounts={accounts} />
-        <AlertsAndInsights />
+      <div className="space-y-4">
+        <TrendForecastingChart transactions={filteredTransactions} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <SankeyChart transactions={filteredTransactions} accounts={accounts} />
+          <AlertsAndInsights />
+        </div>
       </div>
     </div>
   );
