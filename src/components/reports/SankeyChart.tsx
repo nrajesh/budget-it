@@ -43,36 +43,34 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     accountNames.forEach(name => addNode(`Account: ${name}`));
     expenseCategories.forEach(name => addNode(`Expense: ${name}`));
     if (hasTransfers) {
-      addNode('Transfers'); // Add the central Transfers node to break cycles
+      addNode('Transfer Out');
+      addNode('Transfer In');
     }
 
-    // Define links, preventing cycles
-    const processedTransferIds = new Set<string>();
-
+    // Define links
     transactions.forEach(t => {
       const convertedAmount = Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
 
       if (t.category === 'Transfer') {
-        // Process only the debit side of a transfer to create a single directional flow
-        if (t.transfer_id && !processedTransferIds.has(t.transfer_id) && t.amount < 0) {
+        if (t.amount < 0) { // Debit - money leaving an account
           const sourceNode = `Account: ${t.account}`;
-          const intermediateNode = 'Transfers';
-          const targetNode = `Account: ${t.vendor}`;
-          
-          if (nodeMap.has(sourceNode) && nodeMap.has(intermediateNode) && nodeMap.has(targetNode) && sourceNode !== targetNode) {
-            // Link from source account to the central Transfers node
+          const targetNode = 'Transfer Out';
+          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
             links.push({
               source: nodeMap.get(sourceNode)!,
-              target: nodeMap.get(intermediateNode)!,
-              value: convertedAmount,
-            });
-            // Link from the Transfers node to the target account
-            links.push({
-              source: nodeMap.get(intermediateNode)!,
               target: nodeMap.get(targetNode)!,
               value: convertedAmount,
             });
-            processedTransferIds.add(t.transfer_id);
+          }
+        } else { // Credit - money entering an account
+          const sourceNode = 'Transfer In';
+          const targetNode = `Account: ${t.account}`;
+          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
+            links.push({
+              source: nodeMap.get(sourceNode)!,
+              target: nodeMap.get(targetNode)!,
+              value: convertedAmount,
+            });
           }
         }
       } else if (t.amount > 0) {
