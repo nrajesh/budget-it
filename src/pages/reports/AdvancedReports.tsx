@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import ExportButtons from '@/components/reports/ExportButtons';
 import SankeyChart from '@/components/reports/SankeyChart';
 import AlertsAndInsights from '@/components/reports/AlertsAndInsights';
@@ -12,6 +13,16 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AdvancedReports = () => {
   const { accounts } = useTransactions();
+  const [futureMonths, setFutureMonths] = React.useState(2);
+
+  // This effect will run on component mount and keep the displayed value in sync
+  // with the setting, even if the user navigates away and back.
+  React.useEffect(() => {
+    const savedMonths = localStorage.getItem('futureMonths');
+    if (savedMonths) {
+      setFutureMonths(parseInt(savedMonths, 10));
+    }
+  }, []);
 
   // Use the filters hook to get all filter states and handlers
   const {
@@ -61,7 +72,13 @@ const AdvancedReports = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Advanced Reports</h2>
-          <p className="text-muted-foreground">Future projections and intelligent insights.</p>
+          <p className="text-muted-foreground">
+            Future projections for the next {futureMonths} months. You can change this in{' '}
+            <Link to="/settings" className="text-primary underline">
+              Settings
+            </Link>
+            .
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <ExportButtons 
