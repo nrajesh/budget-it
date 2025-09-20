@@ -4,16 +4,22 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface TrendForecastingChartProps {
-  transactions: any[];
+  transactions: any[]; // This will now include future scheduled transactions
 }
 
 const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transactions }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const chartData = React.useMemo(() => {
-    // 1. Aggregate data by month
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Consider today as historical
+
+    const historicalTransactions = transactions.filter(t => new Date(t.date) <= today);
+    const futureScheduledTransactions = transactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
+
+    // 1. Aggregate historical data by month
     const monthlyNet: { [key: string]: number } = {};
-    transactions.forEach(t => {
+    historicalTransactions.forEach(t => {
       if (t.category !== 'Transfer') {
         const date = new Date(t.date);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -31,7 +37,7 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
       actual: monthlyNet[monthKey],
     }));
 
-    // 2. Linear Regression calculation
+    // 2. Linear Regression on historical data
     let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
     const n = historicalData.length;
 
@@ -45,23 +51,40 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
 
-    // 3. Generate forecast data for the next 6 months
+    // 3. Aggregate future scheduled transactions by month
+    const futureMonthlyImpact: { [key: string]: number } = {};
+    futureScheduledTransactions.forEach(t => {
+        const date = new Date(t.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        futureMonthlyImpact[monthKey] = (futureMonthlyImpact[monthKey] || 0) + convertedAmount;
+    });
+
+    // 4. Generate combined data for chart
     const forecastMonths = 6;
     const combinedData = historicalData.map(point => ({
       ...point,
-      forecast: slope * point.index + intercept,
+      baselineForecast: slope * point.index + intercept,
+      finalForecast: null,
     }));
+
+    const lastHistoricalMonth = new Date(sortedMonths[n - 1] + '-02');
 
     for (let i = 0; i < forecastMonths; i++) {
       const futureIndex = n + i;
-      const futureDate = new Date(sortedMonths[n - 1] + '-02');
+      const futureDate = new Date(lastHistoricalMonth);
       futureDate.setMonth(futureDate.getMonth() + i + 1);
-      
+      const futureMonthKey = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}`;
+
+      const baseline = slope * futureIndex + intercept;
+      const scheduledImpact = futureMonthlyImpact[futureMonthKey] || 0;
+
       combinedData.push({
         index: futureIndex,
         month: futureDate.toLocaleString('default', { month: 'short', year: '2-digit' }),
-        actual: null, // No actual data for future months
-        forecast: slope * futureIndex + intercept,
+        actual: null,
+        baselineForecast: baseline,
+        finalForecast: baseline + scheduledImpact,
       });
     }
 
@@ -73,7 +96,7 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
       <CardHeader>
         <CardTitle>Net Income Trend & Forecast</CardTitle>
         <CardDescription>
-          Historical net income with a 6-month forecast based on a linear trend.
+          Historical net income with a 6-month forecast, including scheduled transactions.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -83,10 +106,11 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
-              <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1)]} />
+              <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').trim()]} />
               <Legend />
-              <Line type="monotone" dataKey="actual" stroke="#8884d8" name="Actual Net Income" />
-              <Line type="monotone" dataKey="forecast" stroke="#82ca9d" strokeDasharray="5 5" name="Forecasted Trend" />
+              <Line type="monotone" dataKey="actual" stroke="#8884d8" name="Actual Net Income" strokeWidth={2} />
+              <Line type="monotone" dataKey="baselineForecast" stroke="#cccccc" strokeDasharray="5 5" name="Baseline Trend" />
+              <Line type="monotone" dataKey="finalForecast" stroke="#82ca9d" strokeWidth={2} name="Forecast with Scheduled" />
             </LineChart>
           </ResponsiveContainer>
         ) : (

@@ -2,16 +2,16 @@ import React from 'react';
 import ExportButtons from '@/components/reports/ExportButtons';
 import SankeyChart from '@/components/reports/SankeyChart';
 import AlertsAndInsights from '@/components/reports/AlertsAndInsights';
-import TrendForecastingChart from '@/components/reports/TrendForecastingChart'; // Import the new chart
+import TrendForecastingChart from '@/components/reports/TrendForecastingChart';
 import { showSuccess } from '@/utils/toast';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
+import { useTransactionData } from '@/hooks/transactions/useTransactionData';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
-import { slugify } from '@/lib/utils';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AdvancedReports = () => {
-  const { transactions, accounts } = useTransactions();
+  const { accounts } = useTransactions();
 
   // Use the filters hook to get all filter states and handlers
   const {
@@ -31,62 +31,28 @@ const AdvancedReports = () => {
     handleResetFilters,
   } = useTransactionFilters();
 
-  const handlePdfExport = () => showSuccess("PDF export is not yet implemented.");
-  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
-  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
-
-  // Apply all filters to the transactions data
-  const filteredTransactions = React.useMemo(() => {
-    let filtered = transactions;
-
-    // Search term filter
-    if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
-          (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
-      );
-    }
-
-    // Account filter
-    if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
-      filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
-    }
-
-    // Category filter
-    if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
-      filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
-    }
-
-    // Vendor filter
-    if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
-      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
-    }
-
-    // Date range filter
-    if (dateRange?.from) {
-      const fromDate = dateRange.from;
-      const toDate = dateRange.to || new Date();
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((t) => {
-        const transactionDate = new Date(t.date);
-        return transactionDate >= fromDate && transactionDate <= toDate;
-      });
-    }
-
-    return filtered;
-  }, [
-    transactions,
+  // Use the central data hook to get transactions combined with future scheduled events
+  const { filteredTransactions: combinedFilteredTransactions } = useTransactionData({
     searchTerm,
     selectedAccounts,
     selectedCategories,
     selectedVendors,
     dateRange,
-    availableAccountOptions.length,
-    availableCategoryOptions.length,
-    availableVendorOptions.length,
-  ]);
+    availableAccountOptions,
+    availableCategoryOptions,
+    availableVendorOptions,
+  });
+
+  // Create a historical-only version for charts that shouldn't show future data
+  const historicalFilteredTransactions = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return combinedFilteredTransactions.filter(t => new Date(t.date) <= today);
+  }, [combinedFilteredTransactions]);
+
+  const handlePdfExport = () => showSuccess("PDF export is not yet implemented.");
+  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
+  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
 
   return (
     <div className="space-y-6">
@@ -128,9 +94,11 @@ const AdvancedReports = () => {
       </Card>
 
       <div className="space-y-4">
-        <TrendForecastingChart transactions={filteredTransactions} />
+        {/* The forecasting chart receives all data, including future events */}
+        <TrendForecastingChart transactions={combinedFilteredTransactions} />
         <div className="grid gap-4 md:grid-cols-2">
-          <SankeyChart transactions={filteredTransactions} accounts={accounts} />
+          {/* Other charts receive only historical data */}
+          <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />
           <AlertsAndInsights />
         </div>
       </div>
