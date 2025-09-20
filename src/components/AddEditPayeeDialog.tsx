@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 export type Payee = {
   id: string;
@@ -64,7 +64,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   isAccountOnly = false,
 }) => {
   const { availableCurrencies } = useCurrency();
-  const { refetchAllPayees, fetchTransactions } = useTransactions(); // Use refetchAllPayees and fetchTransactions from context
+  const { invalidateAllData } = useTransactions();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -146,8 +146,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         showSuccess("Payee added successfully!");
       }
       onSuccess();
-      refetchAllPayees(); // Call refetchAllPayees after any successful add/edit
-      fetchTransactions(); // Also refetch transactions to update any affected entries
+      await invalidateAllData();
       onOpenChange(false);
     } catch (error: any) {
       showError(`Error: ${error.message}`);
@@ -178,7 +177,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                 </FormItem>
               )}
             />
-            {!(payee && payee.is_account) && ( // Only render if not editing an account
+            {!(payee && payee.is_account) && (
               <FormField
                 control={form.control}
                 name="is_account"

@@ -9,7 +9,7 @@ import { useTransactionCSV } from "@/hooks/transactions/useTransactionCSV";
 import { useTransactionUI } from "@/hooks/transactions/useTransactionUI";
 
 export const useTransactionManagement = () => {
-  const { transactions: allTransactions, accountCurrencyMap, fetchTransactions: refetchTransactions } = useTransactions(); // Get refetchTransactions
+  const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions(); // Get refetchTransactions
   const { formatCurrency } = useCurrency();
 
   // 1. Filters

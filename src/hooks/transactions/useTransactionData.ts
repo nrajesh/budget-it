@@ -34,12 +34,12 @@ export const useTransactionData = ({
   availableCategoryOptions,
   availableVendorOptions,
 }: UseTransactionDataProps) => {
-  const { transactions, accountCurrencyMap, fetchTransactions: refetchMainTransactions } = useTransactions();
+  const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
 
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions } = createScheduledTransactionsService({
-    fetchTransactions: refetchMainTransactions, // Pass the actual refetch function
+    refetchTransactions: refetchMainTransactions, // Pass the actual refetch function
     userId: user?.id,
   });
 

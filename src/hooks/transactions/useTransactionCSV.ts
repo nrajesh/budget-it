@@ -10,8 +10,9 @@ import Papa from "papaparse";
 export const useTransactionCSV = () => {
   const {
     transactions,
-    fetchTransactions,
-    refetchAllPayees,
+    refetchTransactions,
+    refetchVendors,
+    refetchAccounts,
     accountCurrencyMap,
   } = useTransactions();
   const { user } = useUser();
@@ -77,7 +78,7 @@ export const useTransactionCSV = () => {
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
           await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
 
-          await refetchAllPayees(); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
+          await Promise.all([refetchVendors(), refetchAccounts()]); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
 
           // Step 3: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
@@ -125,7 +126,7 @@ export const useTransactionCSV = () => {
           if (error) throw error;
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          fetchTransactions();
+          refetchTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
         } finally {
@@ -140,7 +141,7 @@ export const useTransactionCSV = () => {
         setIsImporting(false);
       },
     });
-  }, [user, fetchTransactions, refetchAllPayees, accountCurrencyMap]);
+  }, [user, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap]);
 
   const handleExportClick = React.useCallback(() => {
     if (transactions.length === 0) {

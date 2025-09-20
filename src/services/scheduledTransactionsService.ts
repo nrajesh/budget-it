@@ -6,7 +6,7 @@ import { getAccountCurrency } from '@/integrations/supabase/utils';
 import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ScheduledTransactionsServiceProps {
-  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
+  refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   userId: string | undefined;
 }
 
@@ -25,16 +25,14 @@ export type ScheduledTransaction = {
   recurrence_end_date?: string;
 };
 
-export const createScheduledTransactionsService = ({ fetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
+export const createScheduledTransactionsService = ({ refetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
   const { convertBetweenCurrencies } = useCurrency();
 
   const calculateNextOccurrence = (baseDateISO: string, frequency: string): string => {
     const baseDate = new Date(baseDateISO);
     const frequencyMatch = frequency.match(/^(\d+)([dwmy])$/);
 
-    if (!frequencyMatch) {
-      return baseDateISO;
-    }
+    if (!frequencyMatch) return baseDateISO;
 
     const [, numStr, unit] = frequencyMatch;
     const num = parseInt(numStr, 10);
@@ -47,15 +45,11 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
       case 'y': newDate.setFullYear(newDate.getFullYear() + num); break;
       default: return baseDateISO;
     }
-
     return newDate.toISOString();
   };
 
   const processScheduledTransactions = async () => {
-    if (!userId) {
-      console.warn("User not logged in. Cannot process scheduled transactions.");
-      return;
-    }
+    if (!userId) return;
 
     try {
       const { data: scheduledTransactions, error: fetchError } = await supabase
@@ -64,10 +58,7 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
         .eq('user_id', userId);
 
       if (fetchError) throw fetchError;
-      if (!scheduledTransactions || scheduledTransactions.length === 0) {
-        console.log("No scheduled transactions found for user:", userId);
-        return;
-      }
+      if (!scheduledTransactions || scheduledTransactions.length === 0) return;
 
       const accountNames = [...new Set(scheduledTransactions.flatMap(st => [st.account, st.vendor]))];
       const { data: vendorAccountData, error: currencyError } = await supabase
@@ -85,154 +76,73 @@ export const createScheduledTransactionsService = ({ fetchTransactions, userId }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      console.log("Current 'today' for processing:", today.toISOString());
 
       const transactionsToAdd: Omit<Transaction, 'id' | 'created_at'>[] = [];
       const updatesToMake: { id: string; last_processed_date: string }[] = [];
 
       for (const st of scheduledTransactions) {
-        console.log("\n--- Processing Scheduled Transaction ---");
-        console.log("Scheduled Transaction ID:", st.id);
-        console.log("  st.date (Start Date):", st.date);
-        console.log("  st.last_processed_date (Last Processed):", st.last_processed_date);
-        console.log("  st.recurrence_end_date (End Date):", st.recurrence_end_date);
-        console.log("  st.frequency:", st.frequency);
-
         let nextDateToProcess = new Date(st.date);
         nextDateToProcess.setHours(0, 0, 0, 0);
-
         let latestProcessedDateForThisST = st.last_processed_date ? new Date(st.last_processed_date) : null;
-        if (latestProcessedDateForThisST) {
-            latestProcessedDateForThisST.setHours(0, 0, 0, 0);
-        }
-        console.log("  Initial nextDateToProcess:", nextDateToProcess.toISOString());
-        console.log("  LatestProcessedDateForThisST:", latestProcessedDateForThisST ? latestProcessedDateForThisST.toISOString() : "N/A");
-
-
+        if (latestProcessedDateForThisST) latestProcessedDateForThisST.setHours(0, 0, 0, 0);
         let newLastProcessedDateCandidate = latestProcessedDateForThisST;
-
         const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
         if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999);
 
-        let iterationCount = 0;
         while (nextDateToProcess <= today) {
-            iterationCount++;
-            console.log(`  Iteration ${iterationCount}: Checking nextDateToProcess: ${nextDateToProcess.toISOString()}`);
+          if (recurrenceEndDate && nextDateToProcess > recurrenceEndDate) break;
 
-            if (recurrenceEndDate && nextDateToProcess > recurrenceEndDate) {
-                console.log("    Recurrence end date reached. Breaking loop.");
-                break;
-            }
+          if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
+            const baseTransactionFields = {
+              date: nextDateToProcess.toISOString(),
+              account: st.account,
+              vendor: st.vendor,
+              category: st.category,
+              amount: st.amount,
+              remarks: st.remarks || undefined,
+              currency: currencyMap.get(st.account) || 'USD',
+              user_id: userId,
+              is_scheduled_origin: true,
+            };
 
-            if (!latestProcessedDateForThisST || nextDateToProcess > latestProcessedDateForThisST) {
-                console.log("    Condition met: Adding transaction for date:", nextDateToProcess.toISOString());
-                const baseTransactionFields = {
-                    date: nextDateToProcess.toISOString(),
-                    account: st.account,
-                    vendor: st.vendor,
-                    category: st.category,
-                    amount: st.amount,
-                    remarks: st.remarks || undefined,
-                    currency: currencyMap.get(st.account) || 'USD',
-                    user_id: userId,
-                    is_scheduled_origin: true,
-                };
-
-                if (st.category === 'Transfer') {
-                    const transfer_id = `transfer_scheduled_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-                    const newAmount = Math.abs(st.amount);
-
-                    const sourceAccountCurrency = currencyMap.get(st.account) || 'USD';
-                    const destinationAccountCurrency = currencyMap.get(st.vendor) || 'USD';
-
-                    const convertedReceivingAmount = convertBetweenCurrencies(
-                      newAmount,
-                      sourceAccountCurrency,
-                      destinationAccountCurrency
-                    );
-
-                    const debitTransaction = {
-                        ...baseTransactionFields,
-                        transfer_id: transfer_id,
-                        amount: -newAmount,
-                        remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (To ${st.vendor})` : `Transfer to ${st.vendor}`,
-                    };
-                    transactionsToAdd.push(debitTransaction);
-                    console.log("    Pushed debit transaction:", JSON.stringify(debitTransaction));
-
-                    const creditTransaction = {
-                        ...baseTransactionFields,
-                        transfer_id: transfer_id,
-                        account: st.vendor,
-                        vendor: st.account,
-                        amount: convertedReceivingAmount,
-                        remarks: baseTransactionFields.remarks ? `${baseTransactionFields.remarks} (From ${st.account})` : `Transfer from ${st.account}`,
-                        currency: destinationAccountCurrency,
-                    };
-                    transactionsToAdd.push(creditTransaction);
-                    console.log("    Pushed credit transaction:", JSON.stringify(creditTransaction));
-                    console.log("    Current transactionsToAdd length:", transactionsToAdd.length);
-                } else {
-                    transactionsToAdd.push(baseTransactionFields);
-                    console.log("    Added single transaction:", JSON.stringify(baseTransactionFields));
-                }
-                newLastProcessedDateCandidate = nextDateToProcess;
+            if (st.category === 'Transfer') {
+              const transfer_id = `transfer_scheduled_${st.id}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+              const newAmount = Math.abs(st.amount);
+              const sourceAccountCurrency = currencyMap.get(st.account) || 'USD';
+              const destinationAccountCurrency = currencyMap.get(st.vendor) || 'USD';
+              const convertedReceivingAmount = convertBetweenCurrencies(newAmount, sourceAccountCurrency, destinationAccountCurrency);
+              transactionsToAdd.push({ ...baseTransactionFields, transfer_id, amount: -newAmount, remarks: `Transfer to ${st.vendor}` });
+              transactionsToAdd.push({ ...baseTransactionFields, transfer_id, account: st.vendor, vendor: st.account, amount: convertedReceivingAmount, remarks: `Transfer from ${st.account}`, currency: destinationAccountCurrency });
             } else {
-                console.log("    Condition NOT met: nextDateToProcess is not greater than latestProcessedDateForThisST. Skipping.");
+              transactionsToAdd.push(baseTransactionFields);
             }
-            nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));
-            nextDateToProcess.setHours(0, 0, 0, 0);
+            newLastProcessedDateCandidate = nextDateToProcess;
+          }
+          nextDateToProcess = new Date(calculateNextOccurrence(nextDateToProcess.toISOString(), st.frequency));
+          nextDateToProcess.setHours(0, 0, 0, 0);
         }
-        console.log("  Loop finished for scheduled transaction ID:", st.id);
-
 
         if (newLastProcessedDateCandidate && (!latestProcessedDateForThisST || newLastProcessedDateCandidate > latestProcessedDateForThisST)) {
-            updatesToMake.push({
-                id: st.id,
-                last_processed_date: newLastProcessedDateCandidate.toISOString(),
-            });
-            console.log("  Updating last_processed_date for ST ID:", st.id, "to:", newLastProcessedDateCandidate.toISOString());
-        } else {
-            console.log("  No update to last_processed_date needed for ST ID:", st.id);
+          updatesToMake.push({ id: st.id, last_processed_date: newLastProcessedDateCandidate.toISOString() });
         }
       }
 
       if (transactionsToAdd.length > 0) {
-        console.log("\n--- Inserting Generated Transactions ---");
-        console.log("Total transactions to insert:", transactionsToAdd.length);
-        console.log("Transactions to insert:", JSON.stringify(transactionsToAdd, null, 2)); // Log the full array
         const { error: insertError } = await supabase.from('transactions').insert(transactionsToAdd);
-        if (insertError) {
-          console.error("Failed to insert scheduled transactions:", insertError.message);
-          showError(`Failed to add some scheduled transactions: ${insertError.message}`);
-        } else {
-            console.log("Successfully inserted generated transactions.");
-        }
-      } else {
-          console.log("No new transactions to insert.");
+        if (insertError) showError(`Failed to add some scheduled transactions: ${insertError.message}`);
       }
 
       if (updatesToMake.length > 0) {
-        console.log("\n--- Updating Scheduled Transactions last_processed_date ---");
-        console.log("Total scheduled transactions to update:", updatesToMake.length);
         const updatePromises = updatesToMake.map(update =>
-          supabase
-            .from('scheduled_transactions')
-            .update({ last_processed_date: update.last_processed_date })
-            .eq('id', update.id)
+          supabase.from('scheduled_transactions').update({ last_processed_date: update.last_processed_date }).eq('id', update.id)
         );
         await Promise.all(updatePromises);
-        console.log("Successfully updated last_processed_date for scheduled transactions.");
-      } else {
-          console.log("No scheduled transactions to update last_processed_date.");
       }
 
       if (transactionsToAdd.length > 0) {
-        console.log("Refetching main transactions after processing scheduled transactions.");
-        await fetchTransactions();
+        await refetchTransactions();
       }
     } catch (error: any) {
-      console.error("Error processing scheduled transactions:", error.message);
       showError(`Failed to process scheduled transactions: ${error.message}`);
       throw error;
     }

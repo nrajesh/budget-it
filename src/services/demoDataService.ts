@@ -4,17 +4,15 @@ import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase
 import { Transaction, baseCategories } from '@/data/finance-data';
 import { availableCurrencies } from '@/contexts/CurrencyContext';
 import { Category } from '@/pages/Categories';
-import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
+import { QueryObserverResult } from '@tanstack/react-query';
 
 interface DemoDataServiceProps {
-  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Now react-query's refetch function
-  refetchAllPayees: () => Promise<void>; // Now react-query's invalidateQueries function
-  // setTransactions, setVendors, setAccounts, setCategories are no longer needed
+  refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
+  invalidateAllData: () => Promise<void>;
   setDemoDataProgress: React.Dispatch<React.SetStateAction<{ stage: string; progress: number; totalStages: number } | null>>;
   userId: string | undefined;
 }
 
-// Helper function to generate sample transactions for a given month, account, and currency
 const generateTransactions = async (
   monthOffset: number,
   count: number,
@@ -35,13 +33,11 @@ const generateTransactions = async (
 
     const isTransfer = Math.random() < 0.2;
     const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
-
     const currencyCode = accountCurrencyMap.get(accountName) || 'USD';
 
     let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
     let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)];
     let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
-
     let destinationAccountCurrency: string = 'USD';
 
     if (isTransfer) {
@@ -74,47 +70,26 @@ const generateTransactions = async (
 
     if (isTransfer) {
       const transfer_id = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
-      const debitTransaction: Omit<Transaction, 'id' | 'created_at'> = {
-        ...baseTransactionDetails,
-        transfer_id,
-        amount: -Math.abs(baseTransactionDetails.amount),
-        category: 'Transfer',
-        remarks: baseTransactionDetails.remarks ? `${baseTransactionDetails.remarks} (To ${baseTransactionDetails.vendor})` : `Transfer to ${baseTransactionDetails.vendor}`,
-      };
-      sampleTransactions.push(debitTransaction);
-
-      const creditTransaction: Omit<Transaction, 'id' | 'created_at'> = {
-        ...baseTransactionDetails,
-        transfer_id,
-        account: baseTransactionDetails.vendor,
-        vendor: baseTransactionDetails.account,
-        amount: Math.abs(baseTransactionDetails.amount),
-        category: 'Transfer',
-        remarks: baseTransactionDetails.remarks ? `${(baseTransactionDetails.remarks as string).replace(`(To ${baseTransactionDetails.vendor})`, `(From ${baseTransactionDetails.account})`)}` : `Transfer from ${baseTransactionDetails.account}`,
-        currency: destinationAccountCurrency,
-      };
-      sampleTransactions.push(creditTransaction);
+      sampleTransactions.push({ ...baseTransactionDetails, transfer_id, amount: -Math.abs(baseTransactionDetails.amount), category: 'Transfer', remarks: `Transfer to ${baseTransactionDetails.vendor}` });
+      sampleTransactions.push({ ...baseTransactionDetails, transfer_id, account: baseTransactionDetails.vendor, vendor: baseTransactionDetails.account, amount: Math.abs(baseTransactionDetails.amount), category: 'Transfer', remarks: `Transfer from ${baseTransactionDetails.account}`, currency: destinationAccountCurrency });
     } else {
-      const singleTransaction: Omit<Transaction, 'id' | 'created_at'> = {
-        ...baseTransactionDetails,
-      };
-      sampleTransactions.push(singleTransaction);
+      sampleTransactions.push(baseTransactionDetails);
     }
   }
   return sampleTransactions;
 };
 
-export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, setDemoDataProgress, userId }: DemoDataServiceProps) => {
+export const createDemoDataService = ({ refetchTransactions, invalidateAllData, setDemoDataProgress, userId }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
     try {
       const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
       showSuccess("All application data cleared successfully!");
-      await refetchAllPayees(); // Invalidate queries
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to clear transactions: ${error.message}`);
-      throw error; // Re-throw for react-query
+      throw error;
     }
   };
 
@@ -135,77 +110,50 @@ export const createDemoDataService = ({ fetchTransactions, refetchAllPayees, set
       const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
       const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
 
-      // Step 1: Pre-create all accounts
       setDemoDataProgress({ stage: "Creating demo accounts...", progress: ++currentStage, totalStages });
       const createdAccountNames: string[] = [];
       for (const name of baseAccountNames) {
-        const id = await ensurePayeeExists(name, true);
-        if (id) createdAccountNames.push(name);
+        if (await ensurePayeeExists(name, true)) createdAccountNames.push(name);
       }
 
-      // Step 2: Pre-create all regular vendors
       setDemoDataProgress({ stage: "Creating demo vendors...", progress: ++currentStage, totalStages });
       const createdVendorNames: string[] = [];
       for (const name of baseVendorNames) {
-        const id = await ensurePayeeExists(name, false);
-        if (id) createdVendorNames.push(name);
+        if (await ensurePayeeExists(name, false)) createdVendorNames.push(name);
       }
 
-      // Step 3: Pre-create all categories
       setDemoDataProgress({ stage: "Creating demo categories...", progress: ++currentStage, totalStages });
       const createdCategoryNames: string[] = [];
       for (const name of baseCategories) {
-        const id = await ensureCategoryExists(name, userId);
-        if (id) createdCategoryNames.push(name);
+        if (await ensureCategoryExists(name, userId)) createdCategoryNames.push(name);
       }
 
-      // Step 4: Pre-fetch all account currencies into a map
       setDemoDataProgress({ stage: "Fetching account currencies...", progress: ++currentStage, totalStages });
-      const accountCurrencyMap = new Map<string, string>();
-      const { data: accountCurrencyData, error: currencyError } = await supabase
-        .from('vendors')
-        .select('name, accounts(currency)')
-        .eq('is_account', true);
+      const { data: accountCurrencyData, error: currencyError } = await supabase.from('vendors').select('name, accounts(currency)').eq('is_account', true);
+      if (currencyError) throw currencyError;
+      const accountCurrencyMap = new Map<string, string>(accountCurrencyData.map(item => [item.name, item.accounts[0]?.currency || 'USD']));
 
-      if (currencyError) {
-        console.error("Error fetching account currencies:", currencyError.message);
-        showError("Failed to fetch account currencies for demo data generation.");
-        setDemoDataProgress(null);
-        throw currencyError;
-      }
-
-      accountCurrencyData.forEach(item => {
-        if (item.accounts && item.accounts.length > 0) {
-          accountCurrencyMap.set(item.name, item.accounts[0].currency);
-        }
-      });
-
-      // Step 5: Generate transactions using the pre-created names and currency map
       setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
-      const demoData: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      demoData.push(...await generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
-      demoData.push(...await generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
-      demoData.push(...await generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId));
+      const demoData = (await Promise.all([
+        generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+        generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+        generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+      ])).flat();
 
-      // Step 6: Batch insert transactions
       if (demoData.length > 0) {
         const { error } = await supabase.from('transactions').insert(demoData);
         if (error) throw error;
         showSuccess("Diverse demo data generated successfully!");
-      } else {
-        showError("No demo data was generated to insert.");
       }
 
-      await fetchTransactions(); // Refetch transactions via react-query
-      await refetchAllPayees(); // Invalidate queries
+      await refetchTransactions();
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
       throw error;
     } finally {
-      setDemoDataProgress(prev => prev ? { ...prev, progress: prev.totalStages } : null);
-      setTimeout(() => {
-        setDemoDataProgress(null);
-      }, 500);
+      setDemoDataProgress(prev => prev ? { ...prev, progress: totalStages } : null);
+      setTimeout(() => setDemoDataProgress(null), 500);
     }
   };
 

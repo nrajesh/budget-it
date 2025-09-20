@@ -62,7 +62,7 @@ import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransa
 
 const ScheduledTransactionsPage = () => {
   const { user, isLoadingUser } = useUser();
-  const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchAllPayees, fetchTransactions: refetchMainTransactions } = useTransactions();
+  const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions } = useTransactions();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -142,7 +142,7 @@ const ScheduledTransactionsPage = () => {
 
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
-    fetchTransactions: refetchMainTransactions,
+    refetchTransactions: refetchMainTransactions,
     userId: user?.id,
   });
 

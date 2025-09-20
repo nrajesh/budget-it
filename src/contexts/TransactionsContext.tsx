@@ -35,14 +35,14 @@ interface TransactionsContextType {
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;
   clearAllTransactions: () => void;
   generateDiverseDemoData: () => void;
-  fetchVendors: () => Promise<QueryObserverResult<Payee[], Error>>; // Updated return type
-  fetchAccounts: () => Promise<QueryObserverResult<Payee[], Error>>; // Updated return type
-  fetchCategories: () => Promise<QueryObserverResult<Category[], Error>>; // Updated return type
-  refetchAllPayees: () => Promise<void>;
-  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
+  refetchVendors: () => Promise<QueryObserverResult<Payee[], Error>>;
+  refetchAccounts: () => Promise<QueryObserverResult<Payee[], Error>>;
+  refetchCategories: () => Promise<QueryObserverResult<Category[], Error>>;
+  invalidateAllData: () => Promise<void>;
+  refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   demoDataProgress: DemoDataProgress | null;
   processScheduledTransactions: () => Promise<void>;
-  isLoadingTransactions: boolean; // New loading state from react-query
+  isLoadingTransactions: boolean;
   isLoadingVendors: boolean;
   isLoadingAccounts: boolean;
   isLoadingCategories: boolean;
@@ -53,13 +53,10 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies } = useCurrency();
-  const { user, isLoadingUser } = useUser(); // Keep this for enabling queries
+  const { user, isLoadingUser } = useUser();
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
-  // --- Data Fetching with react-query ---
-
-  // Fetch Transactions
   const { data: transactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ['transactions', user?.id],
     queryFn: async () => {
@@ -72,10 +69,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (error) throw error;
       return data as Transaction[];
     },
-    enabled: !!user?.id && !isLoadingUser, // Only run query if user is logged in and not loading
+    enabled: !!user?.id && !isLoadingUser,
   });
 
-  // Fetch Vendors
   const { data: vendors = [], isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery<Payee[], Error>({
     queryKey: ['vendors', user?.id],
     queryFn: async () => {
@@ -91,7 +87,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: !!user?.id && !isLoadingUser,
   });
 
-  // Fetch Accounts
   const { data: accounts = [], isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery<Payee[], Error>({
     queryKey: ['accounts', user?.id],
     queryFn: async () => {
@@ -107,16 +102,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: !!user?.id && !isLoadingUser,
   });
 
-  // Fetch Categories
   const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useQuery<Category[], Error>({
     queryKey: ['categories', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      // Ensure default categories for the user
       await supabase.rpc('ensure_default_categories_for_user', { p_user_id: user.id });
-
-      const { data, error } = await supabase
-        .rpc('get_categories_with_transaction_counts', { user_id_param: user.id });
+      const { data, error } = await supabase.rpc('get_categories_with_transaction_counts', { user_id_param: user.id });
       if (error) throw error;
       return data.map((item: any) => ({
         id: item.id, name: item.name, user_id: item.user_id, created_at: item.created_at, totalTransactions: item.total_transactions || 0,
@@ -125,7 +116,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: !!user?.id && !isLoadingUser,
   });
 
-  // Effect to update accountCurrencyMap when accounts change
   React.useEffect(() => {
     const newMap = new Map<string, string>();
     accounts.forEach(account => {
@@ -136,9 +126,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setAccountCurrencyMap(newMap);
   }, [accounts]);
 
-  // --- Mutations with react-query ---
-
-  const invalidateAllTransactionRelatedQueries = React.useCallback(async () => {
+  const invalidateAllData = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['transactions'] });
     await queryClient.invalidateQueries({ queryKey: ['vendors'] });
     await queryClient.invalidateQueries({ queryKey: ['accounts'] });
@@ -147,68 +135,52 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [queryClient]);
 
   const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
-    fetchTransactions: refetchTransactions, // Pass react-query's refetch
-    refetchAllPayees: invalidateAllTransactionRelatedQueries, // Invalidate all relevant queries
+    refetchTransactions,
+    invalidateAllData,
     transactions,
     convertBetweenCurrencies,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllTransactionRelatedQueries, transactions, convertBetweenCurrencies, user?.id]);
+  }), [refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, user?.id]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
-    fetchTransactions: refetchTransactions,
-    refetchAllPayees: invalidateAllTransactionRelatedQueries,
-    // Removed direct state setters as react-query manages state
+    refetchTransactions,
+    invalidateAllData,
     setDemoDataProgress,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllTransactionRelatedQueries, setDemoDataProgress, user?.id]);
+  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id]);
 
   const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
-    fetchTransactions: refetchTransactions,
+    refetchTransactions,
     userId: user?.id,
   }), [refetchTransactions, user?.id]);
 
-  // --- Auth State Change Handling ---
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
-        queryClient.invalidateQueries(); // Invalidate all queries on sign-in
-        processScheduledTransactions(); // Process scheduled transactions on sign-in
+        queryClient.invalidateQueries();
+        processScheduledTransactions();
       } else if (event === 'SIGNED_OUT') {
-        queryClient.clear(); // Clear all react-query cache on sign-out
+        queryClient.clear();
         setAccountCurrencyMap(new Map());
       }
     });
     return () => subscription.unsubscribe();
-  }, [queryClient, processScheduledTransactions]); // Add processScheduledTransactions to dependencies
+  }, [queryClient, processScheduledTransactions]);
 
   const value = React.useMemo(() => ({
-    transactions,
-    vendors,
-    accounts,
-    categories,
-    accountCurrencyMap,
-    addTransaction,
-    updateTransaction,
-    deleteTransaction,
-    deleteMultipleTransactions,
-    clearAllTransactions,
-    generateDiverseDemoData,
-    fetchVendors: refetchVendors, // Expose refetch functions
-    fetchAccounts: refetchAccounts,
-    fetchCategories: refetchCategories,
-    refetchAllPayees: invalidateAllTransactionRelatedQueries,
-    fetchTransactions: refetchTransactions,
-    demoDataProgress,
-    processScheduledTransactions,
-    isLoadingTransactions,
-    isLoadingVendors,
-    isLoadingAccounts,
-    isLoadingCategories,
+    transactions, vendors, accounts, categories, accountCurrencyMap,
+    addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions,
+    clearAllTransactions, generateDiverseDemoData,
+    refetchVendors, refetchAccounts, refetchCategories,
+    invalidateAllData,
+    refetchTransactions,
+    demoDataProgress, processScheduledTransactions,
+    isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   }), [
     transactions, vendors, accounts, categories, accountCurrencyMap,
     addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions,
     clearAllTransactions, generateDiverseDemoData,
-    refetchVendors, refetchAccounts, refetchCategories, invalidateAllTransactionRelatedQueries, refetchTransactions,
+    refetchVendors, refetchAccounts, refetchCategories, invalidateAllData, refetchTransactions,
     demoDataProgress, processScheduledTransactions,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   ]);

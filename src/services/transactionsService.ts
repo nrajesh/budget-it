@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
-import { QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
+import { QueryObserverResult } from '@tanstack/react-query';
 
 interface TransactionToDelete {
   id: string;
@@ -10,14 +10,14 @@ interface TransactionToDelete {
 }
 
 interface TransactionsServiceProps {
-  fetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>; // Updated return type
-  refetchAllPayees: () => Promise<void>; // Updated return type
-  transactions: Transaction[]; // Still needed for finding original transaction for update
+  refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
+  invalidateAllData: () => Promise<void>;
+  transactions: Transaction[];
   convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
   userId: string | undefined;
 }
 
-export const createTransactionsService = ({ fetchTransactions, refetchAllPayees, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
+export const createTransactionsService = ({ refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
     if (!userId) {
@@ -39,10 +39,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         await ensurePayeeExists(restOfTransaction.vendor, false);
       }
 
-      // Ensure category exists
       await ensureCategoryExists(restOfTransaction.category, userId);
 
-      // Generate recurrence ID if frequency is set
       let recurrenceId: string | null = null;
       if (recurrenceFrequency && recurrenceFrequency !== 'None') {
         recurrenceId = `recurrence_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -96,8 +94,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (error) throw error;
         showSuccess("Transaction added successfully!");
       }
-      await fetchTransactions(); // Refetch transactions via react-query
-      await refetchAllPayees(); // Invalidate queries
+      await refetchTransactions();
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to add transaction: ${error.message}`);
       throw error;
@@ -110,23 +108,13 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       throw new Error("User not logged in.");
     }
     try {
-      // Fetch the original transaction to preserve is_scheduled_origin if not explicitly provided
       const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
       const isScheduledOrigin = originalTransaction?.is_scheduled_origin || false;
-
-      const accountCurrency = originalTransaction?.currency || 'USD'; // Use original currency or default
-
+      const accountCurrency = originalTransaction?.currency || 'USD';
       const newDateISO = new Date(updatedTransaction.date).toISOString();
-
-      // Ensure category exists before updating
       await ensureCategoryExists(updatedTransaction.category, userId);
 
-      // Handle recurrence fields
-      let recurrenceId = updatedTransaction.recurrence_id;
-      let recurrenceFrequency = updatedTransaction.recurrence_frequency;
-      let recurrenceEndDate = updatedTransaction.recurrence_end_date;
-
-      // If recurrence frequency is set to "None", clear all recurrence fields
+      let { recurrence_id: recurrenceId, recurrence_frequency: recurrenceFrequency, recurrence_end_date: recurrenceEndDate } = updatedTransaction;
       if (recurrenceFrequency === "None") {
         recurrenceId = null;
         recurrenceFrequency = null;
@@ -140,21 +128,18 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         category: updatedTransaction.category,
         amount: updatedTransaction.amount,
         remarks: updatedTransaction.remarks,
-        currency: accountCurrency, // Keep original account currency
+        currency: accountCurrency,
         transfer_id: updatedTransaction.transfer_id || null,
-        is_scheduled_origin: isScheduledOrigin, // Preserve the flag
+        is_scheduled_origin: isScheduledOrigin,
         recurrence_id: recurrenceId,
         recurrence_frequency: recurrenceFrequency,
         recurrence_end_date: recurrenceEndDate,
       }).eq('id', updatedTransaction.id);
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       showSuccess("Transaction updated successfully!");
-      await fetchTransactions(); // Refetch transactions via react-query
-      await refetchAllPayees(); // Invalidate queries
+      await refetchTransactions();
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to update transaction: ${error.message}`);
       throw error;
@@ -172,8 +157,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
         if (error) throw error;
         showSuccess("Transaction deleted successfully!");
       }
-      await fetchTransactions(); // Refetch transactions via react-query
-      await refetchAllPayees(); // Invalidate queries
+      await refetchTransactions();
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to delete transaction: ${error.message}`);
       throw error;
@@ -204,8 +189,8 @@ export const createTransactionsService = ({ fetchTransactions, refetchAllPayees,
       }
 
       showSuccess(`${transactionsToDelete.length} transactions deleted successfully!`);
-      await fetchTransactions(); // Refetch transactions via react-query
-      await refetchAllPayees(); // Invalidate queries
+      await refetchTransactions();
+      await invalidateAllData();
     } catch (error: any) {
       showError(`Failed to delete multiple transactions: ${error.message}`);
       throw error;
