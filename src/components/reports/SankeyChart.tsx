@@ -27,20 +27,24 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     const incomeCategories = new Set<string>();
     const expenseCategories = new Set<string>();
     const accountNames = new Set(accounts.map(a => a.name));
+    let hasTransfers = false;
 
     transactions.forEach(t => {
-      if (t.category !== 'Transfer') {
-        if (t.amount > 0) {
-          incomeCategories.add(t.category);
-        } else {
-          expenseCategories.add(t.category);
-        }
+      if (t.category === 'Transfer') {
+        hasTransfers = true;
+      } else if (t.amount > 0) {
+        incomeCategories.add(t.category);
+      } else {
+        expenseCategories.add(t.category);
       }
     });
 
     incomeCategories.forEach(name => addNode(`Income: ${name}`));
     accountNames.forEach(name => addNode(`Account: ${name}`));
     expenseCategories.forEach(name => addNode(`Expense: ${name}`));
+    if (hasTransfers) {
+      addNode('Transfers'); // Add the central Transfers node to break cycles
+    }
 
     // Define links, preventing cycles
     const processedTransferIds = new Set<string>();
@@ -49,16 +53,22 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
       const convertedAmount = Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
 
       if (t.category === 'Transfer') {
-        // Process only the debit side of a transfer to create a single directional link
-        // and prevent cycles. Also, ensure we haven't processed this transfer_id yet.
+        // Process only the debit side of a transfer to create a single directional flow
         if (t.transfer_id && !processedTransferIds.has(t.transfer_id) && t.amount < 0) {
           const sourceNode = `Account: ${t.account}`;
+          const intermediateNode = 'Transfers';
           const targetNode = `Account: ${t.vendor}`;
           
-          // Ensure source and target are different to prevent self-loops
-          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode) && sourceNode !== targetNode) {
+          if (nodeMap.has(sourceNode) && nodeMap.has(intermediateNode) && nodeMap.has(targetNode) && sourceNode !== targetNode) {
+            // Link from source account to the central Transfers node
             links.push({
               source: nodeMap.get(sourceNode)!,
+              target: nodeMap.get(intermediateNode)!,
+              value: convertedAmount,
+            });
+            // Link from the Transfers node to the target account
+            links.push({
+              source: nodeMap.get(intermediateNode)!,
               target: nodeMap.get(targetNode)!,
               value: convertedAmount,
             });
