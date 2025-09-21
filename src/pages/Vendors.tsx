@@ -88,8 +88,12 @@ const VendorsPage = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentVendors = filteredVendors.slice(startIndex, endIndex);
 
+  const selectableVendors = React.useMemo(() => {
+    return currentVendors.filter(v => v.name !== 'Others');
+  }, [currentVendors]);
+
   const numSelected = selectedRows.length;
-  const rowCount = currentVendors.length;
+  const selectableRowCount = selectableVendors.length;
 
   return (
     <div className="flex-1 space-y-4">
@@ -134,7 +138,11 @@ const VendorsPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Checkbox checked={rowCount > 0 && numSelected === rowCount} onCheckedChange={(checked) => handleSelectAll(Boolean(checked), currentVendors)} aria-label="Select all" />
+                    <Checkbox
+                      checked={selectableRowCount > 0 && numSelected === selectableRowCount}
+                      onCheckedChange={(checked) => handleSelectAll(Boolean(checked), currentVendors)}
+                      aria-label="Select all"
+                    />
                   </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -149,7 +157,12 @@ const VendorsPage = () => {
                   currentVendors.map((vendor) => (
                     <TableRow key={vendor.id} data-state={selectedRows.includes(vendor.id) && "selected"}>
                       <TableCell>
-                        <Checkbox checked={selectedRows.includes(vendor.id)} onCheckedChange={(checked) => handleRowSelect(vendor.id, Boolean(checked))} aria-label="Select row" />
+                        <Checkbox
+                          checked={selectedRows.includes(vendor.id)}
+                          onCheckedChange={(checked) => handleRowSelect(vendor.id, Boolean(checked))}
+                          aria-label="Select row"
+                          disabled={vendor.name === 'Others'}
+                        />
                       </TableCell>
                       <TableCell className="font-medium">
                         {editingVendorId === vendor.id ? (
@@ -163,8 +176,8 @@ const VendorsPage = () => {
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                         ) : (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => startEditing(vendor)}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => startEditing(vendor)} disabled={vendor.name === 'Others'}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(vendor)} disabled={vendor.name === 'Others'}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </>
                         )}
                       </TableCell>

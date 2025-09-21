@@ -95,7 +95,12 @@ export const usePayeeManagement = (isAccount: boolean) => {
   };
 
   const handleSelectAll = (checked: boolean, currentPayees: Payee[]) => {
-    setSelectedRows(checked ? currentPayees.map((p) => p.id) : []);
+    if (checked) {
+      const selectablePayees = isAccount ? currentPayees : currentPayees.filter(p => p.name !== 'Others');
+      setSelectedRows(selectablePayees.map(p => p.id));
+    } else {
+      setSelectedRows([]);
+    }
   };
 
   const handleRowSelect = (id: string, checked: boolean) => {

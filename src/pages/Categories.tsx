@@ -96,8 +96,12 @@ const CategoriesPage = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentCategories = filteredCategories.slice(startIndex, endIndex);
 
+  const selectableCategories = React.useMemo(() => {
+    return currentCategories.filter(c => c.name !== 'Others');
+  }, [currentCategories]);
+
   const numSelected = selectedRows.length;
-  const rowCount = currentCategories.length;
+  const selectableRowCount = selectableCategories.length;
 
   return (
     <div className="flex-1 space-y-4">
@@ -143,7 +147,11 @@ const CategoriesPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>
-                    <Checkbox checked={rowCount > 0 && numSelected === rowCount} onCheckedChange={(checked) => handleSelectAll(Boolean(checked), currentCategories)} aria-label="Select all" />
+                    <Checkbox
+                      checked={selectableRowCount > 0 && numSelected === selectableRowCount}
+                      onCheckedChange={(checked) => handleSelectAll(Boolean(checked), currentCategories)}
+                      aria-label="Select all"
+                    />
                   </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -158,7 +166,12 @@ const CategoriesPage = () => {
                   currentCategories.map((category) => (
                     <TableRow key={category.id} data-state={selectedRows.includes(category.id) && "selected"}>
                       <TableCell>
-                        <Checkbox checked={selectedRows.includes(category.id)} onCheckedChange={(checked) => handleRowSelect(category.id, Boolean(checked))} aria-label="Select row" />
+                        <Checkbox
+                          checked={selectedRows.includes(category.id)}
+                          onCheckedChange={(checked) => handleRowSelect(category.id, Boolean(checked))}
+                          aria-label="Select row"
+                          disabled={category.name === 'Others'}
+                        />
                       </TableCell>
                       <TableCell className="font-medium">
                         {editingCategoryId === category.id ? (
@@ -172,8 +185,8 @@ const CategoriesPage = () => {
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                         ) : (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => startEditing(category)}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(category)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => startEditing(category)} disabled={category.name === 'Others'}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(category)} disabled={category.name === 'Others'}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </>
                         )}
                       </TableCell>

@@ -102,7 +102,7 @@ export const useCategoryManagement = () => {
   };
 
   const handleSelectAll = (checked: boolean, currentCategories: Category[]) => {
-    setSelectedRows(checked ? currentCategories.map((c) => c.id) : []);
+    setSelectedRows(checked ? currentCategories.filter(c => c.name !== 'Others').map((c) => c.id) : []);
   };
 
   const handleRowSelect = (id: string, checked: boolean) => {
