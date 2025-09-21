@@ -75,6 +75,12 @@ export const useTransactionFilters = () => {
   // Handle filters from navigation state
   React.useEffect(() => {
     if (location.state) {
+      if (location.state.filterAccount) {
+        const accountOption = availableAccountOptions.find(opt => opt.label === location.state.filterAccount);
+        if (accountOption) {
+          setSelectedAccounts([accountOption.value]);
+        }
+      }
       if (location.state.filterVendor) {
         const vendorOption = availableVendorOptions.find(opt => opt.label === location.state.filterVendor);
         if (vendorOption) {
@@ -90,7 +96,7 @@ export const useTransactionFilters = () => {
       // Clear location state after applying filters to prevent re-applying on subsequent renders
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, availableVendorOptions, availableCategoryOptions]);
+  }, [location.state, availableAccountOptions, availableVendorOptions, availableCategoryOptions]);
 
 
   const handleResetFilters = React.useCallback(() => {
