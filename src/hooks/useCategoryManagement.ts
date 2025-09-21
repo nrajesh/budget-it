@@ -23,6 +23,7 @@ export const useCategoryManagement = () => {
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
 
   // Mutations
   const addCategoryMutation = useMutation({
@@ -45,11 +46,12 @@ export const useCategoryManagement = () => {
       if (error) throw error;
     },
     onSuccess: async () => {
-      showSuccess(categoryToDelete ? "Category deleted successfully." : `${selectedRows.length} categories deleted successfully.`);
+      showSuccess(isBulkDelete ? `${selectedRows.length} categories deleted successfully.` : "Category deleted successfully.");
       await invalidateAllData();
       setIsConfirmOpen(false);
       setCategoryToDelete(null);
       setSelectedRows([]);
+      setIsBulkDelete(false);
     },
     onError: (error: any) => showError(`Failed to delete: ${error.message}`),
   });
@@ -80,12 +82,23 @@ export const useCategoryManagement = () => {
 
   const handleDeleteClick = (category: Category) => {
     setCategoryToDelete(category);
+    setIsBulkDelete(false);
+    setIsConfirmOpen(true);
+  };
+
+  const handleBulkDeleteClick = () => {
+    setCategoryToDelete(null);
+    setIsBulkDelete(true);
     setIsConfirmOpen(true);
   };
 
   const confirmDelete = () => {
-    const idsToDelete = categoryToDelete ? [categoryToDelete.id] : selectedRows;
-    deleteCategoriesMutation.mutate(idsToDelete);
+    const idsToDelete = isBulkDelete ? selectedRows : (categoryToDelete ? [categoryToDelete.id] : []);
+    if (idsToDelete.length > 0) {
+      deleteCategoriesMutation.mutate(idsToDelete);
+    } else {
+      setIsConfirmOpen(false);
+    }
   };
 
   const handleSelectAll = (checked: boolean, currentCategories: Category[]) => {
@@ -155,7 +168,7 @@ export const useCategoryManagement = () => {
     selectedRows,
     isImporting, fileInputRef,
     addCategoryMutation, deleteCategoriesMutation,
-    handleAddClick, handleDeleteClick, confirmDelete,
+    handleAddClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
     handleSelectAll, handleRowSelect,
     handleImportClick, handleFileChange, handleExportClick,
     handleCategoryNameClick,

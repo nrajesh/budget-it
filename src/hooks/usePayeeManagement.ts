@@ -26,6 +26,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
 
   // Mutations
   const deletePayeesMutation = useMutation({
@@ -34,11 +35,12 @@ export const usePayeeManagement = (isAccount: boolean) => {
       if (error) throw error;
     },
     onSuccess: async () => {
-      showSuccess(payeeToDelete ? `${entityName} deleted successfully.` : `${selectedRows.length} ${entityNamePlural} deleted successfully.`);
+      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
       await invalidateAllData();
       setIsConfirmOpen(false);
       setPayeeToDelete(null);
       setSelectedRows([]);
+      setIsBulkDelete(false);
     },
     onError: (error: any) => showError(`Failed to delete: ${error.message}`),
   });
@@ -73,12 +75,23 @@ export const usePayeeManagement = (isAccount: boolean) => {
 
   const handleDeleteClick = (payee: Payee) => {
     setPayeeToDelete(payee);
+    setIsBulkDelete(false);
+    setIsConfirmOpen(true);
+  };
+
+  const handleBulkDeleteClick = () => {
+    setPayeeToDelete(null);
+    setIsBulkDelete(true);
     setIsConfirmOpen(true);
   };
 
   const confirmDelete = () => {
-    const idsToDelete = payeeToDelete ? [payeeToDelete.id] : selectedRows;
-    deletePayeesMutation.mutate(idsToDelete);
+    const idsToDelete = isBulkDelete ? selectedRows : (payeeToDelete ? [payeeToDelete.id] : []);
+    if (idsToDelete.length > 0) {
+      deletePayeesMutation.mutate(idsToDelete);
+    } else {
+      setIsConfirmOpen(false);
+    }
   };
 
   const handleSelectAll = (checked: boolean, currentPayees: Payee[]) => {
@@ -159,7 +172,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
     selectedRows,
     isImporting, fileInputRef,
     deletePayeesMutation,
-    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete,
+    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
     handleSelectAll, handleRowSelect,
     handleImportClick, handleFileChange, handleExportClick,
     handlePayeeNameClick,

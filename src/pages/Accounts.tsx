@@ -36,7 +36,7 @@ const AccountsPage = () => {
     selectedRows,
     isImporting, fileInputRef,
     deletePayeesMutation,
-    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete,
+    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
     handleSelectAll, handleRowSelect,
     handleImportClick, handleFileChange, handleExportClick,
   } = usePayeeManagement(true);
@@ -62,7 +62,7 @@ const AccountsPage = () => {
         <h2 className="text-3xl font-bold tracking-tight">Accounts</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => handleDeleteClick(selectedRows as any)} disabled={deletePayeesMutation.isPending}>
+            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={deletePayeesMutation.isPending}>
               {deletePayeesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>

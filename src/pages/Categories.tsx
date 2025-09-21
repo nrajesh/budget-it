@@ -44,7 +44,7 @@ const CategoriesPage = () => {
     selectedRows,
     isImporting, fileInputRef,
     addCategoryMutation, deleteCategoriesMutation,
-    handleAddClick, handleDeleteClick, confirmDelete,
+    handleAddClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
     handleSelectAll, handleRowSelect,
     handleImportClick, handleFileChange, handleExportClick,
     handleCategoryNameClick,
@@ -106,7 +106,7 @@ const CategoriesPage = () => {
         <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => handleDeleteClick(categories.filter(c => selectedRows.includes(c.id)) as any)} disabled={deleteCategoriesMutation.isPending}>
+            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={deleteCategoriesMutation.isPending}>
               {deleteCategoriesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
