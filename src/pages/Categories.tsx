@@ -21,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { PlusCircle, Trash2, Loader2, RotateCcw, Upload, Download } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, RotateCcw, Upload, Download, Pencil } from "lucide-react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import { useCategoryManagement } from "@/hooks/useCategoryManagement";
@@ -106,7 +106,7 @@ const CategoriesPage = () => {
         <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={() => handleDeleteClick(selectedRows as any)} disabled={deleteCategoriesMutation.isPending}>
+            <Button variant="destructive" onClick={() => handleDeleteClick(categories.filter(c => selectedRows.includes(c.id)) as any)} disabled={deleteCategoriesMutation.isPending}>
               {deleteCategoriesMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
@@ -172,7 +172,7 @@ const CategoriesPage = () => {
                           <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                         ) : (
                           <>
-                            <Button variant="ghost" size="icon" onClick={() => startEditing(category)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => startEditing(category)}><Pencil className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(category)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </>
                         )}
