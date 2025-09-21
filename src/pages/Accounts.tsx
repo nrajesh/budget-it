@@ -39,6 +39,7 @@ const AccountsPage = () => {
     handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
     handleSelectAll, handleRowSelect,
     handleImportClick, handleFileChange, handleExportClick,
+    handlePayeeNameClick,
   } = usePayeeManagement(true);
 
   const filteredAccounts = React.useMemo(() => {
@@ -137,7 +138,11 @@ const AccountsPage = () => {
                           aria-label="Select row"
                         />
                       </TableCell>
-                      <TableCell className="font-medium">{account.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div onClick={() => handlePayeeNameClick(account.name)} className="cursor-pointer hover:text-primary hover:underline">
+                          {account.name}
+                        </div>
+                      </TableCell>
                       <TableCell>{account.currency || "-"}</TableCell>
                       <TableCell>{formatCurrency(account.starting_balance || 0, account.currency || 'USD')}</TableCell>
                       <TableCell>{formatCurrency(account.running_balance || 0, account.currency || 'USD')}</TableCell>
