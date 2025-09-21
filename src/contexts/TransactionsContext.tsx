@@ -1,12 +1,11 @@
 import * as React from 'react';
-import { Transaction, baseCategories } from '@/data/finance-data';
+import { Transaction, baseCategories, Category } from '@/data/finance-data';
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Payee } from '@/components/AddEditPayeeDialog';
 import { createTransactionsService } from '@/services/transactionsService';
 import { createDemoDataService } from '@/services/demoDataService';
-import { Category } from '@/pages/Categories';
 import { createCategoriesService } from '@/services/categoriesService';
 import { useUser } from './UserContext';
 import { createScheduledTransactionsService } from '@/services/scheduledTransactionsService';

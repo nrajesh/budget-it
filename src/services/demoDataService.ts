@@ -1,9 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction, baseCategories } from '@/data/finance-data';
+import { Transaction, baseCategories, Category } from '@/data/finance-data';
 import { availableCurrencies } from '@/contexts/CurrencyContext';
-import { Category } from '@/pages/Categories';
 import { QueryObserverResult } from '@tanstack/react-query';
 
 interface DemoDataServiceProps {
