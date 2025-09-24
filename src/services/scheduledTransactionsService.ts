@@ -3,11 +3,11 @@ import { showError } from '@/utils/toast';
 import { Transaction } from '@/data/finance-data';
 import { QueryObserverResult } from '@tanstack/react-query';
 import { getAccountCurrency } from '@/integrations/supabase/utils';
-import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ScheduledTransactionsServiceProps {
   refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   userId: string | undefined;
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
 }
 
 export type ScheduledTransaction = {
@@ -25,8 +25,7 @@ export type ScheduledTransaction = {
   recurrence_end_date?: string;
 };
 
-export const createScheduledTransactionsService = ({ refetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
-  const { convertBetweenCurrencies } = useCurrency();
+export const createScheduledTransactionsService = ({ refetchTransactions, userId, convertBetweenCurrencies }: ScheduledTransactionsServiceProps) => {
 
   const calculateNextOccurrence = (baseDateISO: string, frequency: string): string => {
     const baseDate = new Date(baseDateISO);

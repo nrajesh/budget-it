@@ -151,7 +151,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
     refetchTransactions,
     userId: user?.id,
-  }), [refetchTransactions, user?.id]);
+    convertBetweenCurrencies,
+  }), [refetchTransactions, user?.id, convertBetweenCurrencies]);
 
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

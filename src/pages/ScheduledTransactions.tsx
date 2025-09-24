@@ -58,11 +58,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 
 const ScheduledTransactionsPage = () => {
   const { user, isLoadingUser } = useUser();
   const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions } = useTransactions();
+  const { convertBetweenCurrencies } = useCurrency();
   const queryClient = useQueryClient();
 
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -144,6 +146,7 @@ const ScheduledTransactionsPage = () => {
   const { fetchScheduledTransactions, processScheduledTransactions } = createScheduledTransactionsService({
     refetchTransactions: refetchMainTransactions,
     userId: user?.id,
+    convertBetweenCurrencies,
   });
 
   const { data: scheduledTransactions = [], isLoading: isLoadingScheduledTransactions, refetch: refetchScheduledTransactions } = useQuery<ScheduledTransactionType[], Error>({
