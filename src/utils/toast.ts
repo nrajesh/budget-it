@@ -1,17 +1,15 @@
-"use client";
+import { toast } from "sonner";
 
-import toast, { type ToastOptions } from 'react-hot-toast';
-
-export const showSuccess = (message: string, options?: ToastOptions) => {
-  toast.success(message, options);
+export const showSuccess = (message: string) => {
+  toast.success(message);
 };
 
-export const showError = (message: string, options?: ToastOptions) => {
-  toast.error(message, options);
+export const showError = (message: string) => {
+  toast.error(message);
 };
 
-export const showToast = (message: string, options?: ToastOptions) => {
-  return toast.loading(message, options);
+export const showLoading = (message: string) => {
+  return toast.loading(message);
 };
 
 export const dismissToast = (toastId: string) => {
