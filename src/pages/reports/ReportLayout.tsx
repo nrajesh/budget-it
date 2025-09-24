@@ -6,9 +6,8 @@ import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
 import { useTransactionData } from '@/hooks/transactions/useTransactionData';
 import { useTransactions } from '@/contexts/TransactionsContext';
-import { showSuccess, showError } from '@/utils/toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { showSuccess, showError, showToast } from '@/utils/toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportLayoutProps {
   title: string;
@@ -34,67 +33,65 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
   }, [dataProps.filteredTransactions]);
 
-  const handlePdfExport = () => {
+  const handlePdfExport = async () => {
+    const toastId = showToast("Generating your report... This may take a moment.");
     try {
-      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-      let yPos = 20;
-
-      doc.setFontSize(18);
-      doc.text(title, 14, yPos);
-      yPos += 15;
-
+      // 1. Find the main content area of the report.
       const reportContent = document.getElementById('report-content');
       if (!reportContent) {
-        showError("Could not find report content to export.");
-        return;
+        throw new Error("Could not find report content to export.");
       }
 
+      // 2. Extract all tables and their corresponding titles.
       const tables = Array.from(reportContent.querySelectorAll('table'));
-
       if (tables.length === 0) {
-        showError("No tabular data found in the report to export.");
-        return;
+        throw new Error("No data tables found in the report to export.");
       }
-      
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text("Note: This PDF export includes tabular data only. Charts and other visual elements are not included.", 14, yPos);
-      yPos += 15;
-      doc.setTextColor(0);
 
-      tables.forEach((table) => {
-        if (yPos > 260) { // Check if new page is needed before drawing
-          doc.addPage();
-          yPos = 20;
-        }
-
+      const tablesData = tables.map(table => {
         const card = table.closest('div[class*="rounded-lg border"]');
-        let finalTitle = "Data Table";
+        let tableTitle = "Data Table";
         if (card) {
-          const cardTitleEl = card.querySelector('h3'); // For Income/Expense Summary
-          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg'); // For Income/Expense Summary inner titles
-          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
+          const cardTitleEl = card.querySelector('h3');
+          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
+          tableTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
         }
-
-        doc.setFontSize(14);
-        doc.text(finalTitle, 14, yPos);
-        yPos += 10;
-
-        autoTable(doc, {
-          html: table,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: { fillColor: [22, 163, 74] }, // Tailwind green-600
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 15;
+        return {
+          title: tableTitle,
+          html: table.outerHTML
+        };
       });
 
-      doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
-      showSuccess("PDF export started. Your download will begin shortly.");
+      // 3. Prepare the payload for the backend function.
+      const payload = {
+        reportTitle: title,
+        tables: tablesData,
+      };
+
+      // 4. Invoke the Supabase Edge Function.
+      const { data, error } = await supabase.functions.invoke('create-docling-pdf-from-html', {
+        body: JSON.stringify(payload),
+      });
+
+      if (error) throw new Error(`Network error: ${error.message}`);
+      if (data.error) throw new Error(`Backend error: ${data.error}`);
+
+      // 5. Receive the download URL and trigger the download.
+      if (data.download_url) {
+        showSuccess("Report created! Your download will begin automatically.", { id: toastId });
+        const link = document.createElement('a');
+        link.href = data.download_url;
+        link.setAttribute('download', `${title.replace(/\s+/g, '_')}_Report.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        throw new Error("Export process did not return a download URL.");
+      }
 
     } catch (error: any) {
       console.error("PDF Export failed:", error);
-      showError(`PDF Export failed: ${error.message}`);
+      showError(`PDF Export failed: ${error.message}`, { id: toastId });
     }
   };
 
