@@ -5,7 +5,6 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 // In a real environment, these would be provided by the platform.
 const Docling__create_new_docling_document = async ({ prompt }: { prompt: string }): Promise<{ document_key: string }> => {
   console.log(`Creating new Docling document with prompt: "${prompt}"`);
-  // Simulate a delay and generate a unique key
   await new Promise(resolve => setTimeout(resolve, 500));
   const document_key = `doc_${crypto.randomUUID()}`;
   console.log(`Generated document key: ${document_key}`);
@@ -16,9 +15,19 @@ const Docling__add_content_to_docling_document = async ({ document_key, content_
   console.log(`Adding content to document ${document_key}:`);
   console.log(`  Type: ${content_type}`);
   console.log(`  Content: ${content.substring(0, 100)}...`);
-  // Simulate a delay
   await new Promise(resolve => setTimeout(resolve, 200));
   return { success: true };
+};
+
+const Docling__get_docling_document_download_url = async ({ document_key }: { document_key: string }): Promise<{ download_url: string }> => {
+  console.log(`Generating download URL for document: ${document_key}`);
+  // Simulate a delay for PDF generation
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  // In a real scenario, this would be a unique, secure URL.
+  // For this simulation, we'll use a public dummy PDF.
+  const download_url = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+  console.log(`Generated download URL: ${download_url}`);
+  return { download_url };
 };
 
 const corsHeaders = {
@@ -49,13 +58,11 @@ serve(async (req) => {
 
     // 2. Add content for each table to the document
     for (const table of tables) {
-      // Add table title as a heading
       await Docling__add_content_to_docling_document({
         document_key,
         content_type: 'h2',
         content: table.title,
       });
-      // Add the table HTML
       await Docling__add_content_to_docling_document({
         document_key,
         content_type: 'html',
@@ -63,7 +70,11 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ document_key }), {
+    // 3. Get the download URL for the generated document
+    const { download_url } = await Docling__get_docling_document_download_url({ document_key });
+
+    // 4. Return the download URL to the client
+    return new Response(JSON.stringify({ document_key, download_url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });

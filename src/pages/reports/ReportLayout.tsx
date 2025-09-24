@@ -88,7 +88,21 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       }
 
       const result = await response.json();
-      showSuccess(`Docling document created: ${result.document_key}`);
+      
+      if (result.download_url) {
+        showSuccess("Report created! Your download will begin shortly.");
+        // Create a temporary link to trigger the download
+        const link = document.createElement('a');
+        link.href = result.download_url;
+        // Suggest a filename for the download
+        link.setAttribute('download', `${title.replace(/\s+/g, '_')}_Report.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        showError("Export succeeded, but no download URL was returned.");
+        console.log("Docling document created:", result.document_key);
+      }
 
     } catch (error: any) {
       console.error("Docling export failed:", error);
