@@ -8,7 +8,7 @@ import { useTransactionData } from '@/hooks/transactions/useTransactionData';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { showSuccess, showError } from '@/utils/toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface ReportLayoutProps {
   title: string;
@@ -37,7 +37,6 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const handlePdfExport = () => {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-      const userDoc = doc as any; // To access autoTable
       let yPos = 20;
 
       doc.setFontSize(18);
@@ -81,13 +80,13 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         doc.text(finalTitle, 14, yPos);
         yPos += 10;
 
-        userDoc.autoTable({
+        autoTable(doc, {
           html: table,
           startY: yPos,
           theme: 'grid',
           headStyles: { fillColor: '#16a34a' }, // green-600
         });
-        yPos = userDoc.autoTable.previous.finalY + 15;
+        yPos = (doc as any).lastAutoTable.finalY + 15;
       });
 
       doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
