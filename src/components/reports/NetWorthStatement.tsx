@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Import Table components
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
 
@@ -55,7 +56,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
         <CardDescription>A summary of your assets and liabilities.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-3 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
@@ -84,6 +85,30 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
             </CardContent>
           </Card>
         </div>
+
+        {/* Table for PDF export */}
+        <Table className="w-full mt-4">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Category</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>Total Assets</TableCell>
+              <TableCell className="text-right text-green-500">{formatCurrency(assets)}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>Total Liabilities</TableCell>
+              <TableCell className="text-right text-red-500">{formatCurrency(liabilities)}</TableCell>
+            </TableRow>
+            <TableRow className="font-bold">
+              <TableCell>Net Worth</TableCell>
+              <TableCell className="text-right">{formatCurrency(netWorth)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

@@ -49,6 +49,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         return;
       }
 
+      // Select all tables within the report content
       const tables = Array.from(reportContent.querySelectorAll('table'));
 
       if (tables.length === 0) {
@@ -63,21 +64,22 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       doc.setTextColor(0);
 
       tables.forEach((table) => {
-        if (yPos > 260) {
+        if (yPos > 260) { // Check if new page is needed before adding a new table
           doc.addPage();
           yPos = 20;
         }
 
+        // Attempt to find a title for the table from its parent card or section
         const card = table.closest('div[class*="rounded-lg border"]');
-        let finalTitle = "Data Table";
+        let sectionTitle = "Data Table";
         if (card) {
-          const cardTitleEl = card.querySelector('h3');
-          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
-          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
+          const cardTitleEl = card.querySelector('h3'); // For Income/Expense Summary
+          const cardHeaderTitleEl = card.querySelector('div > h2'); // For Net Worth Statement
+          sectionTitle = cardTitleEl?.textContent?.trim() || cardHeaderTitleEl?.textContent?.trim() || "Data Table";
         }
 
         doc.setFontSize(14);
-        doc.text(finalTitle, 14, yPos);
+        doc.text(sectionTitle, 14, yPos);
         yPos += 10;
 
         autoTable(doc, {
@@ -85,8 +87,19 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
           startY: yPos,
           theme: 'grid',
           headStyles: { fillColor: '#16a34a' }, // green-600
+          didParseCell: (data) => {
+            // Apply text color for positive/negative amounts in cells
+            if (data.cell.raw instanceof HTMLElement) {
+              const style = window.getComputedStyle(data.cell.raw);
+              if (style.color === 'rgb(34, 197, 94)') { // Tailwind green-500
+                data.cell.styles.textColor = '#22c55e';
+              } else if (style.color === 'rgb(239, 68, 68)') { // Tailwind red-500
+                data.cell.styles.textColor = '#ef4444';
+              }
+            }
+          },
         });
-        yPos = (doc as any).lastAutoTable.finalY + 15;
+        yPos = (doc as any).lastAutoTable.finalY + 15; // Update yPos for the next element
       });
 
       doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
