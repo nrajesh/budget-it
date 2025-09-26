@@ -958,7 +958,6 @@ const ScheduledTransactionsPage = () => {
                       <Textarea
                         placeholder="Optional notes about the scheduled transaction"
                         {...field}
-                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormMessage />

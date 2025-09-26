@@ -1,98 +1,172 @@
-import * as React from 'react';
+import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCurrency } from '@/contexts/CurrencyContext';
-import { useUser } from '@/contexts/UserContext'; // Import useUser
-import { currencies } from '@/data/currencies';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { showError, showSuccess } from '@/utils/toast';
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input"; // Import Input component
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import { showSuccess, showError } from "@/utils/toast";
+import { RotateCcw, DatabaseZap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 
 const SettingsPage = () => {
-  const { selectedCurrency, setSelectedCurrency, isLoadingRates } = useCurrency();
-  const { updateUserPreferences } = useUser(); // Get the update function
-  const [futureMonths, setFutureMonths] = React.useState(() => {
-    return localStorage.getItem('futureMonths') || '2';
-  });
+  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
+  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
-  const handleCurrencyChange = (newCurrency: string) => {
-    setSelectedCurrency(newCurrency);
-    updateUserPreferences({ default_currency: newCurrency }); // Save to DB
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
+  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
+  const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false);
+  const [futureMonths, setFutureMonths] = React.useState<number>(2);
+
+  React.useEffect(() => {
+    const savedMonths = localStorage.getItem('futureMonths');
+    if (savedMonths) {
+      setFutureMonths(parseInt(savedMonths, 10));
+    }
+  }, []);
+
+  const handleCurrencyChange = (value: string) => {
+    setCurrency(value);
+    showSuccess(`Default currency set to ${value}.`);
   };
 
   const handleFutureMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFutureMonths(e.target.value);
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      setFutureMonths(value);
+      localStorage.setItem('futureMonths', value.toString());
+    }
   };
 
-  const handleSaveFutureMonths = () => {
-    const months = parseInt(futureMonths, 10);
-    if (isNaN(months) || months < 1 || months > 24) {
-      showError("Please enter a number between 1 and 24.");
-      return;
+  const handleResetData = async () => {
+    try {
+      const { error } = await supabase.rpc('clear_all_app_data');
+      if (error) throw error;
+      
+      clearAllTransactions();
+      showSuccess("All application data has been reset.");
+    } catch (error: any) {
+      showError(`Failed to reset data: ${error.message}`);
+    } finally {
+      setIsResetConfirmOpen(false);
     }
-    localStorage.setItem('futureMonths', futureMonths);
-    showSuccess("Setting saved successfully!");
+  };
+
+  const handleGenerateDemoData = async () => {
+    setIsDemoDataProgressDialogOpen(true);
+    try {
+      await generateDiverseDemoData();
+    } catch (error: any) {
+    } finally {
+      setIsGenerateConfirmOpen(false);
+    }
   };
 
   return (
     <div className="flex-1 space-y-4">
       <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-          <CardDescription>Manage your application settings.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="currency" className="text-lg font-semibold">Default Currency</Label>
-              <p className="text-sm text-muted-foreground">
-                This is the default currency used for displaying financial data.
-              </p>
-            </div>
-            <Select value={selectedCurrency} onValueChange={handleCurrencyChange} disabled={isLoadingRates}>
-              <SelectTrigger className="w-full sm:w-[180px] mt-2 sm:mt-0">
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Currency Selection Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Default Currency</CardTitle>
+            <CardDescription>Select your preferred currency for display.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
-                {currencies.map(currency => (
+                {availableCurrencies.map((currency) => (
                   <SelectItem key={currency.code} value={currency.code}>
-                    {currency.code} - {currency.name}
+                    {currency.name} ({currency.code})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg border p-4">
-            <div className="space-y-1">
-              <Label htmlFor="future-months" className="text-lg font-semibold">Future Transactions</Label>
-              <p className="text-sm text-muted-foreground">
-                Set how many months into the future to display scheduled transactions.
-              </p>
-            </div>
-            <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+        {/* Future Transactions Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Future Transactions</CardTitle>
+            <CardDescription>
+              Define how many months of future scheduled transactions to show.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
               <Input
-                id="future-months"
                 type="number"
-                min="1"
-                max="24"
                 value={futureMonths}
                 onChange={handleFutureMonthsChange}
+                onBlur={() => showSuccess(`Future transaction view set to ${futureMonths} months.`)}
+                min="0"
                 className="w-[100px]"
               />
-              <Button onClick={handleSaveFutureMonths}>Save</Button>
+              <span className="text-sm text-muted-foreground">months</span>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Reset Data Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Reset All Data</CardTitle>
+            <CardDescription>Permanently delete all transaction, vendor, and account records.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
+              <DatabaseZap className="mr-2 h-4 w-4" />
+              Reset All Data
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Generate Demo Data Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Generate Demo Data</CardTitle>
+            <CardDescription>
+              Generate diverse demo transactions. This will clear existing data first.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setIsGenerateConfirmOpen(true)}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Generate Data
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <ConfirmationDialog
+        isOpen={isResetConfirmOpen}
+        onOpenChange={setIsResetConfirmOpen}
+        onConfirm={handleResetData}
+        title="Are you sure you want to reset all data?"
+        description="This action cannot be undone. All your transaction, vendor, and account data will be permanently deleted."
+        confirmText="Reset Data"
+      />
+
+      <ConfirmationDialog
+        isOpen={isGenerateConfirmOpen}
+        onOpenChange={setIsGenerateConfirmOpen}
+        onConfirm={handleGenerateDemoData}
+        title="Generate new demo data?"
+        description="This will clear all existing transactions and generate new diverse demo data. This action cannot be undone."
+        confirmText="Generate"
+      />
+
+      <DemoDataProgressDialog
+        isOpen={isDemoDataProgressDialogOpen}
+        onOpenChange={setIsDemoDataProgressDialogOpen}
+      />
     </div>
   );
 };

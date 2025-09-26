@@ -1,121 +1,158 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase/utils';
 import { Transaction, baseCategories, Category } from '@/data/finance-data';
-import { currencies } from '@/data/currencies';
+import { availableCurrencies } from '@/contexts/CurrencyContext';
 import { QueryObserverResult } from '@tanstack/react-query';
 
 interface DemoDataServiceProps {
   refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   invalidateAllData: () => Promise<void>;
-  setDemoDataProgress: (progress: { stage: string; progress: number; totalStages: number } | null) => void;
+  setDemoDataProgress: React.Dispatch<React.SetStateAction<{ stage: string; progress: number; totalStages: number } | null>>;
   userId: string | undefined;
 }
 
-export const createDemoDataService = ({
-  refetchTransactions,
-  invalidateAllData,
-  setDemoDataProgress,
-  userId,
-}: DemoDataServiceProps) => {
+const generateTransactions = async (
+  monthOffset: number,
+  count: number,
+  existingAccountNames: string[],
+  existingVendorNames: string[],
+  existingCategoryNames: string[],
+  accountCurrencyMap: Map<string, string>,
+  userId: string,
+): Promise<Omit<Transaction, 'id' | 'created_at'>[]> => {
+  const sampleTransactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
+  const now = new Date();
+  const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const endOfTargetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 0);
+
+  for (let i = 0; i < count; i++) {
+    const randomDay = Math.floor(Math.random() * (endOfTargetMonth.getDate() - targetMonth.getDate() + 1)) + targetMonth.getDate();
+    const date = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), randomDay);
+
+    const isTransfer = Math.random() < 0.2;
+    const accountName = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
+    const currencyCode = accountCurrencyMap.get(accountName) || 'USD';
+
+    let vendorName = existingVendorNames[Math.floor(Math.random() * existingVendorNames.length)];
+    let categoryName = existingCategoryNames[Math.floor(Math.random() * existingCategoryNames.length)];
+    let amountValue = parseFloat((Math.random() * 200 + 10).toFixed(2));
+    let destinationAccountCurrency: string = 'USD';
+
+    if (isTransfer) {
+      let destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
+      while (destAccount === accountName) {
+        destAccount = existingAccountNames[Math.floor(Math.random() * existingAccountNames.length)];
+      }
+      vendorName = destAccount;
+      categoryName = 'Transfer';
+      amountValue = Math.abs(amountValue);
+      destinationAccountCurrency = accountCurrencyMap.get(destAccount) || 'USD';
+    } else {
+      if (Math.random() < 0.6 && categoryName !== 'Salary') {
+        amountValue = -amountValue;
+      } else if (categoryName === 'Salary') {
+        amountValue = Math.abs(amountValue) * 5;
+      }
+    }
+
+    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
+      date: date.toISOString(),
+      account: accountName,
+      currency: currencyCode,
+      vendor: vendorName,
+      amount: amountValue,
+      remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
+      category: categoryName,
+      user_id: userId,
+    };
+
+    if (isTransfer) {
+      const transfer_id = `transfer_${Date.now()}_${i}_${monthOffset}_${accountName.replace(/\s/g, '')}`;
+      sampleTransactions.push({ ...baseTransactionDetails, transfer_id, amount: -Math.abs(baseTransactionDetails.amount), category: 'Transfer', remarks: `Transfer to ${baseTransactionDetails.vendor}` });
+      sampleTransactions.push({ ...baseTransactionDetails, transfer_id, account: baseTransactionDetails.vendor, vendor: baseTransactionDetails.account, amount: Math.abs(baseTransactionDetails.amount), category: 'Transfer', remarks: `Transfer from ${baseTransactionDetails.account}`, currency: destinationAccountCurrency });
+    } else {
+      sampleTransactions.push(baseTransactionDetails);
+    }
+  }
+  return sampleTransactions;
+};
+
+export const createDemoDataService = ({ refetchTransactions, invalidateAllData, setDemoDataProgress, userId }: DemoDataServiceProps) => {
 
   const clearAllTransactions = async () => {
-    if (!userId) {
-      showError("You must be logged in to clear data.");
-      return;
-    }
     try {
       const { error } = await supabase.rpc('clear_all_app_data');
       if (error) throw error;
+      showSuccess("All application data cleared successfully!");
       await invalidateAllData();
-      showSuccess("All your data has been cleared.");
     } catch (error: any) {
-      showError(`Failed to clear data: ${error.message}`);
+      showError(`Failed to clear transactions: ${error.message}`);
+      throw error;
     }
   };
 
   const generateDiverseDemoData = async () => {
     if (!userId) {
-      showError("You must be logged in to generate data.");
-      return;
+      showError("User not logged in. Cannot generate demo data.");
+      setDemoDataProgress(null);
+      throw new Error("User not logged in.");
     }
 
-    const totalStages = 5;
-    setDemoDataProgress({ stage: 'Clearing existing data...', progress: 0, totalStages });
+    const totalStages = 6;
+    let currentStage = 0;
 
     try {
-      // Stage 1: Clear existing data
+      setDemoDataProgress({ stage: "Clearing existing data...", progress: ++currentStage, totalStages });
       await clearAllTransactions();
-      setDemoDataProgress({ stage: 'Creating accounts and vendors...', progress: 1, totalStages });
 
-      // Stage 2: Create accounts and vendors
-      const availableCurrencyCodes = currencies.map(c => c.code);
-      const accountsToCreate = [
-        { name: 'Checking Account', currency: 'USD', starting_balance: 5000, remarks: 'Main checking account' },
-        { name: 'Savings Account', currency: 'USD', starting_balance: 15000, remarks: 'For long-term savings' },
-        { name: 'Euro Wallet', currency: 'EUR', starting_balance: 2500, remarks: 'For European travel' },
-        { name: 'Investment Portfolio', currency: 'JPY', starting_balance: 1000000, remarks: 'Stock investments' },
-      ];
-      await supabase.rpc('batch_upsert_accounts', { p_accounts: accountsToCreate });
+      const baseAccountNames = ["Checking Account", "Savings Account", "Credit Card", "Investment Account", "Travel Fund", "Emergency Fund"];
+      const baseVendorNames = ["SuperMart", "Coffee Shop", "Online Store", "Utility Bill", "Rent Payment", "Gym Membership", "Restaurant A", "Book Store", "Pharmacy", "Gas Station"];
 
-      const vendorsToCreate = [
-        'SuperMart', 'Edison Power', 'City Water', 'Gasoline Co.', 'Internet Provider',
-        'Cell Phone Service', 'Landlord', 'Downtown Parking', 'Public Transport',
-        'Favorite Cafe', 'Lunch Place', 'Fine Dining Restaurant', 'Movie Theater',
-        'Streaming Service', 'Bookstore', 'Gym Membership', 'Pharmacy', 'Doctor\'s Office',
-        'Clothing Store', 'Home Improvement', 'Paycheck', 'Freelance Client', 'Investment Dividend'
-      ];
-      await supabase.rpc('batch_upsert_vendors', { p_names: vendorsToCreate });
-      setDemoDataProgress({ stage: 'Creating categories...', progress: 2, totalStages });
-
-      // Stage 3: Create categories
-      const categoriesToCreate = baseCategories.map(name => ({ user_id: userId, name }));
-      const { error: catError } = await supabase.from('categories').insert(categoriesToCreate);
-      if (catError) throw catError;
-      setDemoDataProgress({ stage: 'Generating transactions...', progress: 3, totalStages });
-
-      // Stage 4: Generate transactions
-      const transactions: Omit<Transaction, 'id' | 'created_at'>[] = [];
-      const today = new Date();
-
-      for (let i = 0; i < 150; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - Math.floor(Math.random() * 365));
-
-        const account = accountsToCreate[Math.floor(Math.random() * accountsToCreate.length)];
-        const isIncome = Math.random() > 0.8;
-        const category = isIncome
-          ? 'Income'
-          : baseCategories[Math.floor(Math.random() * baseCategories.length)];
-        const vendor = isIncome
-          ? ['Paycheck', 'Freelance Client', 'Investment Dividend'][Math.floor(Math.random() * 3)]
-          : vendorsToCreate[Math.floor(Math.random() * vendorsToCreate.length)];
-        const amount = isIncome
-          ? Math.random() * 2000 + 500
-          : -(Math.random() * 200 + 5);
-
-        transactions.push({
-          date: date.toISOString(),
-          account: account.name,
-          currency: account.currency,
-          vendor,
-          amount,
-          category,
-          remarks: `Random transaction #${i + 1}`,
-          user_id: userId,
-        });
+      setDemoDataProgress({ stage: "Creating demo accounts...", progress: ++currentStage, totalStages });
+      const createdAccountNames: string[] = [];
+      for (const name of baseAccountNames) {
+        if (await ensurePayeeExists(name, true)) createdAccountNames.push(name);
       }
-      const { error: transError } = await supabase.from('transactions').insert(transactions);
-      if (transError) throw transError;
-      setDemoDataProgress({ stage: 'Finalizing...', progress: 4, totalStages });
 
-      // Stage 5: Finalize
+      setDemoDataProgress({ stage: "Creating demo vendors...", progress: ++currentStage, totalStages });
+      const createdVendorNames: string[] = [];
+      for (const name of baseVendorNames) {
+        if (await ensurePayeeExists(name, false)) createdVendorNames.push(name);
+      }
+
+      setDemoDataProgress({ stage: "Creating demo categories...", progress: ++currentStage, totalStages });
+      const createdCategoryNames: string[] = [];
+      for (const name of baseCategories) {
+        if (await ensureCategoryExists(name, userId)) createdCategoryNames.push(name);
+      }
+
+      setDemoDataProgress({ stage: "Fetching account currencies...", progress: ++currentStage, totalStages });
+      const { data: accountCurrencyData, error: currencyError } = await supabase.from('vendors').select('name, accounts(currency)').eq('is_account', true);
+      if (currencyError) throw currencyError;
+      const accountCurrencyMap = new Map<string, string>(accountCurrencyData.map(item => [item.name, item.accounts[0]?.currency || 'USD']));
+
+      setDemoDataProgress({ stage: "Generating and inserting transactions...", progress: ++currentStage, totalStages });
+      const demoData = (await Promise.all([
+        generateTransactions(0, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+        generateTransactions(-1, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+        generateTransactions(-2, 300, createdAccountNames, createdVendorNames, createdCategoryNames, accountCurrencyMap, userId),
+      ])).flat();
+
+      if (demoData.length > 0) {
+        const { error } = await supabase.from('transactions').insert(demoData);
+        if (error) throw error;
+        showSuccess("Diverse demo data generated successfully!");
+      }
+
+      await refetchTransactions();
       await invalidateAllData();
-      showSuccess("Demo data generated successfully!");
-
     } catch (error: any) {
       showError(`Failed to generate demo data: ${error.message}`);
+      throw error;
     } finally {
-      setDemoDataProgress(null);
+      setDemoDataProgress(prev => prev ? { ...prev, progress: totalStages } : null);
+      setTimeout(() => setDemoDataProgress(null), 500);
     }
   };
 

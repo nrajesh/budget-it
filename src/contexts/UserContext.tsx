@@ -1,100 +1,90 @@
-import * as React from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { showError } from '@/utils/toast';
+import { User } from '@supabase/supabase-js'; // Import User type
 
-export interface UserProfile {
+interface UserProfile {
   id: string;
-  email?: string;
-  full_name?: string;
-  avatar_url?: string;
-  default_currency?: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
+  updated_at: string | null;
 }
 
 interface UserContextType {
-  user: UserProfile | null;
+  user: User | null;
+  userProfile: UserProfile | null;
   isLoadingUser: boolean;
-  updateUserPreferences: (preferences: { default_currency: string }) => void;
+  fetchUserProfile: () => Promise<void>;
 }
 
-export const UserContext = React.createContext<UserContextType | undefined>(undefined);
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = useQueryClient();
+export const UserProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-  const { data: user, isLoading: isLoadingUser } = useQuery<UserProfile | null, Error>({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!session?.user) return null;
+  const fetchUserProfile = React.useCallback(async () => {
+    setIsLoadingUser(true);
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url, default_currency')
-        .eq('id', session.user.id)
-        .single();
+    if (authError) {
+      console.error("Error fetching auth user:", authError.message);
+      setUser(null);
+      setUserProfile(null);
+      setIsLoadingUser(false);
+      return;
+    }
 
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        // Return basic user info even if profile fetch fails
-        return { id: session.user.id, email: session.user.email };
-      }
+    setUser(authUser);
 
-      return {
-        id: session.user.id,
-        email: session.user.email,
-        ...profile,
-      };
-    },
-    staleTime: Infinity, // User data is stable, refetch on auth change
-  });
-
-  const updateUserMutation = useMutation({
-    mutationFn: async (preferences: { default_currency: string }) => {
-      if (!user) throw new Error("User not authenticated");
+    if (authUser) {
       const { data, error } = await supabase
-        .from('profiles')
-        .update({ default_currency: preferences.default_currency })
-        .eq('id', user.id)
-        .select()
+        .from("user_profile")
+        .select("id, first_name, last_name, avatar_url, email, updated_at")
+        .eq("id", authUser.id)
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      // Update the user data in the query cache
-      queryClient.setQueryData(['user'], (oldUser: UserProfile | null) =>
-        oldUser ? { ...oldUser, default_currency: data.default_currency } : null
-      );
-    },
-    onError: (error) => {
-      showError(`Failed to update preferences: ${error.message}`);
-    },
-  });
+      if (error) {
+        console.error("Error fetching user profile:", error.message);
+        // If profile not found, create a basic one with available user info
+        setUserProfile({
+          id: authUser.id,
+          first_name: null,
+          last_name: null,
+          avatar_url: null,
+          email: authUser.email,
+          updated_at: null,
+        });
+      } else if (data) {
+        setUserProfile(data);
+      }
+    } else {
+      setUserProfile(null);
+    }
+    setIsLoadingUser(false);
+  }, []); // Dependencies removed, as it only uses stable supabase client and state setters
 
-  const updateUserPreferences = (preferences: { default_currency: string }) => {
-    updateUserMutation.mutate(preferences);
-  };
+  useEffect(() => {
+    fetchUserProfile();
 
-  React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Invalidate user query on auth state change to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ['user'] });
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        fetchUserProfile();
+      }
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [queryClient]);
+    return () => subscription.unsubscribe();
+  }, [fetchUserProfile]);
 
   const value = React.useMemo(() => ({
     user,
+    userProfile,
     isLoadingUser,
-    updateUserPreferences,
-  }), [user, isLoadingUser]);
+    fetchUserProfile,
+  }), [user, userProfile, isLoadingUser, fetchUserProfile]);
 
   return (
     <UserContext.Provider value={value}>
@@ -104,7 +94,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useUser = () => {
-  const context = React.useContext(UserContext);
+  const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error('useUser must be used within a UserProvider');
   }
