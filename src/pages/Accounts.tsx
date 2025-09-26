@@ -1,37 +1,45 @@
 import * as React from "react";
-import { useTransactions } from "@/contexts/TransactionsContext";
 import { usePayeeManagement } from "@/hooks/usePayeeManagement";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
+import { AddEditPayeeDialog, Payee } from "@/components/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
-import EntityManagementPage from "@/components/management/EntityManagementPage";
+import { EntityManagementPage } from "@/components/management/EntityManagementPage";
 
-const AccountsPage = () => {
-  const { accounts, isLoadingAccounts, invalidateAllData } = useTransactions();
+const Accounts = () => {
   const { formatCurrency } = useCurrency();
-  const managementProps = usePayeeManagement(true);
+  const managementProps = usePayeeManagement({
+    entityType: "account",
+    refetchQueries: ["accounts"],
+  });
 
-  const columns: ColumnDefinition<Payee>[] = [
+  const {
+    accounts,
+    isLoading: isLoadingAccounts,
+    handleEdit,
+  } = managementProps;
+
+  const columns: ColumnDefinition<Payee>[] = React.useMemo(() => [
+    { accessor: "name", header: "Name" },
     {
-      header: "Account Name",
-      accessor: "name",
-      cellRenderer: (item) => (
-        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer font-medium hover:text-primary hover:underline">
-          {item.name}
-        </div>
+      accessor: "running_balance",
+      header: "Running Balance",
+      render: (item) => formatCurrency(item.running_balance || 0, item.currency),
+    },
+    {
+      accessor: "totalTransactions",
+      header: "Total Transactions",
+      render: (item) => item.totalTransactions?.toString() || "0",
+    },
+    {
+      accessor: "actions",
+      header: "Actions",
+      render: (item) => (
+        <button onClick={() => handleEdit(item)} className="text-blue-500 hover:underline">
+          Edit
+        </button>
       ),
     },
-    { header: "Currency", accessor: "currency" },
-    {
-      header: "Starting Balance",
-      accessor: (item) => formatCurrency(item.starting_balance || 0, item.currency || 'USD'),
-    },
-    {
-      header: "Running Balance",
-      accessor: (item) => formatCurrency(item.running_balance || 0, item.currency || 'USD'),
-    },
-    { header: "Remarks", accessor: "remarks" },
-  ];
+  ], [formatCurrency, handleEdit]);
 
   return (
     <EntityManagementPage
@@ -42,11 +50,8 @@ const AccountsPage = () => {
       isLoading={isLoadingAccounts}
       columns={columns}
       managementProps={managementProps}
-      AddEditDialogComponent={(props) => (
-        <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} isAccountOnly={true} />
-      )}
     />
   );
 };
 
-export default AccountsPage;
+export default Accounts;
