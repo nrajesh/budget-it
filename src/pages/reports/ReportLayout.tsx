@@ -73,33 +73,9 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         const cardTitleElement = card.querySelector('.text-lg.font-semibold, .text-xl.font-bold, .text-2xl.font-bold');
         const cardTitle = cardTitleElement ? cardTitleElement.textContent?.trim() : 'Report Section';
 
-        // Check if it's a chart or a table
-        const chartContainer = card.querySelector('.recharts-wrapper');
         const tableElement = card.querySelector('table');
 
-        if (chartContainer) {
-          // Handle charts
-          if (yPos + 100 > pageHeight - margin) { // Estimate space needed for chart title + chart
-            doc.addPage();
-            yPos = margin;
-          }
-
-          doc.setFontSize(14);
-          doc.text(cardTitle, margin, yPos);
-          yPos += 10;
-
-          const canvas = await html2canvas(chartContainer as HTMLElement, { scale: 2 });
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = 180; // mm
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-          if (yPos + imgHeight > pageHeight - margin) {
-            doc.addPage();
-            yPos = margin;
-          }
-          doc.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
-          yPos += imgHeight + 15;
-        } else if (tableElement) {
+        if (tableElement) {
           // Handle tables
           if (yPos + 50 > pageHeight - margin) { // Estimate space needed for table title + some rows
             doc.addPage();
@@ -127,6 +103,29 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
             },
           });
           yPos = (doc as any).lastAutoTable.finalY + 15;
+        } else {
+          // Handle charts and any other cards (like summary cards with icons) as images
+          if (yPos + 100 > pageHeight - margin) { // Estimate space needed for card title + image
+            doc.addPage();
+            yPos = margin;
+          }
+
+          doc.setFontSize(14);
+          doc.text(cardTitle, margin, yPos);
+          yPos += 10;
+
+          // Capture the entire card as an image
+          const canvas = await html2canvas(card as HTMLElement, { scale: 2 }); // Capture the whole card
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = 180; // mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          if (yPos + imgHeight > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+          yPos += imgHeight + 15;
         }
       }
 
