@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction, baseCategories, Category } from '@/data/finance-data';
+import { Transaction, baseCategories } from '@/data/finance-data';
 import { availableCurrencies } from '@/contexts/CurrencyContext';
 import { QueryObserverResult } from '@tanstack/react-query';
 
@@ -62,9 +62,11 @@ const generateTransactions = async (
       currency: currencyCode,
       vendor: vendorName,
       amount: amountValue,
-      remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : undefined,
+      remarks: Math.random() > 0.7 ? `Sample remark ${i + 1}` : null,
       category: categoryName,
       user_id: userId,
+      is_scheduled_origin: false,
+      recurrence_id: null,
     };
 
     if (isTransfer) {

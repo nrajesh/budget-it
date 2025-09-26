@@ -20,7 +20,7 @@ const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   account: z.string().min(1, "Account is required"),
   category: z.string().min(1, "Category is required"),
-  amount: z.coerce.number().positive("Amount must be positive"),
+  amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   vendor: z.string().optional(),
   remarks: z.string().optional(),
 });
@@ -41,7 +41,11 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ isOpen, onO
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
-      await addTransaction(data);
+      await addTransaction({
+        ...data,
+        vendor: data.vendor || null,
+        remarks: data.remarks || null,
+      });
       onOpenChange(false);
       reset();
     } catch (error: any) {

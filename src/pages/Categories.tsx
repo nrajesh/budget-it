@@ -2,7 +2,7 @@ import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCategoryManagement } from "@/hooks/useCategoryManagement";
 import { Category } from "@/data/finance-data";
-import { ColumnDefinition } from "@/components/management/EntityTable";
+import { ColumnDefinition } from "@/types";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
 import { useMutation } from '@tanstack/react-query';
@@ -75,17 +75,12 @@ const CategoriesPage = () => {
   return (
     <EntityManagementPage
       title="Categories"
-      entityName="Category"
-      entityNamePlural="categories"
       data={managementProps.categories}
       isLoading={managementProps.isLoadingCategories}
       columns={columns}
-      managementProps={managementProps}
-      isDeletable={(item) => item.name !== 'Others'}
-      isEditable={(item) => item.name !== 'Others'}
-      customEditHandler={startEditing}
-      isEditing={id => editingCategoryId === id}
-      isUpdating={updateCategoryNameMutation.isPending}
+      searchTerm={managementProps.searchTerm}
+      setSearchTerm={managementProps.setSearchTerm}
+      onAddNew={managementProps.handleAddClick}
     />
   );
 };

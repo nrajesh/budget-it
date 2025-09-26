@@ -7,7 +7,7 @@ import AddTransactionDialog from "@/components/AddTransactionDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const TransactionsPage = () => {
-  const { transactions, isLoading } = useTransactions();
+  const { transactions, isLoadingTransactions: isLoading } = useTransactions();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
   return (

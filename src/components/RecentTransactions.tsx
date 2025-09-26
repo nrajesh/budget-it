@@ -10,7 +10,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { type Transaction } from "@/data/finance-data";
+import { type Transaction } from "@/types";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { slugify, formatDateToDDMMYYYY } from "@/lib/utils"; // Import formatDateToDDMMYYYY

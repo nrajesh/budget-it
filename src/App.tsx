@@ -17,6 +17,7 @@ import CashFlowStatementReport from "./pages/reports/CashFlowStatementReport";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { UserProvider } from "./contexts/UserContext";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -28,38 +29,38 @@ function App() {
     <Router>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <CurrencyProvider>
-            <TransactionsProvider>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route
-                  path="/*"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Routes>
-                          <Route path="/" element={<Dashboard />} />
-                          <Route path="/transactions" element={<Transactions />} />
-                          <Route path="/accounts" element={<Accounts />} />
-                          <Route path="/vendors" element={<Vendors />} />
-                          <Route path="/payees" element={<Payees />} />
-                          <Route path="/categories" element={<Categories />} />
-                          <Route path="/reports" element={<Reports />} />
-                          <Route path="/reports/essentials" element={<EssentialsReport />} />
-                          <Route path="/reports/spending-analysis" element={<SpendingAnalysisReport />} />
-                          <Route path="/reports/net-worth" element={<NetWorthTrackerReport />} />
-                          <Route path="/reports/cash-flow" element={<CashFlowStatementReport />} />
-                          <Route path="/settings" element={<SettingsPage />} />
-                        </Routes>
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-              <Toaster />
-            </TransactionsProvider>
-          </CurrencyProvider>
+          <UserProvider>
+            <CurrencyProvider>
+              <TransactionsProvider>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route
+                    path="/*"
+                    element={
+                      <ProtectedRoute>
+                        <Layout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Dashboard />} />
+                    <Route path="transactions" element={<Transactions />} />
+                    <Route path="accounts" element={<Accounts />} />
+                    <Route path="vendors" element={<Vendors />} />
+                    <Route path="payees" element={<Payees />} />
+                    <Route path="categories" element={<Categories />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="reports/essentials" element={<EssentialsReport />} />
+                    <Route path="reports/spending-analysis" element={<SpendingAnalysisReport />} />
+                    <Route path="reports/net-worth" element={<NetWorthTrackerReport />} />
+                    <Route path="reports/cash-flow" element={<CashFlowStatementReport />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
+                </Routes>
+                <Toaster />
+              </TransactionsProvider>
+            </CurrencyProvider>
+          </UserProvider>
         </AuthProvider>
       </QueryClientProvider>
     </Router>

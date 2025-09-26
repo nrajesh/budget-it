@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pie, PieChart } from "recharts";
-import { type Transaction } from "@/data/finance-data";
+import { type Transaction } from "@/types";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import React from "react";
 
@@ -31,7 +31,7 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
   const allUniqueVendors = React.useMemo(() => {
     const vendorsSet = new Set<string>();
     transactions.forEach(t => {
-      if (t.amount < 0 && t.category !== 'Transfer') {
+      if (t.amount < 0 && t.category !== 'Transfer' && t.vendor) {
         vendorsSet.add(t.vendor);
       }
     });
@@ -41,7 +41,7 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
   const comprehensiveChartConfig = React.useMemo(() => getVendorChartConfig(allUniqueVendors), [allUniqueVendors]);
 
   const spendingData = transactions.reduce((acc, transaction) => {
-    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
+    if (transaction.amount < 0 && transaction.category !== 'Transfer' && transaction.vendor) {
       const vendor = transaction.vendor;
       const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
       acc[vendor] = (acc[vendor] || 0) + convertedAmount;

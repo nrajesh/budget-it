@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction } from '@/data/finance-data';
+import { Transaction } from '@/types';
 import { QueryObserverResult } from '@tanstack/react-query';
 
 interface TransactionToDelete {
@@ -32,11 +32,11 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
       await ensurePayeeExists(restOfTransaction.account, true);
       const accountCurrency = await getAccountCurrency(restOfTransaction.account);
 
-      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
+      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor || '');
       if (isTransfer) {
-        await ensurePayeeExists(restOfTransaction.vendor, true);
+        await ensurePayeeExists(restOfTransaction.vendor || '', true);
       } else {
-        await ensurePayeeExists(restOfTransaction.vendor, false);
+        await ensurePayeeExists(restOfTransaction.vendor || '', false);
       }
 
       await ensureCategoryExists(restOfTransaction.category, userId);
@@ -61,7 +61,7 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(restOfTransaction.amount);
 
-        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor);
+        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor || '');
         const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
 
         const debitTransaction = {
@@ -75,7 +75,7 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         const creditTransaction = {
           ...commonTransactionFields,
           transfer_id: transfer_id,
-          account: restOfTransaction.vendor,
+          account: restOfTransaction.vendor || '',
           vendor: restOfTransaction.account,
           amount: receivingAmount ?? convertedReceivingAmount,
           category: 'Transfer',

@@ -1,4 +1,5 @@
 import { type ChartConfig } from "@/components/ui/chart";
+import { Transaction, Category } from "@/types";
 
 export const incomeVsExpensesData = [
   { month: "Aug", income: 4000, expenses: 2500 },
@@ -45,32 +46,6 @@ export const chartConfig = {
     color: "hsl(var(--chart-4))",
   },
 } satisfies ChartConfig;
-
-export type Transaction = {
-  id: string;
-  transfer_id?: string;
-  date: string;
-  account: string;
-  currency: string;
-  vendor: string;
-  amount: number;
-  remarks?: string;
-  category: string;
-  created_at: string;
-  user_id: string; // Added user_id here
-  is_scheduled_origin?: boolean; // Added optional property to reflect DB column
-  recurrence_id?: string | null; // Added recurrence fields
-  recurrence_frequency?: string | null;
-  recurrence_end_date?: string | null; // Added recurrence_end_date
-};
-
-export type Category = {
-  id: string;
-  name: string;
-  user_id: string;
-  created_at: string;
-  totalTransactions?: number;
-};
 
 // Base categories for seeding and initial demo data generation.
 // The actual list in the app will be fetched from the database.
