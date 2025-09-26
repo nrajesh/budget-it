@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Transaction } from "@/types";
+import { Transaction } from "@/data/finance-data";
 
 export const useTransactionPagination = (filteredTransactions: Transaction[]) => {
   const [currentPage, setCurrentPage] = React.useState(1);

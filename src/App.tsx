@@ -1,69 +1,63 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
-import Dashboard from "@/pages/Dashboard";
-import Transactions from "@/pages/Transactions";
-import Payees from "@/pages/Payees";
-import Categories from "@/pages/Categories";
-import Reports from "@/pages/Reports";
-import SettingsPage from "@/pages/SettingsPage";
-import Accounts from "@/pages/Accounts";
-import Vendors from "@/pages/Vendors";
-import EssentialsReport from "./pages/reports/EssentialsReport";
-import SpendingAnalysisReport from "./pages/reports/SpendingAnalysisReport";
-import NetWorthTrackerReport from "./pages/reports/NetWorthTrackerReport";
-import CashFlowStatementReport from "./pages/reports/CashFlowStatementReport";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
-import { CurrencyProvider } from "./contexts/CurrencyContext";
-import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
-import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
-import ProtectedRoute from "./components/ProtectedRoute";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
+// Lazy load page components
+const Index = lazy(() => import("@/pages/Index"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const Transactions = lazy(() => import("@/pages/Transactions"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const Login = lazy(() => import("@/pages/Login"));
+const Accounts = lazy(() => import("@/pages/Accounts"));
+const Vendors = lazy(() => import("@/pages/Vendors"));
+const Categories = lazy(() => import("@/pages/Categories"));
+const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions"));
+const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
+const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
+
 function App() {
   return (
-    <Router>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <UserProvider>
-            <CurrencyProvider>
-              <TransactionsProvider>
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route
-                    path="/*"
-                    element={
-                      <ProtectedRoute>
-                        <Layout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Dashboard />} />
-                    <Route path="transactions" element={<Transactions />} />
-                    <Route path="accounts" element={<Accounts />} />
-                    <Route path="vendors" element={<Vendors />} />
-                    <Route path="payees" element={<Payees />} />
-                    <Route path="categories" element={<Categories />} />
-                    <Route path="reports" element={<Reports />} />
-                    <Route path="reports/essentials" element={<EssentialsReport />} />
-                    <Route path="reports/spending-analysis" element={<SpendingAnalysisReport />} />
-                    <Route path="reports/net-worth" element={<NetWorthTrackerReport />} />
-                    <Route path="reports/cash-flow" element={<CashFlowStatementReport />} />
-                    <Route path="settings" element={<SettingsPage />} />
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <TransactionsProvider>
+          <Router>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                {/* Protected routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Index />} />
+                    <Route path="/transactions" element={<Transactions />} />
+                    <Route path="/vendors" element={<Vendors />} />
+                    <Route path="/accounts" element={<Accounts />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/scheduled" element={<ScheduledTransactions />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/reports/essential" element={<EssentialReports />} />
+                    <Route path="/reports/advanced" element={<AdvancedReports />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="*" element={<NotFound />} />
                   </Route>
-                </Routes>
-                <Toaster />
-              </TransactionsProvider>
-            </CurrencyProvider>
-          </UserProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </Router>
+                </Route>
+              </Routes>
+            </Suspense>
+          </Router>
+        </TransactionsProvider>
+      </UserProvider>
+      <Toaster />
+    </QueryClientProvider>
   );
 }
 

@@ -1,8 +1,8 @@
-import React from 'react'; // Added import
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
-import { Category } from "@/types"; // Corrected import
+import { Category } from "@/data/finance-data";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import Papa from "papaparse";

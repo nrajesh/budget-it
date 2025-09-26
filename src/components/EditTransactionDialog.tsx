@@ -20,7 +20,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Transaction } from "@/types"; // Corrected import
+import { Transaction } from "@/data/finance-data";
 import {
   Select,
   SelectContent,

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCategoryManagement } from "@/hooks/useCategoryManagement";
-import { Category } from "@/types"; // Corrected import
-import { ColumnDefinition } from "@/types";
+import { Category } from "@/data/finance-data";
+import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
 import { useMutation } from '@tanstack/react-query';
@@ -53,7 +53,7 @@ const CategoriesPage = () => {
     {
       header: "Name",
       accessor: "name",
-      render: (item) => // Changed cellRenderer to render
+      cellRenderer: (item) =>
         editingCategoryId === item.id ? (
           <Input
             ref={inputRef}
@@ -75,12 +75,17 @@ const CategoriesPage = () => {
   return (
     <EntityManagementPage
       title="Categories"
+      entityName="Category"
+      entityNamePlural="categories"
       data={managementProps.categories}
       isLoading={managementProps.isLoadingCategories}
       columns={columns}
-      searchTerm={managementProps.searchTerm}
-      setSearchTerm={managementProps.setSearchTerm}
-      onAddNew={managementProps.handleAddClick}
+      managementProps={managementProps}
+      isDeletable={(item) => item.name !== 'Others'}
+      isEditable={(item) => item.name !== 'Others'}
+      customEditHandler={startEditing}
+      isEditing={id => editingCategoryId === id}
+      isUpdating={updateCategoryNameMutation.isPending}
     />
   );
 };

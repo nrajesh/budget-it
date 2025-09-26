@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { Transaction } from "@/types";
+import { Transaction } from "@/data/finance-data";
 
 export const useTransactionSelection = (currentTransactions: Transaction[], allTransactions: Transaction[]) => {
   const { deleteMultipleTransactions } = useTransactions();

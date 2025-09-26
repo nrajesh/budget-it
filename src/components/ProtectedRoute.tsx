@@ -1,25 +1,20 @@
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
+import LoadingSpinner from './LoadingSpinner';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
+const ProtectedRoute = () => {
+  const { user, isLoadingUser } = useUser();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+  if (isLoadingUser) {
+    return <LoadingSpinner />;
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 };
 
 export default ProtectedRoute;

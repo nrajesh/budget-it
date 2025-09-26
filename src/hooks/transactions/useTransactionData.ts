@@ -2,7 +2,7 @@ import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/types";
+import { Transaction } from "@/data/finance-data";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { useQuery } from '@tanstack/react-query';
@@ -100,15 +100,14 @@ export const useTransactionData = ({
           vendor: st.vendor,
           category: st.category,
           amount: st.amount,
-          remarks: st.remarks || null,
+          remarks: st.remarks,
           currency: accountCurrencyMap.get(st.account) || 'USD',
           user_id: st.user_id,
           created_at: st.created_at,
           is_scheduled_origin: true,
           recurrence_id: st.id, // Link to the scheduled transaction ID
-          transfer_id: null,
-          recurrence_frequency: st.frequency, // Add recurrence_frequency
-          recurrence_end_date: st.recurrence_end_date || null, // Add recurrence_end_date
+          recurrence_frequency: st.frequency,
+          recurrence_end_date: st.recurrence_end_date,
         });
         nextDate = advanceDate(nextDate);
       }
@@ -137,7 +136,7 @@ export const useTransactionData = ({
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (t) =>
-          (t.vendor && t.vendor.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
           (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
       );
       // console.log("After Search Term Filter:", filtered.length, "transactions");
@@ -160,7 +159,7 @@ export const useTransactionData = ({
     // Vendor filtering
     // Only filter if specific vendors are selected (i.e., not all vendors are selected)
     if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
-      filtered = filtered.filter((t) => t.vendor && selectedVendors.includes(slugify(t.vendor)));
+      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
       // console.log("After Vendor Filter:", filtered.length, "transactions");
     }
 

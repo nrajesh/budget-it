@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction } from '@/types';
+import { Transaction } from '@/data/finance-data';
 import { QueryObserverResult } from '@tanstack/react-query';
 
 interface TransactionToDelete {
@@ -19,7 +19,7 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: { date: string; account: string; category: string; amount: number; vendor?: string | null; remarks?: string | null; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string; }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       throw new Error("User not logged in.");
@@ -32,11 +32,11 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
       await ensurePayeeExists(restOfTransaction.account, true);
       const accountCurrency = await getAccountCurrency(restOfTransaction.account);
 
-      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor || '');
+      const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
       if (isTransfer) {
-        await ensurePayeeExists(restOfTransaction.vendor || '', true);
+        await ensurePayeeExists(restOfTransaction.vendor, true);
       } else {
-        await ensurePayeeExists(restOfTransaction.vendor || '', false);
+        await ensurePayeeExists(restOfTransaction.vendor, false);
       }
 
       await ensureCategoryExists(restOfTransaction.category, userId);
@@ -61,7 +61,7 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         const transfer_id = `transfer_${Date.now()}`;
         const newAmount = Math.abs(restOfTransaction.amount);
 
-        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor || '');
+        const destinationAccountCurrency = await getAccountCurrency(restOfTransaction.vendor);
         const convertedReceivingAmount = convertBetweenCurrencies(newAmount, accountCurrency, destinationAccountCurrency);
 
         const debitTransaction = {
@@ -75,7 +75,7 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         const creditTransaction = {
           ...commonTransactionFields,
           transfer_id: transfer_id,
-          account: restOfTransaction.vendor || '',
+          account: restOfTransaction.vendor,
           vendor: restOfTransaction.account,
           amount: receivingAmount ?? convertedReceivingAmount,
           category: 'Transfer',

@@ -1,67 +1,186 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Payee } from '@/types';
-import { showError, showSuccess } from '@/utils/toast';
+import * as React from "react";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { Payee } from "@/components/AddEditPayeeDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
+import Papa from "papaparse";
+import { useNavigate } from "react-router-dom";
 
-interface UsePayeeManagementProps {
-  entityType: 'account' | 'vendor';
-}
-
-export const usePayeeManagement = ({ entityType }: UsePayeeManagementProps) => {
+export const usePayeeManagement = (isAccount: boolean) => {
+  const { invalidateAllData } = useTransactions();
   const queryClient = useQueryClient();
-  const queryKey = entityType === 'account' ? 'accounts' : 'vendors';
-  const rpcFunction = entityType === 'account' ? 'get_accounts_with_transaction_counts' : 'get_vendors_with_transaction_counts';
+  const navigate = useNavigate();
 
-  const { data: payees = [], isLoading } = useQuery<Payee[]>({
-    queryKey: [queryKey],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc(rpcFunction);
-      if (error) throw new Error(error.message);
-      return data || [];
-    },
-  });
+  const entityName = isAccount ? "Account" : "Vendor";
+  const entityNamePlural = isAccount ? "accounts" : "vendors";
 
-  const { mutate: deletePayees, isPending: isDeleting } = useMutation({
+  // State Management
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage] = React.useState(10);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [selectedPayee, setSelectedPayee] = React.useState<Payee | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [payeeToDelete, setPayeeToDelete] = React.useState<Payee | null>(null);
+  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
+  const [isImporting, setIsImporting] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
+
+  // Mutations
+  const deletePayeesMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       const { error } = await supabase.rpc('delete_payees_batch', { p_vendor_ids: ids });
-      if (error) throw new Error(error.message);
+      if (error) throw error;
     },
-    onSuccess: () => {
-      showSuccess(`${entityType}(s) deleted successfully.`);
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
+    onSuccess: async () => {
+      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
+      await invalidateAllData();
+      setIsConfirmOpen(false);
+      setPayeeToDelete(null);
+      setSelectedRows([]);
+      setIsBulkDelete(false);
     },
-    onError: (error) => {
-      showError(`Failed to delete ${entityType}(s): ${error.message}`);
-    },
+    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
   });
 
-  const { mutate: updatePayee, isPending: isUpdating } = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.rpc('update_vendor_name', { p_vendor_id: id, p_new_name: name });
-      if (error) throw new Error(error.message);
+  const batchUpsertMutation = useMutation({
+    mutationFn: async (dataToUpsert: any[]) => {
+      const rpcName = isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors';
+      const payloadKey = isAccount ? 'p_accounts' : 'p_names';
+      const payload = isAccount ? { [payloadKey]: dataToUpsert } : { [payloadKey]: dataToUpsert.map(d => d.name) };
+      const { error } = await supabase.rpc(rpcName, payload);
+      if (error) throw error;
     },
-    onSuccess: () => {
-      showSuccess(`${entityType} updated successfully.`);
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
+      await invalidateAllData();
+      if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    onError: (error) => {
-      showError(`Failed to update ${entityType}: ${error.message}`);
-    },
+    onError: (error: any) => showError(`Import failed: ${error.message}`),
+    onSettled: () => setIsImporting(false),
   });
 
-  const handleEdit = (id: string, currentName: string) => {
-    const newName = prompt(`Enter new name for ${currentName}:`, currentName);
-    if (newName && newName !== currentName) {
-      updatePayee({ id, name: newName });
+  // Handlers
+  const handleAddClick = () => {
+    setSelectedPayee(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditClick = (payee: Payee) => {
+    setSelectedPayee(payee);
+    setIsDialogOpen(true);
+  };
+
+  const handleDeleteClick = (payee: Payee) => {
+    setPayeeToDelete(payee);
+    setIsBulkDelete(false);
+    setIsConfirmOpen(true);
+  };
+
+  const handleBulkDeleteClick = () => {
+    setPayeeToDelete(null);
+    setIsBulkDelete(true);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    const idsToDelete = isBulkDelete ? selectedRows : (payeeToDelete ? [payeeToDelete.id] : []);
+    if (idsToDelete.length > 0) {
+      deletePayeesMutation.mutate(idsToDelete);
+    } else {
+      setIsConfirmOpen(false);
     }
   };
 
+  const handleSelectAll = (checked: boolean, currentPayees: Payee[]) => {
+    if (checked) {
+      const selectablePayees = isAccount ? currentPayees : currentPayees.filter(p => p.name !== 'Others');
+      setSelectedRows(selectablePayees.map(p => p.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleRowSelect = (id: string, checked: boolean) => {
+    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const requiredHeaders = isAccount ? ["Account Name", "Currency", "Starting Balance", "Remarks"] : ["Vendor Name"];
+        const hasAllHeaders = requiredHeaders.every(h => results.meta.fields?.includes(h));
+
+        if (!hasAllHeaders) {
+          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
+          setIsImporting(false);
+          return;
+        }
+
+        const dataToUpsert = results.data.map((row: any) => isAccount
+          ? { name: row["Account Name"], currency: row["Currency"], starting_balance: parseFloat(row["Starting Balance"]) || 0, remarks: row["Remarks"] }
+          : { name: row["Vendor Name"] }
+        ).filter(item => item.name);
+
+        if (dataToUpsert.length === 0) {
+          showError(`No valid ${entityName.toLowerCase()} data found in the CSV file.`);
+          setIsImporting(false);
+          return;
+        }
+        batchUpsertMutation.mutate(dataToUpsert);
+      },
+      error: (error: any) => {
+        showError(`CSV parsing error: ${error.message}`);
+        setIsImporting(false);
+      },
+    });
+  };
+
+  const handleExportClick = (payees: Payee[]) => {
+    if (payees.length === 0) {
+      showError(`No ${entityNamePlural} to export.`);
+      return;
+    }
+    const dataToExport = payees.map(p => isAccount
+      ? { "Account Name": p.name, "Currency": p.currency, "Starting Balance": p.starting_balance, "Remarks": p.remarks }
+      : { "Vendor Name": p.name }
+    );
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", `${entityNamePlural}_export.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePayeeNameClick = (payeeName: string) => {
+    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
+    navigate('/transactions', { state: { [filterKey]: payeeName } });
+  };
+
   return {
-    payees,
-    isLoading,
-    handleEdit,
-    deletePayees,
-    isDeleting,
-    isUpdating,
+    searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
+    isDialogOpen, setIsDialogOpen, selectedPayee,
+    isConfirmOpen, setIsConfirmOpen,
+    selectedRows,
+    isImporting, fileInputRef,
+    deletePayeesMutation,
+    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
+    handleSelectAll, handleRowSelect,
+    handleImportClick, handleFileChange, handleExportClick,
+    handlePayeeNameClick,
+    isLoadingMutation: deletePayeesMutation.isPending || batchUpsertMutation.isPending,
   };
 };

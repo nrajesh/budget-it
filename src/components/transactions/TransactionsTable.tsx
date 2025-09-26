@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Transaction } from "@/types"; // Corrected import
+import { Transaction } from "@/data/finance-data";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { CalendarCheck } from "lucide-react"; // Import CalendarCheck icon

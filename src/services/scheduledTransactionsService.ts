@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
-import { Transaction } from '@/types'; // Corrected import
+import { Transaction } from '@/data/finance-data';
 import { QueryObserverResult } from '@tanstack/react-query';
 import { getAccountCurrency } from '@/integrations/supabase/utils';
 
@@ -76,7 +76,7 @@ export const createScheduledTransactionsService = ({ refetchTransactions, userId
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const transactionsToAdd: Omit<Transaction, 'id' | 'created_at' | 'recurrence_id' | 'recurrence_frequency' | 'recurrence_end_date'>[] = [];
+      const transactionsToAdd: Omit<Transaction, 'id' | 'created_at'>[] = [];
       const updatesToMake: { id: string; last_processed_date: string }[] = [];
 
       for (const st of scheduledTransactions) {
@@ -102,10 +102,6 @@ export const createScheduledTransactionsService = ({ refetchTransactions, userId
               currency: currencyMap.get(st.account) || 'USD',
               user_id: userId,
               is_scheduled_origin: true,
-              transfer_id: null, // Default to null, will be set for transfers
-              recurrence_id: null, // Scheduled transactions don't have recurrence_id in main transactions
-              recurrence_frequency: null,
-              recurrence_end_date: null,
             };
 
             if (st.category === 'Transfer') {
