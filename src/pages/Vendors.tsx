@@ -1,94 +1,78 @@
 import * as React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext";
 import { usePayeeManagement } from "@/hooks/usePayeeManagement";
-import { AddEditPayeeDialog, Payee } from "@/components/AddEditPayeeDialog";
+import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
-import { EntityManagementPage } from "@/components/management/EntityManagementPage";
+import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Pencil, Loader2 } from "lucide-react";
+import { useMutation } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 
-const Vendors = () => {
-  const queryClient = useQueryClient();
-  const managementProps = usePayeeManagement({
-    entityType: "vendor",
-    refetchQueries: ["vendors"],
-  });
+const VendorsPage = () => {
+  const { vendors, isLoadingVendors, invalidateAllData } = useTransactions();
+  const managementProps = usePayeeManagement(false);
 
-  const {
-    vendors,
-    isLoading: isLoadingVendors,
-    handleEdit,
-  } = managementProps;
-
-  const [editableNames, setEditableNames] = React.useState<Record<string, string>>({});
+  const [editingVendorId, setEditingVendorId] = React.useState<string | null>(null);
+  const [editedName, setEditedName] = React.useState<string>("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const updateVendorNameMutation = useMutation({
     mutationFn: async ({ vendorId, newName }: { vendorId: string; newName: string }) => {
       const { error } = await supabase.rpc('update_vendor_name', { p_vendor_id: vendorId, p_new_name: newName });
       if (error) throw error;
     },
-    onSuccess: () => {
-      showSuccess("Vendor name updated successfully.");
-      queryClient.invalidateQueries({ queryKey: ['vendors'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    onSuccess: async () => {
+      showSuccess("Vendor name updated successfully!");
+      await invalidateAllData();
+      setEditingVendorId(null);
     },
-    onError: (error: any) => {
-      showError(`Failed to update vendor name: ${error.message}`);
-    },
+    onError: (error: any) => showError(`Failed to update vendor name: ${error.message}`),
   });
 
-  const handleNameChange = (id: string, value: string) => {
-    setEditableNames(prev => ({ ...prev, [id]: value }));
+  const startEditing = (vendor: { id: string; name: string }) => {
+    setEditingVendorId(vendor.id);
+    setEditedName(vendor.name);
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const handleSaveName = (id: string, currentName: string) => {
-    const newName = editableNames[id];
-    if (newName && newName !== currentName) {
-      updateVendorNameMutation.mutate({ vendorId: id, newName });
+  const handleSaveName = (vendorId: string, originalName: string) => {
+    if (editedName.trim() === "" || editedName === originalName) {
+      setEditingVendorId(null);
+      return;
     }
+    updateVendorNameMutation.mutate({ vendorId, newName: editedName.trim() });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, item: Payee) => {
-    if (e.key === 'Enter') {
-      handleSaveName(item.id, item.name);
-      (e.target as HTMLInputElement).blur();
-    } else if (e.key === 'Escape') {
-      setEditableNames(prev => ({ ...prev, [item.id]: item.name }));
-      (e.target as HTMLInputElement).blur();
-    }
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, vendor: { id: string; name: string }) => {
+    if (event.key === 'Enter') event.currentTarget.blur();
+    else if (event.key === 'Escape') setEditingVendorId(null);
   };
 
-  const columns: ColumnDefinition<Payee>[] = React.useMemo(() => [
+  const columns: ColumnDefinition<Payee>[] = [
     {
-      accessor: "name",
       header: "Name",
-      render: (item) => (
-        <Input
-          value={editableNames[item.id] ?? item.name}
-          onChange={(e) => handleNameChange(item.id, e.target.value)}
-          onBlur={() => handleSaveName(item.id, item.name)}
-          onKeyDown={(e) => handleKeyDown(e, item)}
-          disabled={updateVendorNameMutation.isPending}
-          className="h-8"
-        />
-      ),
+      accessor: "name",
+      cellRenderer: (item) =>
+        editingVendorId === item.id ? (
+          <Input
+            ref={inputRef}
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onBlur={() => handleSaveName(item.id, item.name)}
+            onKeyDown={(e) => handleKeyDown(e, item)}
+            disabled={updateVendorNameMutation.isPending}
+            className="h-8"
+          />
+        ) : (
+          <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+            {item.name}
+          </div>
+        ),
     },
-    {
-      accessor: "totalTransactions",
-      header: "Total Transactions",
-      render: (item) => item.totalTransactions?.toString() || "0",
-    },
-    {
-      accessor: "actions",
-      header: "Actions",
-      render: (item) => (
-        <button onClick={() => handleEdit(item)} className="text-blue-500 hover:underline">
-          Edit
-        </button>
-      ),
-    },
-  ], [editableNames, handleEdit, updateVendorNameMutation.isPending]);
+  ];
 
   return (
     <EntityManagementPage
@@ -99,8 +83,16 @@ const Vendors = () => {
       isLoading={isLoadingVendors}
       columns={columns}
       managementProps={managementProps}
+      AddEditDialogComponent={(props) => (
+        <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} />
+      )}
+      isDeletable={(item) => item.name !== 'Others'}
+      isEditable={(item) => item.name !== 'Others'}
+      customEditHandler={startEditing}
+      isEditing={id => editingVendorId === id}
+      isUpdating={updateVendorNameMutation.isPending}
     />
   );
 };
 
-export default Vendors;
+export default VendorsPage;

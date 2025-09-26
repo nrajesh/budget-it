@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 
 const SettingsPage = () => {
-  const { selectedCurrency, setSelectedCurrency: setCurrency, currencies: availableCurrencies } = useCurrency();
+  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
