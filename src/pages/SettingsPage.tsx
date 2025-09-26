@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 
 const SettingsPage = () => {
-  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
+  const { selectedCurrency, setCurrency, availableCurrencies, isLoadingCurrencies } = useCurrency();
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
@@ -27,8 +27,8 @@ const SettingsPage = () => {
     }
   }, []);
 
-  const handleCurrencyChange = (value: string) => {
-    setCurrency(value);
+  const handleCurrencyChange = async (value: string) => {
+    await setCurrency(value);
     showSuccess(`Default currency set to ${value}.`);
   };
 
@@ -76,7 +76,7 @@ const SettingsPage = () => {
             <CardDescription>Select your preferred currency for display.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
+            <Select value={selectedCurrency} onValueChange={handleCurrencyChange} disabled={isLoadingCurrencies}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>

@@ -51,7 +51,7 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const { convertBetweenCurrencies } = useCurrency();
+  const { convertBetweenCurrencies, availableCurrencies } = useCurrency();
   const { user, isLoadingUser } = useUser();
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
@@ -146,7 +146,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     invalidateAllData,
     setDemoDataProgress,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id]);
+    availableCurrencies, // Pass availableCurrencies
+    convertBetweenCurrencies, // Pass convertBetweenCurrencies
+  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id, availableCurrencies, convertBetweenCurrencies]);
 
   const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
     refetchTransactions,
