@@ -41,12 +41,16 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ isOpen, onO
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
+      // Explicitly construct the object to ensure required fields are not optional
       await addTransaction({
-        ...data,
+        date: data.date,
+        account: data.account,
+        category: data.category,
+        amount: data.amount,
         vendor: data.vendor || null,
         remarks: data.remarks || null,
-        recurrenceFrequency: null, // Explicitly set to null as it's not part of this form
-        recurrenceEndDate: null,   // Explicitly set to null as it's not part of this form
+        recurrenceFrequency: null,
+        recurrenceEndDate: null,
       });
       onOpenChange(false);
       reset();
