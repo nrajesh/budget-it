@@ -107,6 +107,8 @@ export const useTransactionData = ({
           is_scheduled_origin: true,
           recurrence_id: st.id, // Link to the scheduled transaction ID
           transfer_id: null,
+          recurrence_frequency: st.frequency, // Add recurrence_frequency
+          recurrence_end_date: st.recurrence_end_date || null, // Add recurrence_end_date
         });
         nextDate = advanceDate(nextDate);
       }

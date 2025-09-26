@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Transaction, Category } from '@/types';
+import { Transaction, Category } from '@/types'; // Corrected import
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
@@ -28,7 +28,7 @@ interface TransactionsContextType {
   accounts: Payee[];
   categories: Category[];
   accountCurrencyMap: Map<string, string>;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string; }) => void;
+  addTransaction: (transaction: { date: string; account: string; category: string; amount: number; vendor?: string | null; remarks?: string | null; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string; }) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (transactionId: string, transfer_id?: string) => void;
   deleteMultipleTransactions: (transactionsToDelete: TransactionToDelete[]) => void;

@@ -14,6 +14,8 @@ export interface Transaction {
   user_id: string;
   is_scheduled_origin: boolean | null;
   recurrence_id: string | null;
+  recurrence_frequency: string | null; // Added missing field
+  recurrence_end_date: string | null; // Added missing field
 }
 
 export interface Payee {
@@ -25,6 +27,14 @@ export interface Payee {
   starting_balance?: number;
   running_balance?: number;
   total_transactions: number;
+}
+
+export interface Category { // Exporting Category interface
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  totalTransactions?: number;
 }
 
 export type ColumnDefinition<T> = {

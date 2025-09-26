@@ -1,8 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { Category } from '@/data/finance-data';
+import { Category, Transaction } from '@/types'; // Corrected import
 import { ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction } from '@/data/finance-data';
+import { QueryObserverResult } from '@tanstack/react-query';
 
 interface CategoriesServiceProps {
   // No longer need setCategories as react-query will manage state

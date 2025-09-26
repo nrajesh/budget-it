@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCategoryManagement } from "@/hooks/useCategoryManagement";
-import { Category } from "@/data/finance-data";
+import { Category } from "@/types"; // Corrected import
 import { ColumnDefinition } from "@/types";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ const CategoriesPage = () => {
     {
       header: "Name",
       accessor: "name",
-      cellRenderer: (item) =>
+      render: (item) => // Changed cellRenderer to render
         editingCategoryId === item.id ? (
           <Input
             ref={inputRef}

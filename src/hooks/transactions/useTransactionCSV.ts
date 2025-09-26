@@ -6,6 +6,7 @@ import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
 import Papa from "papaparse";
+import { Transaction } from "@/types"; // Import Transaction type
 
 export const useTransactionCSV = () => {
   const {

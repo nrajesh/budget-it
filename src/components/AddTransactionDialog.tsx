@@ -45,6 +45,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ isOpen, onO
         ...data,
         vendor: data.vendor || null,
         remarks: data.remarks || null,
+        recurrenceFrequency: null, // Explicitly set to null as it's not part of this form
+        recurrenceEndDate: null,   // Explicitly set to null as it's not part of this form
       });
       onOpenChange(false);
       reset();

@@ -19,7 +19,7 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
+  const addTransaction = async (transaction: { date: string; account: string; category: string; amount: number; vendor?: string | null; remarks?: string | null; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string; }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       throw new Error("User not logged in.");

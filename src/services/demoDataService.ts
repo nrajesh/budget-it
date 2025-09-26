@@ -1,7 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { ensurePayeeExists, ensureCategoryExists } from '@/integrations/supabase/utils';
-import { Transaction, baseCategories } from '@/data/finance-data';
+import { Transaction } from '@/types'; // Corrected import
+import { baseCategories } from '@/data/finance-data';
 import { availableCurrencies } from '@/contexts/CurrencyContext';
 import { QueryObserverResult } from '@tanstack/react-query';
 
@@ -56,7 +57,7 @@ const generateTransactions = async (
       }
     }
 
-    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at' | 'transfer_id'> = {
+    const baseTransactionDetails: Omit<Transaction, 'id' | 'created_at'> = {
       date: date.toISOString(),
       account: accountName,
       currency: currencyCode,
@@ -67,6 +68,9 @@ const generateTransactions = async (
       user_id: userId,
       is_scheduled_origin: false,
       recurrence_id: null,
+      recurrence_frequency: null,
+      recurrence_end_date: null,
+      transfer_id: null, // Added missing transfer_id
     };
 
     if (isTransfer) {
