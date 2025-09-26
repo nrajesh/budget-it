@@ -1,116 +1,104 @@
-import * as React from 'react';
-import { useUser } from './UserContext';
-import { showError } from '@/utils/toast';
-
-interface Currency {
-  code: string;
-  name: string;
-  symbol: string;
-  exchangeRate: number; // Rate relative to a base currency (e.g., USD)
-}
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface CurrencyContextType {
   selectedCurrency: string;
-  setCurrency: (currencyCode: string) => void;
-  availableCurrencies: Currency[];
-  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
-  isLoadingCurrencies: boolean;
-  currencySymbols: Record<string, string>;
+  setCurrency: (currency: string) => void;
   formatCurrency: (amount: number, currencyCode?: string) => string;
+  currencySymbols: { [key: string]: string };
+  availableCurrencies: { code: string; name: string }[];
+  convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
 }
 
-export const CurrencyContext = React.createContext<CurrencyContextType | undefined>(undefined);
+const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userProfile, updateDefaultCurrencyInProfile, isLoadingUser } = useUser();
-  const [availableCurrencies, setAvailableCurrencies] = React.useState<Currency[]>([]);
-  const [isLoadingCurrencies, setIsLoadingCurrencies] = React.useState(true);
+// Exchange rates relative to a base currency (USD)
+const exchangeRates: { [key: string]: number } = {
+  USD: 1.0,
+  EUR: 0.92,
+  GBP: 0.79,
+  JPY: 155.0,
+  CAD: 1.37,
+  AUD: 1.51,
+  CHF: 0.90,
+  INR: 83.5,
+  BRL: 5.15,
+  CNY: 7.25,
+};
 
-  // Initialize selectedCurrency from userProfile or default to USD
-  const selectedCurrency = userProfile?.default_currency || 'USD';
+export const currencySymbols: { [key: string]: string } = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: 'C$',
+  AUD: 'A$',
+  CHF: 'CHF',
+  INR: '₹',
+  BRL: 'R$',
+  CNY: '¥',
+};
 
-  React.useEffect(() => {
-    const fetchExchangeRates = async () => {
-      setIsLoadingCurrencies(true);
-      try {
-        // In a real application, you would fetch real-time exchange rates from an API.
-        // For this demo, we'll use static rates.
-        const staticCurrencies: Currency[] = [
-          { code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 1.0 },
-          { code: 'EUR', name: 'Euro', symbol: '€', exchangeRate: 0.92 },
-          { code: 'GBP', name: 'British Pound', symbol: '£', exchangeRate: 0.79 },
-          { code: 'JPY', name: 'Japanese Yen', symbol: '¥', exchangeRate: 156.0 },
-          { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', exchangeRate: 1.37 },
-          { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', exchangeRate: 1.51 },
-          { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', exchangeRate: 0.90 },
-          { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', exchangeRate: 7.25 },
-          { code: 'INR', name: 'Indian Rupee', symbol: '₹', exchangeRate: 83.5 },
-          { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', exchangeRate: 5.15 },
-        ];
-        setAvailableCurrencies(staticCurrencies);
-      } catch (error: any) {
-        showError(`Failed to fetch currencies: ${error.message}`);
-      } finally {
-        setIsLoadingCurrencies(false);
-      }
-    };
+export const availableCurrencies = [
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'EUR', name: 'Euro' },
+  { code: 'GBP', name: 'British Pound' },
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'AUD', name: 'Australian Dollar' },
+  { code: 'CHF', name: 'Swiss Franc' },
+  { code: 'INR', name: 'Indian Rupee' },
+  { code: 'BRL', name: 'Brazilian Real' },
+  { code: 'CNY', name: 'Chinese Yuan' },
+];
 
-    fetchExchangeRates();
+export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
+    return localStorage.getItem('selectedCurrency') || 'USD';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('selectedCurrency', selectedCurrency);
+  }, [selectedCurrency]);
+
+  const setCurrency = useCallback((currency: string) => {
+    if (exchangeRates[currency]) {
+      setSelectedCurrency(currency);
+    } else {
+      console.warn(`Currency ${currency} not supported.`);
+    }
   }, []);
 
-  const setCurrency = React.useCallback(async (currencyCode: string) => {
-    if (userProfile?.default_currency !== currencyCode) {
-      await updateDefaultCurrencyInProfile(currencyCode);
-    }
-  }, [userProfile?.default_currency, updateDefaultCurrencyInProfile]);
-
-  const convertBetweenCurrencies = React.useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
-    const fromRate = availableCurrencies.find(c => c.code === fromCurrency)?.exchangeRate;
-    const toRate = availableCurrencies.find(c => c.code === toCurrency)?.exchangeRate;
-
-    if (!fromRate || !toRate) {
-      console.warn(`Exchange rate not found for ${fromCurrency} or ${toCurrency}. Returning original amount.`);
+  const convertBetweenCurrencies = useCallback((amount: number, fromCurrency: string, toCurrency: string): number => {
+    if (fromCurrency === toCurrency) {
       return amount;
     }
 
-    // Convert to base currency (e.g., USD) then to target currency
-    const amountInBase = amount / fromRate;
-    return amountInBase * toRate;
-  }, [availableCurrencies]);
+    const fromRate = exchangeRates[fromCurrency];
+    const toRate = exchangeRates[toCurrency];
 
-  const currencySymbols = React.useMemo(() => {
-    return availableCurrencies.reduce((acc, curr) => {
-      acc[curr.code] = curr.symbol;
-      return acc;
-    }, {} as Record<string, string>);
-  }, [availableCurrencies]);
-
-  const formatCurrency = React.useCallback((amount: number, currencyCode?: string): string => {
-    const targetCurrencyCode = currencyCode || selectedCurrency;
-    const currency = availableCurrencies.find(c => c.code === targetCurrencyCode);
-
-    if (!currency) {
-      console.warn(`Currency not found for code: ${targetCurrencyCode}. Falling back to default formatting.`);
-      return `${amount.toFixed(2)}`; // Fallback
+    if (fromRate === undefined || toRate === undefined) {
+      console.warn(`Exchange rate not found for conversion from ${fromCurrency} to ${toCurrency}.`);
+      return amount;
     }
 
-    return new Intl.NumberFormat('en-US', { // Using en-US for consistent formatting, can be made dynamic
-      style: 'currency',
-      currency: currency.code,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }, [availableCurrencies, selectedCurrency]);
+    const amountInBase = amount / fromRate;
+    return amountInBase * toRate;
+  }, []);
+
+  const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
+    const displayCurrency = currencyCode || selectedCurrency;
+    const symbol = currencySymbols[displayCurrency] || displayCurrency;
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }, [selectedCurrency]);
 
   const value = React.useMemo(() => ({
     selectedCurrency,
     setCurrency,
+    formatCurrency,
+    currencySymbols,
     availableCurrencies,
     convertBetweenCurrencies,
-    isLoadingCurrencies: isLoadingCurrencies || isLoadingUser, // Consider user loading as part of currency loading
-    currencySymbols,
-    formatCurrency,
-  }), [selectedCurrency, setCurrency, availableCurrencies, convertBetweenCurrencies, isLoadingCurrencies, isLoadingUser, currencySymbols, formatCurrency]);
+  }), [selectedCurrency, setCurrency, formatCurrency, convertBetweenCurrencies]);
 
   return (
     <CurrencyContext.Provider value={value}>
@@ -120,7 +108,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useCurrency = () => {
-  const context = React.useContext(CurrencyContext);
+  const context = useContext(CurrencyContext);
   if (context === undefined) {
     throw new Error('useCurrency must be used within a CurrencyProvider');
   }

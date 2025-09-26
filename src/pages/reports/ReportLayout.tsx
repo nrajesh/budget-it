@@ -9,7 +9,6 @@ import { useTransactions } from '@/contexts/TransactionsContext';
 import { showSuccess, showError } from '@/utils/toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas'; // Import html2canvas
 
 interface ReportLayoutProps {
   title: string;
@@ -35,15 +34,13 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
   }, [dataProps.filteredTransactions]);
 
-  const handlePdfExport = async () => {
+  const handlePdfExport = () => {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
       let yPos = 20;
-      const pageHeight = doc.internal.pageSize.height;
-      const margin = 14;
 
       doc.setFontSize(18);
-      doc.text(title, margin, yPos);
+      doc.text(title, 14, yPos);
       yPos += 15;
 
       const reportContent = document.getElementById('report-content');
@@ -52,82 +49,45 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         return;
       }
 
-      // Add description
-      const descriptionElement = reportContent.querySelector('.text-muted-foreground');
-      if (descriptionElement) {
-        const descriptionText = descriptionElement.textContent || '';
-        const splitDescription = doc.splitTextToSize(descriptionText, doc.internal.pageSize.width - 2 * margin);
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(splitDescription, margin, yPos);
-        yPos += (splitDescription.length * 5) + 10; // Estimate height for description
-        doc.setTextColor(0);
+      const tables = Array.from(reportContent.querySelectorAll('table'));
+
+      if (tables.length === 0) {
+        showError("No tabular data found in the report to export.");
+        return;
       }
 
-      // Select all cards within the report content
-      const cards = Array.from(reportContent.querySelectorAll('.grid > .flex.flex-col.h-full, .grid > .col-span-1, .grid > .col-span-2, .grid > .md\\:col-span-2'));
+      doc.setFontSize(10);
+      doc.setTextColor(150);
+      doc.text("Note: This PDF export includes tabular data only. Charts and other visual elements are not included.", 14, yPos);
+      yPos += 15;
+      doc.setTextColor(0);
 
-      for (const card of cards) {
-        if (!card) continue;
-
-        const cardTitleElement = card.querySelector('.text-lg.font-semibold, .text-xl.font-bold, .text-2xl.font-bold');
-        const cardTitle = cardTitleElement ? cardTitleElement.textContent?.trim() : 'Report Section';
-
-        const tableElement = card.querySelector('table');
-
-        if (tableElement) {
-          // Handle tables
-          if (yPos + 50 > pageHeight - margin) { // Estimate space needed for table title + some rows
-            doc.addPage();
-            yPos = margin;
-          }
-
-          doc.setFontSize(14);
-          doc.text(cardTitle, margin, yPos);
-          yPos += 10;
-
-          autoTable(doc, {
-            html: tableElement,
-            startY: yPos,
-            theme: 'grid',
-            headStyles: { fillColor: '#16a34a' }, // green-600
-            didParseCell: (data) => {
-              if (data.cell.raw instanceof HTMLElement) {
-                const style = window.getComputedStyle(data.cell.raw);
-                if (style.color === 'rgb(34, 197, 94)') { // Tailwind green-500
-                  data.cell.styles.textColor = '#22c55e';
-                } else if (style.color === 'rgb(239, 68, 68)') { // Tailwind red-500
-                  data.cell.styles.textColor = '#ef4444';
-                }
-              }
-            },
-          });
-          yPos = (doc as any).lastAutoTable.finalY + 15;
-        } else {
-          // Handle charts and any other cards (like summary cards with icons) as images
-          if (yPos + 100 > pageHeight - margin) { // Estimate space needed for card title + image
-            doc.addPage();
-            yPos = margin;
-          }
-
-          doc.setFontSize(14);
-          doc.text(cardTitle, margin, yPos);
-          yPos += 10;
-
-          // Capture the entire card as an image
-          const canvas = await html2canvas(card as HTMLElement, { scale: 2 }); // Capture the whole card
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = 180; // mm
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-          if (yPos + imgHeight > pageHeight - margin) {
-            doc.addPage();
-            yPos = margin;
-          }
-          doc.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
-          yPos += imgHeight + 15;
+      tables.forEach((table) => {
+        if (yPos > 260) {
+          doc.addPage();
+          yPos = 20;
         }
-      }
+
+        const card = table.closest('div[class*="rounded-lg border"]');
+        let finalTitle = "Data Table";
+        if (card) {
+          const cardTitleEl = card.querySelector('h3');
+          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
+          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
+        }
+
+        doc.setFontSize(14);
+        doc.text(finalTitle, 14, yPos);
+        yPos += 10;
+
+        autoTable(doc, {
+          html: table,
+          startY: yPos,
+          theme: 'grid',
+          headStyles: { fillColor: '#16a34a' }, // green-600
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      });
 
       doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
       showSuccess("PDF export started. Your download will begin shortly.");
@@ -137,8 +97,8 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     }
   };
 
-  const handleExcelExport = () => showError("Excel export is not yet implemented.");
-  const handleCsvExport = () => showError("CSV export is not yet implemented.");
+  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
+  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
 
   return (
     <div className="space-y-6">

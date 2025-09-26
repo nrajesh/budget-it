@@ -51,7 +51,7 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const { convertBetweenCurrencies, availableCurrencies } = useCurrency();
+  const { convertBetweenCurrencies } = useCurrency();
   const { user, isLoadingUser } = useUser();
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
@@ -146,15 +146,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     invalidateAllData,
     setDemoDataProgress,
     userId: user?.id,
-    availableCurrencies, // Pass availableCurrencies
-    convertBetweenCurrencies, // Pass convertBetweenCurrencies
-  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id, availableCurrencies, convertBetweenCurrencies]);
+  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id]);
 
   const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
     refetchTransactions,
     userId: user?.id,
-    convertBetweenCurrencies,
-  }), [refetchTransactions, user?.id, convertBetweenCurrencies]);
+  }), [refetchTransactions, user?.id]);
 
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
