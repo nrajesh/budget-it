@@ -1,11 +1,11 @@
 # Budget It! - Personal Finance Tracker
 
-Budget It! is a modern, full-featured personal finance application built with React, TypeScript, and Supabase. It provides a comprehensive suite of tools for tracking transactions, managing accounts, scheduling recurring payments, and generating insightful financial reports.
+Budget It! is a modern, full-featured personal finance application built with React, TypeScript, and Supabase. It provides a comprehensive suite of tools for tracking transactions, managing accounts, setting budgets, scheduling recurring payments, and generating insightful financial reports.
 
 ## Features
 
 ### Core Functionality
-*   **Dashboard**: An at-a-glance overview of your total balance, income vs. expenses, spending by category, and recent financial activity.
+*   **Dashboard**: An at-a-glance overview of your total balance, income vs. expenses, spending by category, recent financial activity, and overall budget health.
 *   **Authentication**: Secure user registration and login powered by Supabase Auth. User profiles include personal details and avatars.
 *   **Multi-Currency Support**: Set a default currency for reporting, with automatic conversion for transactions in different currencies.
 
@@ -21,6 +21,12 @@ Budget It! is a modern, full-featured personal finance application built with Re
 *   **Automatic Processing**: Scheduled transactions are automatically processed and added to your main transaction list as their due dates pass, ensuring your records are always up-to-date.
 *   **Future Visibility**: View upcoming scheduled transactions directly in the main transaction list, clearly marked and greyed out.
 
+### Budgets Management
+*   **Set Spending Targets**: Create budgets for specific categories with a target amount, currency, and frequency (e.g., monthly, weekly).
+*   **Track Progress**: Monitor your spending against your budget targets in real-time.
+*   **Flexible Periods**: Define start and end dates for your budgets, or let them run indefinitely.
+*   **Active/Inactive Status**: Easily pause and resume budgets as your financial goals change.
+
 ### Entity Management
 Dedicated pages to manage your financial entities with full CRUD, bulk deletion, and CSV import/export.
 *   **Accounts**: Manage your bank accounts, credit cards, and investment funds. Each account has a starting balance and currency.
@@ -33,14 +39,14 @@ The reporting module is split into two sections, both equipped with powerful fil
 #### Essential Reports
 This section provides a clear overview of your current financial standing based on historical data.
 *   **Net Worth Statement**: A snapshot of your financial health, summarizing total assets, liabilities, and your resulting net worth.
-*   **Income & Expense Summary**: A detailed breakdown of your income and expenses, grouped by category.
-*   **Trends and Analytics**: A visual bar chart that compares your monthly income versus expenses, helping you identify financial patterns over time.
+*   **Income & Expense Summary**: A detailed breakdown of your income and expenses by category, including variance against your budget targets.
+*   **Trends and Analytics**: A visual bar chart that compares your monthly income versus expenses, with an overlay for your total budget target.
 
 #### Advanced Reports
 This section leverages both historical and future scheduled transactions to provide insightful projections.
 *   **Trend Forecasting**: A line chart that analyzes your historical net income to project future trends, intelligently incorporating the impact of your scheduled transactions.
 *   **Financial Flow (Sankey Chart)**: A powerful visualization that shows how your money moves—from income sources, through your various accounts, and out to different expense categories.
-*   **Alerts and Insights**: An automated analysis that provides low balance warnings based on upcoming scheduled transactions and highlights your top spending categories, vendors, and active accounts.
+*   **Alerts and Insights**: An automated analysis that provides low balance warnings based on upcoming scheduled transactions, highlights budget overrun risks, and shows your top spending categories, vendors, and active accounts.
 
 ### Settings
 *   **Default Currency**: Set your preferred currency for all reports and summaries.
@@ -95,6 +101,22 @@ Stores user-defined categories for transactions.
 | `user_id` (FK) | `uuid`                | References `auth.users.id`.               |
 | `name`      | `text`                   | The name of the category (e.g., 'Groceries'). |
 | `created_at`| `timestamp with time zone` | Creation timestamp.                       |
+
+### `budgets`
+Stores user-defined budgets for specific categories.
+
+| Column          | Type                       | Description                               |
+| --------------- | -------------------------- | ----------------------------------------- |
+| `id` (PK)       | `uuid`                     | Unique identifier for the budget.         |
+| `user_id` (FK)  | `uuid`                     | References `auth.users.id`.               |
+| `category_id` (FK) | `uuid`                  | References `categories.id`.               |
+| `target_amount` | `numeric`                  | The spending limit for the period.        |
+| `currency`      | `text`                     | The currency of the target amount.        |
+| `start_date`    | `timestamp with time zone` | The date the budget becomes active.       |
+| `frequency`     | `text`                     | The recurrence pattern (e.g., '1m', '2w'). |
+| `end_date`      | `timestamp with time zone` | Optional date the budget stops.           |
+| `is_active`     | `boolean`                  | Whether the budget is currently active.   |
+| `created_at`    | `timestamp with time zone` | Creation timestamp.                       |
 
 ### `transactions`
 The core table for all financial transactions, including those generated from scheduled transactions.
