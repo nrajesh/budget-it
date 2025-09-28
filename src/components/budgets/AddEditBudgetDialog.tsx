@@ -22,31 +22,51 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
 
-const formSchema = z.object({
-  category_id: z.string().min(1, "Category is required"),
-  target_amount: z.coerce.number().positive("Target amount must be positive"),
-  currency: z.string().min(1, "Currency is required"),
-  start_date: z.string().min(1, "Start date is required"),
-  frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
-  frequency_unit: z.string().min(1, "Frequency unit is required"),
-  end_date: z.string().optional(),
-  is_active: z.boolean(),
-});
-
-type BudgetFormData = z.infer<typeof formSchema>;
-
 interface AddEditBudgetDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   budget: Budget | null;
+  allBudgets: Budget[];
 }
 
-export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget }) => {
+export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets }) => {
   const { user } = useUser();
   const { categories } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const formSchema = React.useMemo(() => z.object({
+    category_id: z.string().min(1, "Category is required"),
+    target_amount: z.coerce.number().positive("Target amount must be positive"),
+    currency: z.string().min(1, "Currency is required"),
+    start_date: z.string().min(1, "Start date is required"),
+    frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
+    frequency_unit: z.string().min(1, "Frequency unit is required"),
+    end_date: z.string().optional(),
+    is_active: z.boolean(),
+  }).superRefine((data, ctx) => {
+    if (!allBudgets) return;
+    const frequency = `${data.frequency_value}${data.frequency_unit}`;
+    const startDate = new Date(data.start_date).toLocaleDateString('en-CA'); // YYYY-MM-DD format
+
+    const isDuplicate = allBudgets.some(b =>
+      b.id !== budget?.id &&
+      b.category_id === data.category_id &&
+      b.frequency === frequency &&
+      new Date(b.start_date).toLocaleDateString('en-CA') === startDate
+    );
+
+    if (isDuplicate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A budget with this category, frequency, and start date already exists.",
+        path: ["category_id"],
+      });
+    }
+  }), [allBudgets, budget]);
+
+  type BudgetFormData = z.infer<typeof formSchema>;
 
   const form = useForm<BudgetFormData>({
     resolver: zodResolver(formSchema),

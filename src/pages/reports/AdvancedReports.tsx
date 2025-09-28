@@ -30,12 +30,13 @@ const AdvancedReports = () => {
       title="Advanced Reports"
       description={description}
     >
-      {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, accounts }) => (
+      {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, accounts, budgets }) => (
         <>
           <AlertsAndInsights
             historicalTransactions={historicalFilteredTransactions}
             futureTransactions={futureFilteredTransactions}
             accounts={accounts}
+            budgets={budgets}
           />
           <TrendForecastingChart transactions={combinedFilteredTransactions} />
           <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />

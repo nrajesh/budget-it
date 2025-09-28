@@ -102,6 +102,7 @@ const BudgetsPage = () => {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         budget={selectedBudget}
+        allBudgets={budgets}
       />
       <ConfirmationDialog
         isOpen={isConfirmOpen}

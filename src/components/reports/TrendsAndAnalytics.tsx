@@ -1,13 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { Budget } from '@/data/finance-data';
 
 interface TrendsAndAnalyticsProps {
   transactions: any[];
+  budgets: Budget[];
 }
 
-const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions }) => {
+const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions, budgets }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   const monthlyData = React.useMemo(() => {
@@ -28,8 +30,19 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions })
       }
     });
 
-    return Object.entries(dataByMonth).map(([month, values]) => ({ month, ...values })).reverse();
-  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+    return Object.entries(dataByMonth).map(([month, values]) => {
+      const monthDate = new Date(month.replace(/(\w{3})\s(\d{2})/, "$1 1, 20$2"));
+      const totalBudgetForMonth = budgets
+        .filter(b => {
+          const startDate = new Date(b.start_date);
+          const endDate = b.end_date ? new Date(b.end_date) : null;
+          return b.is_active && b.frequency === '1m' && startDate <= monthDate && (!endDate || endDate >= monthDate);
+        })
+        .reduce((sum, b) => sum + convertBetweenCurrencies(b.target_amount, b.currency, selectedCurrency), 0);
+
+      return { month, ...values, budgetTarget: totalBudgetForMonth > 0 ? totalBudgetForMonth : null };
+    }).reverse();
+  }, [transactions, budgets, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>
@@ -47,6 +60,7 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions })
             <Legend />
             <Bar dataKey="income" fill="#22c55e" name="Income" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
+            <Line type="monotone" dataKey="budgetTarget" stroke="#ff7300" strokeWidth={2} name="Budget Target" dot={false} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

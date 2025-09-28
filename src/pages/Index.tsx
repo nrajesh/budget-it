@@ -9,6 +9,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BudgetHealthWidget } from "@/components/budgets/BudgetHealthWidget";
 
 const chartConfig = {
   income: {
@@ -289,6 +290,9 @@ const Index = () => {
             </ChartContainer>
           </CardContent>
         </Card>
+      </div>
+      <div className="lg:col-span-1">
+        <BudgetHealthWidget />
       </div>
       <div className="lg:col-span-1">
         <SpendingCategoriesChart transactions={filteredTransactions} />

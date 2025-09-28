@@ -9,6 +9,10 @@ import { useTransactions } from '@/contexts/TransactionsContext';
 import { showSuccess, showError } from '@/utils/toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@/contexts/UserContext';
+import { Budget } from '@/data/finance-data';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReportLayoutProps {
   title: string;
@@ -18,13 +22,29 @@ interface ReportLayoutProps {
     combinedFilteredTransactions: any[];
     futureFilteredTransactions: any[];
     accounts: any[];
+    budgets: Budget[];
   }) => React.ReactNode;
 }
 
 const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
   const { accounts } = useTransactions();
+  const { user } = useUser();
   const filterProps = useTransactionFilters();
   const dataProps = useTransactionData(filterProps);
+
+  const { data: budgets = [] } = useQuery<Budget[], Error>({
+    queryKey: ['budgets', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*, categories(name)')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+    },
+    enabled: !!user,
+  });
 
   const { historicalFilteredTransactions, futureFilteredTransactions } = React.useMemo(() => {
     const today = new Date();
@@ -131,6 +151,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
           combinedFilteredTransactions: dataProps.filteredTransactions,
           futureFilteredTransactions,
           accounts,
+          budgets,
         })}
       </div>
     </div>

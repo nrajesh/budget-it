@@ -10,11 +10,11 @@ const EssentialReports = () => {
       title="Essential Reports"
       description="Your core financial summaries and trends based on historical data."
     >
-      {({ historicalFilteredTransactions, accounts }) => (
+      {({ historicalFilteredTransactions, accounts, budgets }) => (
         <>
           <NetWorthStatement transactions={historicalFilteredTransactions} accounts={accounts} />
-          <IncomeExpenseSummary transactions={historicalFilteredTransactions} />
-          <TrendsAndAnalytics transactions={historicalFilteredTransactions} />
+          <IncomeExpenseSummary transactions={historicalFilteredTransactions} budgets={budgets} />
+          <TrendsAndAnalytics transactions={historicalFilteredTransactions} budgets={budgets} />
         </>
       )}
     </ReportLayout>
