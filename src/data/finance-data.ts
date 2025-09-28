@@ -72,6 +72,20 @@ export type Category = {
   totalTransactions?: number;
 };
 
+export type Budget = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  category_name?: string;
+  currency: string;
+  target_amount: number;
+  start_date: string;
+  frequency: string;
+  end_date?: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
 // Base categories for seeding and initial demo data generation.
 // The actual list in the app will be fetched from the database.
 export const baseCategories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];

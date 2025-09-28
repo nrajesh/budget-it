@@ -100,6 +100,8 @@ const Layout = () => {
         return "Categories";
       case "/scheduled":
         return "Scheduled Transactions";
+      case "/budgets":
+        return "Budgets";
       default:
         return "Page Not Found";
     }
@@ -225,10 +227,12 @@ const Layout = () => {
                 </SidebarMenuItem>
               </Collapsible>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <FileText />
-                  Budgets
-                </SidebarMenuButton>
+                <Link to="/budgets" className="w-full">
+                  <SidebarMenuButton isActive={location.pathname === "/budgets"}>
+                    <FileText />
+                    Budgets
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>

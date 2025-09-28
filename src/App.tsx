@@ -22,6 +22,7 @@ const Accounts = lazy(() => import("@/pages/Accounts"));
 const Vendors = lazy(() => import("@/pages/Vendors"));
 const Categories = lazy(() => import("@/pages/Categories"));
 const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions"));
+const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 
@@ -43,6 +44,7 @@ function App() {
                     <Route path="/accounts" element={<Accounts />} />
                     <Route path="/categories" element={<Categories />} />
                     <Route path="/scheduled" element={<ScheduledTransactions />} />
+                    <Route path="/budgets" element={<Budgets />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/reports/essential" element={<EssentialReports />} />
                     <Route path="/reports/advanced" element={<AdvancedReports />} />
