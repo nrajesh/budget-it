@@ -5,11 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Moon } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 
 function Login() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -29,9 +29,9 @@ function Login() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          onClick={() => setTheme(resolvedTheme === 'light' ? 'dark' : 'light')}
         >
-          <Moon className="size-5" />
+          {resolvedTheme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
           <span className="sr-only">Toggle theme</span>
         </Button>
       </div>

@@ -19,6 +19,7 @@ import {
   Notebook,
   Mail,
   Moon,
+  Sun,
   Plus,
   User,
   Bell,
@@ -72,7 +73,7 @@ import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Layout = () => {
-  const { setTheme, theme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { user, userProfile, isLoadingUser } = useUser();
   const location = useLocation();
@@ -339,9 +340,9 @@ const Layout = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
             >
-              <Moon className="size-5" />
+              {resolvedTheme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
               <span className="sr-only">Toggle theme</span>
             </Button>
             <Button variant="ghost" size="icon">
