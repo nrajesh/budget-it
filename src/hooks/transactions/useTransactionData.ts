@@ -7,6 +7,7 @@ import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { useQuery } from '@tanstack/react-query';
 import { ScheduledTransaction, createScheduledTransactionsService, generateFutureTransactions } from '@/services/scheduledTransactionsService';
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Option {
   value: string;
@@ -36,11 +37,13 @@ export const useTransactionData = ({
 }: UseTransactionDataProps) => {
   const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
+  const { convertBetweenCurrencies } = useCurrency();
 
   // Fetch scheduled transactions using react-query
   const { fetchScheduledTransactions } = createScheduledTransactionsService({
     refetchTransactions: refetchMainTransactions,
     userId: user?.id,
+    convertBetweenCurrencies,
   });
 
   const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({

@@ -9,10 +9,12 @@ import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase
 import Papa from "papaparse";
 import { parseDateFromDDMMYYYY } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export const useScheduledTransactionManagement = () => {
   const { user, isLoadingUser } = useUser();
   const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions } = useTransactions();
+  const { convertBetweenCurrencies } = useCurrency();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -37,6 +39,7 @@ export const useScheduledTransactionManagement = () => {
   const { fetchScheduledTransactions } = createScheduledTransactionsService({
     refetchTransactions: refetchMainTransactions,
     userId: user?.id,
+    convertBetweenCurrencies,
   });
 
   const { data: scheduledTransactions = [], isLoading: isLoadingScheduled, refetch } = useQuery<ScheduledTransactionType[], Error>({
