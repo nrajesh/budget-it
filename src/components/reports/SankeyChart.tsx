@@ -102,7 +102,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     const filteredLinks = links.filter(link => link.value > 0);
 
     // Calculate dynamic height based on the number of nodes to prevent excessive white space
-    const dynamicHeight = Math.max(200, nodes.length * 35);
+    const dynamicHeight = Math.max(150, nodes.length * 40);
 
     return { 
       sankeyData: { nodes, links: filteredLinks }, 
@@ -127,8 +127,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
               margin={{
                 left: 100,
                 right: 100,
-                top: 20,
-                bottom: 20,
+                top: 5,
+                bottom: 5,
               }}
               link={{ stroke: '#777' }}
             >
