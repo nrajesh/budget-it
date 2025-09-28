@@ -80,12 +80,15 @@ const CategoriesPage = () => {
       data={managementProps.categories}
       isLoading={managementProps.isLoadingCategories}
       columns={columns}
-      managementProps={managementProps}
       isDeletable={(item) => item.name !== 'Others'}
       isEditable={(item) => item.name !== 'Others'}
       customEditHandler={startEditing}
       isEditing={id => editingCategoryId === id}
       isUpdating={updateCategoryNameMutation.isPending}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedEntity}
+      refetch={managementProps.refetchCategories}
     />
   );
 };

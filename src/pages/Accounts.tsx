@@ -41,10 +41,12 @@ const AccountsPage = () => {
       data={accounts}
       isLoading={isLoadingAccounts}
       columns={columns}
-      managementProps={managementProps}
       AddEditDialogComponent={(props) => (
         <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} isAccountOnly={true} />
       )}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedPayee}
     />
   );
 };

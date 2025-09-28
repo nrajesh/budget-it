@@ -82,7 +82,6 @@ const VendorsPage = () => {
       data={vendors}
       isLoading={isLoadingVendors}
       columns={columns}
-      managementProps={managementProps}
       AddEditDialogComponent={(props) => (
         <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} />
       )}
@@ -91,6 +90,9 @@ const VendorsPage = () => {
       customEditHandler={startEditing}
       isEditing={id => editingVendorId === id}
       isUpdating={updateVendorNameMutation.isPending}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedPayee}
     />
   );
 };

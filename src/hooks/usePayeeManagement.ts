@@ -1,117 +1,34 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEntityManagement } from "./useEntityManagement";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Payee } from "@/components/AddEditPayeeDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
 import Papa from "papaparse";
+import { showError } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 
 export const usePayeeManagement = (isAccount: boolean) => {
   const { invalidateAllData } = useTransactions();
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const entityName = isAccount ? "Account" : "Vendor";
   const entityNamePlural = isAccount ? "accounts" : "vendors";
 
-  // State Management
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage] = React.useState(10);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedPayee, setSelectedPayee] = React.useState<Payee | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [payeeToDelete, setPayeeToDelete] = React.useState<Payee | null>(null);
-  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
-
-  // Mutations
-  const deletePayeesMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.rpc('delete_payees_batch', { p_vendor_ids: ids });
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
-      await invalidateAllData();
-      setIsConfirmOpen(false);
-      setPayeeToDelete(null);
-      setSelectedRows([]);
-      setIsBulkDelete(false);
-    },
-    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
+  const managementProps = useEntityManagement<Payee>({
+    entityName,
+    entityNamePlural,
+    queryKey: [entityNamePlural],
+    deleteRpcFn: 'delete_payees_batch',
+    batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
+    batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
+    isDeletable: (item) => item.name !== 'Others',
+    onSuccess: invalidateAllData,
   });
-
-  const batchUpsertMutation = useMutation({
-    mutationFn: async (dataToUpsert: any[]) => {
-      const rpcName = isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors';
-      const payloadKey = isAccount ? 'p_accounts' : 'p_names';
-      const payload = isAccount ? { [payloadKey]: dataToUpsert } : { [payloadKey]: dataToUpsert.map(d => d.name) };
-      const { error } = await supabase.rpc(rpcName, payload);
-      if (error) throw error;
-    },
-    onSuccess: async (data, variables) => {
-      showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
-      await invalidateAllData();
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    onError: (error: any) => showError(`Import failed: ${error.message}`),
-    onSettled: () => setIsImporting(false),
-  });
-
-  // Handlers
-  const handleAddClick = () => {
-    setSelectedPayee(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditClick = (payee: Payee) => {
-    setSelectedPayee(payee);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteClick = (payee: Payee) => {
-    setPayeeToDelete(payee);
-    setIsBulkDelete(false);
-    setIsConfirmOpen(true);
-  };
-
-  const handleBulkDeleteClick = () => {
-    setPayeeToDelete(null);
-    setIsBulkDelete(true);
-    setIsConfirmOpen(true);
-  };
-
-  const confirmDelete = () => {
-    const idsToDelete = isBulkDelete ? selectedRows : (payeeToDelete ? [payeeToDelete.id] : []);
-    if (idsToDelete.length > 0) {
-      deletePayeesMutation.mutate(idsToDelete);
-    } else {
-      setIsConfirmOpen(false);
-    }
-  };
-
-  const handleSelectAll = (checked: boolean, currentPayees: Payee[]) => {
-    if (checked) {
-      const selectablePayees = isAccount ? currentPayees : currentPayees.filter(p => p.name !== 'Others');
-      setSelectedRows(selectablePayees.map(p => p.id));
-    } else {
-      setSelectedRows([]);
-    }
-  };
-
-  const handleRowSelect = (id: string, checked: boolean) => {
-    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
-  };
-
-  const handleImportClick = () => fileInputRef.current?.click();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    managementProps.batchUpsertMutation.reset(); // Reset mutation state
+    const setIsImporting = (managementProps as any).setIsImporting; // A bit of a hack, ideally the hook would expose this
     setIsImporting(true);
 
     Papa.parse(file, {
@@ -137,7 +54,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
           setIsImporting(false);
           return;
         }
-        batchUpsertMutation.mutate(dataToUpsert);
+        managementProps.batchUpsertMutation.mutate(dataToUpsert);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
@@ -171,16 +88,10 @@ export const usePayeeManagement = (isAccount: boolean) => {
   };
 
   return {
-    searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
-    isDialogOpen, setIsDialogOpen, selectedPayee,
-    isConfirmOpen, setIsConfirmOpen,
-    selectedRows,
-    isImporting, fileInputRef,
-    deletePayeesMutation,
-    handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
-    handleSelectAll, handleRowSelect,
-    handleImportClick, handleFileChange, handleExportClick,
+    ...managementProps,
+    handleFileChange,
+    handleExportClick,
     handlePayeeNameClick,
-    isLoadingMutation: deletePayeesMutation.isPending || batchUpsertMutation.isPending,
+    selectedPayee: managementProps.selectedEntity, // Alias for clarity
   };
 };

@@ -25,6 +25,68 @@ export type ScheduledTransaction = {
   recurrence_end_date?: string;
 };
 
+export const generateFutureTransactions = (
+  scheduledTransactions: ScheduledTransaction[],
+  accountCurrencyMap: Map<string, string>
+): Transaction[] => {
+  const today = new Date();
+  const futureMonthsToShow = parseInt(localStorage.getItem('futureMonths') || '2', 10);
+  const futureDateLimit = new Date();
+  futureDateLimit.setMonth(today.getMonth() + futureMonthsToShow);
+
+  return scheduledTransactions.flatMap(st => {
+    const occurrences: Transaction[] = [];
+    let nextDate = new Date(st.last_processed_date || st.date);
+
+    const frequencyMatch = st.frequency.match(/^(\d+)([dwmy])$/);
+    if (!frequencyMatch) return [];
+
+    const [, numStr, unit] = frequencyMatch;
+    const num = parseInt(numStr, 10);
+
+    const advanceDate = (date: Date) => {
+      const newDate = new Date(date);
+      switch (unit) {
+        case 'd': newDate.setDate(newDate.getDate() + num); break;
+        case 'w': newDate.setDate(newDate.getDate() + num * 7); break;
+        case 'm': newDate.setMonth(newDate.getMonth() + num); break;
+        case 'y': newDate.setFullYear(newDate.getFullYear() + num); break;
+      }
+      return newDate;
+    };
+
+    while (nextDate <= today) {
+      nextDate = advanceDate(nextDate);
+    }
+
+    const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
+    if (recurrenceEndDate) recurrenceEndDate.setHours(23, 59, 59, 999);
+
+    while (nextDate < futureDateLimit) {
+      if (recurrenceEndDate && nextDate > recurrenceEndDate) break;
+
+      occurrences.push({
+        id: `scheduled-${st.id}-${nextDate.toISOString()}`,
+        date: nextDate.toISOString(),
+        account: st.account,
+        vendor: st.vendor,
+        category: st.category,
+        amount: st.amount,
+        remarks: st.remarks,
+        currency: accountCurrencyMap.get(st.account) || 'USD',
+        user_id: st.user_id,
+        created_at: st.created_at,
+        is_scheduled_origin: true,
+        recurrence_id: st.id,
+        recurrence_frequency: st.frequency,
+        recurrence_end_date: st.recurrence_end_date,
+      });
+      nextDate = advanceDate(nextDate);
+    }
+    return occurrences;
+  });
+};
+
 export const createScheduledTransactionsService = ({ refetchTransactions, userId }: ScheduledTransactionsServiceProps) => {
   const { convertBetweenCurrencies } = useCurrency();
 

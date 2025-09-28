@@ -1,12 +1,13 @@
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEntityManagement } from "./useEntityManagement";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
 import { Category } from "@/data/finance-data";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
 import Papa from "papaparse";
+import { showError, showSuccess } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
 export const useCategoryManagement = () => {
   const { user } = useUser();
@@ -14,18 +15,16 @@ export const useCategoryManagement = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  // State Management
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage] = React.useState(10);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null);
-  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
+  const managementProps = useEntityManagement<Category>({
+    entityName: "Category",
+    entityNamePlural: "categories",
+    queryKey: ['categories', user?.id],
+    deleteRpcFn: 'delete_categories_batch', // This RPC needs to be created or logic adjusted
+    isDeletable: (item) => item.name !== 'Others',
+    onSuccess: invalidateAllData,
+  });
 
-  // Mutations
+  // Specific mutations for categories that don't fit the generic RPC model
   const addCategoryMutation = useMutation({
     mutationFn: async (newCategoryName: string) => {
       if (!user) throw new Error("User not logged in.");
@@ -39,23 +38,6 @@ export const useCategoryManagement = () => {
     onError: (error: any) => showError(`Failed to add category: ${error.message}`),
   });
 
-  const deleteCategoriesMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      if (!user) throw new Error("User not logged in.");
-      const { error } = await supabase.from('categories').delete().in('id', ids).eq('user_id', user.id);
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      showSuccess(isBulkDelete ? `${selectedRows.length} categories deleted successfully.` : "Category deleted successfully.");
-      await invalidateAllData();
-      setIsConfirmOpen(false);
-      setCategoryToDelete(null);
-      setSelectedRows([]);
-      setIsBulkDelete(false);
-    },
-    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
-  });
-
   const batchUpsertCategoriesMutation = useMutation({
     mutationFn: async (categoryNames: string[]) => {
       if (!user) throw new Error("User not logged in.");
@@ -66,13 +48,12 @@ export const useCategoryManagement = () => {
     onSuccess: async (data, variables) => {
       showSuccess(`${variables.length} categories imported successfully!`);
       await refetchCategories();
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (managementProps.fileInputRef.current) managementProps.fileInputRef.current.value = "";
     },
     onError: (error: any) => showError(`Import failed: ${error.message}`),
-    onSettled: () => setIsImporting(false),
+    onSettled: () => (managementProps as any).setIsImporting(false),
   });
 
-  // Handlers
   const handleAddClick = () => {
     const newCategoryName = prompt("Enter new category name:");
     if (newCategoryName?.trim()) {
@@ -80,41 +61,10 @@ export const useCategoryManagement = () => {
     }
   };
 
-  const handleDeleteClick = (category: Category) => {
-    setCategoryToDelete(category);
-    setIsBulkDelete(false);
-    setIsConfirmOpen(true);
-  };
-
-  const handleBulkDeleteClick = () => {
-    setCategoryToDelete(null);
-    setIsBulkDelete(true);
-    setIsConfirmOpen(true);
-  };
-
-  const confirmDelete = () => {
-    const idsToDelete = isBulkDelete ? selectedRows : (categoryToDelete ? [categoryToDelete.id] : []);
-    if (idsToDelete.length > 0) {
-      deleteCategoriesMutation.mutate(idsToDelete);
-    } else {
-      setIsConfirmOpen(false);
-    }
-  };
-
-  const handleSelectAll = (checked: boolean, currentCategories: Category[]) => {
-    setSelectedRows(checked ? currentCategories.filter(c => c.name !== 'Others').map((c) => c.id) : []);
-  };
-
-  const handleRowSelect = (id: string, checked: boolean) => {
-    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
-  };
-
-  const handleImportClick = () => fileInputRef.current?.click();
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
-    setIsImporting(true);
+    (managementProps as any).setIsImporting(true);
 
     Papa.parse(file, {
       header: true,
@@ -123,20 +73,20 @@ export const useCategoryManagement = () => {
         const hasHeader = results.meta.fields?.includes("Category Name");
         if (!hasHeader) {
           showError(`CSV is missing required header: "Category Name"`);
-          setIsImporting(false);
+          (managementProps as any).setIsImporting(false);
           return;
         }
         const categoryNames = results.data.map((row: any) => row["Category Name"]).filter(Boolean);
         if (categoryNames.length === 0) {
           showError("No valid category names found in the CSV file.");
-          setIsImporting(false);
+          (managementProps as any).setIsImporting(false);
           return;
         }
         batchUpsertCategoriesMutation.mutate(categoryNames);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
+        (managementProps as any).setIsImporting(false);
       },
     });
   };
@@ -162,16 +112,16 @@ export const useCategoryManagement = () => {
   };
 
   return {
-    categories, isLoadingCategories, refetchCategories,
-    searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
-    isConfirmOpen, setIsConfirmOpen,
-    selectedRows,
-    isImporting, fileInputRef,
-    addCategoryMutation, deleteCategoriesMutation,
-    handleAddClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
-    handleSelectAll, handleRowSelect,
-    handleImportClick, handleFileChange, handleExportClick,
+    ...managementProps,
+    categories,
+    isLoadingCategories,
+    refetchCategories,
+    addCategoryMutation,
+    deleteCategoriesMutation: managementProps.deleteMutation,
+    handleAddClick,
+    handleFileChange,
+    handleExportClick,
     handleCategoryNameClick,
-    isLoadingMutation: addCategoryMutation.isPending || deleteCategoriesMutation.isPending || batchUpsertCategoriesMutation.isPending,
+    isLoadingMutation: addCategoryMutation.isPending || managementProps.deleteMutation.isPending || batchUpsertCategoriesMutation.isPending,
   };
 };

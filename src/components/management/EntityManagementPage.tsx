@@ -12,18 +12,31 @@ import LoadingOverlay from "@/components/LoadingOverlay";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { EntityTable, ColumnDefinition } from "./EntityTable";
 
-interface ManagementProps<T> {
+interface EntityManagementPageProps<T extends { id: string; name: string }> {
+  title: string;
+  entityName: string;
+  entityNamePlural: string;
+  data: T[];
+  isLoading: boolean;
+  columns: ColumnDefinition<T>[];
+  AddEditDialogComponent?: React.FC<any>;
+  isDeletable?: (item: T) => boolean;
+  isEditable?: (item: T) => boolean;
+  customEditHandler?: (item: T) => void;
+  isEditing?: (id: string) => boolean;
+  isUpdating?: boolean;
+  // Management props are now explicit
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
+  itemsPerPage: number;
   selectedRows: string[];
   isImporting: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
-  deletePayeesMutation?: any; // Make mutations optional for categories
-  deleteCategoriesMutation?: any;
   isLoadingMutation: boolean;
   handleAddClick: () => void;
+  handleEditClick: (item: T) => void;
   handleDeleteClick: (item: T) => void;
   confirmDelete: () => void;
   handleBulkDeleteClick: () => void;
@@ -36,24 +49,8 @@ interface ManagementProps<T> {
   setIsConfirmOpen: (isOpen: boolean) => void;
   isDialogOpen: boolean;
   setIsDialogOpen: (isOpen: boolean) => void;
-  selectedPayee?: T | null; // Make specific props optional
-  selectedCategory?: T | null;
-}
-
-interface EntityManagementPageProps<T extends { id: string; name: string }> {
-  title: string;
-  entityName: string;
-  entityNamePlural: string;
-  data: T[];
-  isLoading: boolean;
-  columns: ColumnDefinition<T>[];
-  managementProps: any; // Using any for simplicity, can be typed better
-  AddEditDialogComponent?: React.FC<any>;
-  isDeletable?: (item: T) => boolean;
-  isEditable?: (item: T) => boolean;
-  customEditHandler?: (item: T) => void;
-  isEditing?: (id: string) => boolean;
-  isUpdating?: boolean;
+  selectedEntity: T | null;
+  refetch?: () => void;
 }
 
 const EntityManagementPage = <T extends { id: string; name: string }>({
@@ -63,28 +60,24 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   data,
   isLoading,
   columns,
-  managementProps,
   AddEditDialogComponent,
   isDeletable = () => true,
   isEditable = () => true,
   customEditHandler,
   isEditing = () => false,
   isUpdating = false,
+  // Destructure all management props
+  searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
+  isDialogOpen, setIsDialogOpen, selectedEntity,
+  isConfirmOpen, setIsConfirmOpen,
+  selectedRows,
+  isImporting, fileInputRef,
+  isLoadingMutation,
+  handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
+  handleSelectAll, handleRowSelect,
+  handleImportClick, handleFileChange, handleExportClick,
+  refetch,
 }: EntityManagementPageProps<T>) => {
-  const {
-    searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
-    isDialogOpen, setIsDialogOpen, selectedPayee,
-    isConfirmOpen, setIsConfirmOpen,
-    selectedRows,
-    isImporting, fileInputRef,
-    deletePayeesMutation, deleteCategoriesMutation,
-    isLoadingMutation,
-    handleAddClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
-    handleSelectAll, handleRowSelect,
-    handleImportClick, handleFileChange, handleExportClick,
-  } = managementProps;
-
-  const deleteMutation = deletePayeesMutation || deleteCategoriesMutation;
 
   const filteredData = React.useMemo(() => {
     return data.filter((item) =>
@@ -106,8 +99,8 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={deleteMutation?.isPending}>
-              {deleteMutation?.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>
+              {isLoadingMutation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
             </Button>
           )}
@@ -122,7 +115,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           <Button onClick={handleAddClick}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
           </Button>
-          <Button variant="outline" size="icon" onClick={async () => await managementProps.refetch?.()} disabled={isLoading}>
+          <Button variant="outline" size="icon" onClick={async () => await refetch?.()} disabled={isLoading}>
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
             <span className="sr-only">Refresh</span>
           </Button>
@@ -143,13 +136,13 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             isLoading={isLoading}
             selectedRows={selectedRows}
             handleRowSelect={(id, checked) => {
-              if (id.includes(',')) { // Hack for select all
+              if (id.includes(',')) {
                 handleSelectAll(checked, currentData);
               } else {
                 handleRowSelect(id, checked);
               }
             }}
-            handleEditClick={customEditHandler || managementProps.handleEditClick}
+            handleEditClick={customEditHandler || handleEditClick}
             handleDeleteClick={handleDeleteClick}
             isDeletable={isDeletable}
             isEditing={isEditing}
@@ -162,8 +155,8 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           </div>
           <Pagination>
             <PaginationContent>
-              <PaginationItem><PaginationPrevious onClick={() => setCurrentPage((prev: number) => Math.max(prev - 1, 1))} disabled={currentPage === 1} /></PaginationItem>
-              <PaginationItem><PaginationNext onClick={() => setCurrentPage((prev: number) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
+              <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} /></PaginationItem>
+              <PaginationItem><PaginationNext onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
             </PaginationContent>
           </Pagination>
         </CardFooter>
@@ -172,7 +165,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         <AddEditDialogComponent
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          payee={selectedPayee}
+          payee={selectedEntity} // Use generic selectedEntity
         />
       )}
       <ConfirmationDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={confirmDelete} title="Are you sure?" description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone." confirmText="Delete" />
