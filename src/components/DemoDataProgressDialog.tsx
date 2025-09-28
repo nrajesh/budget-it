@@ -52,7 +52,7 @@ export const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({
               {demoDataProgress?.stage || "Initializing..."}
             </p>
           </div>
-          <Progress value={progressValue} className="w-full" />
+          <Progress value={progressValue} className="w-full" indicatorClassName="bg-primary" />
           <p className="text-right text-sm text-muted-foreground">
             {Math.round(progressValue)}% Complete
           </p>
