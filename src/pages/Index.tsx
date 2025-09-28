@@ -114,12 +114,6 @@ const Index = () => {
     }, 0);
   }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
 
-  const numberOfActiveAccounts = useMemo(() => {
-    const activeAccounts = new Set<string>();
-    currentTransactions.forEach(t => activeAccounts.add(t.account));
-    return activeAccounts.size;
-  }, [currentTransactions]);
-
   const calculatePercentageChange = (
     data: { [key: string]: number },
     isBalance: boolean = false
@@ -246,16 +240,7 @@ const Index = () => {
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
-          <Wallet className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{numberOfActiveAccounts}</div>
-          <p className="text-xs text-muted-foreground">Unique accounts with transactions</p>
-        </CardContent>
-      </Card>
+      <BudgetHealthWidget />
       <div className="lg:col-span-2">
         <Card className="h-full">
           <CardHeader>
@@ -290,9 +275,6 @@ const Index = () => {
             </ChartContainer>
           </CardContent>
         </Card>
-      </div>
-      <div className="lg:col-span-1">
-        <BudgetHealthWidget />
       </div>
       <div className="lg:col-span-1">
         <SpendingCategoriesChart transactions={filteredTransactions} />
