@@ -11,7 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Transaction } from "@/data/finance-data";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { CalendarCheck } from "lucide-react"; // Import CalendarCheck icon
+import { CalendarCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface TransactionsTableProps {
   currentTransactions: Transaction[];
@@ -34,11 +35,30 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   isAllSelectedOnPage,
   handleRowClick,
 }) => {
+  const navigate = useNavigate();
   const today = React.useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
     return d;
   }, []);
+
+  const handleAccountClick = (e: React.MouseEvent, accountName: string) => {
+    e.stopPropagation(); // Prevent row click event
+    navigate('/transactions', { state: { filterAccount: accountName } });
+  };
+
+  const handleVendorClick = (e: React.MouseEvent, vendorName: string) => {
+    e.stopPropagation(); // Prevent row click event
+    const isAccount = accountCurrencyMap.has(vendorName);
+    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
+    navigate('/transactions', { state: { [filterKey]: vendorName } });
+  };
+
+  const handleCategoryClick = (e: React.MouseEvent, categoryName: string) => {
+    e.stopPropagation(); // Prevent row click event
+    if (categoryName === 'Transfer') return;
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
 
   return (
     <div className="border rounded-md overflow-x-auto">
@@ -100,13 +120,19 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                     </div>
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    {transaction.account}
+                    <span onClick={(e) => handleAccountClick(e, transaction.account)} className="cursor-pointer hover:text-primary hover:underline">
+                      {transaction.account}
+                    </span>
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    {transaction.vendor}
+                    <span onClick={(e) => handleVendorClick(e, transaction.vendor)} className="cursor-pointer hover:text-primary hover:underline">
+                      {transaction.vendor}
+                    </span>
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    {transaction.category}
+                    <span onClick={(e) => handleCategoryClick(e, transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:text-primary hover:underline" : ""}>
+                      {transaction.category}
+                    </span>
                   </TableCell>
                   <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cn(
                     'text-right',

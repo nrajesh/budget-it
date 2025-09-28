@@ -4,6 +4,7 @@ import { AlertTriangle, BarChart2, ShoppingCart, Banknote } from 'lucide-react';
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { differenceInDays } from 'date-fns';
 import { Budget } from '@/data/finance-data';
+import { useNavigate } from "react-router-dom";
 
 interface AlertsAndInsightsProps {
   historicalTransactions: any[];
@@ -14,6 +15,22 @@ interface AlertsAndInsightsProps {
 
 const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransactions, futureTransactions, accounts, budgets }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const navigate = useNavigate();
+
+  const handleAccountClick = (accountName: string) => {
+    navigate('/transactions', { state: { filterAccount: accountName } });
+  };
+
+  const handleVendorClick = (vendorName: string) => {
+    const isAccount = accounts.some(acc => acc.name === vendorName);
+    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
+    navigate('/transactions', { state: { [filterKey]: vendorName } });
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    if (categoryName === 'Transfer') return;
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
 
   // 1. Calculate Low Balance Alerts
   const lowBalanceAlerts = React.useMemo(() => {
@@ -147,7 +164,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {lowBalanceAlerts.map(alert => (
                       <li key={alert.accountName}>
-                        <span className="font-semibold">{alert.accountName}</span> is projected to have a negative balance in{' '}
+                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span> is projected to have a negative balance in{' '}
                         <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
                       </li>
                     ))}
@@ -160,7 +177,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {budgetOverrunAlerts.map(alert => (
                       <li key={alert.categoryName}>
-                        <span className="font-semibold">{alert.categoryName}</span> budget is at{' '}
+                        <span onClick={() => handleCategoryClick(alert.categoryName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.categoryName}</span> budget is at{' '}
                         <span className={`font-bold ${alert.percentage >= 100 ? 'text-destructive' : 'text-amber-500'}`}>{alert.percentage}%</span> of its monthly limit.
                       </li>
                     ))}
@@ -179,7 +196,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
               <div>
                 <p className="font-semibold">Top Spending Categories</p>
                 {keyInsights.topCategories.length > 0 ? (
-                  <p className="text-muted-foreground">{keyInsights.topCategories.map(([name]) => name).join(', ')}</p>
+                  <p className="text-muted-foreground">
+                    {keyInsights.topCategories.map(([name], index) => (
+                      <React.Fragment key={name}>
+                        <span onClick={() => handleCategoryClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
+                        {index < keyInsights.topCategories.length - 1 ? ', ' : ''}
+                      </React.Fragment>
+                    ))}
+                  </p>
                 ) : <p className="text-muted-foreground">No spending data.</p>}
               </div>
             </div>
@@ -188,7 +212,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
               <div>
                 <p className="font-semibold">Most Frequented Vendors</p>
                 {keyInsights.topVendors.length > 0 ? (
-                  <p className="text-muted-foreground">{keyInsights.topVendors.map(([name]) => name).join(', ')}</p>
+                  <p className="text-muted-foreground">
+                    {keyInsights.topVendors.map(([name], index) => (
+                      <React.Fragment key={name}>
+                        <span onClick={() => handleVendorClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
+                        {index < keyInsights.topVendors.length - 1 ? ', ' : ''}
+                      </React.Fragment>
+                    ))}
+                  </p>
                 ) : <p className="text-muted-foreground">No spending data.</p>}
               </div>
             </div>
@@ -197,7 +228,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
               <div>
                 <p className="font-semibold">Most Active Accounts</p>
                 {keyInsights.topAccounts.length > 0 ? (
-                  <p className="text-muted-foreground">{keyInsights.topAccounts.map(([name]) => name).join(', ')}</p>
+                  <p className="text-muted-foreground">
+                    {keyInsights.topAccounts.map(([name], index) => (
+                      <React.Fragment key={name}>
+                        <span onClick={() => handleAccountClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
+                        {index < keyInsights.topAccounts.length - 1 ? ', ' : ''}
+                      </React.Fragment>
+                    ))}
+                  </p>
                 ) : <p className="text-muted-foreground">No transaction data.</p>}
               </div>
             </div>

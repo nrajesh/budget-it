@@ -58,12 +58,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
+import { useNavigate } from "react-router-dom";
 
 
 const ScheduledTransactionsPage = () => {
   const { user, isLoadingUser } = useUser();
   const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions } = useTransactions();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -560,6 +562,21 @@ const ScheduledTransactionsPage = () => {
     return { firstUpcoming, subsequentUpcoming };
   }, []);
 
+  const handleAccountClick = (accountName: string) => {
+    navigate('/transactions', { state: { filterAccount: accountName } });
+  };
+
+  const handleVendorClick = (vendorName: string) => {
+    const isAccount = allPayees.find(p => p.value === vendorName)?.isAccount || false;
+    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
+    navigate('/transactions', { state: { [filterKey]: vendorName } });
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    if (categoryName === 'Transfer') return;
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
+
   const isPageLoading = isLoadingScheduledTransactions || isLoadingAccounts || isLoadingVendors || isLoadingCategories || isLoadingUser;
 
   return (
@@ -680,7 +697,23 @@ const ScheduledTransactionsPage = () => {
                               </Button>
                               {firstUpcoming ? formatDateToDDMMYYYY(firstUpcoming) : 'N/A'}
                             </div>
-                          </TableCell><TableCell>{transaction.account}</TableCell><TableCell>{transaction.vendor}</TableCell><TableCell>{transaction.category}</TableCell><TableCell>{transaction.amount.toFixed(2)}</TableCell><TableCell>{transaction.frequency}</TableCell><TableCell>{transaction.recurrence_end_date ? formatDateToDDMMYYYY(transaction.recurrence_end_date) : '-'}</TableCell> {/* Display End Date */}
+                          </TableCell>
+                          <TableCell>
+                            <span onClick={() => handleAccountClick(transaction.account)} className="cursor-pointer hover:text-primary hover:underline">
+                              {transaction.account}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span onClick={() => handleVendorClick(transaction.vendor)} className="cursor-pointer hover:text-primary hover:underline">
+                              {transaction.vendor}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span onClick={() => handleCategoryClick(transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:text-primary hover:underline" : ""}>
+                              {transaction.category}
+                            </span>
+                          </TableCell>
+                          <TableCell>{transaction.amount.toFixed(2)}</TableCell><TableCell>{transaction.frequency}</TableCell><TableCell>{transaction.recurrence_end_date ? formatDateToDDMMYYYY(transaction.recurrence_end_date) : '-'}</TableCell> {/* Display End Date */}
                           <TableCell>{transaction.remarks || '-'}</TableCell><TableCell className="text-right">
                             <Button variant="ghost" size="icon" onClick={() => handleEditClick(transaction)}>
                               <Edit className="h-4 w-4" />

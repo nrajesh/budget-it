@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Budget } from '@/data/finance-data';
+import { useNavigate } from "react-router-dom";
 
 interface IncomeExpenseSummaryProps {
   transactions: any[];
@@ -11,6 +12,12 @@ interface IncomeExpenseSummaryProps {
 
 const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transactions, budgets }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryName: string) => {
+    if (categoryName === 'Transfer') return;
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
 
   const summary = React.useMemo(() => {
     const incomeByCategory: Record<string, number> = {};
@@ -61,7 +68,11 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
             <TableBody>
               {Object.entries(summary.incomeByCategory).map(([category, amount]) => (
                 <TableRow key={category}>
-                  <TableCell>{category}</TableCell>
+                  <TableCell>
+                    <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline">
+                      {category}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
                 </TableRow>
               ))}
@@ -87,7 +98,11 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
             <TableBody>
               {summary.expensesWithBudget.map(({ category, amount, target, variance, percentSpent }) => (
                 <TableRow key={category}>
-                  <TableCell>{category}</TableCell>
+                  <TableCell>
+                    <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline">
+                      {category}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
                   <TableCell className="text-right">{target !== null ? formatCurrency(target) : '-'}</TableCell>
                   <TableCell className={`text-right ${variance !== null && variance < 0 ? 'text-red-500' : ''}`}>

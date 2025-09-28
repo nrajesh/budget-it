@@ -14,6 +14,7 @@ import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { slugify, formatDateToDDMMYYYY } from "@/lib/utils"; // Import formatDateToDDMMYYYY
+import { useNavigate } from "react-router-dom";
 
 interface RecentTransactionsProps {
   transactions: Transaction[]; // These are transactions filtered by account
@@ -23,8 +24,24 @@ interface RecentTransactionsProps {
 export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
   const { transactions: allTransactions, accountCurrencyMap } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
+
+  const handleAccountClick = (accountName: string) => {
+    navigate('/transactions', { state: { filterAccount: accountName } });
+  };
+
+  const handleVendorClick = (vendorName: string) => {
+    const isAccount = accountCurrencyMap.has(vendorName);
+    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
+    navigate('/transactions', { state: { [filterKey]: vendorName } });
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    if (categoryName === 'Transfer') return;
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
 
   const transactionsWithCorrectBalance = React.useMemo(() => {
     let runningBalance = 0;
@@ -99,12 +116,15 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                   const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
                   return (
                     <TableRow key={transaction.id}>
-                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell><TableCell>
-                        <div className="font-medium">{transaction.vendor}</div>
-                        <div className="text-sm text-muted-foreground">{transaction.account}</div>
-                      </TableCell><TableCell>
-                        <Badge variant="outline">{transaction.category}</Badge>
-                      </TableCell><TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell>
+                      <TableCell>
+                        <div onClick={() => handleVendorClick(transaction.vendor)} className="font-medium cursor-pointer hover:text-primary hover:underline">{transaction.vendor}</div>
+                        <div onClick={() => handleAccountClick(transaction.account)} className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline">{transaction.account}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" onClick={() => handleCategoryClick(transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:border-primary" : ""}>{transaction.category}</Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(transaction.amount, currentAccountCurrency)}
                       </TableCell><TableCell className="text-right font-medium">
                         {formatCurrency(transaction.runningBalance)}
