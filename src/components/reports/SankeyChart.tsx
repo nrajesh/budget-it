@@ -121,8 +121,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
               margin={{
                 left: 100,
                 right: 100,
-                top: 5,
-                bottom: 5,
+                top: 40,
+                bottom: 40,
               }}
               link={{ stroke: '#777' }}
             >
