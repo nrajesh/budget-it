@@ -71,7 +71,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
           ) : (
             budgets.map((budget) => {
               const progress = budgetProgress.get(budget.id) || { actual: 0, percentage: 0 };
-              const progressColor = progress.percentage > 100 ? "bg-red-500" : "bg-primary";
+              const progressColor = progress.percentage > 100 ? "bg-destructive" : "bg-primary";
               return (
                 <TableRow key={budget.id}>
                   <TableCell className="font-medium">{budget.category_name}</TableCell>

@@ -94,7 +94,7 @@ export const BudgetHealthWidget = () => {
     );
   }
 
-  const progressColor = healthData.percentage > 100 ? "bg-red-500" : "bg-primary";
+  const progressColor = healthData.percentage > 100 ? "bg-destructive" : "bg-primary";
 
   return (
     <Card>
