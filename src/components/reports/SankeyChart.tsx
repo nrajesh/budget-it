@@ -11,7 +11,7 @@ interface SankeyChartProps {
 const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
-  const sankeyData = React.useMemo(() => {
+  const { sankeyData, chartHeight } = React.useMemo(() => {
     const nodes: { name: string }[] = [];
     const links: { source: number; target: number; value: number }[] = [];
     const nodeMap = new Map<string, number>();
@@ -101,7 +101,13 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     // Filter out links with zero value
     const filteredLinks = links.filter(link => link.value > 0);
 
-    return { nodes, links: filteredLinks };
+    // Calculate dynamic height based on the number of nodes to prevent excessive white space
+    const dynamicHeight = Math.max(200, nodes.length * 35);
+
+    return { 
+      sankeyData: { nodes, links: filteredLinks }, 
+      chartHeight: dynamicHeight 
+    };
   }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
   return (
@@ -114,15 +120,15 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
       </CardHeader>
       <CardContent>
         {sankeyData.nodes.length > 1 && sankeyData.links.length > 0 ? (
-          <ResponsiveContainer width="100%" height={400}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <Sankey
               data={sankeyData}
               nodePadding={50}
               margin={{
                 left: 100,
                 right: 100,
-                top: 40,
-                bottom: 40,
+                top: 20,
+                bottom: 20,
               }}
               link={{ stroke: '#777' }}
             >
