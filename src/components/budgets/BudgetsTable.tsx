@@ -79,7 +79,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <span>{formatCurrency(progress.actual, budget.currency)} ({Math.round(progress.percentage)}%)</span>
-                      <Progress value={progress.percentage} className="h-2" indicatorClassName={progressColor} />
+                      <Progress value={Math.min(progress.percentage, 100)} className="h-2" indicatorClassName={progressColor} />
                     </div>
                   </TableCell>
                   <TableCell>{budget.frequency}</TableCell>

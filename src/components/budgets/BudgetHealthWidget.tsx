@@ -108,7 +108,7 @@ export const BudgetHealthWidget = () => {
             <span>{formatCurrency(healthData.totalSpending)}</span>
             <span>{formatCurrency(healthData.totalBudget)}</span>
           </div>
-          <Progress value={healthData.percentage} indicatorClassName={progressColor} />
+          <Progress value={Math.min(healthData.percentage, 100)} indicatorClassName={progressColor} />
           <p className="text-sm text-muted-foreground text-center">
             {Math.round(healthData.percentage)}% of budget spent
           </p>
