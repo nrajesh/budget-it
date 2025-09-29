@@ -53,8 +53,8 @@ function Login() {
               },
               dark: {
                 colors: {
-                  brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
+                  brand: '#475569',
+                  brandAccent: '#f8fafc',
                   inputText: 'hsl(var(--foreground))',
                   inputLabelText: 'hsl(var(--foreground))',
                 },
