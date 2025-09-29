@@ -42,24 +42,9 @@ function Login() {
           providers={[]}
           appearance={{
             theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: 'hsl(var(--primary))',
-                  brandAccent: 'hsl(var(--primary-foreground))',
-                  inputText: 'hsl(var(--foreground))',
-                  inputLabelText: 'hsl(var(--foreground))',
-                },
-              },
-              dark: {
-                colors: {
-                  brand: '#475569',
-                  brandAccent: '#f8fafc',
-                  inputText: 'hsl(var(--foreground))',
-                  inputLabelText: 'hsl(var(--foreground))',
-                },
-              },
-            },
+            className: {
+              button: 'bg-slate-600 hover:bg-slate-600 text-white border-slate-600 hover:border-slate-600',
+            }
           }}
           theme="dark"
         />
