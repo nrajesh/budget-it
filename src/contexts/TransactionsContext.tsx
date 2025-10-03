@@ -1,15 +1,13 @@
 import * as React from 'react';
-import { Transaction, baseCategories, Category } from '@/data/finance-data';
+import { Transaction, Category } from '@/data/finance-data';
 import { useCurrency } from './CurrencyContext';
 import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
 import { Payee } from '@/components/AddEditPayeeDialog';
 import { createTransactionsService } from '@/services/transactionsService';
 import { createDemoDataService } from '@/services/demoDataService';
-import { createCategoriesService } from '@/services/categoriesService';
 import { useUser } from './UserContext';
 import { createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
-import { useQuery, useMutation, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
+import { useQuery, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
 
 interface TransactionToDelete {
   id: string;
@@ -50,6 +48,7 @@ interface TransactionsContextType {
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 const transformPayeeData = (data: any[]): Payee[] => {
+  if (!data) return [];
   return data.map((item: any) => ({
     id: item.id, name: item.name, is_account: item.is_account, created_at: item.created_at,
     account_id: item.account_id, currency: item.currency, starting_balance: item.starting_balance,
@@ -58,6 +57,7 @@ const transformPayeeData = (data: any[]): Payee[] => {
 };
 
 const transformCategoryData = (data: any[]): Category[] => {
+  if (!data) return [];
   return data.map((item: any) => ({
     id: item.id, name: item.name, user_id: item.user_id, created_at: item.created_at, totalTransactions: item.total_transactions || 0,
   }));
@@ -67,7 +67,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
   const { user, isLoadingUser } = useUser();
-  const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
   const convertBetweenCurrenciesRef = React.useRef(_convert);
@@ -131,14 +130,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     select: transformCategoryData,
   });
 
-  React.useEffect(() => {
+  const accountCurrencyMap = React.useMemo(() => {
     const newMap = new Map<string, string>();
     accounts.forEach(account => {
       if (account.name && account.currency) {
         newMap.set(account.name, account.currency);
       }
     });
-    setAccountCurrencyMap(newMap);
+    return newMap;
   }, [accounts]);
 
   const invalidateAllData = React.useCallback(async () => {
@@ -161,7 +160,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     invalidateAllData,
     setDemoDataProgress,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllData, user?.id]);
+  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id]);
 
   const scheduledTransactionsService = React.useMemo(() => createScheduledTransactionsService({
     refetchTransactions,
@@ -181,7 +180,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         processScheduledTransactionsRef.current();
       } else if (event === 'SIGNED_OUT') {
         queryClient.clear();
-        setAccountCurrencyMap(new Map());
       }
     });
     return () => subscription.unsubscribe();
