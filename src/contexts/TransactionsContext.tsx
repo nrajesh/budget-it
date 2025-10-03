@@ -9,7 +9,7 @@ import { createDemoDataService } from '@/services/demoDataService';
 import { createCategoriesService } from '@/services/categoriesService';
 import { useUser } from './UserContext';
 import { createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
-import { useQuery, useMutation, useQueryClient, QueryObserverResult } from '@tanstack/react-query'; // Import QueryObserverResult
+import { useQuery, useMutation, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
 
 interface TransactionToDelete {
   id: string;
@@ -49,6 +49,20 @@ interface TransactionsContextType {
 
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
+const transformPayeeData = (data: any[]): Payee[] => {
+  return data.map((item: any) => ({
+    id: item.id, name: item.name, is_account: item.is_account, created_at: item.created_at,
+    account_id: item.account_id, currency: item.currency, starting_balance: item.starting_balance,
+    remarks: item.remarks, running_balance: item.running_balance, totalTransactions: item.total_transactions || 0,
+  }));
+};
+
+const transformCategoryData = (data: any[]): Category[] => {
+  return data.map((item: any) => ({
+    id: item.id, name: item.name, user_id: item.user_id, created_at: item.created_at, totalTransactions: item.total_transactions || 0,
+  }));
+};
+
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
@@ -56,14 +70,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
-  const convertBetweenCurrenciesRef = React.useRef(_convert);
-  React.useEffect(() => {
-    convertBetweenCurrenciesRef.current = _convert;
-  }, [_convert]);
-
   const convertBetweenCurrencies = React.useCallback((amount: number, from: string, to: string) => {
-    return convertBetweenCurrenciesRef.current(amount, from, to);
-  }, []);
+    return _convert(amount, from, to);
+  }, [_convert]);
 
   const { data: transactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ['transactions', user?.id],
@@ -80,48 +89,41 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: !!user?.id && !isLoadingUser,
   });
 
-  const { data: vendors = [], isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery<Payee[], Error>({
+  const { data: vendors = [], isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery({
     queryKey: ['vendors', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       const { data, error } = await supabase.rpc('get_vendors_with_transaction_counts');
       if (error) throw error;
-      return data.map((item: any) => ({
-        id: item.id, name: item.name, is_account: item.is_account, created_at: item.created_at,
-        account_id: item.account_id, currency: item.currency, starting_balance: item.starting_balance,
-        remarks: item.remarks, running_balance: item.running_balance, totalTransactions: item.total_transactions || 0,
-      })) as Payee[];
+      return data;
     },
     enabled: !!user?.id && !isLoadingUser,
+    select: transformPayeeData,
   });
 
-  const { data: accounts = [], isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery<Payee[], Error>({
+  const { data: accounts = [], isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery({
     queryKey: ['accounts', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       const { data, error } = await supabase.rpc('get_accounts_with_transaction_counts');
       if (error) throw error;
-      return data.map((item: any) => ({
-        id: item.id, name: item.name, is_account: item.is_account, created_at: item.created_at,
-        account_id: item.account_id, currency: item.currency, starting_balance: item.starting_balance,
-        remarks: item.remarks, running_balance: item.running_balance, totalTransactions: item.total_transactions || 0,
-      })) as Payee[];
+      return data;
     },
     enabled: !!user?.id && !isLoadingUser,
+    select: transformPayeeData,
   });
 
-  const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useQuery<Category[], Error>({
+  const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useQuery({
     queryKey: ['categories', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       await supabase.rpc('ensure_default_categories_for_user', { p_user_id: user.id });
       const { data, error } = await supabase.rpc('get_categories_with_transaction_counts', { user_id_param: user.id });
       if (error) throw error;
-      return data.map((item: any) => ({
-        id: item.id, name: item.name, user_id: item.user_id, created_at: item.created_at, totalTransactions: item.total_transactions || 0,
-      })) as Category[];
+      return data;
     },
     enabled: !!user?.id && !isLoadingUser,
+    select: transformCategoryData,
   });
 
   React.useEffect(() => {
@@ -142,33 +144,33 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await queryClient.invalidateQueries({ queryKey: ['scheduledTransactions'] });
   }, [queryClient]);
 
-  const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
+  const transactionsService = React.useMemo(() => createTransactionsService({
     refetchTransactions,
     invalidateAllData,
     convertBetweenCurrencies,
     userId: user?.id,
   }), [refetchTransactions, invalidateAllData, convertBetweenCurrencies, user?.id]);
 
-  const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
+  const demoDataService = React.useMemo(() => createDemoDataService({
     refetchTransactions,
     invalidateAllData,
     setDemoDataProgress,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllData, setDemoDataProgress, user?.id]);
+  }), [refetchTransactions, invalidateAllData, user?.id]);
 
-  const { processScheduledTransactions } = React.useMemo(() => createScheduledTransactionsService({
+  const scheduledTransactionsService = React.useMemo(() => createScheduledTransactionsService({
     refetchTransactions,
     userId: user?.id,
     convertBetweenCurrencies,
   }), [refetchTransactions, user?.id, convertBetweenCurrencies]);
 
-  const processScheduledTransactionsRef = React.useRef(processScheduledTransactions);
+  const processScheduledTransactionsRef = React.useRef(scheduledTransactionsService.processScheduledTransactions);
   React.useEffect(() => {
-    processScheduledTransactionsRef.current = processScheduledTransactions;
-  }, [processScheduledTransactions]);
+    processScheduledTransactionsRef.current = scheduledTransactionsService.processScheduledTransactions;
+  }, [scheduledTransactionsService.processScheduledTransactions]);
 
   React.useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
         queryClient.invalidateQueries();
         processScheduledTransactionsRef.current();
@@ -182,19 +184,19 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const value = React.useMemo(() => ({
     transactions, vendors, accounts, categories, accountCurrencyMap,
-    addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions,
-    clearAllTransactions, generateDiverseDemoData,
+    ...transactionsService,
+    ...demoDataService,
+    ...scheduledTransactionsService,
     refetchVendors, refetchAccounts, refetchCategories,
     invalidateAllData,
     refetchTransactions,
-    demoDataProgress, processScheduledTransactions,
+    demoDataProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   }), [
     transactions, vendors, accounts, categories, accountCurrencyMap,
-    addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions,
-    clearAllTransactions, generateDiverseDemoData,
+    transactionsService, demoDataService, scheduledTransactionsService,
     refetchVendors, refetchAccounts, refetchCategories, invalidateAllData, refetchTransactions,
-    demoDataProgress, processScheduledTransactions,
+    demoDataProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories,
   ]);
 
