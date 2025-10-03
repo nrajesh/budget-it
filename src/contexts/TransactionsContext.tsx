@@ -70,9 +70,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
 
-  const convertBetweenCurrencies = React.useCallback((amount: number, from: string, to: string) => {
-    return _convert(amount, from, to);
+  const convertBetweenCurrenciesRef = React.useRef(_convert);
+  React.useEffect(() => {
+    convertBetweenCurrenciesRef.current = _convert;
   }, [_convert]);
+
+  const convertBetweenCurrencies = React.useCallback((amount: number, from: string, to: string) => {
+    return convertBetweenCurrenciesRef.current(amount, from, to);
+  }, []);
 
   const { data: transactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ['transactions', user?.id],
