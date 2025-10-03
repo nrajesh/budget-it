@@ -136,10 +136,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions } = React.useMemo(() => createTransactionsService({
     refetchTransactions,
     invalidateAllData,
-    transactions,
     convertBetweenCurrencies,
     userId: user?.id,
-  }), [refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, user?.id]);
+  }), [refetchTransactions, invalidateAllData, convertBetweenCurrencies, user?.id]);
 
   const { clearAllTransactions, generateDiverseDemoData } = React.useMemo(() => createDemoDataService({
     refetchTransactions,

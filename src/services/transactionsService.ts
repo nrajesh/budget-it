@@ -12,12 +12,11 @@ interface TransactionToDelete {
 interface TransactionsServiceProps {
   refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
   invalidateAllData: () => Promise<void>;
-  transactions: Transaction[];
   convertBetweenCurrencies: (amount: number, fromCurrency: string, toCurrency: string) => number;
   userId: string | undefined;
 }
 
-export const createTransactionsService = ({ refetchTransactions, invalidateAllData, transactions, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
+export const createTransactionsService = ({ refetchTransactions, invalidateAllData, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
     if (!userId) {
@@ -108,9 +107,8 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
       throw new Error("User not logged in.");
     }
     try {
-      const originalTransaction = transactions.find(t => t.id === updatedTransaction.id);
-      const isScheduledOrigin = originalTransaction?.is_scheduled_origin || false;
-      const accountCurrency = originalTransaction?.currency || 'USD';
+      const isScheduledOrigin = updatedTransaction.is_scheduled_origin || false;
+      const accountCurrency = updatedTransaction.currency || 'USD';
       const newDateISO = new Date(updatedTransaction.date).toISOString();
       await ensureCategoryExists(updatedTransaction.category, userId);
 

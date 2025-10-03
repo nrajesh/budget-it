@@ -104,6 +104,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       recurrenceEndDate: "",
     },
   });
+  const { setValue, getValues } = form;
 
   React.useEffect(() => {
     if (isOpen) {
@@ -164,24 +165,24 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
           destinationAccountCurrency
         );
         setAutoCalculatedReceivingAmount(convertedAmount);
-        form.setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
+        setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
       } else {
         setAutoCalculatedReceivingAmount(0);
-        form.setValue("receivingAmount", 0);
+        setValue("receivingAmount", 0);
       }
     } else {
       setAutoCalculatedReceivingAmount(0);
-      form.setValue("receivingAmount", 0);
+      setValue("receivingAmount", 0);
     }
-  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies, form]);
+  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies, setValue]);
 
   React.useEffect(() => {
     if (isTransfer) {
-      form.setValue("category", "Transfer");
-    } else if (form.getValues("category") === "Transfer") {
-      form.setValue("category", "");
+      setValue("category", "Transfer");
+    } else if (getValues("category") === "Transfer") {
+      setValue("category", "");
     }
-  }, [isTransfer, form]);
+  }, [isTransfer, setValue, getValues]);
 
   const onSubmit = (values: AddTransactionFormValues) => {
     const transactionData = {
