@@ -153,18 +153,23 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     convertBetweenCurrencies,
   }), [refetchTransactions, user?.id, convertBetweenCurrencies]);
 
+  const processScheduledTransactionsRef = React.useRef(processScheduledTransactions);
+  React.useEffect(() => {
+    processScheduledTransactionsRef.current = processScheduledTransactions;
+  }, [processScheduledTransactions]);
+
   React.useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         queryClient.invalidateQueries();
-        processScheduledTransactions();
+        processScheduledTransactionsRef.current();
       } else if (event === 'SIGNED_OUT') {
         queryClient.clear();
         setAccountCurrencyMap(new Map());
       }
     });
     return () => subscription.unsubscribe();
-  }, [queryClient, processScheduledTransactions]);
+  }, [queryClient]);
 
   const value = React.useMemo(() => ({
     transactions, vendors, accounts, categories, accountCurrencyMap,

@@ -104,11 +104,11 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       recurrenceEndDate: "",
     },
   });
-  const { setValue, getValues } = form;
+  const { setValue, getValues, reset } = form;
 
   React.useEffect(() => {
     if (isOpen) {
-      form.reset({
+      reset({
         date: formatDateToYYYYMMDD(new Date()),
         account: "",
         vendor: "",
@@ -123,7 +123,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       setDestinationAccountCurrency(null);
       setAutoCalculatedReceivingAmount(0);
     }
-  }, [isOpen, form]);
+  }, [isOpen, reset]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
