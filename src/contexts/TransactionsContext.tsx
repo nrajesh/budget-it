@@ -51,10 +51,19 @@ export const TransactionsContext = React.createContext<TransactionsContextType |
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const { convertBetweenCurrencies } = useCurrency();
+  const { convertBetweenCurrencies: _convert } = useCurrency();
   const { user, isLoadingUser } = useUser();
   const [accountCurrencyMap, setAccountCurrencyMap] = React.useState<Map<string, string>>(new Map());
   const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
+
+  const convertBetweenCurrenciesRef = React.useRef(_convert);
+  React.useEffect(() => {
+    convertBetweenCurrenciesRef.current = _convert;
+  }, [_convert]);
+
+  const convertBetweenCurrencies = React.useCallback((amount: number, from: string, to: string) => {
+    return convertBetweenCurrenciesRef.current(amount, from, to);
+  }, []);
 
   const { data: transactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ['transactions', user?.id],

@@ -200,22 +200,22 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     onOpenChange(false);
   };
 
-  const baseAccountOptions = allAccounts.map(acc => ({ value: acc, label: acc }));
-  const baseVendorOptions = allVendors.map(v => ({ value: v, label: v }));
+  const baseAccountOptions = React.useMemo(() => allAccounts.map(acc => ({ value: acc, label: acc })), [allAccounts]);
+  const baseVendorOptions = React.useMemo(() => allVendors.map(v => ({ value: v, label: v })), [allVendors]);
 
-  const filteredAccountOptions = baseAccountOptions.map(option => ({
+  const filteredAccountOptions = React.useMemo(() => baseAccountOptions.map(option => ({
     ...option,
     disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
-  }));
+  })), [baseAccountOptions, vendorValue, allAccounts]);
 
-  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
+  const combinedBaseVendorOptions = React.useMemo(() => [...baseAccountOptions, ...baseVendorOptions], [baseAccountOptions, baseVendorOptions]);
 
-  const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
+  const filteredCombinedVendorOptions = React.useMemo(() => combinedBaseVendorOptions.map(option => ({
     ...option,
     disabled: option.value === accountValue,
-  }));
+  })), [combinedBaseVendorOptions, accountValue]);
 
-  const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name }));
+  const categoryOptions = React.useMemo(() => allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })), [allCategories]);
 
   const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
 
