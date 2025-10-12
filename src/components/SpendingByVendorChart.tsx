@@ -1,9 +1,13 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart } from "recharts";
+import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import React from "react";
+import { ActivePieShape } from "./charts/ActivePieShape"; // Import the new component
+import { usePieChartInteraction } from "@/hooks/usePieChartInteraction"; // Import the new hook
 
 interface SpendingByVendorChartProps {
   transactions: Transaction[];
@@ -27,6 +31,7 @@ const getVendorChartConfig = (vendors: string[]) => {
 
 export function SpendingByVendorChart({ transactions }: SpendingByVendorChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { activeIndex, onPieClick, resetActiveIndex } = usePieChartInteraction(); // Use the new hook
 
   const allUniqueVendors = React.useMemo(() => {
     const vendorsSet = new Set<string>();
@@ -88,8 +93,16 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
               dataKey="amount"
               nameKey="vendor"
               innerRadius={60}
+              outerRadius={80}
               strokeWidth={5}
-            />
+              activeIndex={activeIndex}
+              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} /> : null}
+              onClick={onPieClick}
+            >
+              {finalChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Pie>
           </PieChart>
         </ChartContainer>
       </CardContent>

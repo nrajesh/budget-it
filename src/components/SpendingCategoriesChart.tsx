@@ -1,60 +1,23 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Sector, Cell } from "recharts"; // Import Cell and Sector
+import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { ActivePieShape } from "./charts/ActivePieShape"; // Import the new component
+import { usePieChartInteraction } from "@/hooks/usePieChartInteraction"; // Import the new hook
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
 }
 
-// Custom active shape component to display details in the center
-const ActivePieShape = (props: any) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, formatCurrency } = props;
-  const { category, amount } = payload;
-
-  return (
-    <g>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius + 10} // Slightly larger for active state
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-        className="transition-all duration-200 ease-in-out"
-      />
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={outerRadius + 12}
-        outerRadius={outerRadius + 16}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-        className="transition-all duration-200 ease-in-out"
-      />
-      <text x={cx} y={cy - 10} textAnchor="middle" dominantBaseline="central" fill="#333" className="font-bold text-lg">
-        {category}
-      </text>
-      <text x={cx} y={cy + 15} textAnchor="middle" dominantBaseline="central" fill="#666" className="text-md">
-        {formatCurrency(amount)}
-      </text>
-    </g>
-  );
-};
-
 export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { categories: allCategories } = useTransactions();
-
-  // State to keep track of the active (clicked) slice index
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const { activeIndex, onPieClick, resetActiveIndex } = usePieChartInteraction(); // Use the new hook
 
   const chartConfig = React.useMemo(() => {
     const config: ChartConfig = {
@@ -93,11 +56,6 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
 
   const totalSpending = chartData.reduce((sum, item) => sum + item.amount, 0);
 
-  // Handler for clicking a pie slice
-  const onPieClick = useCallback((data: any, index: number) => {
-    setActiveIndex(prevIndex => (prevIndex === index ? null : index));
-  }, []);
-
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
@@ -119,14 +77,14 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               dataKey="amount"
               nameKey="category"
               innerRadius={60}
-              outerRadius={80} // Set a fixed outerRadius for the main pie
+              outerRadius={80}
               strokeWidth={5}
-              activeIndex={activeIndex} // Pass activeIndex to Pie
-              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null} // Only render activeShape if activeIndex is not null
-              onClick={onPieClick} // Handle click for toggling active state
+              activeIndex={activeIndex}
+              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} /> : null}
+              onClick={onPieClick}
             >
               {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} /> // Use entry.fill from chartData
+                <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
           </PieChart>
