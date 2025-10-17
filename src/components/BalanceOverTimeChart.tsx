@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell, Brush } from "recharts"; // Added Brush
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ZoomOut } from "lucide-react"; // Added ZoomOut icon
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -28,7 +28,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Updated ChartType
+type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
@@ -36,6 +36,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>('line');
+  const [zoomRange, setZoomRange] = React.useState<{ startIndex: number; endIndex: number } | null>(null); // New state for zoom
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -282,9 +283,14 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       return <p className="text-center text-muted-foreground py-8">No transaction data available to display.</p>;
     }
 
+    // Apply zoom filtering
+    const displayedData = zoomRange
+      ? dataToUse.slice(zoomRange.startIndex, zoomRange.endIndex + 1)
+      : dataToUse;
+
     const commonChartProps = {
       accessibilityLayer: true,
-      data: dataToUse,
+      data: displayedData, // Use displayedData for the chart
       margin: { left: 12, right: 12 },
       className: "aspect-auto h-[250px] w-full",
     };
@@ -347,6 +353,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 style={{ cursor: 'pointer' }}
               />
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary-foreground))"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && e.startIndex !== undefined && e.endIndex !== undefined) {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </ChartComponent>
         );
 
@@ -372,7 +391,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 radius={4}
                 onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
               >
-                {dataToUse.map((entry, monthIndex) => (
+                {displayedData.map((entry, monthIndex) => ( // Use displayedData here
                   <Cell
                     key={`bar-cell-${account}-${monthIndex}`}
                     fill={
@@ -386,6 +405,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 ))}
               </Bar>
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary-foreground))"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && e.startIndex !== undefined && e.endIndex !== undefined) {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </BarChart>
         );
 
@@ -411,7 +443,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 radius={4}
                 onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)} // Reusing bar click handler
               >
-                {dataToUse.map((entry, index) => {
+                {displayedData.map((entry, index) => { // Use displayedData here
                   const value = entry[account] as number;
                   const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
                   return (
@@ -429,6 +461,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 })}
               </Bar>
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary-foreground))"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && e.startIndex !== undefined && e.endIndex !== undefined) {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </BarChart>
         );
 
@@ -447,6 +492,16 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </CardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
+          {zoomRange && ( // Show reset button only when zoomed
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => setZoomRange(null)}
+            >
+              <ZoomOut className="h-4 w-4" />
+              Reset Zoom
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
