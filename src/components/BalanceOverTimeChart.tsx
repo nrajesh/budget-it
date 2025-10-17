@@ -264,11 +264,16 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           const parts = item.date.split('/');
           itemDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
         }
-        const fromDate = dateRange.from!;
-        const toDate = dateRange.to!;
-        fromDate.setHours(0, 0, 0, 0);
-        toDate.setHours(23, 59, 59, 999);
-        return itemDate >= fromDate && itemDate <= toDate;
+        
+        // Create new Date objects for comparison to avoid mutating state
+        const compareFromDate = new Date(dateRange.from!);
+        const compareToDate = new Date(dateRange.to!);
+
+        // Set hours for comparison to be inclusive of the entire day
+        compareFromDate.setHours(0, 0, 0, 0);
+        compareToDate.setHours(23, 59, 59, 999);
+
+        return itemDate >= compareFromDate && itemDate <= compareToDate;
       });
     }
 
@@ -334,11 +339,16 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           const parts = item.date.split('/');
           itemDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
         }
-        const fromDate = dateRange.from!;
-        const toDate = dateRange.to!;
-        fromDate.setHours(0, 0, 0, 0); // Set to start of day
-        toDate.setHours(23, 59, 59, 999); // Set to end of day
-        return itemDate >= fromDate && itemDate <= toDate;
+        
+        // Create new Date objects for comparison to avoid mutating state
+        const compareFromDate = new Date(dateRange.from!);
+        const compareToDate = new Date(dateRange.to!);
+
+        // Set hours for comparison to be inclusive of the entire day
+        compareFromDate.setHours(0, 0, 0, 0); // Set to start of day
+        compareToDate.setHours(23, 59, 59, 999); // Set to end of day
+
+        return itemDate >= compareFromDate && itemDate <= compareToDate;
       });
     }
 

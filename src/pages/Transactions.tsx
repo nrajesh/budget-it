@@ -4,9 +4,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle } from "lucide-react";
-import { TransactionTable } from "@/components/transactions/TransactionTable";
+import { TransactionTable } from "@/components/transactions/TransactionTable"; // Updated path
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
-import { TransactionDialog } from "@/components/transactions/TransactionDialog";
+import { TransactionDialog } from "@/components/transactions/TransactionDialog"; // Updated path
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -66,6 +66,19 @@ export type Vendor = {
   account_id: string | null;
 };
 
+export type Budget = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  currency: string;
+  target_amount: number;
+  start_date: string;
+  frequency: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
 const fetchTransactions = async (): Promise<Transaction[]> => {
   const { data, error } = await supabase.from("transactions").select("*").order("date", { ascending: false });
   if (error) throw new Error(error.message);
@@ -75,7 +88,7 @@ const fetchTransactions = async (): Promise<Transaction[]> => {
 const fetchAccounts = async (): Promise<Account[]> => {
   const { data: vendorsData, error: vendorsError } = await supabase
     .from("vendors")
-    .select("name, account_id")
+    .select("name, account_id, accounts(currency, starting_balance)")
     .eq("is_account", true);
 
   if (vendorsError) throw new Error(vendorsError.message);
@@ -159,11 +172,21 @@ export default function Transactions() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
       const transactionDate = new Date(transaction.date);
-      const fromDate = dateRange?.from;
-      const toDate = dateRange?.to;
+      
+      let fromDate = dateRange?.from;
+      let toDate = dateRange?.to;
 
-      if (fromDate && transactionDate < fromDate) return false;
-      if (toDate && transactionDate > toDate) return false;
+      if (fromDate) {
+        fromDate = new Date(fromDate); // Create a new Date object to avoid mutating state
+        fromDate.setHours(0, 0, 0, 0); // Set to start of day
+        if (transactionDate < fromDate) return false;
+      }
+      if (toDate) {
+        toDate = new Date(toDate); // Create a new Date object to avoid mutating state
+        toDate.setHours(23, 59, 59, 999); // Set to end of day
+        if (transactionDate > toDate) return false;
+      }
+
       if (accountFilter && transaction.account !== accountFilter) return false;
       if (categoryFilter && transaction.category !== categoryFilter) return false;
       if (vendorFilter && transaction.vendor !== vendorFilter) return false;
