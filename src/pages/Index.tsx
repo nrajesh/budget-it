@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react"; // Import useCallback
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"; // Import Cell
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { SpendingByVendorChart } from "@/components/SpendingByVendorChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
@@ -28,6 +28,8 @@ const Index = () => {
 
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // State to track the active bar in the Income vs. Expenses chart
+  const [activeBar, setActiveBar] = useState<{ monthIndex: number; dataKey: 'income' | 'expenses' } | null>(null);
 
   // Filter transactions to exclude future-dated ones
   const currentTransactions = useMemo(() => {
@@ -191,6 +193,19 @@ const Index = () => {
     return isPositive ? "text-green-500" : "text-red-500";
   };
 
+  // Handler for clicking a bar in the Income vs. Expenses chart
+  const handleBarClick = useCallback((data: any, monthIndex: number, clickedDataKey: 'income' | 'expenses') => {
+    setActiveBar(prevActiveBar => {
+      if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
+        // Clicking the same bar again, reset
+        return null;
+      } else {
+        // Clicking a new bar
+        return { monthIndex, dataKey: clickedDataKey };
+      }
+    });
+  }, []);
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -269,8 +284,42 @@ const Index = () => {
                   cursor={false}
                   content={<ChartTooltipContent indicator="dashed" formatter={(value) => formatCurrency(Number(value))} />}
                 />
-                <Bar dataKey="income" fill="var(--color-income)" radius={4} />
-                <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} />
+                <Bar
+                  dataKey="income"
+                  radius={4}
+                  onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'income')}
+                >
+                  {monthlySummary.map((entry, monthIndex) => (
+                    <Cell
+                      key={`income-cell-${monthIndex}`}
+                      fill={
+                        activeBar === null
+                          ? chartConfig.income.color
+                          : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'income'
+                            ? chartConfig.income.color
+                            : '#ccc')
+                      }
+                    />
+                  ))}
+                </Bar>
+                <Bar
+                  dataKey="expenses"
+                  radius={4}
+                  onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'expenses')}
+                >
+                  {monthlySummary.map((entry, monthIndex) => (
+                    <Cell
+                      key={`expenses-cell-${monthIndex}`}
+                      fill={
+                        activeBar === null
+                          ? chartConfig.expenses.color
+                          : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'expenses'
+                            ? chartConfig.expenses.color
+                            : '#ccc')
+                      }
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ChartContainer>
           </CardContent>
