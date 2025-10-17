@@ -3,7 +3,7 @@
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReportLayout, { ReportChildrenProps } from "./ReportLayout"; // Import ReportChildrenProps
-import { TransactionTable } from "@/components/transactions/TransactionTable";
+import { TransactionTable } from "../../components/transactions/TransactionTable"; // Corrected relative path
 import { useMemo } from "react";
 
 export default function EssentialReports() {
