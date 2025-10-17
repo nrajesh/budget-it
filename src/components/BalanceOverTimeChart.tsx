@@ -321,15 +321,17 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               />
             ))}
             <Brush
+              key={zoomRange ? 'controlled-line-brush' : 'uncontrolled-line-brush'} // Dynamic key for reset
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
               fill="hsl(var(--primary) / 0.1)"
-              startIndex={zoomRange?.startIndex}
-              endIndex={zoomRange?.endIndex}
+              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
               onChange={(e) => {
                 if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
                   setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                } else {
+                  setZoomRange(null); // Reset if brush is cleared by user interaction
                 }
               }}
             />
@@ -381,15 +383,17 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               </Bar>
             ))}
             <Brush
+              key={zoomRange ? 'controlled-bar-brush' : 'uncontrolled-bar-brush'} // Dynamic key for reset
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
               fill="hsl(var(--primary) / 0.1)"
-              startIndex={zoomRange?.startIndex}
-              endIndex={zoomRange?.endIndex}
+              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
               onChange={(e) => {
                 if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
                   setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                } else {
+                  setZoomRange(null); // Reset if brush is cleared by user interaction
                 }
               }}
             />
@@ -467,15 +471,17 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               </Bar>
             ))}
             <Brush
+              key={zoomRange ? 'controlled-candlestick-brush' : 'uncontrolled-candlestick-brush'} // Dynamic key for reset
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
               fill="hsl(var(--primary) / 0.1)"
-              startIndex={zoomRange?.startIndex}
-              endIndex={zoomRange?.endIndex}
+              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
               onChange={(e) => {
                 if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
                   setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                } else {
+                  setZoomRange(null); // Reset if brush is cleared by user interaction
                 }
               }}
             />
