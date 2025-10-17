@@ -4,9 +4,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle } from "lucide-react";
-import { TransactionTable } from "../components/transactions/TransactionTable"; // Corrected relative path
+import { TransactionTable } from "@/components/transactions/TransactionTable"; // Changed to @/ alias
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
-import { TransactionDialog } from "../components/transactions/TransactionDialog"; // Corrected relative path
+import { TransactionDialog } from "@/components/transactions/TransactionDialog"; // Changed to @/ alias
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
