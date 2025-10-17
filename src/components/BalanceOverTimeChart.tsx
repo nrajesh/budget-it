@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell, Brush } from "recharts"; // Added Brush
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'bar-stacked' | 'candlestick'; // Updated ChartType
+type ChartType = 'line' | 'bar-stacked' | 'candlestick';
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
@@ -36,6 +36,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>('line');
+  const [zoomRange, setZoomRange] = React.useState<{ startIndex: number; endIndex: number } | null>(null); // New state for zoom
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -218,6 +219,11 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
+  // Effect to reset zoom when chart type or data changes
+  React.useEffect(() => {
+    setZoomRange(null);
+  }, [chartType, dailyRunningBalanceData, monthlyStackedBarChartData, dailyCandlestickChartData]);
+
   // Handler for clicking a line
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
@@ -314,6 +320,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 style={{ cursor: 'pointer' }}
               />
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary) / 0.1)"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </ChartComponent>
         );
 
@@ -361,6 +380,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 ))}
               </Bar>
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary) / 0.1)"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </BarChart>
         );
 
@@ -383,8 +415,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 <ChartTooltipContent
                   indicator="dashed"
                   formatter={(value, name, props) => {
-                    const accountName = (name as string).replace('_change', ''); // Cast name to string
-                    const entry = props.payload?.[0]?.payload; // Get the full data entry for the day
+                    const accountName = (name as string).replace('_change', '');
+                    const entry = props.payload?.[0]?.payload;
                     if (entry) {
                       const open = entry[`${accountName}_open`];
                       const close = entry[`${accountName}_close`];
@@ -411,14 +443,14 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             {accountsToDisplay.map(account => (
               <Bar
                 key={account}
-                dataKey={`${account}_change`} // Use the daily change as the bar value
-                stackId="a" // Stack bars to show total daily change
+                dataKey={`${account}_change`}
+                stackId="a"
                 radius={4}
                 onClick={(data, index) => handleBarClick(data, index, `${account}_change`)}
               >
                 {dataToUse.map((entry, index) => {
                   const value = entry[`${account}_change`] as number;
-                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
+                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))';
                   return (
                     <Cell
                       key={`candlestick-cell-${account}-${index}`}
@@ -434,6 +466,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 })}
               </Bar>
             ))}
+            <Brush
+              dataKey={xAxisDataKey}
+              height={30}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary) / 0.1)"
+              startIndex={zoomRange?.startIndex}
+              endIndex={zoomRange?.endIndex}
+              onChange={(e) => {
+                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
+                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
+                }
+              }}
+            />
           </BarChart>
         );
 
@@ -476,6 +521,14 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            variant="outline"
+            onClick={() => setZoomRange(null)}
+            disabled={!zoomRange}
+            className="flex items-center gap-2"
+          >
+            Reset Zoom
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
