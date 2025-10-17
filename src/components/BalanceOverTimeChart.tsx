@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -21,6 +23,8 @@ const chartConfig = {
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
+  // State to track the active line (account name)
+  const [activeLine, setActiveLine] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -104,6 +108,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
+  // Handler for clicking a line
+  const handleLineClick = React.useCallback((dataKey: string) => {
+    setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
+  }, []);
 
   return (
     <Card>
@@ -157,9 +165,17 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 key={account}
                 dataKey={account}
                 type="monotone"
-                stroke={dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color}
+                stroke={
+                  activeLine === null
+                    ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                    : (activeLine === account
+                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                      : '#ccc') // Dimmed color for inactive lines
+                }
                 strokeWidth={2}
                 dot={false}
+                onClick={() => handleLineClick(account)} // Add onClick handler
+                style={{ cursor: 'pointer' }} // Indicate interactivity
               />
             ))}
           </LineChart>
