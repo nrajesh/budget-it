@@ -37,6 +37,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>('line');
   const [zoomRange, setZoomRange] = React.useState<{ startIndex: number; endIndex: number } | null>(null); // New state for zoom
+  const [brushResetKey, setBrushResetKey] = React.useState(0); // New state to force Brush re-render
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -222,6 +223,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   // Effect to reset zoom when chart type or data changes
   React.useEffect(() => {
     setZoomRange(null);
+    setBrushResetKey(prev => prev + 1); // Also reset brush key here
   }, [chartType, dailyRunningBalanceData, monthlyStackedBarChartData, dailyCandlestickChartData]);
 
   // Handler for clicking a line
@@ -321,7 +323,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               />
             ))}
             <Brush
-              key={zoomRange ? 'controlled-line-brush' : 'uncontrolled-line-brush'} // Dynamic key for reset
+              key={`line-brush-${brushResetKey}`} // Use the new key
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
@@ -383,7 +385,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               </Bar>
             ))}
             <Brush
-              key={zoomRange ? 'controlled-bar-brush' : 'uncontrolled-bar-brush'} // Dynamic key for reset
+              key={`bar-brush-${brushResetKey}`} // Use the new key
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
@@ -471,7 +473,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               </Bar>
             ))}
             <Brush
-              key={zoomRange ? 'controlled-candlestick-brush' : 'uncontrolled-candlestick-brush'} // Dynamic key for reset
+              key={`candlestick-brush-${brushResetKey}`} // Use the new key
               dataKey={xAxisDataKey}
               height={30}
               stroke="hsl(var(--primary))"
@@ -529,7 +531,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </DropdownMenu>
           <Button
             variant="outline"
-            onClick={() => setZoomRange(null)}
+            onClick={() => {
+              setZoomRange(null);
+              setBrushResetKey(prev => prev + 1); // Increment key to force Brush re-render
+            }}
             disabled={!zoomRange}
             className="flex items-center gap-2"
           >
