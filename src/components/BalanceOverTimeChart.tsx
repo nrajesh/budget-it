@@ -28,7 +28,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'area-unstacked' | 'area-stacked' | 'bar-stacked';
+type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Updated ChartType
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
@@ -61,7 +61,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   }, [transactions]);
 
   // Data for Line and Area Charts (daily running balances)
-  const dailyChartData = React.useMemo(() => {
+  const dailyRunningBalanceData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
@@ -154,16 +154,86 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return finalMonthlyData;
   }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
+  // Data for Waterfall Chart (daily net changes)
+  const dailyNetChangeData = React.useMemo(() => {
+    const data = dailyRunningBalanceData;
+    if (data.length === 0) return [];
+
+    const netChanges: { date: string; totalChange: number; [key: string]: number | string }[] = [];
+    let previousDayBalances: { [account: string]: number } = {};
+
+    // Initialize previousDayBalances with the first day's balances if available, otherwise 0
+    if (data.length > 0) {
+      accountsToDisplay.forEach(account => {
+        previousDayBalances[account] = (data[0][account] as number) || 0;
+      });
+    }
+
+    data.forEach((currentDay, index) => {
+      if (index === 0) {
+        // For the first day, the change is its balance (assuming start from 0 or initial balance)
+        const firstDayChange: { date: string; totalChange: number; [key: string]: number | string } = {
+          date: currentDay.date,
+          totalChange: 0, // Will be calculated below
+        };
+        let dayTotalChange = 0;
+        accountsToDisplay.forEach(account => {
+          const change = (currentDay[account] as number) || 0;
+          firstDayChange[account] = change;
+          dayTotalChange += change;
+        });
+        firstDayChange.totalChange = dayTotalChange;
+        netChanges.push(firstDayChange);
+      } else {
+        const dayChange: { date: string; totalChange: number; [key: string]: number | string } = {
+          date: currentDay.date,
+          totalChange: 0, // Will be calculated below
+        };
+        let dayTotalChange = 0;
+        accountsToDisplay.forEach(account => {
+          const currentBalance = (currentDay[account] as number) || 0;
+          const prevBalance = previousDayBalances[account] || 0;
+          const change = currentBalance - prevBalance;
+          dayChange[account] = change;
+          dayTotalChange += change;
+        });
+        dayChange.totalChange = dayTotalChange;
+        netChanges.push(dayChange);
+      }
+
+      // Update previousDayBalances for the next iteration
+      accountsToDisplay.forEach(account => {
+        previousDayBalances[account] = (currentDay[account] as number) || 0;
+      });
+    });
+
+    return netChanges;
+  }, [dailyRunningBalanceData, accountsToDisplay]);
+
 
   const totalBalance = React.useMemo(() => {
-    const dataToUse = chartType === 'bar-stacked' ? monthlyStackedBarChartData : dailyChartData;
+    let dataToUse;
+    if (chartType === 'bar-stacked') {
+      dataToUse = monthlyStackedBarChartData;
+    } else if (chartType === 'waterfall') {
+      // For waterfall, total balance is the sum of all changes, which is the final running balance
+      if (dailyRunningBalanceData.length === 0) return 0;
+      const lastDayBalances = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
+      return accountsToDisplay.reduce((sum, account) => {
+        const balance = lastDayBalances[account];
+        return sum + (typeof balance === 'number' ? balance : 0);
+      }, 0);
+    } else { // line chart
+      dataToUse = dailyRunningBalanceData;
+    }
+
     if (dataToUse.length === 0) return 0;
     const lastDayBalances = dataToUse[dataToUse.length - 1];
     return accountsToDisplay.reduce((sum, account) => {
       const balance = lastDayBalances[account];
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
-  }, [dailyChartData, monthlyStackedBarChartData, accountsToDisplay, chartType]);
+  }, [dailyRunningBalanceData, monthlyStackedBarChartData, accountsToDisplay, chartType]);
 
   const dynamicChartConfig = React.useMemo(() => {
     const newConfig = { ...chartConfig };
@@ -194,8 +264,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   }, []);
 
   const renderChart = () => {
-    const dataToUse = chartType === 'bar-stacked' ? monthlyStackedBarChartData : dailyChartData;
-    const xAxisDataKey = chartType === 'bar-stacked' ? 'month' : 'date';
+    let dataToUse;
+    let xAxisDataKey;
+
+    if (chartType === 'bar-stacked') {
+      dataToUse = monthlyStackedBarChartData;
+      xAxisDataKey = 'month';
+    } else if (chartType === 'waterfall') {
+      dataToUse = dailyNetChangeData;
+      xAxisDataKey = 'date';
+    } else { // line chart
+      dataToUse = dailyRunningBalanceData;
+      xAxisDataKey = 'date';
+    }
 
     if (dataToUse.length === 0) {
       return <p className="text-center text-muted-foreground py-8">No transaction data available to display.</p>;
@@ -227,16 +308,13 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       />
     );
 
-    let ChartComponent: React.ElementType; // Declare ChartComponent here
-    let ItemComponent: React.ElementType; // Declare ItemComponent here
+    let ChartComponent: React.ElementType;
+    let ItemComponent: React.ElementType;
 
     switch (chartType) {
       case 'line':
-      case 'area-unstacked':
-      case 'area-stacked':
-        ChartComponent = chartType === 'line' ? LineChart : AreaChart; // Assign here
-        ItemComponent = chartType === 'line' ? Line : Area;
-        const stackId = chartType === 'area-stacked' ? "a" : undefined;
+        ChartComponent = LineChart;
+        ItemComponent = Line;
 
         return (
           <ChartComponent {...commonChartProps}>
@@ -256,22 +334,12 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 key={account}
                 dataKey={account}
                 type="monotone"
-                stackId={stackId}
                 stroke={
                   activeLine === null
                     ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
                     : (activeLine === account
                       ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
                       : '#ccc')
-                }
-                fill={
-                  chartType !== 'line'
-                    ? (activeLine === null
-                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                      : (activeLine === account
-                        ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                        : '#ccc'))
-                    : undefined
                 }
                 strokeWidth={2}
                 dot={false}
@@ -321,6 +389,49 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </BarChart>
         );
 
+      case 'waterfall':
+        return (
+          <BarChart {...commonChartProps}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey={xAxisDataKey}
+              {...commonAxisProps}
+              tickFormatter={(value) => value}
+            />
+            <YAxis
+              {...commonAxisProps}
+              tickFormatter={(value) => formatCurrency(Number(value))}
+            />
+            {commonTooltip}
+            {accountsToDisplay.map(account => (
+              <Bar
+                key={account}
+                dataKey={account}
+                stackId="a" // Stack bars to show total daily change
+                radius={4}
+                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)} // Reusing bar click handler
+              >
+                {dataToUse.map((entry, index) => {
+                  const value = entry[account] as number;
+                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
+                  return (
+                    <Cell
+                      key={`waterfall-cell-${account}-${index}`}
+                      fill={
+                        activeBar === null
+                          ? color
+                          : (activeBar.monthIndex === index && activeBar.dataKey === account
+                            ? color
+                            : '#ccc')
+                      }
+                    />
+                  );
+                })}
+              </Bar>
+            ))}
+          </BarChart>
+        );
+
       default:
         return null;
     }
@@ -343,9 +454,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 className="flex items-center gap-2"
               >
                 {chartType === 'line' && 'Line Chart'}
-                {chartType === 'area-unstacked' && 'Area Chart (Unstacked)'}
-                {chartType === 'area-stacked' && 'Area Chart (Stacked)'}
                 {chartType === 'bar-stacked' && 'Stacked Bar Chart'}
+                {chartType === 'waterfall' && 'Waterfall Chart'}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -353,14 +463,11 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               <DropdownMenuItem onClick={() => setChartType('line')}>
                 Line Chart
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setChartType('area-unstacked')}>
-                Area Chart (Unstacked)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setChartType('area-stacked')}>
-                Area Chart (Stacked)
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setChartType('bar-stacked')}>
                 Stacked Bar Chart
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChartType('waterfall')}>
+                Waterfall Chart
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
