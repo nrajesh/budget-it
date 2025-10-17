@@ -1,16 +1,28 @@
-"use client";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import ReportLayout from './ReportLayout';
+import SankeyChart from '@/components/reports/SankeyChart';
+import AlertsAndInsights from '@/components/reports/AlertsAndInsights';
+import TrendForecastingChart from '@/components/reports/TrendForecastingChart';
 
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import ReportLayout, { ReportChildrenProps } from "./ReportLayout"; // Import ReportChildrenProps
-import { TransactionTable } from "../../components/transactions/TransactionTable"; // Corrected relative path
-import { useMemo } from "react";
+const AdvancedReports = () => {
+  const [futureMonths, setFutureMonths] = React.useState(2);
 
-export default function AdvancedReports() {
+  React.useEffect(() => {
+    const savedMonths = localStorage.getItem('futureMonths');
+    if (savedMonths) {
+      setFutureMonths(parseInt(savedMonths, 10));
+    }
+  }, []);
+
   const description = (
-    <>
-      Detailed financial analysis including combined historical and future projections, and budget tracking.
-    </>
+    <p>
+      Future projections for the next {futureMonths} months. You can change this in{' '}
+      <Link to="/settings" className="text-primary underline">
+        Settings
+      </Link>
+      .
+    </p>
   );
 
   return (
@@ -18,51 +30,20 @@ export default function AdvancedReports() {
       title="Advanced Reports"
       description={description}
     >
-      {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, allAccounts, budgets }: ReportChildrenProps) => (
+      {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, accounts, budgets }) => (
         <>
-          <BalanceOverTimeChart transactions={combinedFilteredTransactions} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Combined Transactions (Historical & Future)</CardTitle>
-              <CardDescription>All transactions and scheduled transactions within the selected date range.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TransactionTable
-                transactions={combinedFilteredTransactions}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                isLoading={false}
-              />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Future Scheduled Transactions</CardTitle>
-              <CardDescription>Upcoming scheduled transactions based on the selected date range.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* You might need a separate table component for ScheduledTransaction if its structure differs significantly */}
-              <TransactionTable
-                transactions={futureFilteredTransactions.map(st => ({
-                  ...st,
-                  vendor: st.vendor, // Ensure vendor is present for type compatibility
-                  is_scheduled_origin: true,
-                  recurrence_id: st.id,
-                  recurrence_frequency: st.frequency,
-                  recurrence_end_date: st.recurrence_end_date,
-                  user_id: st.user_id,
-                  created_at: st.created_at,
-                  currency: 'USD' // Default currency, adjust if needed
-                }))}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                isLoading={false}
-              />
-            </CardContent>
-          </Card>
-          {/* Add more advanced report components here, e.g., Budget vs Actual */}
+          <AlertsAndInsights
+            historicalTransactions={historicalFilteredTransactions}
+            futureTransactions={futureFilteredTransactions}
+            accounts={accounts}
+            budgets={budgets}
+          />
+          <TrendForecastingChart transactions={combinedFilteredTransactions} />
+          <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />
         </>
       )}
     </ReportLayout>
   );
-}
+};
+
+export default AdvancedReports;

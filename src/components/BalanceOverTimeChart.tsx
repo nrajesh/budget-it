@@ -15,9 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, X } from "lucide-react"; // Added X icon for reset button
-import { DateRange } from "react-day-picker"; // Added DateRange type
-import { DateRangePicker } from "./DateRangePicker"; // New import for date range picker
+import { ChevronDown } from "lucide-react";
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -30,53 +28,31 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Reverted ChartType to original
+type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Updated ChartType
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
-  const [accountStartingBalances, setAccountStartingBalances] = React.useState<Record<string, { balance: number; currency: string }>>({});
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>('line');
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined); // New state for date range
 
   React.useEffect(() => {
-    const fetchAccountData = async () => {
+    const fetchAccountNames = async () => {
       const { data, error } = await supabase
         .from('vendors')
-        .select('name, account_id, accounts(currency, starting_balance)')
+        .select('name')
         .eq('is_account', true);
 
       if (error) {
-        console.error("Error fetching account names and balances for chart:", error.message);
+        console.error("Error fetching account names for chart:", error.message);
         setAllDefinedAccounts([]);
-        setAccountStartingBalances({});
       } else {
-        const names = data.map(item => item.name);
-        setAllDefinedAccounts(names);
-
-        const balances: Record<string, { balance: number; currency: string }> = {};
-        data.forEach(item => {
-          // Supabase returns related data as an array, even for one-to-one relationships
-          const accountDetails = item.accounts && item.accounts.length > 0 ? item.accounts[0] : null;
-          if (accountDetails) {
-            balances[item.name] = {
-              balance: accountDetails.starting_balance || 0,
-              currency: accountDetails.currency || selectedCurrency,
-            };
-          } else {
-            balances[item.name] = {
-              balance: 0,
-              currency: selectedCurrency,
-            };
-          }
-        });
-        setAccountStartingBalances(balances);
+        setAllDefinedAccounts(data.map(item => item.name));
       }
     };
-    fetchAccountData();
-  }, [selectedCurrency]);
+    fetchAccountNames();
+  }, []);
 
   const accountsToDisplay = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();
@@ -84,18 +60,15 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return Array.from(uniqueAccounts);
   }, [transactions]);
 
+  // Data for Line and Area Charts (daily running balances)
   const dailyRunningBalanceData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
 
     const initialBalances: { [account: string]: number } = {};
-    accountsToDisplay.forEach(account => {
-      const startingBalanceInfo = accountStartingBalances[account];
-      const initialAmount = startingBalanceInfo
-        ? convertBetweenCurrencies(startingBalanceInfo.balance, startingBalanceInfo.currency, selectedCurrency)
-        : 0;
-      initialBalances[account] = initialAmount;
+    allDefinedAccounts.forEach(account => {
+      initialBalances[account] = 0;
     });
     dailyBalances['initial'] = initialBalances;
 
@@ -106,12 +79,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         dailyBalances[date] = previousDate ? { ...dailyBalances[previousDate] } : { ...dailyBalances['initial'] };
       }
 
-      if (dailyBalances[date][transaction.account] === undefined) {
-        dailyBalances[date][transaction.account] = 0;
+      if (dailyBalances[date][transaction.account] !== undefined) {
+        const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+        dailyBalances[date][transaction.account] += convertedAmount;
       }
-      
-      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
-      dailyBalances[date][transaction.account] += convertedAmount;
     });
 
     const formattedData = Object.entries(dailyBalances)
@@ -126,20 +97,17 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       });
 
     return formattedData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, accountStartingBalances]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
+  // Data for Stacked Bar Chart (monthly ending balances)
   const monthlyStackedBarChartData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const monthlyData: { [monthKey: string]: { [account: string]: number } } = {};
     let currentRunningBalances: { [account: string]: number } = {};
 
-    accountsToDisplay.forEach(account => {
-      const startingBalanceInfo = accountStartingBalances[account];
-      const initialAmount = startingBalanceInfo
-        ? convertBetweenCurrencies(startingBalanceInfo.balance, startingBalanceInfo.currency, selectedCurrency)
-        : 0;
-      currentRunningBalances[account] = initialAmount;
+    allDefinedAccounts.forEach(account => {
+      currentRunningBalances[account] = 0;
     });
 
     sortedTransactions.forEach(transaction => {
@@ -170,13 +138,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
     const finalMonthlyData: { month: string; [key: string]: number | string }[] = [];
     let lastMonthBalances: { [account: string]: number } = {};
-    accountsToDisplay.forEach(account => {
-      const startingBalanceInfo = accountStartingBalances[account];
-      const initialAmount = startingBalanceInfo
-        ? convertBetweenCurrencies(startingBalanceInfo.balance, startingBalanceInfo.currency, selectedCurrency)
-        : 0;
-      lastMonthBalances[account] = initialAmount;
-    });
+    allDefinedAccounts.forEach(account => lastMonthBalances[account] = 0);
 
     allMonths.forEach(monthKey => {
       if (monthlyData[monthKey]) {
@@ -190,8 +152,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     });
 
     return finalMonthlyData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, accountStartingBalances]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
+  // Data for Waterfall Chart (daily net changes)
   const dailyNetChangeData = React.useMemo(() => {
     const data = dailyRunningBalanceData;
     if (data.length === 0) return [];
@@ -199,6 +162,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     const netChanges: { date: string; totalChange: number; [key: string]: number | string }[] = [];
     let previousDayBalances: { [account: string]: number } = {};
 
+    // Initialize previousDayBalances with the first day's balances if available, otherwise 0
     if (data.length > 0) {
       accountsToDisplay.forEach(account => {
         previousDayBalances[account] = (data[0][account] as number) || 0;
@@ -207,9 +171,10 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
     data.forEach((currentDay, index) => {
       if (index === 0) {
+        // For the first day, the change is its balance (assuming start from 0 or initial balance)
         const firstDayChange: { date: string; totalChange: number; [key: string]: number | string } = {
           date: currentDay.date,
-          totalChange: 0,
+          totalChange: 0, // Will be calculated below
         };
         let dayTotalChange = 0;
         accountsToDisplay.forEach(account => {
@@ -222,7 +187,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       } else {
         const dayChange: { date: string; totalChange: number; [key: string]: number | string } = {
           date: currentDay.date,
-          totalChange: 0,
+          totalChange: 0, // Will be calculated below
         };
         let dayTotalChange = 0;
         accountsToDisplay.forEach(account => {
@@ -236,6 +201,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         netChanges.push(dayChange);
       }
 
+      // Update previousDayBalances for the next iteration
       accountsToDisplay.forEach(account => {
         previousDayBalances[account] = (currentDay[account] as number) || 0;
       });
@@ -246,45 +212,28 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
 
   const totalBalance = React.useMemo(() => {
-    let dataForTotalCalculation;
+    let dataToUse;
     if (chartType === 'bar-stacked') {
-      dataForTotalCalculation = monthlyStackedBarChartData;
-    } else { // line or waterfall
-      dataForTotalCalculation = dailyRunningBalanceData;
+      dataToUse = monthlyStackedBarChartData;
+    } else if (chartType === 'waterfall') {
+      // For waterfall, total balance is the sum of all changes, which is the final running balance
+      if (dailyRunningBalanceData.length === 0) return 0;
+      const lastDayBalances = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
+      return accountsToDisplay.reduce((sum, account) => {
+        const balance = lastDayBalances[account];
+        return sum + (typeof balance === 'number' ? balance : 0);
+      }, 0);
+    } else { // line chart
+      dataToUse = dailyRunningBalanceData;
     }
 
-    let filteredDataForTotal = dataForTotalCalculation;
-    if (dateRange?.from && dateRange?.to) {
-      filteredDataForTotal = dataForTotalCalculation.filter((item: any) => {
-        let itemDate: Date;
-        if (chartType === 'bar-stacked') {
-          const [year, month] = item.month.split('-').map(Number);
-          itemDate = new Date(year, month - 1, 1);
-        } else { // line or waterfall
-          const parts = item.date.split('/');
-          itemDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        }
-        
-        // Create new Date objects for comparison to avoid mutating state
-        const compareFromDate = new Date(dateRange.from!);
-        const compareToDate = new Date(dateRange.to!);
-
-        // Set hours for comparison to be inclusive of the entire day
-        compareFromDate.setHours(0, 0, 0, 0);
-        compareToDate.setHours(23, 59, 59, 999);
-
-        return itemDate >= compareFromDate && itemDate <= compareToDate;
-      });
-    }
-
-    if (filteredDataForTotal.length === 0) return 0;
-
-    const lastDataPoint = filteredDataForTotal[filteredDataForTotal.length - 1];
+    if (dataToUse.length === 0) return 0;
+    const lastDayBalances = dataToUse[dataToUse.length - 1];
     return accountsToDisplay.reduce((sum, account) => {
-      const balance = lastDataPoint[account];
+      const balance = lastDayBalances[account];
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
-  }, [dailyRunningBalanceData, monthlyStackedBarChartData, accountsToDisplay, chartType, dateRange]);
+  }, [dailyRunningBalanceData, monthlyStackedBarChartData, accountsToDisplay, chartType]);
 
   const dynamicChartConfig = React.useMemo(() => {
     const newConfig = { ...chartConfig };
@@ -298,10 +247,12 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
+  // Handler for clicking a line/area
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
   }, []);
 
+  // Handler for clicking a bar
   const handleBarClick = React.useCallback((data: any, monthIndex: number, clickedDataKey: string) => {
     setActiveBar(prevActiveBar => {
       if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
@@ -313,52 +264,27 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   }, []);
 
   const renderChart = () => {
-    let rawDataToUse;
+    let dataToUse;
     let xAxisDataKey;
 
     if (chartType === 'bar-stacked') {
-      rawDataToUse = monthlyStackedBarChartData;
+      dataToUse = monthlyStackedBarChartData;
       xAxisDataKey = 'month';
     } else if (chartType === 'waterfall') {
-      rawDataToUse = dailyNetChangeData;
+      dataToUse = dailyNetChangeData;
       xAxisDataKey = 'date';
     } else { // line chart
-      rawDataToUse = dailyRunningBalanceData;
+      dataToUse = dailyRunningBalanceData;
       xAxisDataKey = 'date';
     }
 
-    let filteredDataToUse = rawDataToUse;
-
-    if (dateRange?.from && dateRange?.to) {
-      filteredDataToUse = rawDataToUse.filter((item: any) => {
-        let itemDate: Date;
-        if (xAxisDataKey === 'month') {
-          const [year, month] = item.month.split('-').map(Number);
-          itemDate = new Date(year, month - 1, 1); // First day of the month
-        } else { // 'date' format DD/MM/YYYY
-          const parts = item.date.split('/');
-          itemDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        }
-        
-        // Create new Date objects for comparison to avoid mutating state
-        const compareFromDate = new Date(dateRange.from!);
-        const compareToDate = new Date(dateRange.to!);
-
-        // Set hours for comparison to be inclusive of the entire day
-        compareFromDate.setHours(0, 0, 0, 0); // Set to start of day
-        compareToDate.setHours(23, 59, 59, 999); // Set to end of day
-
-        return itemDate >= compareFromDate && itemDate <= compareToDate;
-      });
-    }
-
-    if (filteredDataToUse.length === 0) {
-      return <p className="text-center text-muted-foreground py-8">No transaction data available for the selected date range.</p>;
+    if (dataToUse.length === 0) {
+      return <p className="text-center text-muted-foreground py-8">No transaction data available to display.</p>;
     }
 
     const commonChartProps = {
       accessibilityLayer: true,
-      data: filteredDataToUse, // Use filtered data here
+      data: dataToUse,
       margin: { left: 12, right: 12 },
       className: "aspect-auto h-[250px] w-full",
     };
@@ -446,7 +372,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 radius={4}
                 onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
               >
-                {filteredDataToUse.map((entry, monthIndex) => (
+                {dataToUse.map((entry, monthIndex) => (
                   <Cell
                     key={`bar-cell-${account}-${monthIndex}`}
                     fill={
@@ -481,13 +407,13 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               <Bar
                 key={account}
                 dataKey={account}
-                stackId="a"
+                stackId="a" // Stack bars to show total daily change
                 radius={4}
-                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
+                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)} // Reusing bar click handler
               >
-                {filteredDataToUse.map((entry, index) => {
+                {dataToUse.map((entry, index) => {
                   const value = entry[account] as number;
-                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))';
+                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
                   return (
                     <Cell
                       key={`waterfall-cell-${account}-${index}`}
@@ -521,18 +447,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </CardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
-          <DateRangePicker date={dateRange} setDate={setDateRange} />
-          {(dateRange?.from || dateRange?.to) && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setDateRange(undefined)}
-              className="ml-2"
-              aria-label="Reset zoom"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

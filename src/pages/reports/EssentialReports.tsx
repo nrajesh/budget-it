@@ -1,36 +1,24 @@
-"use client";
+import React from 'react';
+import ReportLayout from './ReportLayout';
+import NetWorthStatement from '@/components/reports/NetWorthStatement';
+import IncomeExpenseSummary from '@/components/reports/IncomeExpenseSummary';
+import TrendsAndAnalytics from '@/components/reports/TrendsAndAnalytics';
 
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import ReportLayout, { ReportChildrenProps } from "./ReportLayout"; // Import ReportChildrenProps
-import { TransactionTable } from "../../components/transactions/TransactionTable"; // Corrected relative path
-import { useMemo } from "react";
-
-export default function EssentialReports() {
+const EssentialReports = () => {
   return (
     <ReportLayout
       title="Essential Reports"
       description="Your core financial summaries and trends based on historical data."
     >
-      {({ historicalFilteredTransactions, allAccounts, budgets }: ReportChildrenProps) => (
+      {({ historicalFilteredTransactions, accounts, budgets }) => (
         <>
-          <BalanceOverTimeChart transactions={historicalFilteredTransactions} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Historical Transactions</CardTitle>
-              <CardDescription>All transactions up to the selected date range.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TransactionTable
-                transactions={historicalFilteredTransactions}
-                onEdit={() => {}} // Reports are read-only, no edit/delete actions
-                onDelete={() => {}}
-                isLoading={false} // Assuming data is loaded by ReportLayout
-              />
-            </CardContent>
-          </Card>
+          <NetWorthStatement transactions={historicalFilteredTransactions} accounts={accounts} />
+          <IncomeExpenseSummary transactions={historicalFilteredTransactions} budgets={budgets} />
+          <TrendsAndAnalytics transactions={historicalFilteredTransactions} budgets={budgets} />
         </>
       )}
     </ReportLayout>
   );
-}
+};
+
+export default EssentialReports;
