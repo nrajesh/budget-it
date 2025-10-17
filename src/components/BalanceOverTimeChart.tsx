@@ -28,7 +28,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Updated ChartType
+type ChartType = 'line' | 'bar-stacked' | 'candlestick'; // Updated ChartType
 
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
@@ -60,7 +60,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return Array.from(uniqueAccounts);
   }, [transactions]);
 
-  // Data for Line and Area Charts (daily running balances)
+  // Data for Line Chart (daily running balances)
   const dailyRunningBalanceData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -154,76 +154,47 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return finalMonthlyData;
   }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
-  // Data for Waterfall Chart (daily net changes)
-  const dailyNetChangeData = React.useMemo(() => {
+  // Data for Candlestick Chart (daily net changes with OHLC values)
+  const dailyCandlestickChartData = React.useMemo(() => {
     const data = dailyRunningBalanceData;
     if (data.length === 0) return [];
 
-    const netChanges: { date: string; totalChange: number; [key: string]: number | string }[] = [];
-    let previousDayBalances: { [account: string]: number } = {};
+    const candlestickData: { date: string; [key: string]: number | string }[] = [];
+    let prevDayBalances: { [account: string]: number } = {};
 
-    // Initialize previousDayBalances with the first day's balances if available, otherwise 0
-    if (data.length > 0) {
-      accountsToDisplay.forEach(account => {
-        previousDayBalances[account] = (data[0][account] as number) || 0;
-      });
-    }
-
-    data.forEach((currentDay, index) => {
-      if (index === 0) {
-        // For the first day, the change is its balance (assuming start from 0 or initial balance)
-        const firstDayChange: { date: string; totalChange: number; [key: string]: number | string } = {
-          date: currentDay.date,
-          totalChange: 0, // Will be calculated below
-        };
-        let dayTotalChange = 0;
-        accountsToDisplay.forEach(account => {
-          const change = (currentDay[account] as number) || 0;
-          firstDayChange[account] = change;
-          dayTotalChange += change;
-        });
-        firstDayChange.totalChange = dayTotalChange;
-        netChanges.push(firstDayChange);
-      } else {
-        const dayChange: { date: string; totalChange: number; [key: string]: number | string } = {
-          date: currentDay.date,
-          totalChange: 0, // Will be calculated below
-        };
-        let dayTotalChange = 0;
-        accountsToDisplay.forEach(account => {
-          const currentBalance = (currentDay[account] as number) || 0;
-          const prevBalance = previousDayBalances[account] || 0;
-          const change = currentBalance - prevBalance;
-          dayChange[account] = change;
-          dayTotalChange += change;
-        });
-        dayChange.totalChange = dayTotalChange;
-        netChanges.push(dayChange);
-      }
-
-      // Update previousDayBalances for the next iteration
-      accountsToDisplay.forEach(account => {
-        previousDayBalances[account] = (currentDay[account] as number) || 0;
-      });
+    allDefinedAccounts.forEach(account => {
+        prevDayBalances[account] = 0; // Assume starting from 0 before the first day
     });
 
-    return netChanges;
-  }, [dailyRunningBalanceData, accountsToDisplay]);
+    data.forEach((currentDay, index) => {
+        const dayEntry: { date: string; [key: string]: number | string } = { date: currentDay.date };
+        accountsToDisplay.forEach(account => {
+            const currentClose = (currentDay[account] as number) || 0;
+            const currentOpen = prevDayBalances[account] || 0;
+            const netChange = currentClose - currentOpen;
+
+            dayEntry[`${account}_change`] = netChange; // This will be the bar value
+            dayEntry[`${account}_open`] = currentOpen;
+            dayEntry[`${account}_close`] = currentClose;
+            // Simplified high/low: max/min of open and close
+            dayEntry[`${account}_high`] = Math.max(currentOpen, currentClose);
+            dayEntry[`${account}_low`] = Math.min(currentOpen, currentClose);
+        });
+        candlestickData.push(dayEntry);
+
+        accountsToDisplay.forEach(account => {
+            prevDayBalances[account] = (currentDay[account] as number) || 0;
+        });
+    });
+    return candlestickData;
+  }, [dailyRunningBalanceData, accountsToDisplay, allDefinedAccounts]);
 
 
   const totalBalance = React.useMemo(() => {
     let dataToUse;
     if (chartType === 'bar-stacked') {
       dataToUse = monthlyStackedBarChartData;
-    } else if (chartType === 'waterfall') {
-      // For waterfall, total balance is the sum of all changes, which is the final running balance
-      if (dailyRunningBalanceData.length === 0) return 0;
-      const lastDayBalances = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
-      return accountsToDisplay.reduce((sum, account) => {
-        const balance = lastDayBalances[account];
-        return sum + (typeof balance === 'number' ? balance : 0);
-      }, 0);
-    } else { // line chart
+    } else { // line chart or candlestick
       dataToUse = dailyRunningBalanceData;
     }
 
@@ -247,18 +218,18 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
-  // Handler for clicking a line/area
+  // Handler for clicking a line
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
   }, []);
 
   // Handler for clicking a bar
-  const handleBarClick = React.useCallback((data: any, monthIndex: number, clickedDataKey: string) => {
+  const handleBarClick = React.useCallback((data: any, index: number, clickedDataKey: string) => {
     setActiveBar(prevActiveBar => {
-      if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
+      if (prevActiveBar?.monthIndex === index && prevActiveBar?.dataKey === clickedDataKey) {
         return null;
       } else {
-        return { monthIndex, dataKey: clickedDataKey };
+        return { monthIndex: index, dataKey: clickedDataKey };
       }
     });
   }, []);
@@ -270,8 +241,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     if (chartType === 'bar-stacked') {
       dataToUse = monthlyStackedBarChartData;
       xAxisDataKey = 'month';
-    } else if (chartType === 'waterfall') {
-      dataToUse = dailyNetChangeData;
+    } else if (chartType === 'candlestick') {
+      dataToUse = dailyCandlestickChartData;
       xAxisDataKey = 'date';
     } else { // line chart
       dataToUse = dailyRunningBalanceData;
@@ -296,18 +267,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       minTickGap: 32,
     };
 
-    const commonTooltip = (
-      <ChartTooltip
-        cursor={false}
-        content={
-          <ChartTooltipContent
-            indicator="dashed"
-            formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`}
-          />
-        }
-      />
-    );
-
     let ChartComponent: React.ElementType;
     let ItemComponent: React.ElementType;
 
@@ -328,7 +287,15 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
             />
-            {commonTooltip}
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  indicator="dashed"
+                  formatter={(value, name, props) => `${name}: ${formatCurrency(Number(value))}`}
+                />
+              }
+            />
             {accountsToDisplay.map(account => (
               <ItemComponent
                 key={account}
@@ -363,22 +330,30 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
             />
-            {commonTooltip}
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  indicator="dashed"
+                  formatter={(value, name, props) => `${name}: ${formatCurrency(Number(value))}`}
+                />
+              }
+            />
             {accountsToDisplay.map(account => (
               <Bar
                 key={account}
                 dataKey={account}
                 stackId="a"
                 radius={4}
-                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
+                onClick={(data, index) => handleBarClick(data, index, account)}
               >
-                {dataToUse.map((entry, monthIndex) => (
+                {dataToUse.map((entry, index) => (
                   <Cell
-                    key={`bar-cell-${account}-${monthIndex}`}
+                    key={`bar-cell-${account}-${index}`}
                     fill={
                       activeBar === null
                         ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                        : (activeBar.monthIndex === monthIndex && activeBar.dataKey === account
+                        : (activeBar.monthIndex === index && activeBar.dataKey === account
                           ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
                           : '#ccc')
                     }
@@ -389,7 +364,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           </BarChart>
         );
 
-      case 'waterfall':
+      case 'candlestick':
         return (
           <BarChart {...commonChartProps}>
             <CartesianGrid vertical={false} />
@@ -402,25 +377,55 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
             />
-            {commonTooltip}
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  indicator="dashed"
+                  formatter={(value, name, props) => {
+                    const accountName = (name as string).replace('_change', ''); // Cast name to string
+                    const entry = props.payload?.[0]?.payload; // Get the full data entry for the day
+                    if (entry) {
+                      const open = entry[`${accountName}_open`];
+                      const close = entry[`${accountName}_close`];
+                      const high = entry[`${accountName}_high`];
+                      const low = entry[`${accountName}_low`];
+                      const change = entry[`${accountName}_change`];
+
+                      return (
+                        <div className="flex flex-col p-2 bg-background border rounded-md shadow-sm text-sm">
+                          <span className="font-semibold">{accountName}</span>
+                          <span>Open: {formatCurrency(Number(open))}</span>
+                          <span>Close: {formatCurrency(Number(close))}</span>
+                          <span>High: {formatCurrency(Number(high))}</span>
+                          <span>Low: {formatCurrency(Number(low))}</span>
+                          <span className="font-medium">Change: {formatCurrency(Number(change))}</span>
+                        </div>
+                      );
+                    }
+                    return `${name}: ${formatCurrency(Number(value))}`;
+                  }}
+                />
+              }
+            />
             {accountsToDisplay.map(account => (
               <Bar
                 key={account}
-                dataKey={account}
+                dataKey={`${account}_change`} // Use the daily change as the bar value
                 stackId="a" // Stack bars to show total daily change
                 radius={4}
-                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)} // Reusing bar click handler
+                onClick={(data, index) => handleBarClick(data, index, `${account}_change`)}
               >
                 {dataToUse.map((entry, index) => {
-                  const value = entry[account] as number;
+                  const value = entry[`${account}_change`] as number;
                   const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
                   return (
                     <Cell
-                      key={`waterfall-cell-${account}-${index}`}
+                      key={`candlestick-cell-${account}-${index}`}
                       fill={
                         activeBar === null
                           ? color
-                          : (activeBar.monthIndex === index && activeBar.dataKey === account
+                          : (activeBar.monthIndex === index && activeBar.dataKey === `${account}_change`
                             ? color
                             : '#ccc')
                       }
@@ -455,7 +460,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               >
                 {chartType === 'line' && 'Line Chart'}
                 {chartType === 'bar-stacked' && 'Stacked Bar Chart'}
-                {chartType === 'waterfall' && 'Waterfall Chart'}
+                {chartType === 'candlestick' && 'Candlestick Chart'}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -466,8 +471,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
               <DropdownMenuItem onClick={() => setChartType('bar-stacked')}>
                 Stacked Bar Chart
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setChartType('waterfall')}>
-                Waterfall Chart
+              <DropdownMenuItem onClick={() => setChartType('candlestick')}>
+                Candlestick Chart
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
