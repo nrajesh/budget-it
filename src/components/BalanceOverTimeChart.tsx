@@ -3,11 +3,19 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
@@ -20,11 +28,14 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+type ChartType = 'line' | 'area-unstacked' | 'area-stacked' | 'bar-stacked';
+
 export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
-  // State to track the active line (account name)
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
+  const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
+  const [chartType, setChartType] = React.useState<ChartType>('line');
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -49,7 +60,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return Array.from(uniqueAccounts);
   }, [transactions]);
 
-  const chartData = React.useMemo(() => {
+  // Data for Line and Area Charts (daily running balances)
+  const dailyChartData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const dailyBalances: { [date: string]: { [account: string]: number } } = {};
@@ -87,14 +99,71 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return formattedData;
   }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
+  // Data for Stacked Bar Chart (monthly ending balances)
+  const monthlyStackedBarChartData = React.useMemo(() => {
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const monthlyData: { [monthKey: string]: { [account: string]: number } } = {};
+    let currentRunningBalances: { [account: string]: number } = {};
+
+    allDefinedAccounts.forEach(account => {
+      currentRunningBalances[account] = 0;
+    });
+
+    sortedTransactions.forEach(transaction => {
+      const transactionDate = new Date(transaction.date);
+      const monthKey = `${transactionDate.getFullYear()}-${(transactionDate.getMonth() + 1).toString().padStart(2, '0')}`;
+
+      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+      if (currentRunningBalances[transaction.account] !== undefined) {
+        currentRunningBalances[transaction.account] += convertedAmount;
+      } else {
+        currentRunningBalances[transaction.account] = convertedAmount;
+      }
+
+      monthlyData[monthKey] = { ...currentRunningBalances };
+    });
+
+    const allMonths: string[] = [];
+    if (sortedTransactions.length > 0) {
+      const firstDate = new Date(sortedTransactions[0].date);
+      const lastDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
+
+      let currentDate = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+      while (currentDate <= lastDate) {
+        allMonths.push(`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+    }
+
+    const finalMonthlyData: { month: string; [key: string]: number | string }[] = [];
+    let lastMonthBalances: { [account: string]: number } = {};
+    allDefinedAccounts.forEach(account => lastMonthBalances[account] = 0);
+
+    allMonths.forEach(monthKey => {
+      if (monthlyData[monthKey]) {
+        lastMonthBalances = { ...monthlyData[monthKey] };
+      }
+      const obj: { month: string; [key: string]: number | string } = { month: monthKey };
+      accountsToDisplay.forEach(account => {
+        obj[account] = lastMonthBalances[account] || 0;
+      });
+      finalMonthlyData.push(obj);
+    });
+
+    return finalMonthlyData;
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
+
+
   const totalBalance = React.useMemo(() => {
-    if (chartData.length === 0) return 0;
-    const lastDayBalances = chartData[chartData.length - 1];
+    const dataToUse = chartType === 'bar-stacked' ? monthlyStackedBarChartData : dailyChartData;
+    if (dataToUse.length === 0) return 0;
+    const lastDayBalances = dataToUse[dataToUse.length - 1];
     return accountsToDisplay.reduce((sum, account) => {
       const balance = lastDayBalances[account];
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
-  }, [chartData, accountsToDisplay]);
+  }, [dailyChartData, monthlyStackedBarChartData, accountsToDisplay, chartType]);
 
   const dynamicChartConfig = React.useMemo(() => {
     const newConfig = { ...chartConfig };
@@ -108,10 +177,154 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
-  // Handler for clicking a line
+  // Handler for clicking a line/area
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
   }, []);
+
+  // Handler for clicking a bar
+  const handleBarClick = React.useCallback((data: any, monthIndex: number, clickedDataKey: string) => {
+    setActiveBar(prevActiveBar => {
+      if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
+        return null;
+      } else {
+        return { monthIndex, dataKey: clickedDataKey };
+      }
+    });
+  }, []);
+
+  const renderChart = () => {
+    const dataToUse = chartType === 'bar-stacked' ? monthlyStackedBarChartData : dailyChartData;
+    const xAxisDataKey = chartType === 'bar-stacked' ? 'month' : 'date';
+
+    if (dataToUse.length === 0) {
+      return <p className="text-center text-muted-foreground py-8">No transaction data available to display.</p>;
+    }
+
+    const commonChartProps = {
+      accessibilityLayer: true,
+      data: dataToUse,
+      margin: { left: 12, right: 12 },
+      className: "aspect-auto h-[250px] w-full",
+    };
+
+    const commonAxisProps = {
+      tickLine: false,
+      axisLine: false,
+      tickMargin: 8,
+      minTickGap: 32,
+    };
+
+    const commonTooltip = (
+      <ChartTooltip
+        cursor={false}
+        content={
+          <ChartTooltipContent
+            indicator="dashed"
+            formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`}
+          />
+        }
+      />
+    );
+
+    let ChartComponent: React.ElementType; // Declare ChartComponent here
+    let ItemComponent: React.ElementType; // Declare ItemComponent here
+
+    switch (chartType) {
+      case 'line':
+      case 'area-unstacked':
+      case 'area-stacked':
+        ChartComponent = chartType === 'line' ? LineChart : AreaChart; // Assign here
+        ItemComponent = chartType === 'line' ? Line : Area;
+        const stackId = chartType === 'area-stacked' ? "a" : undefined;
+
+        return (
+          <ChartComponent {...commonChartProps}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey={xAxisDataKey}
+              {...commonAxisProps}
+              tickFormatter={(value) => value}
+            />
+            <YAxis
+              {...commonAxisProps}
+              tickFormatter={(value) => formatCurrency(Number(value))}
+            />
+            {commonTooltip}
+            {accountsToDisplay.map(account => (
+              <ItemComponent
+                key={account}
+                dataKey={account}
+                type="monotone"
+                stackId={stackId}
+                stroke={
+                  activeLine === null
+                    ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                    : (activeLine === account
+                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                      : '#ccc')
+                }
+                fill={
+                  chartType !== 'line'
+                    ? (activeLine === null
+                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                      : (activeLine === account
+                        ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                        : '#ccc'))
+                    : undefined
+                }
+                strokeWidth={2}
+                dot={false}
+                onClick={() => handleLineClick(account)}
+                style={{ cursor: 'pointer' }}
+              />
+            ))}
+          </ChartComponent>
+        );
+
+      case 'bar-stacked':
+        return (
+          <BarChart {...commonChartProps}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey={xAxisDataKey}
+              {...commonAxisProps}
+              tickFormatter={(value) => value.slice(0, 7)}
+            />
+            <YAxis
+              {...commonAxisProps}
+              tickFormatter={(value) => formatCurrency(Number(value))}
+            />
+            {commonTooltip}
+            {accountsToDisplay.map(account => (
+              <Bar
+                key={account}
+                dataKey={account}
+                stackId="a"
+                radius={4}
+                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
+              >
+                {dataToUse.map((entry, monthIndex) => (
+                  <Cell
+                    key={`bar-cell-${account}-${monthIndex}`}
+                    fill={
+                      activeBar === null
+                        ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                        : (activeBar.monthIndex === monthIndex && activeBar.dataKey === account
+                          ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                          : '#ccc')
+                    }
+                  />
+                ))}
+              </Bar>
+            ))}
+          </BarChart>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <Card>
@@ -122,63 +335,43 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             Total balance: {formatCurrency(totalBalance)}
           </CardDescription>
         </div>
+        <div className="flex items-center gap-1 p-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {chartType === 'line' && 'Line Chart'}
+                {chartType === 'area-unstacked' && 'Area Chart (Unstacked)'}
+                {chartType === 'area-stacked' && 'Area Chart (Stacked)'}
+                {chartType === 'bar-stacked' && 'Stacked Bar Chart'}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuItem onClick={() => setChartType('line')}>
+                Line Chart
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChartType('area-unstacked')}>
+                Area Chart (Unstacked)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChartType('area-stacked')}>
+                Area Chart (Stacked)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChartType('bar-stacked')}>
+                Stacked Bar Chart
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
           config={dynamicChartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => value}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => formatCurrency(Number(value))}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  indicator="dashed"
-                  formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`}
-                />
-              }
-            />
-            {accountsToDisplay.map(account => (
-              <Line
-                key={account}
-                dataKey={account}
-                type="monotone"
-                stroke={
-                  activeLine === null
-                    ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                    : (activeLine === account
-                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                      : '#ccc') // Dimmed color for inactive lines
-                }
-                strokeWidth={2}
-                dot={false}
-                onClick={() => handleLineClick(account)} // Add onClick handler
-                style={{ cursor: 'pointer' }} // Indicate interactivity
-              />
-            ))}
-          </LineChart>
+          {renderChart()}
         </ChartContainer>
       </CardContent>
     </Card>
