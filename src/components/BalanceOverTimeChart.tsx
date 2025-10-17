@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell, Brush } from "recharts"; // Added Brush
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,9 +35,14 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
-  const [chartType, setChartType] = React.useState<ChartType>('line');
-  const [zoomRange, setZoomRange] = React.useState<{ startIndex: number; endIndex: number } | null>(null); // New state for zoom
-  const [brushResetKey, setBrushResetKey] = React.useState(0); // New state to force Brush re-render
+  const chartType = React.useRef<ChartType>('line'); // Corrected useRef declaration
+  const [zoomRange, setZoomRange] = React.useState<{ startIndex: number; endIndex: number } | null>(null);
+
+  const chartContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragStartX, setDragStartX] = React.useState<number | null>(null);
+  const [dragCurrentX, setDragCurrentX] = React.useState<number | null>(null);
+  const [chartWidth, setChartWidth] = React.useState(0);
 
   React.useEffect(() => {
     const fetchAccountNames = async () => {
@@ -62,7 +67,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return Array.from(uniqueAccounts);
   }, [transactions]);
 
-  // Data for Line Chart (daily running balances)
   const dailyRunningBalanceData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -101,7 +105,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return formattedData;
   }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
-  // Data for Stacked Bar Chart (monthly ending balances)
   const monthlyStackedBarChartData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -156,7 +159,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return finalMonthlyData;
   }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
 
-  // Data for Candlestick Chart (daily net changes with OHLC values)
   const dailyCandlestickChartData = React.useMemo(() => {
     const data = dailyRunningBalanceData;
     if (data.length === 0) return [];
@@ -165,7 +167,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     let prevDayBalances: { [account: string]: number } = {};
 
     allDefinedAccounts.forEach(account => {
-        prevDayBalances[account] = 0; // Assume starting from 0 before the first day
+        prevDayBalances[account] = 0;
     });
 
     data.forEach((currentDay, index) => {
@@ -175,10 +177,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             const currentOpen = prevDayBalances[account] || 0;
             const netChange = currentClose - currentOpen;
 
-            dayEntry[`${account}_change`] = netChange; // This will be the bar value
+            dayEntry[`${account}_change`] = netChange;
             dayEntry[`${account}_open`] = currentOpen;
             dayEntry[`${account}_close`] = currentClose;
-            // Simplified high/low: max/min of open and close
             dayEntry[`${account}_high`] = Math.max(currentOpen, currentClose);
             dayEntry[`${account}_low`] = Math.min(currentOpen, currentClose);
         });
@@ -194,9 +195,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
   const totalBalance = React.useMemo(() => {
     let dataToUse;
-    if (chartType === 'bar-stacked') {
+    if (chartType.current === 'bar-stacked') {
       dataToUse = monthlyStackedBarChartData;
-    } else { // line chart or candlestick
+    } else {
       dataToUse = dailyRunningBalanceData;
     }
 
@@ -220,18 +221,94 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
-  // Effect to reset zoom when chart type or data changes
+  const { currentDataToUse, currentXAxisDataKey } = React.useMemo(() => {
+    let data;
+    let key;
+    if (chartType.current === 'bar-stacked') {
+      data = monthlyStackedBarChartData;
+      key = 'month';
+    } else if (chartType.current === 'candlestick') {
+      data = dailyCandlestickChartData;
+      key = 'date';
+    } else {
+      data = dailyRunningBalanceData;
+      key = 'date';
+    }
+    return { currentDataToUse: data, currentXAxisDataKey: key };
+  }, [chartType.current, monthlyStackedBarChartData, dailyCandlestickChartData, dailyRunningBalanceData]);
+
+  const chartPaddingLeft = 12;
+  const chartPaddingRight = 12;
+
+  React.useLayoutEffect(() => {
+    const updateWidth = () => {
+      if (chartContainerRef.current) {
+        setChartWidth(chartContainerRef.current.offsetWidth - chartPaddingLeft - chartPaddingRight);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    if (chartContainerRef.current) {
+      setIsDragging(true);
+      setDragStartX(e.clientX);
+      setDragCurrentX(e.clientX);
+      setZoomRange(null);
+    }
+  }, []);
+
+  const handleMouseMove = React.useCallback((e: React.MouseEvent) => {
+    if (isDragging) {
+      setDragCurrentX(e.clientX);
+    }
+  }, [isDragging]);
+
+  const handleMouseUp = React.useCallback(() => {
+    if (isDragging && dragStartX !== null && dragCurrentX !== null && chartContainerRef.current && chartWidth > 0) {
+      const chartRect = chartContainerRef.current.getBoundingClientRect();
+      const dataLength = currentDataToUse.length;
+
+      const startPixel = Math.min(dragStartX, dragCurrentX) - chartRect.left - chartPaddingLeft;
+      const endPixel = Math.max(dragStartX, dragCurrentX) - chartRect.left - chartPaddingLeft;
+
+      const newStartIndex = Math.floor((startPixel / chartWidth) * dataLength);
+      const newEndIndex = Math.ceil((endPixel / chartWidth) * dataLength) - 1;
+
+      if (newEndIndex > newStartIndex && (endPixel - startPixel) > 10) {
+        setZoomRange({
+          startIndex: Math.max(0, newStartIndex),
+          endIndex: Math.min(dataLength - 1, newEndIndex)
+        });
+      } else {
+        setZoomRange(null);
+      }
+    }
+    setIsDragging(false);
+    setDragStartX(null);
+    setDragCurrentX(null);
+  }, [isDragging, dragStartX, dragCurrentX, currentDataToUse, chartWidth, chartPaddingLeft]);
+
+  React.useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseUp]);
+
   React.useEffect(() => {
     setZoomRange(null);
-    setBrushResetKey(prev => prev + 1); // Also reset brush key here
-  }, [chartType, dailyRunningBalanceData, monthlyStackedBarChartData, dailyCandlestickChartData]);
+    setIsDragging(false);
+    setDragStartX(null);
+    setDragCurrentX(null);
+  }, [chartType.current, dailyRunningBalanceData, monthlyStackedBarChartData, dailyCandlestickChartData]);
 
-  // Handler for clicking a line
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
   }, []);
 
-  // Handler for clicking a bar
   const handleBarClick = React.useCallback((data: any, index: number, clickedDataKey: string) => {
     setActiveBar(prevActiveBar => {
       if (prevActiveBar?.monthIndex === index && prevActiveBar?.dataKey === clickedDataKey) {
@@ -242,30 +319,36 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     });
   }, []);
 
-  const renderChart = () => {
-    let dataToUse;
-    let xAxisDataKey;
-
-    if (chartType === 'bar-stacked') {
-      dataToUse = monthlyStackedBarChartData;
-      xAxisDataKey = 'month';
-    } else if (chartType === 'candlestick') {
-      dataToUse = dailyCandlestickChartData;
-      xAxisDataKey = 'date';
-    } else { // line chart
-      dataToUse = dailyRunningBalanceData;
-      xAxisDataKey = 'date';
+  const selectionRect = React.useMemo(() => {
+    if (!isDragging || dragStartX === null || dragCurrentX === null || !chartContainerRef.current) {
+      return null;
     }
+    const chartRect = chartContainerRef.current.getBoundingClientRect();
+    const left = Math.min(dragStartX, dragCurrentX) - chartRect.left;
+    const right = Math.max(dragStartX, dragCurrentX) - chartRect.left;
+    const width = right - left;
 
-    if (dataToUse.length === 0) {
+    return {
+      left: left,
+      width: width,
+      height: chartRect.height,
+      top: 0,
+    };
+  }, [isDragging, dragStartX, dragCurrentX]);
+
+
+  const renderChart = () => {
+    if (currentDataToUse.length === 0) {
       return <p className="text-center text-muted-foreground py-8">No transaction data available to display.</p>;
     }
 
     const commonChartProps = {
       accessibilityLayer: true,
-      data: dataToUse,
-      margin: { left: 12, right: 12 },
+      data: currentDataToUse,
+      margin: { left: chartPaddingLeft, right: chartPaddingRight },
       className: "aspect-auto h-[250px] w-full",
+      startIndex: zoomRange?.startIndex,
+      endIndex: zoomRange?.endIndex,
     };
 
     const commonAxisProps = {
@@ -278,7 +361,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     let ChartComponent: React.ElementType;
     let ItemComponent: React.ElementType;
 
-    switch (chartType) {
+    switch (chartType.current) {
       case 'line':
         ChartComponent = LineChart;
         ItemComponent = Line;
@@ -287,7 +370,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           <ChartComponent {...commonChartProps}>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey={xAxisDataKey}
+              dataKey={currentXAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
             />
@@ -322,21 +405,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 style={{ cursor: 'pointer' }}
               />
             ))}
-            <Brush
-              key={`line-brush-${brushResetKey}`} // Use the new key
-              dataKey={xAxisDataKey}
-              height={30}
-              stroke="hsl(var(--primary))"
-              fill="hsl(var(--primary) / 0.1)"
-              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
-              onChange={(e) => {
-                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
-                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
-                } else {
-                  setZoomRange(null); // Reset if brush is cleared by user interaction
-                }
-              }}
-            />
           </ChartComponent>
         );
 
@@ -345,7 +413,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           <BarChart {...commonChartProps}>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey={xAxisDataKey}
+              dataKey={currentXAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value.slice(0, 7)}
             />
@@ -370,7 +438,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 radius={4}
                 onClick={(data, index) => handleBarClick(data, index, account)}
               >
-                {dataToUse.map((entry, index) => (
+                {currentDataToUse.map((entry, index) => (
                   <Cell
                     key={`bar-cell-${account}-${index}`}
                     fill={
@@ -384,21 +452,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 ))}
               </Bar>
             ))}
-            <Brush
-              key={`bar-brush-${brushResetKey}`} // Use the new key
-              dataKey={xAxisDataKey}
-              height={30}
-              stroke="hsl(var(--primary))"
-              fill="hsl(var(--primary) / 0.1)"
-              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
-              onChange={(e) => {
-                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
-                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
-                } else {
-                  setZoomRange(null); // Reset if brush is cleared by user interaction
-                }
-              }}
-            />
           </BarChart>
         );
 
@@ -407,7 +460,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
           <BarChart {...commonChartProps}>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey={xAxisDataKey}
+              dataKey={currentXAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
             />
@@ -454,7 +507,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 radius={4}
                 onClick={(data, index) => handleBarClick(data, index, `${account}_change`)}
               >
-                {dataToUse.map((entry, index) => {
+                {currentDataToUse.map((entry, index) => {
                   const value = entry[`${account}_change`] as number;
                   const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))';
                   return (
@@ -472,21 +525,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 })}
               </Bar>
             ))}
-            <Brush
-              key={`candlestick-brush-${brushResetKey}`} // Use the new key
-              dataKey={xAxisDataKey}
-              height={30}
-              stroke="hsl(var(--primary))"
-              fill="hsl(var(--primary) / 0.1)"
-              {...(zoomRange ? { startIndex: zoomRange.startIndex, endIndex: zoomRange.endIndex } : {})} // Conditionally pass startIndex/endIndex
-              onChange={(e) => {
-                if (e && typeof e.startIndex === 'number' && typeof e.endIndex === 'number') {
-                  setZoomRange({ startIndex: e.startIndex, endIndex: e.endIndex });
-                } else {
-                  setZoomRange(null); // Reset if brush is cleared by user interaction
-                }
-              }}
-            />
           </BarChart>
         );
 
@@ -511,20 +549,20 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 variant="outline"
                 className="flex items-center gap-2"
               >
-                {chartType === 'line' && 'Line Chart'}
-                {chartType === 'bar-stacked' && 'Stacked Bar Chart'}
-                {chartType === 'candlestick' && 'Candlestick Chart'}
+                {chartType.current === 'line' && 'Line Chart'}
+                {chartType.current === 'bar-stacked' && 'Stacked Bar Chart'}
+                {chartType.current === 'candlestick' && 'Candlestick Chart'}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuItem onClick={() => setChartType('line')}>
+              <DropdownMenuItem onClick={() => chartType.current = 'line'}>
                 Line Chart
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setChartType('bar-stacked')}>
+              <DropdownMenuItem onClick={() => chartType.current = 'bar-stacked'}>
                 Stacked Bar Chart
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setChartType('candlestick')}>
+              <DropdownMenuItem onClick={() => chartType.current = 'candlestick'}>
                 Candlestick Chart
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -533,7 +571,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             variant="outline"
             onClick={() => {
               setZoomRange(null);
-              setBrushResetKey(prev => prev + 1); // Increment key to force Brush re-render
+              setIsDragging(false);
+              setDragStartX(null);
+              setDragCurrentX(null);
             }}
             disabled={!zoomRange}
             className="flex items-center gap-2"
@@ -544,10 +584,30 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
+          ref={chartContainerRef}
           config={dynamicChartConfig}
-          className="aspect-auto h-[250px] w-full"
+          className="aspect-auto h-[250px] w-full relative"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onTouchStart={(e) => handleMouseDown(e.nativeEvent as any)}
+          onTouchMove={(e) => handleMouseMove(e.nativeEvent as any)}
+          onTouchEnd={handleMouseUp}
         >
-          {renderChart()}
+          <div> {/* Wrapper div to ensure a single child for ChartContainer */}
+            {renderChart()}
+            {selectionRect && (
+              <div
+                className="absolute bg-primary/20 pointer-events-none"
+                style={{
+                  left: selectionRect.left,
+                  width: selectionRect.width,
+                  height: selectionRect.height,
+                  top: selectionRect.top,
+                }}
+              />
+            )}
+          </div>
         </ChartContainer>
       </CardContent>
     </Card>
