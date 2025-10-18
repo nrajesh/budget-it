@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Cell, Sector } from "recharts";
+import { Pie, PieChart, Cell } from "recharts"; // Removed Sector
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
@@ -94,7 +94,8 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     return config;
   }, [currentChartData, selectedCategoryForDrilldown]);
 
-  const handlePieSliceClick = (data: any, index: number) => {
+  const handlePieSliceClick = (data: any, index: number, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent event from bubbling up to ChartContainer
     if (!selectedCategoryForDrilldown) {
       // Currently in category view, drill down
       const clickedCategory = data.category;
@@ -107,11 +108,12 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     }
   };
 
-  const handleCenterClick = () => {
-    console.log("Center clicked, going back to categories."); // Debug log
-    setSelectedCategoryForDrilldown(null);
-    resetCategoryActiveIndex();
-    resetVendorActiveIndex();
+  const handleGoBackToCategories = () => {
+    if (selectedCategoryForDrilldown) {
+      setSelectedCategoryForDrilldown(null);
+      resetCategoryActiveIndex();
+      resetVendorActiveIndex();
+    }
   };
 
   const activeIndexForPie = selectedCategoryForDrilldown ? vendorActiveIndex : categoryActiveIndex;
@@ -132,6 +134,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
         <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"
+          onClick={handleGoBackToCategories} // Click anywhere in container to go back
         >
           <PieChart>
             <ChartTooltip
@@ -147,26 +150,13 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               strokeWidth={5}
               activeIndex={activeIndexForPie}
               activeShape={(props) => activeIndexForPie !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null}
-              onClick={(data, index) => handlePieSliceClick(data, index)}
+              onClick={(data, index, event) => handlePieSliceClick(data, index, event)}
             >
               {currentChartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            {selectedCategoryForDrilldown && (
-              // Semi-transparent sector in the center to act as a back button (visible for debugging)
-              <Sector
-                cx={125}
-                cy={125}
-                innerRadius={0} // Start from the very center
-                outerRadius={80} // Extend to the outer radius of the pie slices
-                startAngle={0}
-                endAngle={360}
-                fill="rgba(128, 128, 128, 0.2)" // Temporarily visible
-                onClick={handleCenterClick}
-                style={{ cursor: 'pointer' }}
-              />
-            )}
+            {/* The central Sector for back button is removed */}
           </PieChart>
         </ChartContainer>
       </CardContent>
