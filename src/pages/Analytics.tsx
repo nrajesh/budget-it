@@ -123,7 +123,7 @@ const Analytics = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-end"> {/* Added items-end for alignment */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end"> {/* Adjusted alignment for mobile */}
         <div className="flex flex-col gap-2">
           <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
           <DatePickerWithRange
