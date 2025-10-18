@@ -1,64 +1,50 @@
-import * as React from "react";
+"use client";
+
+import React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { Transaction } from "@/data/finance-data";
+import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
 
 export const useTransactionSelection = (currentTransactions: Transaction[], allTransactions: Transaction[]) => {
   const { deleteMultipleTransactions } = useTransactions();
   const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
-  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
 
-  // Memoize selectable transactions on the current page (excluding scheduled origins)
-  const selectableTransactionsOnPage = React.useMemo(() => {
-    return currentTransactions.filter(t => !t.is_scheduled_origin);
-  }, [currentTransactions]);
-
-  const handleSelectOne = React.useCallback((id: string) => {
+  const toggleTransactionSelection = (id: string) => {
     setSelectedTransactionIds((prev) =>
       prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
     );
-  }, []);
+  };
 
-  const handleSelectAll = React.useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedTransactionIds(selectableTransactionsOnPage.map((t) => t.id));
-    } else {
+  const toggleAllTransactionsSelection = () => {
+    if (selectedTransactionIds.length === currentTransactions.length) {
       setSelectedTransactionIds([]);
+    } else {
+      setSelectedTransactionIds(currentTransactions.map((t) => t.id));
     }
-  }, [selectableTransactionsOnPage]);
+  };
 
-  const isAllSelectedOnPage = React.useMemo(() => {
-    if (selectableTransactionsOnPage.length === 0) {
-      return false;
+  const clearSelection = () => {
+    setSelectedTransactionIds([]);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedTransactionIds.length > 0) {
+      await deleteMultipleTransactions(selectedTransactionIds);
+      clearSelection();
     }
-    return selectableTransactionsOnPage.every((t) => selectedTransactionIds.includes(t.id));
-  }, [selectableTransactionsOnPage, selectedTransactionIds]);
+  };
 
-  const handleBulkDelete = React.useCallback(() => {
-    const transactionsToDelete = selectedTransactionIds.map(id => {
-      const transaction = allTransactions.find(t => t.id === id);
-      return { id, transfer_id: transaction?.transfer_id };
-    });
-    deleteMultipleTransactions(transactionsToDelete);
-    setSelectedTransactionIds([]);
-    setIsBulkDeleteConfirmOpen(false);
-  }, [selectedTransactionIds, allTransactions, deleteMultipleTransactions]);
-
-  const numSelected = selectedTransactionIds.length;
-
-  const clearSelection = React.useCallback(() => {
-    setSelectedTransactionIds([]);
-  }, []);
+  const isAllSelected =
+    currentTransactions.length > 0 &&
+    selectedTransactionIds.length === currentTransactions.length;
+  const isAnySelected = selectedTransactionIds.length > 0;
 
   return {
     selectedTransactionIds,
-    setSelectedTransactionIds,
-    isBulkDeleteConfirmOpen,
-    setIsBulkDeleteConfirmOpen,
-    handleSelectOne,
-    handleSelectAll,
-    isAllSelectedOnPage,
-    handleBulkDelete,
-    numSelected,
+    toggleTransactionSelection,
+    toggleAllTransactionsSelection,
     clearSelection,
+    handleDeleteSelected,
+    isAllSelected,
+    isAnySelected,
   };
 };

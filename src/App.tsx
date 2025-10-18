@@ -7,7 +7,8 @@ import Layout from "./layouts/Layout";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Transactions from "./pages/Transactions";
-import Analytics from "./pages/Analytics"; // Import the new Analytics page
+import Analytics from "./pages/Analytics";
+import { TransactionsProvider } from "./contexts/TransactionsContext"; // Import the TransactionsProvider
 
 const queryClient = new QueryClient();
 
@@ -20,8 +21,15 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Index />} />
             <Route path="about" element={<About />} />
-            <Route path="transactions" element={<Transactions />} />
-            <Route path="analytics" element={<Analytics />} /> {/* Add the new Analytics route */}
+            <Route
+              path="transactions"
+              element={
+                <TransactionsProvider>
+                  <Transactions />
+                </TransactionsProvider>
+              }
+            />
+            <Route path="analytics" element={<Analytics />} />
           </Route>
         </Routes>
       </BrowserRouter>

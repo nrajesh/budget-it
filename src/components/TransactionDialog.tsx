@@ -19,16 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
+import { useTransactions, Transaction, Payee, Category } from "@/contexts/TransactionsContext"; // Import types
 
 interface TransactionDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  transaction?: any; // Optional, for editing existing transactions
+  transaction?: Transaction | null; // Optional, for editing existing transactions
   onClose: () => void;
 }
 
@@ -38,19 +37,29 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
   transaction,
   onClose,
 }) => {
-  const queryClient = useQueryClient();
+  const {
+    saveTransaction, // Changed from addOrUpdateTransaction to saveTransaction
+    accounts,
+    isLoadingAccounts,
+    categories,
+    isLoadingCategories,
+    vendors,
+    isLoadingVendors,
+  } = useTransactions();
+
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [account, setAccount] = useState("");
   const [vendor, setVendor] = useState("");
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (transaction) {
       setDate(new Date(transaction.date));
       setAccount(transaction.account);
-      setVendor(transaction.vendor);
+      setVendor(transaction.vendor || "");
       setCategory(transaction.category);
       setAmount(transaction.amount.toString());
       setRemarks(transaction.remarks || "");
@@ -65,93 +74,34 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
     }
   }, [transaction, isOpen]);
 
-  const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("name")
-        .eq("is_account", true);
-      if (error) throw error;
-      return data.map((acc) => acc.name);
-    },
-  });
-
-  const { data: categories, isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("name");
-      if (error) throw error;
-      return data.map((cat) => cat.name);
-    },
-  });
-
-  const { data: vendors, isLoading: isLoadingVendors } = useQuery({
-    queryKey: ["vendors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("name")
-        .eq("is_account", false);
-      if (error) throw error;
-      return data.map((ven) => ven.name);
-    },
-  });
-
-  const addOrUpdateTransaction = useMutation({
-    mutationFn: async (newTransaction: any) => {
-      if (transaction) {
-        const { data, error } = await supabase
-          .from("transactions")
-          .update(newTransaction)
-          .eq("id", transaction.id)
-          .select();
-        if (error) throw error;
-        return data;
-      } else {
-        const { data, error } = await supabase
-          .from("transactions")
-          .insert(newTransaction)
-          .select();
-        if (error) throw error;
-        return data;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
-      toast.success(
-        `Transaction ${transaction ? "updated" : "added"} successfully.`
-      );
-      setIsOpen(false);
-      onClose();
-    },
-    onError: (error) => {
-      toast.error(`Failed to ${transaction ? "update" : "add"} transaction.`);
-      console.error("Transaction mutation error:", error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !account || !category || !amount) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    const transactionData = {
-      date: format(date, "yyyy-MM-dd"),
-      account,
-      vendor: vendor || null, // Vendor can be optional
-      category,
-      amount: parseFloat(amount),
-      remarks: remarks || null,
-      currency: "USD", // Default currency, can be made dynamic if needed
-    };
+    setIsSaving(true);
+    try {
+      const transactionData: Partial<Transaction> = {
+        id: transaction?.id, // Include ID for updates
+        date: format(date, "yyyy-MM-dd"),
+        account,
+        vendor: vendor || null, // Vendor can be optional
+        category,
+        amount: parseFloat(amount),
+        remarks: remarks || null,
+        currency: "USD", // Default currency, can be made dynamic if needed
+      };
 
-    addOrUpdateTransaction.mutate(transactionData);
+      await saveTransaction(transactionData); // Use saveTransaction
+      setIsOpen(false);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save transaction:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -186,8 +136,8 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
                   </SelectItem>
                 ) : (
                   accounts?.map((acc) => (
-                    <SelectItem key={acc} value={acc}>
-                      {acc}
+                    <SelectItem key={acc.id} value={acc.name}>
+                      {acc.name}
                     </SelectItem>
                   ))
                 )}
@@ -209,8 +159,8 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
                   </SelectItem>
                 ) : (
                   vendors?.map((ven) => (
-                    <SelectItem key={ven} value={ven}>
-                      {ven}
+                    <SelectItem key={ven.id} value={ven.name}>
+                      {ven.name}
                     </SelectItem>
                   ))
                 )}
@@ -232,8 +182,8 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
                   </SelectItem>
                 ) : (
                   categories?.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
                     </SelectItem>
                   ))
                 )}
@@ -266,7 +216,7 @@ const TransactionDialog: React.FC<TransactionDialogProps> = ({
             />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={addOrUpdateTransaction.isPending}>
+            <Button type="submit" disabled={isSaving}>
               {transaction ? "Save Changes" : "Add Transaction"}
             </Button>
           </DialogFooter>

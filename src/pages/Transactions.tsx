@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -29,90 +27,37 @@ import TransactionDialog from "@/components/TransactionDialog";
 import { ImportTransactionsDialog } from "@/components/ImportTransactionsDialog";
 import { ExportTransactionsDialog } from "@/components/ExportTransactionsDialog";
 import { TransactionTable } from "@/components/TransactionTable";
+import { useTransactions } from "@/contexts/TransactionsContext"; // Import the custom hook
 
 const Transactions = () => {
+  const {
+    transactions,
+    isLoadingTransactions,
+    deleteTransaction,
+    searchTerm,
+    setSearchTerm,
+    dateRange,
+    setDateRange,
+    selectedAccount,
+    setSelectedAccount,
+    selectedCategory,
+    setSelectedCategory,
+    selectedVendor,
+    setSelectedVendor,
+    handleRefresh,
+    handleResetFilters,
+    accounts,
+    isLoadingAccounts,
+    categories,
+    isLoadingCategories,
+    vendors,
+    isLoadingVendors,
+  } = useTransactions(); // Use the custom hook
+
   const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
-    undefined
-  );
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined
-  );
-  const [selectedVendor, setSelectedVendor] = useState<string | undefined>(
-    undefined
-  );
-
-  const queryClient = useQueryClient();
-
-  const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["transactions", dateRange, selectedAccount, selectedCategory, selectedVendor, searchTerm],
-    queryFn: async () => {
-      let query = supabase.from("transactions").select("*");
-
-      if (dateRange?.from) {
-        query = query.gte("date", format(dateRange.from, "yyyy-MM-dd"));
-      }
-      if (dateRange?.to) {
-        query = query.lte("date", format(dateRange.to, "yyyy-MM-dd"));
-      }
-      if (selectedAccount) {
-        query = query.eq("account", selectedAccount);
-      }
-      if (selectedCategory) {
-        query = query.eq("category", selectedCategory);
-      }
-      if (selectedVendor) {
-        query = query.eq("vendor", selectedVendor);
-      }
-      if (searchTerm) {
-        query = query.or(
-          `vendor.ilike.%${searchTerm}%,remarks.ilike.%${searchTerm}%`
-        );
-      }
-
-      const { data, error } = await query.order("date", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
-    queryKey: ["accounts"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("name")
-        .eq("is_account", true);
-      if (error) throw error;
-      return data.map((account) => account.name);
-    },
-  });
-
-  const { data: categories, isLoading: isLoadingCategories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("name");
-      if (error) throw error;
-      return data.map((category) => category.name);
-    },
-  });
-
-  const { data: vendors, isLoading: isLoadingVendors } = useQuery({
-    queryKey: ["vendors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("name")
-        .eq("is_account", false);
-      if (error) throw error;
-      return data.map((vendor) => vendor.name);
-    },
-  });
 
   const handleEdit = (transaction) => {
     setSelectedTransaction(transaction);
@@ -120,31 +65,7 @@ const Transactions = () => {
   };
 
   const handleDelete = async (id) => {
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to delete transaction.");
-    } else {
-      toast.success("Transaction deleted successfully.");
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    }
-  };
-
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    queryClient.invalidateQueries({ queryKey: ["accounts"] });
-    queryClient.invalidateQueries({ queryKey: ["categories"] });
-    queryClient.invalidateQueries({ queryKey: ["vendors"] });
-    toast.info("Data refreshed.");
-  };
-
-  const handleResetFilters = () => {
-    setSearchTerm("");
-    setDateRange(undefined);
-    setSelectedAccount(undefined);
-    setSelectedCategory(undefined);
-    setSelectedVendor(undefined);
-    queryClient.invalidateQueries({ queryKey: ["transactions"] });
-    toast.info("Filters reset.");
+    await deleteTransaction(id);
   };
 
   const filteredTransactions = useMemo(() => {
@@ -222,8 +143,8 @@ const Transactions = () => {
                   </SelectItem>
                 ) : (
                   accounts?.map((account) => (
-                    <SelectItem key={account} value={account}>
-                      {account}
+                    <SelectItem key={account.id} value={account.name}>
+                      {account.name}
                     </SelectItem>
                   ))
                 )}
@@ -248,8 +169,8 @@ const Transactions = () => {
                   </SelectItem>
                 ) : (
                   categories?.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
                     </SelectItem>
                   ))
                 )}
@@ -274,8 +195,8 @@ const Transactions = () => {
                   </SelectItem>
                 ) : (
                   vendors?.map((vendor) => (
-                    <SelectItem key={vendor} value={vendor}>
-                      {vendor}
+                    <SelectItem key={vendor.id} value={vendor.name}>
+                      {vendor.name}
                     </SelectItem>
                   ))
                 )}

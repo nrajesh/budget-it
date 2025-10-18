@@ -1,11 +1,20 @@
-import * as React from "react";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
-import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
-import { showError, showSuccess } from "@/utils/toast";
-import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
+"use client";
+
+import React from "react";
 import Papa from "papaparse";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useMutation } from "@tanstack/react-query";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useUser } from "@/hooks/useUser";
+import { Transaction, Payee } from "@/contexts/TransactionsContext"; // Import Transaction and Payee types
+import { format } from "date-fns";
+
+const formatDateToDDMMYYYY = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return format(date, "dd/MM/yyyy");
+};
 
 export const useTransactionCSV = () => {
   const {
@@ -17,139 +26,102 @@ export const useTransactionCSV = () => {
   } = useTransactions();
   const { user } = useUser();
 
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const importTransactionsMutation = useMutation({
+    mutationFn: async (file: File) => {
+      return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            if (!user) {
+              toast.error("User not authenticated.");
+              return reject("User not authenticated.");
+            }
 
-  const handleImportClick = React.useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+            const vendorsToUpsert: string[] = [];
+            const accountsToUpsert: { name: string; currency: string; starting_balance: number; remarks?: string }[] = [];
 
-  const handleFileChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!user) {
-      showError("You must be logged in to import transactions.");
-      setIsImporting(false);
+            const transactionsToInsert = results.data.map((row: any) => {
+              const isAccount = row.IsAccount?.toLowerCase() === "true";
+              const payeeName = row.Account || row.Vendor; // Use Account for accounts, Vendor for others
+
+              if (payeeName && !isAccount && !vendorsToUpsert.includes(payeeName)) {
+                vendorsToUpsert.push(payeeName);
+              } else if (payeeName && isAccount && !accountsToUpsert.some(acc => acc.name === payeeName)) {
+                accountsToUpsert.push({
+                  name: payeeName,
+                  currency: row.Currency || "USD",
+                  starting_balance: parseFloat(row["Starting Balance"] || 0),
+                  remarks: row.Remarks,
+                });
+              }
+
+              return {
+                date: row.Date,
+                account: row.Account,
+                vendor: row.Vendor,
+                category: row.Category,
+                amount: parseFloat(row.Amount),
+                remarks: row.Remarks,
+                currency: row.Currency || "USD",
+                user_id: user.id,
+                transfer_id: row.transfer_id || null,
+                is_scheduled_origin: row.is_scheduled_origin?.toLowerCase() === "true",
+                recurrence_frequency: row.Frequency === "None" ? null : row.Frequency,
+                recurrence_end_date: row["End Date"] || null,
+              };
+            });
+
+            // Upsert vendors
+            if (vendorsToUpsert.length > 0) {
+              const { error: vendorUpsertError } = await supabase.rpc("batch_upsert_vendors", { p_names: vendorsToUpsert });
+              if (vendorUpsertError) {
+                console.error("Vendor upsert error:", vendorUpsertError);
+                toast.error("Failed to import some vendors.");
+              }
+            }
+
+            // Upsert accounts
+            if (accountsToUpsert.length > 0) {
+              const { error: accountUpsertError } = await supabase.rpc("batch_upsert_accounts", { p_accounts: accountsToUpsert });
+              if (accountUpsertError) {
+                console.error("Account upsert error:", accountUpsertError);
+                toast.error("Failed to import some accounts.");
+              }
+            }
+
+            const { data, error } = await supabase
+              .from("transactions")
+              .insert(transactionsToInsert)
+              .select();
+            if (error) return reject(error);
+            resolve(data);
+          },
+          error: (error: any) => {
+            reject(error);
+          },
+        });
+      });
+    },
+    onSuccess: () => {
+      refetchTransactions();
+      refetchVendors();
+      refetchAccounts();
+      toast.success("Transactions imported successfully.");
+    },
+    onError: (error) => {
+      toast.error("Failed to import transactions.");
+      console.error("Import error:", error);
+    },
+  });
+
+  const exportTransactionsToCsv = () => {
+    if (!transactions || transactions.length === 0) {
+      toast.info("No transactions to export.");
       return;
     }
 
-    setIsImporting(true);
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      delimiter: ';',
-      complete: async (results) => {
-        const requiredHeaders = ["Date", "Account", "Vendor", "Category", "Amount", "Remarks", "Currency", "Frequency", "End Date"];
-        const actualHeaders = results.meta.fields || [];
-        const hasAllHeaders = requiredHeaders.every(h => actualHeaders.includes(h));
-
-        if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}. Please ensure all columns are present.`);
-          setIsImporting(false);
-          return;
-        }
-
-        const parsedData = results.data as any[];
-        if (parsedData.length === 0) {
-          showError("No data found in CSV.");
-          setIsImporting(false);
-          return;
-        }
-
-        try {
-          // Step 1: Ensure all payees exist
-          const uniqueAccountsData = parsedData.map(row => ({
-            name: row.Account,
-            currency: row.Currency,
-          })).filter(item => item.name);
-
-          await Promise.all(uniqueAccountsData.map(async (acc) => {
-            await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
-          }));
-
-          const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
-          await Promise.all(uniqueVendors.map(name => {
-            const row = parsedData.find(r => r.Vendor === name);
-            const isTransfer = row?.Category === 'Transfer';
-            return ensurePayeeExists(name, isTransfer);
-          }));
-
-          // Step 2: Ensure all categories exist
-          const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
-          await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
-
-          await Promise.all([refetchVendors(), refetchAccounts()]); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
-
-          // Step 3: Prepare transactions for insertion using the now-updated accountCurrencyMap
-          const transactionsToInsert = parsedData.map(row => {
-            const accountCurrency = accountCurrencyMap.get(row.Account) || row.Currency || 'USD';
-            if (!accountCurrency) {
-              console.warn(`Could not determine currency for account: ${row.Account}. Skipping row.`);
-              return null;
-            }
-
-            // Parse frequency and end date
-            let recurrenceId: string | null = null;
-            let recurrenceFrequency: string | null = null;
-            let recurrenceEndDate: string | null = null;
-
-            if (row.Frequency && row.Frequency !== 'None') {
-              recurrenceId = `recurrence_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-              recurrenceFrequency = row.Frequency;
-              recurrenceEndDate = row["End Date"] ? parseDateFromDDMMYYYY(row["End Date"]).toISOString() : null;
-            }
-
-            return {
-              date: parseDateFromDDMMYYYY(row.Date).toISOString(),
-              account: row.Account,
-              vendor: row.Vendor,
-              category: row.Category,
-              amount: parseFloat(row.Amount) || 0,
-              remarks: row.Remarks,
-              currency: accountCurrency,
-              transfer_id: row.transfer_id || null,
-              is_scheduled_origin: false,
-              recurrence_id: recurrenceId,
-              recurrence_frequency: recurrenceFrequency,
-              recurrence_end_date: recurrenceEndDate,
-            };
-          }).filter((t): t is NonNullable<typeof t> => t !== null);
-
-          if (transactionsToInsert.length === 0) {
-            showError("No valid transactions could be prepared from the CSV. Check account names, amounts, and currency column.");
-            setIsImporting(false);
-            return;
-          }
-
-          // Step 4: Insert transactions
-          const { error } = await supabase.from('transactions').insert(transactionsToInsert);
-          if (error) throw error;
-
-          showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
-          refetchTransactions();
-        } catch (error: any) {
-          showError(`Import failed: ${error.message}`);
-        } finally {
-          setIsImporting(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
-      },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
-      },
-    });
-  }, [user, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap]);
-
-  const handleExportClick = React.useCallback(() => {
-    if (transactions.length === 0) {
-      showError("No transactions to export.");
-      return;
-    }
-
-    const dataToExport = transactions.map(t => ({
+    const dataToExport = transactions.map((t) => ({
       "Date": formatDateToDDMMYYYY(t.date),
       "Account": t.account,
       "Vendor": t.vendor,
@@ -163,24 +135,20 @@ export const useTransactionCSV = () => {
       "End Date": t.recurrence_end_date ? formatDateToDDMMYYYY(t.recurrence_end_date) : "",
     }));
 
-    const csv = Papa.unparse(dataToExport, {
-      delimiter: ';',
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "transactions_export.csv");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", "transactions.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [transactions]);
+    toast.success("Transactions exported successfully.");
+  };
 
   return {
-    isImporting,
-    fileInputRef,
-    handleImportClick,
-    handleFileChange,
-    handleExportClick,
+    importTransactions: importTransactionsMutation.mutateAsync,
+    exportTransactionsToCsv,
+    isImporting: importTransactionsMutation.isPending,
   };
 };

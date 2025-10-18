@@ -18,7 +18,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Import FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,58 +30,47 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
-import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
-import { useCurrency } from "@/hooks/useCurrency"; // Import useCurrency
+import { ScheduledTransaction, Payee, Category } from "@/contexts/TransactionsContext"; // Import types
 import { format } from "date-fns";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
   account: z.string({ required_error: "Account is required." }),
-  vendor: z.string().optional(),
+  vendor: z.string({ required_error: "Vendor is required." }),
   category: z.string({ required_error: "Category is required." }),
   amount: z.preprocess(
     (val) => Number(val),
     z.number().positive({ message: "Amount must be positive." })
   ),
+  frequency: z.string({ required_error: "Frequency is required." }),
+  recurrence_end_date: z.date().optional().nullable(),
   remarks: z.string().optional(),
 });
 
-interface EditTransactionDialogProps {
+interface AddEditScheduledTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  transaction: Transaction | null;
+  scheduledTransaction?: ScheduledTransaction;
+  onSave: (data: Partial<ScheduledTransaction>) => Promise<void>;
+  isSubmitting: boolean;
+  accounts: Payee[];
+  allPayees: { value: string; label: string; isAccount: boolean }[];
+  categories: Category[];
+  isLoading: boolean;
 }
 
-export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
+export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
-  transaction,
+  scheduledTransaction,
+  onSave,
+  isSubmitting,
+  accounts,
+  allPayees,
+  categories,
+  isLoading,
 }) => {
-  const {
-    updateTransaction,
-    deleteTransaction,
-    accountCurrencyMap,
-    categories: allCategories,
-    accounts,
-    vendors,
-    isLoadingAccounts,
-    isLoadingVendors,
-    isLoadingCategories,
-  } = useTransactions();
-  const { currencySymbols, convertBetweenCurrencies } = useCurrency();
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -91,19 +79,23 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       vendor: "",
       category: "",
       amount: 0,
+      frequency: "monthly",
+      recurrence_end_date: null,
       remarks: "",
     },
   });
 
   useEffect(() => {
-    if (transaction) {
+    if (scheduledTransaction) {
       form.reset({
-        date: new Date(transaction.date),
-        account: transaction.account,
-        vendor: transaction.vendor || "",
-        category: transaction.category,
-        amount: transaction.amount,
-        remarks: transaction.remarks || "",
+        date: new Date(scheduledTransaction.date),
+        account: scheduledTransaction.account,
+        vendor: scheduledTransaction.vendor,
+        category: scheduledTransaction.category,
+        amount: scheduledTransaction.amount,
+        frequency: scheduledTransaction.frequency,
+        recurrence_end_date: scheduledTransaction.recurrence_end_date ? new Date(scheduledTransaction.recurrence_end_date) : null,
+        remarks: scheduledTransaction.remarks || "",
       });
     } else {
       form.reset({
@@ -112,53 +104,41 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         vendor: "",
         category: "",
         amount: 0,
+        frequency: "monthly",
+        recurrence_end_date: null,
         remarks: "",
       });
     }
-  }, [transaction, isOpen, form]);
-
-  const allAccounts = React.useMemo(() => accounts?.map((p) => p.name) || [], [accounts]);
-  const allVendors = React.useMemo(() => vendors?.map((p) => p.name) || [], [vendors]);
+  }, [scheduledTransaction, isOpen, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!transaction) return;
     try {
       const transactionData = {
-        id: transaction.id,
+        id: scheduledTransaction?.id,
         date: format(values.date, "yyyy-MM-dd"),
         account: values.account,
-        vendor: values.vendor || null,
+        vendor: values.vendor,
         category: values.category,
         amount: values.amount,
+        frequency: values.frequency,
+        recurrence_end_date: values.recurrence_end_date ? format(values.recurrence_end_date, "yyyy-MM-dd") : null,
         remarks: values.remarks || null,
-        currency: accountCurrencyMap[values.account] || "USD",
       };
-      await updateTransaction(transactionData);
+      await onSave(transactionData);
       onOpenChange(false);
     } catch (error) {
-      toast.error("Failed to update transaction.");
-      console.error("Update transaction error:", error);
+      toast.error("Failed to save scheduled transaction.");
+      console.error("Scheduled transaction save error:", error);
     }
   };
 
-  const handleDelete = async () => {
-    if (!transaction) return;
-    try {
-      await deleteTransaction(transaction.id);
-      onOpenChange(false);
-    } catch (error) {
-      toast.error("Failed to delete transaction.");
-      console.error("Delete transaction error:", error);
-    }
-  };
-
-  const categoryOptions = allCategories?.filter((c) => c.name !== "Transfer").map((cat) => ({ value: cat.name, label: cat.name })) || [];
+  const title = scheduledTransaction ? "Edit Scheduled Transaction" : "Add New Scheduled Transaction";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Transaction</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
@@ -167,7 +147,7 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               name="date"
               render={({ field }) => (
                 <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Date</FormLabel>
+                  <FormLabel className="text-right">Start Date</FormLabel>
                   <FormControl className="col-span-3">
                     <DatePicker date={field.value} setDate={field.onChange} />
                   </FormControl>
@@ -188,14 +168,14 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {isLoadingAccounts ? (
+                      {isLoading ? (
                         <SelectItem value="loading" disabled>
                           Loading...
                         </SelectItem>
                       ) : (
-                        allAccounts.map((acc) => (
-                          <SelectItem key={acc} value={acc}>
-                            {acc}
+                        accounts.map((acc) => (
+                          <SelectItem key={acc.id} value={acc.name}>
+                            {acc.name}
                           </SelectItem>
                         ))
                       )}
@@ -210,22 +190,22 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
               name="vendor"
               render={({ field }) => (
                 <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Vendor</FormLabel>
+                  <FormLabel className="text-right">Payee/Vendor</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl className="col-span-3">
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a vendor (optional)" />
+                        <SelectValue placeholder="Select a payee/vendor" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {isLoadingVendors ? (
+                      {isLoading ? (
                         <SelectItem value="loading" disabled>
                           Loading...
                         </SelectItem>
                       ) : (
-                        allVendors.map((ven) => (
-                          <SelectItem key={ven} value={ven}>
-                            {ven}
+                        allPayees.map((payee) => (
+                          <SelectItem key={payee.value} value={payee.value}>
+                            {payee.label}
                           </SelectItem>
                         ))
                       )}
@@ -248,14 +228,14 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {isLoadingCategories ? (
+                      {isLoading ? (
                         <SelectItem value="loading" disabled>
                           Loading...
                         </SelectItem>
                       ) : (
-                        categoryOptions.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
+                        categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
                           </SelectItem>
                         ))
                       )}
@@ -280,6 +260,44 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
             />
             <FormField
               control={form.control}
+              name="frequency"
+              render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                  <FormLabel className="text-right">Frequency</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl className="col-span-3">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="col-span-4 col-start-2" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="recurrence_end_date"
+              render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                  <FormLabel className="text-right">End Date (Optional)</FormLabel>
+                  <FormControl className="col-span-3">
+                    <DatePicker date={field.value || undefined} setDate={field.onChange} />
+                  </FormControl>
+                  <FormMessage className="col-span-4 col-start-2" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="remarks"
               render={({ field }) => (
                 <FormItem className="grid grid-cols-4 items-center gap-4">
@@ -291,31 +309,9 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                 </FormItem>
               )}
             />
-            <DialogFooter className="flex justify-between">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button type="button" variant="destructive">
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete
-                      this transaction and remove its data from our servers.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                Save Changes
+            <DialogFooter>
+              <Button type="submit" disabled={isSubmitting}>
+                {scheduledTransaction ? "Save Changes" : "Add Scheduled Transaction"}
               </Button>
             </DialogFooter>
           </form>

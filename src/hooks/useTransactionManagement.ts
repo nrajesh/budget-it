@@ -1,135 +1,76 @@
-import * as React from "react";
-import { useCurrency } from "@/contexts/CurrencyContext";
+"use client";
+
+import React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { useTransactionData } from "@/hooks/transactions/useTransactionData";
-import { useTransactionPagination } from "@/hooks/transactions/useTransactionPagination";
-import { useTransactionSelection } from "@/hooks/transactions/useTransactionSelection";
-import { useTransactionCSV } from "@/hooks/transactions/useTransactionCSV";
-import { useTransactionUI } from "@/hooks/transactions/useTransactionUI";
+import { useCurrency } from "./useCurrency";
+import { useTransactionPagination } from "./transactions/useTransactionPagination";
+import { useTransactionSelection } from "./transactions/useTransactionSelection";
+import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
 
 export const useTransactionManagement = () => {
   const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions(); // Get refetchTransactions
   const { formatCurrency } = useCurrency();
 
-  // 1. Filters
-  const {
-    searchTerm,
-    setSearchTerm,
-    selectedAccounts,
-    setSelectedAccounts,
-    selectedCategories,
-    setSelectedCategories,
-    selectedVendors,
-    setSelectedVendors,
-    dateRange,
-    setDateRange,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
-    handleResetFilters: resetFilterStates, // Rename to avoid conflict
-  } = useTransactionFilters();
+  const [isAddTransactionDialogOpen, setIsAddTransactionDialogOpen] = React.useState(false);
+  const [isEditTransactionDialogOpen, setIsEditTransactionDialogOpen] = React.useState(false);
+  const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
 
-  // 2. Data (combines and filters transactions)
-  const { filteredTransactions } = useTransactionData({
-    searchTerm,
-    selectedAccounts,
-    selectedCategories,
-    selectedVendors,
-    dateRange,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
-  });
+  const handleAddTransaction = () => {
+    setSelectedTransaction(null);
+    setIsAddTransactionDialogOpen(true);
+  };
 
-  // 3. Pagination
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditTransactionDialogOpen(true);
+  };
+
   const {
     currentPage,
     setCurrentPage,
     itemsPerPage,
     setItemsPerPage,
+    paginatedTransactions,
     totalPages,
-    startIndex,
-    endIndex,
-    currentTransactions,
-  } = useTransactionPagination(filteredTransactions);
+    totalItems,
+  } = useTransactionPagination(allTransactions || []);
 
-  // 4. Selection
   const {
     selectedTransactionIds,
-    isBulkDeleteConfirmOpen,
-    setIsBulkDeleteConfirmOpen,
-    handleSelectOne,
-    handleSelectAll,
-    isAllSelectedOnPage,
-    handleBulkDelete,
-    numSelected,
+    toggleTransactionSelection,
+    toggleAllTransactionsSelection,
     clearSelection,
-  } = useTransactionSelection(currentTransactions, allTransactions);
-
-  // 5. CSV Operations
-  const {
-    isImporting,
-    fileInputRef,
-    handleImportClick,
-    handleFileChange,
-    handleExportClick,
-  } = useTransactionCSV();
-
-  // 6. UI States & Actions
-  const { isRefreshing, handleRefresh } = useTransactionUI();
-
-  // Combined reset handler
-  const handleResetFilters = React.useCallback(() => {
-    resetFilterStates(); // Call the filter-specific reset
-    clearSelection();    // Clear transaction selections
-  }, [resetFilterStates, clearSelection]);
+    handleDeleteSelected,
+    isAllSelected,
+    isAnySelected,
+  } = useTransactionSelection(paginatedTransactions, allTransactions || []);
 
   return {
-    // States
-    currentPage,
-    itemsPerPage,
-    searchTerm,
-    selectedAccounts,
-    selectedCategories,
-    selectedVendors,
-    dateRange,
-    isRefreshing,
-    isImporting,
-    selectedTransactionIds,
-    isBulkDeleteConfirmOpen,
-    fileInputRef,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
-    filteredTransactions,
-    totalPages,
-    startIndex,
-    endIndex,
-    currentTransactions,
-    numSelected,
-    accountCurrencyMap,
+    allTransactions,
+    refetchTransactions,
     formatCurrency,
-    isAllSelectedOnPage,
-
-    // Setters
+    accountCurrencyMap,
+    isAddTransactionDialogOpen,
+    setIsAddTransactionDialogOpen,
+    isEditTransactionDialogOpen,
+    setIsEditTransactionDialogOpen,
+    selectedTransaction,
+    setSelectedTransaction,
+    handleAddTransaction,
+    handleEditTransaction,
+    currentPage,
     setCurrentPage,
+    itemsPerPage,
     setItemsPerPage,
-    setSearchTerm,
-    setSelectedAccounts,
-    setSelectedCategories,
-    setSelectedVendors,
-    setDateRange,
-    setIsBulkDeleteConfirmOpen,
-
-    // Handlers
-    handleResetFilters,
-    handleSelectOne,
-    handleSelectAll,
-    handleBulkDelete,
-    handleRefresh,
-    handleImportClick,
-    handleFileChange,
-    handleExportClick,
+    paginatedTransactions,
+    totalPages,
+    totalItems,
+    selectedTransactionIds,
+    toggleTransactionSelection,
+    toggleAllTransactionsSelection,
+    clearSelection,
+    handleDeleteSelected,
+    isAllSelected,
+    isAnySelected,
   };
 };

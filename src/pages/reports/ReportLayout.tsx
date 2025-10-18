@@ -1,159 +1,211 @@
-import * as React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { TransactionFilters } from '@/components/transactions/TransactionFilters';
-import ExportButtons from '@/components/reports/ExportButtons';
-import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
-import { useTransactionData } from '@/hooks/transactions/useTransactionData';
-import { useTransactions } from '@/contexts/TransactionsContext';
-import { showSuccess, showError } from '@/utils/toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { useQuery } from '@tanstack/react-query';
-import { useUser } from '@/contexts/UserContext';
-import { Budget } from '@/data/finance-data';
-import { supabase } from '@/integrations/supabase/client';
+"use client";
 
-interface ReportLayoutProps {
-  title: string;
-  description: React.ReactNode;
-  children: (props: {
-    historicalFilteredTransactions: any[];
-    combinedFilteredTransactions: any[];
-    futureFilteredTransactions: any[];
-    accounts: any[];
-    budgets: Budget[];
-  }) => React.ReactNode;
+import React, { useState, useMemo } from "react";
+import { Outlet } from "react-router-dom";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { RefreshCcw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
+
+interface ReportLayoutContextType {
+  filteredTransactions: Transaction[];
+  isLoadingTransactions: boolean;
+  selectedCurrency: string;
+  formatCurrency: (amount: number, currency: string) => string;
+  convertBetweenCurrencies: (amount: number, from: string, to: string, rates: Record<string, string>) => number;
+  accountCurrencyMap: Record<string, string>;
 }
 
-const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
-  const { accounts } = useTransactions();
-  const { user } = useUser();
-  const filterProps = useTransactionFilters();
-  const dataProps = useTransactionData(filterProps);
+export const ReportLayoutContext = React.createContext<ReportLayoutContextType | undefined>(undefined);
 
-  const { data: budgets = [] } = useQuery<Budget[], Error>({
-    queryKey: ['budgets', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*, categories(name)')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
-    },
-    enabled: !!user,
-  });
+const ReportLayout = () => {
+  const {
+    transactions,
+    isLoadingTransactions,
+    handleRefresh,
+    dateRange,
+    setDateRange,
+    selectedAccount,
+    setSelectedAccount,
+    selectedCategory,
+    setSelectedCategory,
+    selectedVendor,
+    setSelectedVendor,
+    accounts,
+    categories,
+    vendors,
+    isLoadingAccounts,
+    isLoadingCategories,
+    isLoadingVendors,
+  } = useTransactions();
+  const { selectedCurrency, formatCurrency, convertBetweenCurrencies, accountCurrencyMap } = useCurrency();
 
-  const { historicalFilteredTransactions, futureFilteredTransactions } = React.useMemo(() => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const historical = dataProps.filteredTransactions.filter(t => new Date(t.date) <= today);
-    const future = dataProps.filteredTransactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
-    return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
-  }, [dataProps.filteredTransactions]);
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+    let filtered = transactions;
 
-  const handlePdfExport = () => {
-    try {
-      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-      let yPos = 20;
-
-      doc.setFontSize(18);
-      doc.text(title, 14, yPos);
-      yPos += 15;
-
-      const reportContent = document.getElementById('report-content');
-      if (!reportContent) {
-        showError("Could not find report content to export.");
-        return;
-      }
-
-      const tables = Array.from(reportContent.querySelectorAll('table'));
-
-      if (tables.length === 0) {
-        showError("No tabular data found in the report to export.");
-        return;
-      }
-
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text("Note: This PDF export includes tabular data only. Charts and other visual elements are not included.", 14, yPos);
-      yPos += 15;
-      doc.setTextColor(0);
-
-      tables.forEach((table) => {
-        if (yPos > 260) {
-          doc.addPage();
-          yPos = 20;
-        }
-
-        const card = table.closest('div[class*="rounded-lg border"]');
-        let finalTitle = "Data Table";
-        if (card) {
-          const cardTitleEl = card.querySelector('h3');
-          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
-          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
-        }
-
-        doc.setFontSize(14);
-        doc.text(finalTitle, 14, yPos);
-        yPos += 10;
-
-        autoTable(doc, {
-          html: table,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: { fillColor: '#16a34a' }, // green-600
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 15;
-      });
-
-      doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
-      showSuccess("PDF export started. Your download will begin shortly.");
-    } catch (error: any) {
-      console.error("PDF Export failed:", error);
-      showError(`PDF Export failed: ${error.message}`);
+    if (dateRange?.from) {
+      filtered = filtered.filter(t => new Date(t.date) >= dateRange.from!);
     }
-  };
+    if (dateRange?.to) {
+      filtered = filtered.filter(t => new Date(t.date) <= dateRange.to!);
+    }
+    if (selectedAccount) {
+      filtered = filtered.filter(t => t.account === selectedAccount);
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(t => t.category === selectedCategory);
+    }
+    if (selectedVendor) {
+      filtered = filtered.filter(t => t.vendor === selectedVendor);
+    }
 
-  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
-  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
+    return filtered.map(t => ({
+      ...t,
+      amount: convertBetweenCurrencies(t.amount, t.currency, selectedCurrency, accountCurrencyMap)
+    }));
+  }, [transactions, dateRange, selectedAccount, selectedCategory, selectedVendor, selectedCurrency, accountCurrencyMap, convertBetweenCurrencies]);
+
+  const dataProps = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today's date
+
+    const historical = filteredTransactions.filter(t => new Date(t.date) <= today);
+    const future = filteredTransactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
+    return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
+  }, [filteredTransactions]);
+
+  const contextValue = useMemo(() => ({
+    filteredTransactions,
+    isLoadingTransactions,
+    selectedCurrency,
+    formatCurrency,
+    convertBetweenCurrencies,
+    accountCurrencyMap,
+    ...dataProps, // Spread historical and future transactions
+  }), [filteredTransactions, isLoadingTransactions, selectedCurrency, formatCurrency, convertBetweenCurrencies, accountCurrencyMap, dataProps]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-          <div className="text-muted-foreground">{description}</div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Reports</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Filter Reports</h2>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <ExportButtons
-          onPdfExport={handlePdfExport}
-          onExcelExport={handleExcelExport}
-          onCsvExport={handleCsvExport}
-        />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end mb-4">
+          <div>
+            <label htmlFor="date-range" className="block text-sm font-medium text-gray-700 mb-1">
+              Date Range
+            </label>
+            <DatePickerWithRange
+              id="date-range"
+              date={dateRange}
+              setDate={setDateRange}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="account-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Account
+            </label>
+            <Select
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+            >
+              <SelectTrigger id="account-filter" className="w-full">
+                <SelectValue placeholder="Filter by Account" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingAccounts ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  accounts?.map((account) => (
+                    <SelectItem key={account.id} value={account.name}>
+                      {account.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger id="category-filter" className="w-full">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="vendor-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Vendor
+            </label>
+            <Select
+              value={selectedVendor}
+              onValueChange={setSelectedVendor}
+            >
+              <SelectTrigger id="vendor-filter" className="w-full">
+                <SelectValue placeholder="Filter by Vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingVendors ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  vendors?.map((vendor) => (
+                    <SelectItem key={vendor.id} value={vendor.name}>
+                      {vendor.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Filters</CardTitle>
-          <TransactionFilters
-            {...filterProps}
-            onDateChange={filterProps.setDateRange}
-            onResetFilters={filterProps.handleResetFilters}
-          />
-        </CardHeader>
-      </Card>
-
-      <div className="space-y-4" id="report-content">
-        {children({
-          historicalFilteredTransactions,
-          combinedFilteredTransactions: dataProps.filteredTransactions,
-          futureFilteredTransactions,
-          accounts,
-          budgets,
-        })}
-      </div>
+      <ReportLayoutContext.Provider value={contextValue}>
+        <Outlet />
+      </ReportLayoutContext.Provider>
     </div>
   );
 };

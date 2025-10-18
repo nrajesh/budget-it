@@ -1,111 +1,68 @@
-import * as React from "react";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/data/finance-data";
-import { slugify } from "@/lib/utils";
-import { DateRange } from "react-day-picker";
-import { useQuery } from '@tanstack/react-query';
-import { ScheduledTransaction, createScheduledTransactionsService, generateFutureTransactions } from '@/services/scheduledTransactionsService';
-import { useCurrency } from "@/contexts/CurrencyContext";
+"use client";
 
-interface Option {
-  value: string;
-  label: string;
-}
+import React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useUser } from "@/hooks/useUser";
+import { useCurrency } from "@/hooks/useCurrency";
+import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
 
 interface UseTransactionDataProps {
-  searchTerm: string;
-  selectedAccounts: string[];
-  selectedCategories: string[];
-  selectedVendors: string[];
-  dateRange: DateRange | undefined;
-  availableAccountOptions: Option[];
-  availableCategoryOptions: Option[];
-  availableVendorOptions: Option[];
+  dateRange?: { from?: Date; to?: Date };
+  selectedAccount?: string;
+  selectedCategory?: string;
+  selectedVendor?: string;
+  searchTerm?: string;
 }
 
 export const useTransactionData = ({
-  searchTerm,
-  selectedAccounts,
-  selectedCategories,
-  selectedVendors,
   dateRange,
-  availableAccountOptions,
-  availableCategoryOptions,
-  availableVendorOptions,
+  selectedAccount,
+  selectedCategory,
+  selectedVendor,
+  searchTerm,
 }: UseTransactionDataProps) => {
   const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
-  const { convertBetweenCurrencies } = useCurrency();
-
-  // Fetch scheduled transactions using react-query
-  const { fetchScheduledTransactions } = createScheduledTransactionsService({
-    refetchTransactions: refetchMainTransactions,
-    userId: user?.id,
-    convertBetweenCurrencies,
-  });
-
-  const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({
-    queryKey: ['scheduledTransactions', user?.id],
-    queryFn: fetchScheduledTransactions,
-    enabled: !!user?.id && !isLoadingUser,
-  });
-
-  const combinedTransactions = React.useMemo(() => {
-    const futureTransactions = generateFutureTransactions(scheduledTransactions, accountCurrencyMap);
-    return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+  const { selectedCurrency, convertBetweenCurrencies } = useCurrency();
 
   const filteredTransactions = React.useMemo(() => {
-    let filtered = combinedTransactions;
+    if (!transactions) return [];
 
+    let filtered = transactions;
+
+    if (dateRange?.from) {
+      filtered = filtered.filter(t => new Date(t.date) >= dateRange.from!);
+    }
+    if (dateRange?.to) {
+      filtered = filtered.filter(t => new Date(t.date) <= dateRange.to!);
+    }
+    if (selectedAccount) {
+      filtered = filtered.filter(t => t.account === selectedAccount);
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(t => t.category === selectedCategory);
+    }
+    if (selectedVendor) {
+      filtered = filtered.filter(t => t.vendor === selectedVendor);
+    }
     if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (t) =>
-          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
-          (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
+        t =>
+          t.vendor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.remarks?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
-      filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
-    }
-
-    if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
-      filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
-    }
-
-    if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
-      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
-    }
-
-    if (dateRange?.from) {
-      const fromDate = dateRange.from;
-      const toDate = dateRange.to || new Date();
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((t) => {
-        const transactionDate = new Date(t.date);
-        return transactionDate >= fromDate && transactionDate <= toDate;
-      });
-    }
-
-    return filtered;
-  }, [
-    combinedTransactions,
-    searchTerm,
-    selectedAccounts,
-    selectedCategories,
-    selectedVendors,
-    dateRange,
-    availableAccountOptions.length,
-    availableCategoryOptions.length,
-    availableVendorOptions.length,
-  ]);
+    return filtered.map(t => ({
+      ...t,
+      amount: convertBetweenCurrencies(t.amount, t.currency, selectedCurrency, accountCurrencyMap)
+    }));
+  }, [transactions, dateRange, selectedAccount, selectedCategory, selectedVendor, searchTerm, selectedCurrency, accountCurrencyMap, convertBetweenCurrencies]);
 
   return {
-    filteredTransactions,
-    combinedTransactions,
+    transactions: filteredTransactions,
+    refetchTransactions: refetchMainTransactions,
+    isLoadingUser,
+    user,
   };
 };

@@ -1,335 +1,141 @@
-import { useMemo, useState, useCallback } from "react"; // Import useCallback
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"; // Import Cell
+"use client";
+
+import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
+import { useCurrency } from "@/hooks/useCurrency";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { RefreshCcw } from "lucide-react";
+import { RecentTransactions } from "@/components/RecentTransactions";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { SpendingByVendorChart } from "@/components/SpendingByVendorChart";
-import { RecentTransactions } from "@/components/RecentTransactions";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { BudgetHealthWidget } from "@/components/budgets/BudgetHealthWidget";
-
-const chartConfig = {
-  income: {
-    label: "Income",
-    color: "hsl(var(--chart-1))",
-  },
-  expenses: {
-    label: "Expenses",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"; // Import Select components
 
 const Index = () => {
-  const { transactions } = useTransactions();
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const {
+    transactions,
+    isLoadingTransactions,
+    handleRefresh,
+    dateRange,
+    setDateRange,
+    selectedCategory,
+    setSelectedCategory,
+    categories,
+    isLoadingCategories,
+  } = useTransactions();
+  const { selectedCurrency, formatCurrency, convertBetweenCurrencies, accountCurrencyMap } = useCurrency();
 
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  // State to track the active bar in the Income vs. Expenses chart
-  const [activeBar, setActiveBar] = useState<{ monthIndex: number; dataKey: 'income' | 'expenses' } | null>(null);
-
-  // Filter transactions to exclude future-dated ones
-  const currentTransactions = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
-
-    return transactions.filter(t => {
-      const transactionDate = new Date(t.date);
-      return transactionDate <= today;
-    });
-  }, [transactions]);
+  const [selectedChartCategories, setSelectedChartCategories] = useState<string[]>([]);
 
   const filteredTransactions = useMemo(() => {
-    let filtered = currentTransactions;
+    if (!transactions) return [];
+    let filtered = transactions;
 
-    if (selectedAccounts.length > 0) {
-      filtered = filtered.filter(t => selectedAccounts.includes(t.account));
+    if (dateRange?.from) {
+      filtered = filtered.filter(t => new Date(t.date) >= dateRange.from!);
+    }
+    if (dateRange?.to) {
+      filtered = filtered.filter(t => new Date(t.date) <= dateRange.to!);
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter(t => t.category === selectedCategory);
     }
 
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(t => selectedCategories.includes(t.category));
-    }
-
-    return filtered;
-  }, [currentTransactions, selectedAccounts, selectedCategories]);
-
-  const monthlySummary = useMemo(() => {
-    const summary: { [key: string]: { income: number; expenses: number } } = {};
-
-    currentTransactions.forEach(transaction => {
-      const month = new Date(transaction.date).toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      if (!summary[month]) {
-        summary[month] = { income: 0, expenses: 0 };
-      }
-
-      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
-
-      if (transaction.amount > 0 && transaction.category !== 'Transfer') {
-        summary[month].income += convertedAmount;
-      } else if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-        summary[month].expenses += Math.abs(convertedAmount);
-      }
-    });
-
-    const sortedMonths = Object.keys(summary).sort((a, b) => {
-      const [monthA, yearA] = a.split(' ');
-      const [monthB, yearB] = b.split(' ');
-      const dateA = new Date(`${monthA} 1, ${yearA}`);
-      const dateB = new Date(`${monthB} 1, ${yearB}`);
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    return sortedMonths.map(month => ({
-      month,
-      income: summary[month].income,
-      expenses: summary[month].expenses,
+    return filtered.map(t => ({
+      ...t,
+      amount: convertBetweenCurrencies(t.amount, t.currency, selectedCurrency, accountCurrencyMap)
     }));
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
+  }, [transactions, dateRange, selectedCategory, selectedCurrency, accountCurrencyMap, convertBetweenCurrencies]);
 
-  const totalBalance = useMemo(() => {
-    return currentTransactions.reduce((acc, t) => {
-      if (t.category !== 'Transfer') {
-        return acc + convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-      }
-      return acc;
-    }, 0);
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const totalIncome = useMemo(() => {
-    return currentTransactions.reduce((acc, t) => {
-      if (t.amount > 0 && t.category !== 'Transfer') {
-        return acc + convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-      }
-      return acc;
-    }, 0);
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const totalExpenses = useMemo(() => {
-    return currentTransactions.reduce((acc, t) => {
-      if (t.amount < 0 && t.category !== 'Transfer') {
-        return acc + Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
-      }
-      return acc;
-    }, 0);
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const calculatePercentageChange = (
-    data: { [key: string]: number },
-    isBalance: boolean = false
-  ) => {
-    const sortedMonths = Object.keys(data).sort();
-    if (sortedMonths.length < 2) {
-      return { value: "N/A", isPositive: null };
-    }
-
-    const currentMonthKey = sortedMonths[sortedMonths.length - 1];
-    const previousMonthKey = sortedMonths[sortedMonths.length - 2];
-
-    const currentMonthValue = data[currentMonthKey] || 0;
-    const previousMonthValue = data[previousMonthKey] || 0;
-
-    if (previousMonthValue === 0) {
-      return { value: currentMonthValue > 0 ? "N/A (No data last month)" : "0%", isPositive: null };
-    }
-
-    const change = ((currentMonthValue - previousMonthValue) / previousMonthValue) * 100;
-    const isPositive = change >= 0;
-    const sign = isPositive ? "+" : "";
-    return { value: `${sign}${change.toFixed(1)}%`, isPositive };
-  };
-
-  const monthlyExpensesData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    currentTransactions.forEach(transaction => {
-      if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-        const date = new Date(transaction.date);
-        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + Math.abs(convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency));
-      }
-    });
-    return data;
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const monthlyIncomeData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    currentTransactions.forEach(transaction => {
-      if (transaction.amount > 0 && transaction.category !== 'Transfer') {
-        const date = new Date(transaction.date);
-        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
-      }
-    });
-    return data;
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const monthlyBalanceData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    const sortedTransactions = [...currentTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    let runningBalance = 0;
-    sortedTransactions.forEach(transaction => {
-      if (transaction.category !== 'Transfer') {
-        runningBalance += convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
-      }
-      const date = new Date(transaction.date);
-      const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      data[yearMonth] = runningBalance;
-    });
-    return data;
-  }, [currentTransactions, selectedCurrency, convertBetweenCurrencies]);
-
-  const expensesChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
-  const incomeChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);
-  const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData, true), [monthlyBalanceData]);
-
-  const getChangeColorClass = (isPositive: boolean | null, type: 'income' | 'expenses' | 'balance') => {
-    if (isPositive === null) return "text-muted-foreground";
-    if (type === 'expenses') {
-      return isPositive ? "text-red-500" : "text-green-500";
-    }
-    return isPositive ? "text-green-500" : "text-red-500";
-  };
-
-  // Handler for clicking a bar in the Income vs. Expenses chart
-  const handleBarClick = useCallback((data: any, monthIndex: number, clickedDataKey: 'income' | 'expenses') => {
-    setActiveBar(prevActiveBar => {
-      if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
-        // Clicking the same bar again, reset
-        return null;
-      } else {
-        // Clicking a new bar
-        return { monthIndex, dataKey: clickedDataKey };
-      }
-    });
-  }, []);
+  const totalSpending = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            className="h-4 w-4 text-muted-foreground"
-          >
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-          <p className={cn("text-xs", getChangeColorClass(balanceChange.isPositive, 'balance'))}>
-            {balanceChange.value} from last month
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-          <p className={cn("text-xs", getChangeColorClass(incomeChange.isPositive, 'income'))}>
-            {incomeChange.value} from last month
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-          <p className={cn("text-xs", getChangeColorClass(expensesChange.isPositive, 'expenses'))}>
-            {expensesChange.value} from last month
-          </p>
-        </CardContent>
-      </Card>
-      <BudgetHealthWidget />
-      <div className="lg:col-span-2">
-        <Card className="h-full">
-          <CardHeader>
-            <CardTitle>Income vs. Expenses</CardTitle>
-            <CardDescription>Monthly overview of your financial activity.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-              <BarChart data={monthlySummary}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                  minTickGap={32}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => formatCurrency(Number(value))}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dashed" formatter={(value) => formatCurrency(Number(value))} />}
-                />
-                <Bar
-                  dataKey="income"
-                  radius={4}
-                  onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'income')}
-                >
-                  {monthlySummary.map((entry, monthIndex) => (
-                    <Cell
-                      key={`income-cell-${monthIndex}`}
-                      fill={
-                        activeBar === null
-                          ? chartConfig.income.color
-                          : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'income'
-                            ? chartConfig.income.color
-                            : '#ccc')
-                      }
-                    />
-                  ))}
-                </Bar>
-                <Bar
-                  dataKey="expenses"
-                  radius={4}
-                  onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'expenses')}
-                >
-                  {monthlySummary.map((entry, monthIndex) => (
-                    <Cell
-                      key={`expenses-cell-${monthIndex}`}
-                      fill={
-                        activeBar === null
-                          ? chartConfig.expenses.color
-                          : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'expenses'
-                            ? chartConfig.expenses.color
-                            : '#ccc')
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Overview</h2>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end mb-4">
+          <div>
+            <label htmlFor="date-range" className="block text-sm font-medium text-gray-700 mb-1">
+              Date Range
+            </label>
+            <DatePickerWithRange
+              id="date-range"
+              date={dateRange}
+              setDate={setDateRange}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger id="category-filter" className="w-full">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="text-lg font-medium">Total Spending: {formatCurrency(totalSpending, selectedCurrency)}</h3>
+        </div>
       </div>
-      <div className="lg:col-span-1">
-        <SpendingCategoriesChart transactions={filteredTransactions} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="lg:col-span-1">
+          <SpendingCategoriesChart transactions={filteredTransactions} />
+        </div>
+        <div className="lg:col-span-1">
+          <SpendingByVendorChart transactions={filteredTransactions} />
+        </div>
       </div>
-      <div className="lg:col-span-1">
-        <SpendingByVendorChart transactions={filteredTransactions} />
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+        {isLoadingTransactions ? (
+          <p>Loading recent transactions...</p>
+        ) : (
+          <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedChartCategories} />
+        )}
       </div>
     </div>
   );
