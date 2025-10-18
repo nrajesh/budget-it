@@ -7,9 +7,10 @@ import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { slugify } from "@/lib/utils";
-import { DatePickerWithRange } from "@/components/DatePickerWithRange"; // Import the new component
+import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
+import { Button } from "@/components/ui/button"; // Import Button component
 
 const chartConfigForAccounts = {
   Checking: {
@@ -111,9 +112,18 @@ const Analytics = () => {
     return filtered;
   }, [currentTransactions, selectedAccounts, selectedCategories]);
 
+  const handleResetFilters = () => {
+    setDateRange({
+      from: addDays(new Date(), -30),
+      to: new Date(),
+    });
+    setSelectedAccounts(availableAccounts.map(acc => acc.value));
+    setSelectedCategories(availableCategories.map(cat => cat.value));
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-end"> {/* Added items-end for alignment */}
         <div className="flex flex-col gap-2">
           <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
           <DatePickerWithRange
@@ -142,6 +152,9 @@ const Analytics = () => {
             placeholder="Filter by Category"
           />
         </div>
+        <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2">
+          Reset Filters
+        </Button>
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
