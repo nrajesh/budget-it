@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { Outlet } from "react-router-dom";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/hooks/useCurrency";
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
 
 interface ReportLayoutContextType {
   filteredTransactions: Transaction[];
@@ -25,6 +24,8 @@ interface ReportLayoutContextType {
   formatCurrency: (amount: number, currency: string) => string;
   convertBetweenCurrencies: (amount: number, from: string, to: string, rates: Record<string, string>) => number;
   accountCurrencyMap: Record<string, string>;
+  historicalFilteredTransactions: Transaction[];
+  futureFilteredTransactions: Transaction[];
 }
 
 export const ReportLayoutContext = React.createContext<ReportLayoutContextType | undefined>(undefined);

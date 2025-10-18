@@ -3,8 +3,8 @@
 import React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/hooks/useUser";
-import { useCurrency } from "@/hooks/useCurrency";
-import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
+import { Transaction } from "@/contexts/TransactionsContext";
 
 interface UseTransactionDataProps {
   dateRange?: { from?: Date; to?: Date };

@@ -31,7 +31,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/hooks/useCurrency"; // Import useCurrency
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { format } from "date-fns";
 import { toast } from "sonner";
 

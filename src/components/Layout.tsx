@@ -1,40 +1,9 @@
-import * as React from "react";
-import { Link, useLocation, Outlet } from "react-router-dom";
-import { useTheme } from "next-themes";
-import {
-  Home,
-  ArrowRightLeft,
-  BarChart2,
-  Settings,
-  Users,
-  Mountain,
-  LayoutGrid,
-  BarChart3,
-  Phone,
-  ShoppingCart,
-  Newspaper,
-  MessageSquare,
-  ChevronDown,
-  FileText,
-  Notebook,
-  Mail,
-  Moon,
-  Sun,
-  Plus,
-  User,
-  Bell,
-  Banknote,
-  Tag,
-  Calendar,
-} from "lucide-react";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+"use client";
+
+import React, { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
+import { Home, ListChecks, BarChart2, Wallet, Tag, Users, Calendar, DollarSign, Settings, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,350 +12,118 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import AddTransactionDialog from "./AddTransactionDialog";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
+import { AddTransactionDialog } from "./AddTransactionDialog"; // Corrected import
 
 const Layout = () => {
-  const { setTheme, resolvedTheme } = useTheme();
-  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { user, userProfile, isLoadingUser } = useUser();
-  const location = useLocation();
-  const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-
-  const getPageTitle = (pathname: string) => {
-    if (pathname.startsWith("/reports/essential")) return "Essential Reports";
-    if (pathname.startsWith("/reports/advanced")) return "Advanced Reports";
-    switch (pathname) {
-      case "/":
-        return "Dashboard";
-      case "/transactions":
-        return "Transactions";
-      case "/analytics":
-        return "Analytics";
-      case "/settings":
-        return "Settings";
-      case "/profile":
-        return "Profile Settings";
-      case "/vendors":
-        return "Vendors";
-      case "/accounts":
-        return "Accounts";
-      case "/categories":
-        return "Categories";
-      case "/scheduled":
-        return "Scheduled Transactions";
-      case "/budgets":
-        return "Budgets";
-      default:
-        return "Page Not Found";
-    }
-  };
-
-  const pageTitle = getPageTitle(location.pathname);
-
-  const displayName = userProfile?.first_name && userProfile?.last_name
-    ? `${userProfile.first_name} ${userProfile.last_name}`
-    : userProfile?.first_name || userProfile?.last_name || "User Name";
-  const displayEmail = userProfile?.email || user?.email || "user@example.com";
-  const displayAvatar = userProfile?.avatar_url || "/placeholder.svg";
-  const avatarFallback = (userProfile?.first_name?.charAt(0) || "") + (userProfile?.last_name?.charAt(0) || "");
+  const [isAddTransactionDialogOpen, setIsAddTransactionDialogOpen] = useState(false);
 
   return (
-    <SidebarProvider className="min-h-screen">
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="size-9 shrink-0">
-              <Mountain className="size-5 text-primary" />
-            </Button>
-            <span className="text-lg font-semibold">Budget It!</span>
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="p-0">
-          <SidebarGroup>
-            <SidebarGroupLabel>Dashboards</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Link to="/" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/"}>
-                    <LayoutGrid />
-                    Dashboard
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/analytics" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/analytics"}>
-                    <BarChart3 />
-                    Analytics
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/transactions" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/transactions"}>
-                    <Users />
-                    Transactions
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Link to="/accounts" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/accounts"}>
-                    <Banknote />
-                    Accounts
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/categories" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/categories"}>
-                    <Tag />
-                    Categories
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link to="/vendors" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/vendors"}>
-                    <Phone />
-                    Vendors
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel>Setup</SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Link to="/scheduled" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/scheduled"}>
-                    <Calendar />
-                    Scheduled
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <Collapsible asChild>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={location.pathname.startsWith("/reports")}>
-                      <Newspaper />
-                      Reports
-                      <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <Link to="/reports/essential" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/reports/essential"}>
-                            Essential
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <Link to="/reports/advanced" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/reports/advanced"}>
-                            Advanced
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-              <SidebarMenuItem>
-                <Link to="/budgets" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/budgets"}>
-                    <FileText />
-                    Budgets
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel>User</SidebarGroupLabel>
-            <SidebarMenu>
-              <Collapsible asChild>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={location.pathname.startsWith("/profile") || location.pathname.startsWith("/settings")}>
-                      <User />
-                      User Profile
-                      <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <Link to="/profile" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/profile"}>
-                            Profile
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <Link to="/settings" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/settings"}>
-                            Settings
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Mail />
-                  Notifications
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-auto w-full justify-start gap-2 p-2"
-                disabled={isLoadingUser}
-              >
-                <Avatar className="size-8">
-                  <AvatarImage src={displayAvatar} alt={displayName} />
-                  <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
-                </Avatar>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {displayEmail}
-                  </p>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/profile">Profile</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings">Settings</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
-                await supabase.auth.signOut();
-              }}>
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="flex flex-col bg-background">
-        <header className="flex h-14 items-center justify-between border-b bg-background px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="sm:hidden" />
-            <h1 className="text-lg font-semibold">{pageTitle}</h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Select value={selectedCurrency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCurrencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
-            >
-              {resolvedTheme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="size-5" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative size-8 rounded-full">
-                  <Avatar className="size-8">
-                    <AvatarImage src={displayAvatar} alt={displayName} />
-                    <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
-                  </Avatar>
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-primary text-primary-foreground p-4 shadow-md">
+        <div className="container mx-auto flex justify-between items-center">
+          <Link to="/" className="text-2xl font-bold">
+            My App
+          </Link>
+          <nav>
+            <ul className="flex space-x-4 items-center">
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/">
+                    <Home className="mr-2 h-4 w-4" /> Home
+                  </Link>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  await supabase.auth.signOut();
-                }}>
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
-          <Outlet />
-        </main>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg">
-          <Plus className="h-6 w-6" />
-          <span className="sr-only">Add Transaction</span>
-        </Button>
-        <AddTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
-      </SidebarInset>
-    </SidebarProvider>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/transactions">
+                    <ListChecks className="mr-2 h-4 w-4" /> Transactions
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/accounts">
+                    <Wallet className="mr-2 h-4 w-4" /> Accounts
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/categories">
+                    <Tag className="mr-2 h-4 w-4" /> Categories
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/vendors">
+                    <Users className="mr-2 h-4 w-4" /> Vendors
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/scheduled-transactions">
+                    <Calendar className="mr-2 h-4 w-4" /> Scheduled
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/budgets">
+                    <DollarSign className="mr-2 h-4 w-4" /> Budgets
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost">
+                      <BarChart2 className="mr-2 h-4 w-4" /> Reports
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Report Types</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/reports/essential">Essential Reports</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/reports/advanced">Advanced Reports</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </li>
+              <li>
+                <Button variant="ghost" asChild>
+                  <Link to="/settings">
+                    <Settings className="mr-2 h-4 w-4" /> Settings
+                  </Link>
+                </Button>
+              </li>
+              <li>
+                <Button onClick={() => setIsAddTransactionDialogOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+                </Button>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-grow">
+        <Outlet />
+      </main>
+      <footer className="bg-secondary text-secondary-foreground p-4 text-center">
+        <div className="container mx-auto">
+          © {new Date().getFullYear()} My App. All rights reserved.
+        </div>
+      </footer>
+
+      <AddTransactionDialog
+        isOpen={isAddTransactionDialogOpen}
+        onOpenChange={setIsAddTransactionDialogOpen}
+      />
+    </div>
   );
 };
 

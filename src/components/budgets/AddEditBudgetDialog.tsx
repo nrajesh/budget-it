@@ -18,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,11 +31,10 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
-import { useCurrency } from "@/hooks/useCurrency";
+import { useTransactions, Budget } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Budget } from "@/data/finance-data"; // Assuming Budget type is defined here
 
 const formSchema = z.object({
   category_id: z.string({ required_error: "Category is required." }),

@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/hooks/useCurrency";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { Button } from "@/components/ui/button";
 import { PlusCircle, RefreshCcw } from "lucide-react";
 import { PayeeTable } from "@/components/PayeeTable";
 import { AddEditPayeeDialog } from "@/components/AddEditPayeeDialog";
-import { Payee } from "@/contexts/TransactionsContext"; // Import Payee type
+import { Payee } from "@/contexts/TransactionsContext";
 
 const AccountsPage = () => {
   const { accounts, isLoadingAccounts, invalidateAllData, refetchAccounts } = useTransactions();

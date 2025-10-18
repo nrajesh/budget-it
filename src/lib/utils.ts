@@ -6,6 +6,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDateToYYYYMMDD(date: Date): string {
-  return format(date, "yyyy-MM-dd");
+export function formatDateToDDMMYYYY(date: Date): string {
+  return format(date, "dd/MM/yyyy");
 }

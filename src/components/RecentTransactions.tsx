@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
-import { useCurrency } from "@/hooks/useCurrency";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 
 interface RecentTransactionsProps {
   transactions: Transaction[];

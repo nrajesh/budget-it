@@ -8,7 +8,7 @@ import { PlusCircle, Upload, Download, RefreshCcw } from "lucide-react";
 import { CategoryTable } from "@/components/CategoryTable";
 import { AddEditCategoryDialog } from "@/components/AddEditCategoryDialog";
 import { ImportCategoriesDialog } from "@/components/ImportCategoriesDialog";
-import { Category } from "@/contexts/TransactionsContext"; // Import Category type
+import { Category } from "@/contexts/TransactionsContext";
 
 const CategoriesPage = () => {
   const { invalidateAllData } = useTransactions();
@@ -72,13 +72,19 @@ const CategoriesPage = () => {
         isOpen={isAddEditDialogOpen}
         onOpenChange={setIsAddEditDialogOpen}
         category={selectedCategory}
-        onSave={selectedCategory ? managementProps.updateCategory : managementProps.addCategory}
+        onSave={async (values) => {
+          if (selectedCategory) {
+            await managementProps.updateCategory(selectedCategory.id, values.name);
+          } else {
+            await managementProps.addCategory(values.name);
+          }
+        }}
         isSaving={selectedCategory ? managementProps.isUpdatingCategory : managementProps.isAddingCategory}
       />
       <ImportCategoriesDialog
         isOpen={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
-        onImport={importCategoriesFromCsv}
+        onImport={importCategoriesFromCsv} // Type now matches UseMutateAsyncFunction
         isImporting={managementProps.isImportingCategories}
       />
     </div>

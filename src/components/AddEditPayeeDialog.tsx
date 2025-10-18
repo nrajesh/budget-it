@@ -24,15 +24,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { usePayeeManagement } from "@/hooks/usePayeeManagement";
-import { useCurrency } from "@/hooks/useCurrency"; // Import useCurrency
-import { useTransactions, Payee } from "@/contexts/TransactionsContext"; // Import useTransactions and Payee
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
+import { useTransactions, Payee } from "@/contexts/TransactionsContext";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Import Select components
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -59,7 +59,7 @@ export const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   isAccount,
 }) => {
   const { availableCurrencies } = useCurrency();
-  const { invalidateAllData } = useTransactions(); // Use invalidateAllData from context
+  const { invalidateAllData } = useTransactions();
   const { addPayee, updatePayee, isAdding, isUpdating } = usePayeeManagement(isAccount);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -100,7 +100,7 @@ export const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
       } else {
         await addPayee(values);
       }
-      invalidateAllData(); // Invalidate all data after adding/editing
+      invalidateAllData();
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to save payee:", error);

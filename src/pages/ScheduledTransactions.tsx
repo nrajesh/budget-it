@@ -2,13 +2,12 @@
 
 import React, { useState, useMemo } from "react";
 import { useScheduledTransactionManagement } from "@/hooks/useScheduledTransactionManagement";
-import { useCurrency } from "@/hooks/useCurrency";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { Button } from "@/components/ui/button";
 import { PlusCircle, RefreshCcw } from "lucide-react";
 import { ScheduledTransactionTable } from "@/components/ScheduledTransactionTable";
 import { AddEditScheduledTransactionDialog } from "@/components/AddEditScheduledTransactionDialog";
-import { ScheduledTransaction } from "@/data/finance-data"; // Assuming ScheduledTransaction type is defined here
-import { Payee, Category } from "@/contexts/TransactionsContext"; // Import Payee and Category types
+import { ScheduledTransaction, Payee, Category } from "@/contexts/TransactionsContext"; // Corrected import types
 
 const ScheduledTransactionsPage = () => {
   const {

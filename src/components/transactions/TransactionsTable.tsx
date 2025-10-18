@@ -1,4 +1,6 @@
-import * as React from "react";
+"use client";
+
+import React from "react";
 import {
   Table,
   TableBody,
@@ -7,69 +9,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Transaction } from "@/data/finance-data";
+import { Edit, Trash2 } from "lucide-react";
+import { Transaction } from "@/contexts/TransactionsContext";
+import { format } from "date-fns";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
+import { useTransactions } from "@/contexts/TransactionsContext";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { CalendarCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface TransactionsTableProps {
-  currentTransactions: Transaction[];
-  accountCurrencyMap: Map<string, string>;
-  formatCurrency: (amount: number, currencyCode?: string) => string;
-  selectedTransactionIds: string[];
-  handleSelectOne: (id: string) => void;
-  handleSelectAll: (checked: boolean) => void;
-  isAllSelectedOnPage: boolean;
-  handleRowClick: (transaction: Transaction) => void;
+  transactions: Transaction[];
+  isLoading: boolean;
+  onEdit: (transaction: Transaction) => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({
-  currentTransactions,
-  accountCurrencyMap,
-  formatCurrency,
-  selectedTransactionIds,
-  handleSelectOne,
-  handleSelectAll,
-  isAllSelectedOnPage,
-  handleRowClick,
+  transactions,
+  isLoading,
+  onEdit,
+  onDelete,
 }) => {
-  const navigate = useNavigate();
-  const today = React.useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
-    return d;
-  }, []);
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { accountCurrencyMap } = useTransactions();
 
-  const handleAccountClick = (e: React.MouseEvent, accountName: string) => {
-    e.stopPropagation(); // Prevent row click event
-    navigate('/transactions', { state: { filterAccount: accountName } });
-  };
+  if (isLoading) {
+    return <div className="text-center py-8">Loading transactions...</div>;
+  }
 
-  const handleVendorClick = (e: React.MouseEvent, vendorName: string) => {
-    e.stopPropagation(); // Prevent row click event
-    const isAccount = accountCurrencyMap.has(vendorName);
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: vendorName } });
-  };
-
-  const handleCategoryClick = (e: React.MouseEvent, categoryName: string) => {
-    e.stopPropagation(); // Prevent row click event
-    if (categoryName === 'Transfer') return;
-    navigate('/transactions', { state: { filterCategory: categoryName } });
-  };
+  if (!transactions || transactions.length === 0) {
+    return <div className="text-center py-8">No transactions found.</div>;
+  }
 
   return (
-    <div className="border rounded-md overflow-x-auto">
-      <Table className="w-full">
+    <div className="rounded-md border">
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[50px]">
               <Checkbox
-                checked={isAllSelectedOnPage}
-                onCheckedChange={handleSelectAll}
-                aria-label="Select all transactions on current page"
+                checked={false} // Placeholder for selection logic
+                onCheckedChange={() => {}}
+                aria-label="Select all"
               />
             </TableHead>
             <TableHead>Date</TableHead>
@@ -78,76 +61,53 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
             <TableHead>Category</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead>Remarks</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentTransactions.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
-                No transactions found matching your filters.
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell>
+                <Checkbox
+                  checked={false} // Placeholder for selection logic
+                  onCheckedChange={() => {}}
+                  aria-label="Select row"
+                />
+              </TableCell>
+              <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
+              <TableCell>{transaction.account}</TableCell>
+              <TableCell>{transaction.vendor}</TableCell>
+              <TableCell>{transaction.category}</TableCell>
+              <TableCell className="text-right">
+                {formatCurrency(
+                  convertBetweenCurrencies(
+                    transaction.amount,
+                    transaction.currency,
+                    selectedCurrency,
+                    accountCurrencyMap
+                  ),
+                  selectedCurrency
+                )}
+              </TableCell>
+              <TableCell>{transaction.remarks}</TableCell>
+              <TableCell className="flex justify-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(transaction)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(transaction.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
-          ) : (
-            currentTransactions.map((transaction) => {
-              const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
-              const isScheduledOrigin = transaction.is_scheduled_origin; // Use the new flag
-              const transactionDate = new Date(transaction.date);
-              const isFutureTransaction = transactionDate > today; // Check if date is in the future
-
-              // Only grey out if it's from a scheduled origin AND it's in the future
-              const shouldBeGreyedOut = isScheduledOrigin && isFutureTransaction;
-
-              const rowClassName = cn("group", shouldBeGreyedOut && "text-muted-foreground italic");
-              const cellClassName = cn(
-                "group-hover:bg-accent/50",
-                !shouldBeGreyedOut && "cursor-pointer" // Only allow click if not greyed out
-              );
-
-              return (
-                <TableRow key={transaction.id} className={rowClassName}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedTransactionIds.includes(transaction.id)}
-                      onCheckedChange={() => handleSelectOne(transaction.id)}
-                      aria-label={`Select transaction ${transaction.id}`}
-                      disabled={shouldBeGreyedOut} // Disable checkbox if it's a future scheduled transaction
-                    />
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <div className="flex items-center gap-1">
-                      {isScheduledOrigin && <CalendarCheck className="h-4 w-4 text-muted-foreground" />}
-                      {formatDateToDDMMYYYY(transaction.date)}
-                    </div>
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleAccountClick(e, transaction.account)} className="cursor-pointer hover:text-primary hover:underline">
-                      {transaction.account}
-                    </span>
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleVendorClick(e, transaction.vendor)} className="cursor-pointer hover:text-primary hover:underline">
-                      {transaction.vendor}
-                    </span>
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleCategoryClick(e, transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:text-primary hover:underline" : ""}>
-                      {transaction.category}
-                    </span>
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cn(
-                    'text-right',
-                    !shouldBeGreyedOut && (transaction.amount < 0 ? 'text-red-500' : 'text-green-500'),
-                    cellClassName
-                  )}>
-                    {formatCurrency(transaction.amount, currentAccountCurrency)}
-                  </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    {transaction.remarks}
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
+          ))}
         </TableBody>
       </Table>
     </div>

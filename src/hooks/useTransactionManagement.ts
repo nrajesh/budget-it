@@ -1,14 +1,13 @@
 "use client";
 
 import React from "react";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "./useCurrency";
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { useTransactionPagination } from "./transactions/useTransactionPagination";
 import { useTransactionSelection } from "./transactions/useTransactionSelection";
-import { Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type
 
 export const useTransactionManagement = () => {
-  const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions(); // Get refetchTransactions
+  const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions();
   const { formatCurrency } = useCurrency();
 
   const [isAddTransactionDialogOpen, setIsAddTransactionDialogOpen] = React.useState(false);
@@ -30,7 +29,7 @@ export const useTransactionManagement = () => {
     setCurrentPage,
     itemsPerPage,
     setItemsPerPage,
-    paginatedTransactions,
+    currentTransactions, // Changed from paginatedTransactions
     totalPages,
     totalItems,
   } = useTransactionPagination(allTransactions || []);
@@ -43,7 +42,7 @@ export const useTransactionManagement = () => {
     handleDeleteSelected,
     isAllSelected,
     isAnySelected,
-  } = useTransactionSelection(paginatedTransactions, allTransactions || []);
+  } = useTransactionSelection(currentTransactions, allTransactions || []); // Use currentTransactions here
 
   return {
     allTransactions,
@@ -62,7 +61,7 @@ export const useTransactionManagement = () => {
     setCurrentPage,
     itemsPerPage,
     setItemsPerPage,
-    paginatedTransactions,
+    paginatedTransactions: currentTransactions, // Export as paginatedTransactions for compatibility
     totalPages,
     totalItems,
     selectedTransactionIds,

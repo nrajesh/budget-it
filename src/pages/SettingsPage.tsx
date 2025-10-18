@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useCurrency } from "@/hooks/useCurrency";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
+import { useTransactions } from "@/contexts/TransactionsContext";
 import { Button } from "@/components/ui/button";
 import {
   Select,

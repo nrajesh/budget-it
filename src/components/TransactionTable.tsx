@@ -10,33 +10,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, Trash2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Transaction } from "@/contexts/TransactionsContext";
+import { format } from "date-fns";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface TransactionTableProps {
-  transactions: any[];
+  transactions: Transaction[];
   isLoading: boolean;
-  onEdit: (transaction: any) => void;
-  onDelete: (id: string) => void;
+  onEdit: (transaction: Transaction) => void;
+  onDelete: (id: string) => Promise<void>;
 }
 
-const TransactionTable: React.FC<TransactionTableProps> = ({
+export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
   isLoading,
   onEdit,
   onDelete,
 }) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { accountCurrencyMap } = useTransactions();
+
   if (isLoading) {
     return <div className="text-center py-8">Loading transactions...</div>;
   }
@@ -50,6 +46,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[50px]">
+              <Checkbox
+                checked={false} // Placeholder for selection logic
+                onCheckedChange={() => {}}
+                aria-label="Select all"
+              />
+            </TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Account</TableHead>
             <TableHead>Vendor</TableHead>
@@ -63,16 +66,26 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           {transactions.map((transaction) => (
             <TableRow key={transaction.id}>
               <TableCell>
-                {format(new Date(transaction.date), "PPP")}
+                <Checkbox
+                  checked={false} // Placeholder for selection logic
+                  onCheckedChange={() => {}}
+                  aria-label="Select row"
+                />
               </TableCell>
+              <TableCell>{format(new Date(transaction.date), "PPP")}</TableCell>
               <TableCell>{transaction.account}</TableCell>
               <TableCell>{transaction.vendor}</TableCell>
               <TableCell>{transaction.category}</TableCell>
               <TableCell className="text-right">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: transaction.currency || "USD",
-                }).format(transaction.amount)}
+                {formatCurrency(
+                  convertBetweenCurrencies(
+                    transaction.amount,
+                    transaction.currency,
+                    selectedCurrency,
+                    accountCurrencyMap
+                  ),
+                  selectedCurrency
+                )}
               </TableCell>
               <TableCell>{transaction.remarks}</TableCell>
               <TableCell className="flex justify-center space-x-2">
@@ -83,28 +96,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete
-                        your transaction and remove its data from our servers.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(transaction.id)}>
-                        Continue
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(transaction.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -113,5 +111,3 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
     </div>
   );
 };
-
-export { TransactionTable };

@@ -16,7 +16,7 @@ import { toast } from "sonner";
 interface ImportCategoriesDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (file: File) => Promise<void>;
+  onImport: (file: File) => Promise<any>; // Changed to Promise<any>
   isImporting: boolean;
 }
 

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Category } from "@/contexts/TransactionsContext"; // Import Category type
+import { Category } from "@/contexts/TransactionsContext";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Category name must be at least 2 characters." }),
@@ -31,7 +31,7 @@ interface AddEditCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   category?: Category;
-  onSave: (name: string) => Promise<void>;
+  onSave: (values: { id?: string; name: string }) => Promise<void>; // Updated signature
   isSaving: boolean;
 }
 
@@ -59,7 +59,7 @@ export const AddEditCategoryDialog: React.FC<AddEditCategoryDialogProps> = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await onSave(values.name);
+      await onSave({ id: category?.id, name: values.name }); // Pass object
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to save category:", error);

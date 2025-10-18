@@ -4,10 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useTransactions, Payee } from "@/contexts/TransactionsContext"; // Import useTransactions and Payee type
+import { useTransactions, Payee } from "@/contexts/TransactionsContext";
 
 interface PayeeFormValues {
-  name: string;
+  name: string; // Made required
   is_account: boolean;
   currency?: string;
   starting_balance?: number;
@@ -15,7 +15,7 @@ interface PayeeFormValues {
 }
 
 export const usePayeeManagement = (isAccount: boolean) => {
-  const { invalidateAllData } = useTransactions(); // Use invalidateAllData from context
+  const { invalidateAllData } = useTransactions();
   const navigate = useNavigate();
 
   const addPayeeMutation = useMutation({

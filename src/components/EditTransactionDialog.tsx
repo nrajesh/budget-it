@@ -18,7 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription, // Import FormDescription
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
-import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
-import { useCurrency } from "@/hooks/useCurrency"; // Import useCurrency
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {

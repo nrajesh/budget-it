@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
-import { useCurrency } from "@/hooks/useCurrency";
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -19,7 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Import Select components
+} from "@/components/ui/select";
 
 const Index = () => {
   const {
