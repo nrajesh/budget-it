@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"; // Import SheetClose
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import React from "react";
+import MobileNavContent from "../navigation/MobileNavContent.tsx"; // Explicitly added .tsx extension
 
 const Header = () => {
-  const [isSheetOpen, setIsSheetOpen] = React.useState(false); // State to control sheet visibility
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -23,27 +24,15 @@ const Header = () => {
         </div>
         <div className="flex items-center space-x-4">
           {/* User/Auth related stuff */}
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}> {/* Control sheet with state */}
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col gap-4 p-4">
-                {/* Wrap each Link with SheetClose */}
-                <SheetClose asChild>
-                  <Link to="/dashboard" className="text-lg font-medium">Dashboard</Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link to="/transactions" className="text-lg font-medium">Transactions</Link>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Link to="/analytics" className="text-lg font-medium">Analytics</Link>
-                </SheetClose>
-                {/* Add more mobile links here, wrapped with SheetClose */}
-              </nav>
+            <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+              <MobileNavContent />
             </SheetContent>
           </Sheet>
         </div>
