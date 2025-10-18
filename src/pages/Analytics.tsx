@@ -10,7 +10,8 @@ import { slugify } from "@/lib/utils";
 import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
-import { Button } from "@/components/ui/button"; // Import Button component
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Import Input component
 
 const chartConfigForAccounts = {
   Checking: {
@@ -34,6 +35,7 @@ const Analytics = () => {
     from: addDays(new Date(), -30), // Default to last 30 days
     to: new Date(),
   });
+  const [searchTerm, setSearchTerm] = React.useState<string>(""); // New state for search term
 
   // Filter transactions to exclude future-dated ones and apply date range
   const currentTransactions = React.useMemo(() => {
@@ -109,8 +111,19 @@ const Analytics = () => {
       filtered = filtered.filter(t => selectedCategories.includes(slugify(t.category)));
     }
 
+    // Apply search term filter
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.vendor?.toLowerCase().includes(lowerCaseSearchTerm) ||
+        t.category.toLowerCase().includes(lowerCaseSearchTerm) ||
+        t.remarks?.toLowerCase().includes(lowerCaseSearchTerm) ||
+        t.account.toLowerCase().includes(lowerCaseSearchTerm)
+      );
+    }
+
     return filtered;
-  }, [currentTransactions, selectedAccounts, selectedCategories]);
+  }, [currentTransactions, selectedAccounts, selectedCategories, searchTerm]);
 
   const handleResetFilters = () => {
     setDateRange({
@@ -119,17 +132,29 @@ const Analytics = () => {
     });
     setSelectedAccounts(availableAccounts.map(acc => acc.value));
     setSelectedCategories(availableCategories.map(cat => cat.value));
+    setSearchTerm(""); // Reset search term
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end"> {/* Adjusted alignment for mobile */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="search-input" className="text-sm font-medium text-foreground">Search</label>
+          <Input
+            id="search-input"
+            placeholder="Search transactions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-[280px]" // Longer search bar
+          />
+        </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
           <DatePickerWithRange
             id="date-range-filter"
             date={dateRange}
             onDateChange={setDateRange}
+            className="w-full sm:w-[180px]" // Smaller date selector
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -140,6 +165,7 @@ const Analytics = () => {
             selectedValues={selectedAccounts}
             onSelectChange={setSelectedAccounts}
             placeholder="Filter by Account"
+            className="w-full sm:w-[200px]" // Consistent width
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -150,6 +176,7 @@ const Analytics = () => {
             selectedValues={selectedCategories}
             onSelectChange={setSelectedCategories}
             placeholder="Filter by Category"
+            className="w-full sm:w-[200px]" // Consistent width
           />
         </div>
         <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2">
