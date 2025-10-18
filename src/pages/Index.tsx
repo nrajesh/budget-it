@@ -3,12 +3,12 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "../contexts/AuthContext.tsx"; // Re-applying correct relative path
-import { SpendingByCategoryChart } from "../components/SpendingByCategoryChart.tsx"; // Re-applying correct relative path
+import { useAuth } from "@/contexts/AuthContext.tsx"; // Changed to use @/ alias
+import { SpendingByCategoryChart } from "@/components/SpendingByCategoryChart.tsx"; // Changed to use @/ alias
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
-import { useCurrency } from "../contexts/CurrencyContext.tsx"; // Ensuring this related path is also correct
-import { type Transaction } from "../data/finance-data.ts"; // Ensuring this related path is also correct
+import { useCurrency } from "@/contexts/CurrencyContext.tsx"; // Changed to use @/ alias
+import { type Transaction } from "@/data/finance-data.ts"; // Changed to use @/ alias
 
 const Index = () => {
   const { user } = useAuth();
