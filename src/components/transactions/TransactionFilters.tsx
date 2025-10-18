@@ -1,11 +1,9 @@
 import * as React from "react";
-import { Input } from "@/components/ui/input"; // Keep Input for now, but it will be replaced by SearchInput
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { SearchInput } from "@/components/SearchInput"; // Import SearchInput
+import { SearchInput } from "@/components/SearchInput";
 
 interface Option {
   value: string;
@@ -53,7 +51,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
         placeholder="Search vendor or remarks..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full sm:w-[240px]" // Adjusted search bar width
+        className="w-[160px]" // Standardized search bar width
       />
       <div className="flex flex-col gap-2">
         <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
@@ -61,7 +59,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           id="date-range-filter"
           date={dateRange}
           onDateChange={onDateChange}
-          className="w-full sm:w-[160px]" // Adjusted date selector width
+          className="w-[160px]" // Standardized date selector width
         />
       </div>
       <div className="flex flex-col gap-2">

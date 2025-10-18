@@ -2,7 +2,7 @@ import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig } from "@/components/ui/chart";
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
+import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart"; // Fixed import syntax
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
@@ -11,7 +11,7 @@ import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/SearchInput"; // Import SearchInput
+import { SearchInput } from "@/components/SearchInput";
 
 const chartConfigForAccounts = {
   Checking: {
@@ -35,7 +35,7 @@ const Analytics = () => {
     from: addDays(new Date(), -30), // Default to last 30 days
     to: new Date(),
   });
-  const [searchTerm, setSearchTerm] = React.useState<string>(""); // New state for search term
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
 
   // Filter transactions to exclude future-dated ones and apply date range
   const currentTransactions = React.useMemo(() => {
@@ -144,7 +144,7 @@ const Analytics = () => {
           placeholder="Search transactions..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full sm:w-[240px]" // Adjusted search bar width
+          className="w-[160px]" // Standardized search bar width
         />
         <div className="flex flex-col gap-2">
           <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
@@ -152,7 +152,7 @@ const Analytics = () => {
             id="date-range-filter"
             date={dateRange}
             onDateChange={setDateRange}
-            className="w-full sm:w-[160px]" // Adjusted date selector width
+            className="w-[160px]" // Standardized date selector width
           />
         </div>
         <div className="flex flex-col gap-2">
