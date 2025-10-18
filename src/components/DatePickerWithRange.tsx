@@ -27,8 +27,9 @@ export function DatePickerWithRange({
           <Button
             id="date"
             variant={"outline"}
+            // Removed fixed w-[300px] to allow parent className to control width
             className={cn(
-              "w-[300px] justify-start text-left font-normal",
+              "justify-start text-left font-normal", 
               !date && "text-muted-foreground"
             )}
           >

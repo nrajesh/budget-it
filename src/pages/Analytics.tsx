@@ -11,7 +11,7 @@ import { DatePickerWithRange } from "@/components/DatePickerWithRange";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Import Input component
+import { SearchInput } from "@/components/SearchInput"; // Import SearchInput
 
 const chartConfigForAccounts = {
   Checking: {
@@ -137,24 +137,22 @@ const Analytics = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="search-input" className="text-sm font-medium text-foreground">Search</label>
-          <Input
-            id="search-input"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-[280px]" // Longer search bar
-          />
-        </div>
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end flex-wrap">
+        <SearchInput
+          id="search-input"
+          label="Search"
+          placeholder="Search transactions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full sm:w-[240px]" // Adjusted search bar width
+        />
         <div className="flex flex-col gap-2">
           <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
           <DatePickerWithRange
             id="date-range-filter"
             date={dateRange}
             onDateChange={setDateRange}
-            className="w-full sm:w-[180px]" // Smaller date selector
+            className="w-full sm:w-[160px]" // Adjusted date selector width
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -165,7 +163,7 @@ const Analytics = () => {
             selectedValues={selectedAccounts}
             onSelectChange={setSelectedAccounts}
             placeholder="Filter by Account"
-            className="w-full sm:w-[200px]" // Consistent width
+            className="w-full sm:w-[200px]"
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -176,10 +174,10 @@ const Analytics = () => {
             selectedValues={selectedCategories}
             onSelectChange={setSelectedCategories}
             placeholder="Filter by Category"
-            className="w-full sm:w-[200px]" // Consistent width
+            className="w-full sm:w-[200px]"
           />
         </div>
-        <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2">
+        <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2 shrink-0">
           Reset Filters
         </Button>
       </div>

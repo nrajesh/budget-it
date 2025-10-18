@@ -1,10 +1,11 @@
 import * as React from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/input"; // Keep Input for now, but it will be replaced by SearchInput
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, X } from "lucide-react"; // Import X icon
+import { RotateCcw, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
+import { SearchInput } from "@/components/SearchInput"; // Import SearchInput
 
 interface Option {
   value: string;
@@ -20,9 +21,9 @@ interface TransactionFiltersProps {
   availableCategoryOptions: Option[];
   selectedCategories: string[];
   setSelectedCategories: (values: string[]) => void;
-  availableVendorOptions: Option[]; // New prop for vendor options
-  selectedVendors: string[]; // New prop for selected vendors
-  setSelectedVendors: (values: string[]) => void; // New prop for setting selected vendors
+  availableVendorOptions: Option[];
+  selectedVendors: string[];
+  setSelectedVendors: (values: string[]) => void;
   dateRange: DateRange | undefined;
   onDateChange: (date: DateRange | undefined) => void;
   onResetFilters: () => void;
@@ -37,7 +38,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   availableCategoryOptions,
   selectedCategories,
   setSelectedCategories,
-  availableVendorOptions, // Destructure new props
+  availableVendorOptions,
   selectedVendors,
   setSelectedVendors,
   dateRange,
@@ -45,24 +46,22 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   onResetFilters,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mt-4 items-start sm:items-end flex-wrap"> {/* Adjusted alignment and added flex-wrap */}
-      <div className="flex flex-col gap-2">
-        <label htmlFor="search-input" className="text-sm font-medium text-foreground">Search</label>
-        <Input
-          id="search-input"
-          placeholder="Search vendor or remarks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full sm:w-[280px]" // Longer search bar
-        />
-      </div>
+    <div className="flex flex-col sm:flex-row gap-4 mt-4 items-start sm:items-end flex-wrap">
+      <SearchInput
+        id="search-input"
+        label="Search"
+        placeholder="Search vendor or remarks..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full sm:w-[240px]" // Adjusted search bar width
+      />
       <div className="flex flex-col gap-2">
         <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
         <DateRangePicker
           id="date-range-filter"
           date={dateRange}
           onDateChange={onDateChange}
-          className="w-full sm:w-[180px]" // Smaller date selector
+          className="w-full sm:w-[160px]" // Adjusted date selector width
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -73,7 +72,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           selectedValues={selectedAccounts}
           onSelectChange={setSelectedAccounts}
           placeholder="Filter by Account"
-          className="w-full sm:w-[200px]" // Consistent width
+          className="w-full sm:w-[200px]"
         />
       </div>
       <div className="flex flex-col gap-2">
@@ -84,21 +83,21 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           selectedValues={selectedCategories}
           onSelectChange={setSelectedCategories}
           placeholder="Filter by Category"
-          className="w-full sm:w-[200px]" // Consistent width
+          className="w-full sm:w-[200px]"
         />
       </div>
       <div className="flex flex-col gap-2">
         <label htmlFor="vendor-filter" className="text-sm font-medium text-foreground">Vendor</label>
-        <MultiSelectDropdown // Add new MultiSelectDropdown for vendors
+        <MultiSelectDropdown
           id="vendor-filter"
           options={availableVendorOptions}
           selectedValues={selectedVendors}
           onSelectChange={setSelectedVendors}
           placeholder="Filter by Vendor"
-          className="w-full sm:w-[200px]" // Consistent width
+          className="w-full sm:w-[200px]"
         />
       </div>
-      <Button variant="outline" onClick={onResetFilters} className="h-10 px-4 py-2 shrink-0"> {/* Updated reset button */}
+      <Button variant="outline" onClick={onResetFilters} className="h-10 px-4 py-2 shrink-0">
         Reset Filters
       </Button>
     </div>
