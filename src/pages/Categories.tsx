@@ -1,93 +1,95 @@
-"use client";
-
-import React, { useState } from "react";
+import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCategoryManagement } from "@/hooks/useCategoryManagement";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Upload, Download, RefreshCcw } from "lucide-react";
-import { CategoryTable } from "@/components/CategoryTable";
-import { AddEditCategoryDialog } from "@/components/AddEditCategoryDialog";
-import { ImportCategoriesDialog } from "@/components/ImportCategoriesDialog";
-import { Category } from "@/contexts/TransactionsContext";
+import { Category } from "@/data/finance-data";
+import { ColumnDefinition } from "@/components/management/EntityTable";
+import EntityManagementPage from "@/components/management/EntityManagementPage";
+import { Input } from "@/components/ui/input";
+import { useMutation } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
 
 const CategoriesPage = () => {
   const { invalidateAllData } = useTransactions();
   const managementProps = useCategoryManagement();
-  const { categories, isLoadingCategories, refetchCategories, exportCategoriesToCsv, importCategoriesFromCsv } = managementProps;
 
-  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
+  const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null);
+  const [editedName, setEditedName] = React.useState<string>("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleAddCategory = () => {
-    setSelectedCategory(undefined);
-    setIsAddEditDialogOpen(true);
+  const updateCategoryNameMutation = useMutation({
+    mutationFn: async ({ categoryId, newName }: { categoryId: string; newName: string }) => {
+      const { error } = await supabase.from('categories').update({ name: newName.trim() }).eq('id', categoryId);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess("Category name updated successfully!");
+      await invalidateAllData();
+      setEditingCategoryId(null);
+    },
+    onError: (error: any) => showError(`Failed to update category name: ${error.message}`),
+  });
+
+  const startEditing = (category: { id: string; name: string }) => {
+    setEditingCategoryId(category.id);
+    setEditedName(category.name);
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const handleEditCategory = (category: Category) => {
-    setSelectedCategory(category);
-    setIsAddEditDialogOpen(true);
+  const handleSaveName = (categoryId: string, originalName: string) => {
+    if (editedName.trim() === "" || editedName === originalName) {
+      setEditingCategoryId(null);
+      return;
+    }
+    updateCategoryNameMutation.mutate({ categoryId, newName: editedName.trim() });
   };
 
-  const handleRefresh = () => {
-    refetchCategories();
-    invalidateAllData();
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, category: { id: string; name: string }) => {
+    if (event.key === 'Enter') event.currentTarget.blur();
+    else if (event.key === 'Escape') setEditingCategoryId(null);
   };
+
+  const columns: ColumnDefinition<Category>[] = [
+    {
+      header: "Name",
+      accessor: "name",
+      cellRenderer: (item) =>
+        editingCategoryId === item.id ? (
+          <Input
+            ref={inputRef}
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onBlur={() => handleSaveName(item.id, item.name)}
+            onKeyDown={(e) => handleKeyDown(e, item)}
+            disabled={updateCategoryNameMutation.isPending}
+            className="h-8"
+          />
+        ) : (
+          <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+            {item.name}
+          </div>
+        ),
+    },
+  ];
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Categories</h1>
-
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Your Categories</h2>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsImportDialogOpen(true)}
-            >
-              <Upload className="mr-2 h-4 w-4" /> Import CSV
-            </Button>
-            <Button variant="outline" onClick={exportCategoriesToCsv}>
-              <Download className="mr-2 h-4 w-4" /> Export CSV
-            </Button>
-            <Button variant="outline" onClick={handleRefresh}>
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleAddCategory}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Category
-            </Button>
-          </div>
-        </div>
-
-        <CategoryTable
-          data={categories || []}
-          isLoading={isLoadingCategories}
-          onEdit={handleEditCategory}
-          onDelete={managementProps.deleteCategories}
-        />
-      </div>
-
-      <AddEditCategoryDialog
-        isOpen={isAddEditDialogOpen}
-        onOpenChange={setIsAddEditDialogOpen}
-        category={selectedCategory}
-        onSave={async (values) => {
-          if (values.id) {
-            await managementProps.updateCategory(values.id, values.name);
-          } else {
-            await managementProps.addCategory(values.name);
-          }
-        }}
-        isSaving={selectedCategory ? managementProps.isUpdatingCategory : managementProps.isAddingCategory}
-      />
-      <ImportCategoriesDialog
-        isOpen={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
-        onImport={importCategoriesFromCsv}
-        isImporting={managementProps.isImportingCategories}
-      />
-    </div>
+    <EntityManagementPage
+      title="Categories"
+      entityName="Category"
+      entityNamePlural="categories"
+      data={managementProps.categories}
+      isLoading={managementProps.isLoadingCategories}
+      columns={columns}
+      isDeletable={(item) => item.name !== 'Others'}
+      isEditable={(item) => item.name !== 'Others'}
+      customEditHandler={startEditing}
+      isEditing={id => editingCategoryId === id}
+      isUpdating={updateCategoryNameMutation.isPending}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedEntity}
+      refetch={managementProps.refetchCategories}
+    />
   );
 };
 

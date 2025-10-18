@@ -1,43 +1,63 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError } from '@/utils/toast';
-import { Payee } from '@/contexts/TransactionsContext'; // Corrected import
+import { Payee } from '@/components/AddEditPayeeDialog';
 
-export const getPayees = async (isAccount: boolean): Promise<Payee[]> => {
-  const { data, error } = await supabase
-    .from('vendors')
-    .select('id, name, is_account, account_id, accounts(currency, starting_balance, remarks)')
-    .eq('is_account', isAccount);
+interface PayeesServiceProps {
+  // No longer need setVendors, setAccounts as react-query will manage state
+  convertAmount: (amount: number) => number;
+}
 
-  if (error) {
-    showError('Failed to fetch payees.');
-    console.error('Error fetching payees:', error);
-    return [];
-  }
+export const createPayeesService = ({ convertAmount }: PayeesServiceProps) => {
 
-  return data.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    is_account: item.is_account,
-    account_id: item.account_id,
-    currency: item.accounts?.currency,
-    starting_balance: item.accounts?.starting_balance,
-    remarks: item.accounts?.remarks,
-  })) as Payee[];
-};
+  // These functions are now primarily for react-query's queryFn, not direct state manipulation
+  const fetchVendors = async () => {
+    const { data, error } = await supabase
+      .rpc('get_vendors_with_transaction_counts');
 
-export const addPayee = async (payee: Partial<Payee>): Promise<Payee | null> => {
-  // Placeholder for add logic
-  console.log('Adding payee:', payee);
-  return null;
-};
+    if (error) {
+      throw error; // Throw error for react-query to catch
+    }
+    // Map the data to include the totalTransactions field
+    const vendorsWithCounts: Payee[] = data.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      is_account: item.is_account,
+      created_at: item.created_at,
+      account_id: item.account_id,
+      currency: item.currency,
+      starting_balance: item.starting_balance,
+      remarks: item.remarks,
+      running_balance: item.running_balance,
+      totalTransactions: item.total_transactions || 0,
+    }));
+    return vendorsWithCounts;
+  };
 
-export const updatePayee = async (id: string, payee: Partial<Payee>): Promise<Payee | null> => {
-  // Placeholder for update logic
-  console.log('Updating payee:', id, payee);
-  return null;
-};
+  const fetchAccounts = async () => {
+    const { data, error } = await supabase
+      .rpc('get_accounts_with_transaction_counts');
 
-export const deletePayee = async (id: string): Promise<void> => {
-  // Placeholder for delete logic
-  console.log('Deleting payee:', id);
+    if (error) {
+      throw error; // Throw error for react-query to catch
+    }
+    // Map the data to include the totalTransactions field
+    const accountsWithCounts: Payee[] = data.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      is_account: item.is_account,
+      created_at: item.created_at,
+      account_id: item.account_id,
+      currency: item.currency,
+      starting_balance: item.starting_balance,
+      remarks: item.remarks,
+      running_balance: item.running_balance,
+      totalTransactions: item.total_transactions || 0,
+    }));
+    return accountsWithCounts;
+  };
+
+  return {
+    fetchVendors,
+    fetchAccounts,
+  };
 };

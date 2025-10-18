@@ -1,15 +1,15 @@
-"use client";
-
-import React, { useEffect } from "react";
+import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -18,9 +18,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { Combobox } from "@/components/ui/combobox";
+import { supabase } from "@/integrations/supabase/client";
+import { getAccountCurrency } from "@/integrations/supabase/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatDateToYYYYMMDD } from "@/lib/utils";
+import { Loader2 } from 'lucide-react'; // Import Loader2
 import {
   Select,
   SelectContent,
@@ -28,243 +35,399 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
-import { format } from "date-fns";
-import { toast } from "sonner";
+
+interface AddTransactionFormValues {
+  date: string;
+  account: string;
+  vendor: string;
+  category: string;
+  amount: number;
+  remarks?: string;
+  receivingAmount?: number;
+  recurrenceFrequency?: string;
+  recurrenceEndDate?: string;
+}
 
 const formSchema = z.object({
-  date: z.date({ required_error: "A date is required." }),
-  account: z.string({ required_error: "Account is required." }),
-  vendor: z.string().optional(),
-  category: z.string({ required_error: "Category is required." }),
-  amount: z.preprocess(
-    (val) => Number(val),
-    z.number().positive({ message: "Amount must be positive." })
-  ),
+  date: z.string().min(1, "Date is required"),
+  account: z.string().min(1, "Account is required"),
+  vendor: z.string().min(1, "Vendor is required"),
+  category: z.string().min(1, "Category is required"),
+  amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   remarks: z.string().optional(),
+  receivingAmount: z.coerce.number().optional(),
+  recurrenceFrequency: z.string().optional(),
+  recurrenceEndDate: z.string().optional(),
+}).refine(data => data.account !== data.vendor, {
+  message: "Source and destination accounts cannot be the same.",
+  path: ["vendor"],
+}).refine(data => {
+  if (data.recurrenceFrequency && data.recurrenceFrequency !== 'None') {
+    return data.recurrenceEndDate !== undefined && data.recurrenceEndDate !== '';
+  }
+  return true;
+}, {
+  message: "End date is required when recurrence frequency is set",
+  path: ["recurrenceEndDate"],
 });
 
 interface AddTransactionDialogProps {
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
+const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const {
-    addTransaction,
-    accountCurrencyMap,
-    categories: allCategories,
-    accounts,
-    vendors,
-    isLoadingAccounts,
-    isLoadingVendors,
-    isLoadingCategories,
-  } = useTransactions();
+  const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
+  const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
+
+  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
+  const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
+  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
+
+  const form = useForm<AddTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      date: new Date(),
+      date: formatDateToYYYYMMDD(new Date()),
       account: "",
       vendor: "",
       category: "",
       amount: 0,
       remarks: "",
+      receivingAmount: 0,
+      recurrenceFrequency: "None",
+      recurrenceEndDate: "",
     },
   });
+  const { setValue, getValues, reset } = form;
 
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset({
-        date: new Date(),
+  React.useEffect(() => {
+    if (isOpen) {
+      reset({
+        date: formatDateToYYYYMMDD(new Date()),
         account: "",
         vendor: "",
         category: "",
         amount: 0,
         remarks: "",
+        receivingAmount: 0,
+        recurrenceFrequency: "None",
+        recurrenceEndDate: "",
       });
+      setAccountCurrencySymbol('$');
+      setDestinationAccountCurrency(null);
+      setAutoCalculatedReceivingAmount(0);
     }
-  }, [isOpen, form]);
+  }, [isOpen, reset]);
 
-  const allAccounts = React.useMemo(() => accounts?.map((p) => p.name) || [], [accounts]);
-  const allVendors = React.useMemo(() => vendors?.map((p) => p.name) || [], [vendors]);
+  const accountValue = form.watch("account");
+  const vendorValue = form.watch("vendor");
+  const amountValue = form.watch("amount");
+  const recurrenceFrequency = form.watch("recurrenceFrequency");
+  const isTransfer = allAccounts.includes(vendorValue);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      const transactionData = {
-        date: format(values.date, "yyyy-MM-dd"),
-        account: values.account,
-        vendor: values.vendor || null,
-        category: values.category,
-        amount: values.amount,
-        remarks: values.remarks || null,
-        currency: accountCurrencyMap[values.account] || "USD", // Default to USD if not found
-      };
-      await addTransaction(transactionData);
-      onOpenChange(false);
-    } catch (error) {
-      toast.error("Failed to add transaction.");
-      console.error("Add transaction error:", error);
+  React.useEffect(() => {
+    const updateCurrencySymbol = async () => {
+      if (accountValue) {
+        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
+        setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
+      } else {
+        setAccountCurrencySymbol('$');
+      }
+    };
+    updateCurrencySymbol();
+  }, [accountValue, currencySymbols, accountCurrencyMap]);
+
+  React.useEffect(() => {
+    const fetchDestinationCurrency = async () => {
+      if (isTransfer && vendorValue) {
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
+        setDestinationAccountCurrency(currencyCode);
+      } else {
+        setDestinationAccountCurrency(null);
+      }
+    };
+    fetchDestinationCurrency();
+  }, [vendorValue, isTransfer, accountCurrencyMap]);
+
+  React.useEffect(() => {
+    if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
+      const sendingCurrency = accountCurrencyMap.get(accountValue);
+      if (sendingCurrency && sendingCurrency !== destinationAccountCurrency) {
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(amountValue),
+          sendingCurrency,
+          destinationAccountCurrency
+        );
+        setAutoCalculatedReceivingAmount(convertedAmount);
+        setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
+      } else {
+        setAutoCalculatedReceivingAmount(0);
+        setValue("receivingAmount", 0);
+      }
+    } else {
+      setAutoCalculatedReceivingAmount(0);
+      setValue("receivingAmount", 0);
     }
+  }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies, setValue]);
+
+  React.useEffect(() => {
+    if (isTransfer) {
+      setValue("category", "Transfer");
+    } else if (getValues("category") === "Transfer") {
+      setValue("category", "");
+    }
+  }, [isTransfer, setValue, getValues]);
+
+  const onSubmit = (values: AddTransactionFormValues) => {
+    const transactionData = {
+      date: values.date,
+      account: values.account,
+      vendor: values.vendor,
+      category: values.category,
+      amount: values.amount,
+      remarks: values.remarks,
+      receivingAmount: values.receivingAmount,
+      recurrenceFrequency: values.recurrenceFrequency,
+      recurrenceEndDate: values.recurrenceEndDate,
+    };
+    addTransaction(transactionData);
+    onOpenChange(false);
   };
 
-  const categoryOptions = React.useMemo(() =>
-    allCategories?.filter((c) => c.name !== "Transfer").map((cat) => ({ value: cat.name, label: cat.name })) || [],
-    [allCategories]
-  );
+  const baseAccountOptions = React.useMemo(() => allAccounts.map(acc => ({ value: acc, label: acc })), [allAccounts]);
+  const baseVendorOptions = React.useMemo(() => allVendors.map(v => ({ value: v, label: v })), [allVendors]);
+
+  const filteredAccountOptions = React.useMemo(() => baseAccountOptions.map(option => ({
+    ...option,
+    disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
+  })), [baseAccountOptions, vendorValue, allAccounts]);
+
+  const combinedBaseVendorOptions = React.useMemo(() => [...baseAccountOptions, ...baseVendorOptions], [baseAccountOptions, baseVendorOptions]);
+
+  const filteredCombinedVendorOptions = React.useMemo(() => combinedBaseVendorOptions.map(option => ({
+    ...option,
+    disabled: option.value === accountValue,
+  })), [combinedBaseVendorOptions, accountValue]);
+
+  const categoryOptions = React.useMemo(() => allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })), [allCategories]);
+
+  const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
+
+  const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogDescription>
+            Quickly add a new transaction to your records.
+          </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Date</FormLabel>
-                  <FormControl className="col-span-3">
-                    <DatePicker date={field.value} setDate={field.onChange} />
-                  </FormControl>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="account"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Account</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl className="col-span-3">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an account" />
-                      </SelectTrigger>
+        {isFormLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {isLoadingAccounts ? (
-                        <SelectItem value="loading" disabled>
-                          Loading...
-                        </SelectItem>
-                      ) : (
-                        allAccounts.map((acc) => (
-                          <SelectItem key={acc} value={acc}>
-                            {acc}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="account"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Account (Sending)</FormLabel>
+                    <Combobox
+                      options={filteredAccountOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select an account..."
+                      searchPlaceholder="Search accounts..."
+                      emptyPlaceholder="No account found."
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="vendor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vendor / Account (Receiving)</FormLabel>
+                    <Combobox
+                      options={filteredCombinedVendorOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a vendor or account..."
+                      searchPlaceholder="Search..."
+                      emptyPlaceholder="No results found."
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Combobox
+                      options={categoryOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Select a category..."
+                      searchPlaceholder="Search categories..."
+                      emptyPlaceholder="No category found."
+                      disabled={isTransfer}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount (Sending)</FormLabel>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                        {accountCurrencySymbol}
+                      </span>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {showReceivingValueField && (
+                <FormField
+                  control={form.control}
+                  name="receivingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount (Receiving)</FormLabel>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
+                          {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                        </span>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...field}
+                            value={field.value === 0 ? "" : field.value}
+                            onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                            placeholder={autoCalculatedReceivingAmount.toFixed(2)}
+                            className="pl-8"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormDescription>
+                        This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-            <FormField
-              control={form.control}
-              name="vendor"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Vendor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl className="col-span-3">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a vendor (optional)" />
-                      </SelectTrigger>
+
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {isLoadingVendors ? (
-                        <SelectItem value="loading" disabled>
-                          Loading...
-                        </SelectItem>
-                      ) : (
-                        allVendors.map((ven) => (
-                          <SelectItem key={ven} value={ven}>
-                            {ven}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Recurrence Fields */}
+              <FormField
+                control={form.control}
+                name="recurrenceFrequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Recurrence Frequency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select recurrence frequency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Daily">Daily</SelectItem>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Quarterly">Quarterly</SelectItem>
+                        <SelectItem value="Yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Set how often this transaction should repeat.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {recurrenceFrequency && recurrenceFrequency !== 'None' && (
+                <FormField
+                  control={form.control}
+                  name="recurrenceEndDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recurrence End Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        The date after which this transaction will no longer recur.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl className="col-span-3">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {isLoadingCategories ? (
-                        <SelectItem value="loading" disabled>
-                          Loading...
-                        </SelectItem>
-                      ) : (
-                        categoryOptions.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Amount</FormLabel>
-                  <FormControl className="col-span-3">
-                    <Input type="number" step="0.01" {...field} />
-                  </FormControl>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Remarks</FormLabel>
-                  <FormControl className="col-span-3">
-                    <Textarea placeholder="Optional remarks" {...field} />
-                  </FormControl>
-                  <FormMessage className="col-span-4 col-start-2" />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                Add Transaction
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+
+              <DialogFooter>
+                <Button type="submit">Add Transaction</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
 };
+
+export default AddTransactionDialog;

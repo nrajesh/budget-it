@@ -1,71 +1,53 @@
-"use client";
-
-import React, { useState } from "react";
+import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
-import { Button } from "@/components/ui/button";
-import { PlusCircle, RefreshCcw } from "lucide-react";
-import { PayeeTable } from "@/components/PayeeTable";
-import { AddEditPayeeDialog } from "@/components/AddEditPayeeDialog";
-import { Payee } from "@/contexts/TransactionsContext";
+import { usePayeeManagement } from "@/hooks/usePayeeManagement";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
+import { ColumnDefinition } from "@/components/management/EntityTable";
+import EntityManagementPage from "@/components/management/EntityManagementPage";
 
 const AccountsPage = () => {
-  const { accounts, isLoadingAccounts, invalidateAllData, refetchAccounts } = useTransactions();
+  const { accounts, isLoadingAccounts, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
+  const managementProps = usePayeeManagement(true);
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedPayee, setSelectedPayee] = useState<Payee | undefined>(undefined);
-
-  const handleAddAccount = () => {
-    setSelectedPayee(undefined);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditAccount = (account: Payee) => {
-    setSelectedPayee(account);
-    setIsDialogOpen(true);
-  };
-
-  const handleRefresh = () => {
-    refetchAccounts();
-    invalidateAllData();
-  };
+  const columns: ColumnDefinition<Payee>[] = [
+    {
+      header: "Account Name",
+      accessor: "name",
+      cellRenderer: (item) => (
+        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer font-medium hover:text-primary hover:underline">
+          {item.name}
+        </div>
+      ),
+    },
+    { header: "Currency", accessor: "currency" },
+    {
+      header: "Starting Balance",
+      accessor: (item) => formatCurrency(item.starting_balance || 0, item.currency || 'USD'),
+    },
+    {
+      header: "Running Balance",
+      accessor: (item) => formatCurrency(item.running_balance || 0, item.currency || 'USD'),
+    },
+    { header: "Remarks", accessor: "remarks" },
+  ];
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Accounts</h1>
-
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Your Accounts</h2>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleRefresh}>
-              <RefreshCcw className="h-4 w-4" />
-            </Button>
-            <Button onClick={handleAddAccount}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Account
-            </Button>
-          </div>
-        </div>
-
-        <PayeeTable
-          entityType="account"
-          entityNamePlural="accounts"
-          data={accounts || []}
-          isLoading={isLoadingAccounts}
-          onEdit={handleEditAccount}
-          formatCurrency={formatCurrency}
-          isAccountTable={true}
-        />
-      </div>
-
-      <AddEditPayeeDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        payee={selectedPayee}
-        isAccount={true}
-      />
-    </div>
+    <EntityManagementPage
+      title="Accounts"
+      entityName="Account"
+      entityNamePlural="accounts"
+      data={accounts}
+      isLoading={isLoadingAccounts}
+      columns={columns}
+      AddEditDialogComponent={(props) => (
+        <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} isAccountOnly={true} />
+      )}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedPayee}
+    />
   );
 };
 
