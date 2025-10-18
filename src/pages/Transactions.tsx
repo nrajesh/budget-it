@@ -1,196 +1,316 @@
-import * as React from "react";
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationLink,
-} from "@/components/ui/pagination";
-import { Transaction } from "@/data/finance-data";
-import EditTransactionDialog from "@/components/EditTransactionDialog";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { PlusCircle, Upload, Download, RefreshCcw } from "lucide-react";
+import TransactionDialog from "@/components/TransactionDialog";
+import { ImportTransactionsDialog } from "@/components/ImportTransactionsDialog";
+import { ExportTransactionsDialog } from "@/components/ExportTransactionsDialog";
+import { TransactionTable } from "@/components/TransactionTable";
 
-// Import new modular components and hook
-import { useTransactionManagement } from "@/hooks/useTransactionManagement";
-import { TransactionFilters } from "@/components/transactions/TransactionFilters.tsx";
-import { TransactionActions } from "@/components/transactions/TransactionActions.tsx";
-import { TransactionsTable } from "@/components/transactions/TransactionsTable.tsx";
-import LoadingOverlay from "@/components/LoadingOverlay";
-import { useTransactions } from "@/contexts/TransactionsContext"; // Import useTransactions
+const Transactions = () => {
+  const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedVendor, setSelectedVendor] = useState<string | undefined>(
+    undefined
+  );
 
-const TransactionsPage = () => {
-  const {
-    // States
-    currentPage,
-    itemsPerPage,
-    searchTerm,
-    selectedAccounts,
-    selectedCategories,
-    selectedVendors,
-    dateRange,
-    isRefreshing,
-    isImporting,
-    selectedTransactionIds,
-    isBulkDeleteConfirmOpen,
-    fileInputRef,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
-    filteredTransactions,
-    totalPages,
-    startIndex,
-    endIndex,
-    currentTransactions,
-    numSelected,
-    accountCurrencyMap,
-    formatCurrency,
-    isAllSelectedOnPage,
+  const queryClient = useQueryClient();
 
-    // Setters
-    setCurrentPage,
-    setItemsPerPage,
-    setSearchTerm,
-    setSelectedAccounts,
-    setSelectedCategories,
-    setSelectedVendors,
-    setDateRange,
-    setIsBulkDeleteConfirmOpen,
+  const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
+    queryKey: ["transactions", dateRange, selectedAccount, selectedCategory, selectedVendor, searchTerm],
+    queryFn: async () => {
+      let query = supabase.from("transactions").select("*");
 
-    // Handlers
-    handleResetFilters,
-    handleSelectOne,
-    handleSelectAll,
-    handleBulkDelete,
-    handleRefresh,
-    handleImportClick,
-    handleFileChange,
-    handleExportClick,
-  } = useTransactionManagement();
+      if (dateRange?.from) {
+        query = query.gte("date", format(dateRange.from, "yyyy-MM-dd"));
+      }
+      if (dateRange?.to) {
+        query = query.lte("date", format(dateRange.to, "yyyy-MM-dd"));
+      }
+      if (selectedAccount) {
+        query = query.eq("account", selectedAccount);
+      }
+      if (selectedCategory) {
+        query = query.eq("category", selectedCategory);
+      }
+      if (selectedVendor) {
+        query = query.eq("vendor", selectedVendor);
+      }
+      if (searchTerm) {
+        query = query.or(
+          `vendor.ilike.%${searchTerm}%,remarks.ilike.%${searchTerm}%`
+        );
+      }
 
-  // Destructure loading states directly from useTransactions
-  const { isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories } = useTransactions();
+      const { data, error } = await query.order("date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedTransaction, setSelectedTransaction] = React.useState<Transaction | null>(null);
+  const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("name")
+        .eq("is_account", true);
+      if (error) throw error;
+      return data.map((account) => account.name);
+    },
+  });
 
-  const handleRowClick = (transaction: Transaction) => {
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("name");
+      if (error) throw error;
+      return data.map((category) => category.name);
+    },
+  });
+
+  const { data: vendors, isLoading: isLoadingVendors } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("name")
+        .eq("is_account", false);
+      if (error) throw error;
+      return data.map((vendor) => vendor.name);
+    },
+  });
+
+  const handleEdit = (transaction) => {
     setSelectedTransaction(transaction);
-    setIsDialogOpen(true);
+    setIsTransactionDialogOpen(true);
   };
 
-  const isPageLoading = isLoadingTransactions || isLoadingVendors || isLoadingAccounts || isLoadingCategories;
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete transaction.");
+    } else {
+      toast.success("Transaction deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    }
+  };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    queryClient.invalidateQueries({ queryKey: ["categories"] });
+    queryClient.invalidateQueries({ queryKey: ["vendors"] });
+    toast.info("Data refreshed.");
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setDateRange(undefined);
+    setSelectedAccount(undefined);
+    setSelectedCategory(undefined);
+    setSelectedVendor(undefined);
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    toast.info("Filters reset.");
+  };
+
+  const filteredTransactions = useMemo(() => {
+    return transactions || [];
+  }, [transactions]);
 
   return (
-    <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isPageLoading} message="Loading transactions data..." />
-      <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              All Transactions
-              <TransactionActions
-                numSelected={numSelected}
-                isImporting={isImporting}
-                isRefreshing={isRefreshing}
-                onImportClick={handleImportClick}
-                onExportClick={handleExportClick}
-                onRefresh={handleRefresh}
-                onBulkDeleteClick={() => setIsBulkDeleteConfirmOpen(true)}
-              />
-            </CardTitle>
-            <TransactionFilters
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              availableAccountOptions={availableAccountOptions}
-              selectedAccounts={selectedAccounts}
-              setSelectedAccounts={setSelectedAccounts}
-              availableCategoryOptions={availableCategoryOptions}
-              selectedCategories={selectedCategories}
-              setSelectedCategories={setSelectedCategories}
-              availableVendorOptions={availableVendorOptions}
-              selectedVendors={selectedVendors}
-              setSelectedVendors={setSelectedVendors}
-              dateRange={dateRange}
-              onDateChange={setDateRange}
-              onResetFilters={handleResetFilters}
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Transactions</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">All Transactions</h2>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsImportDialogOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Import CSV
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsExportDialogOpen(true)}
+            >
+              <Download className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => setIsTransactionDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end mb-4">
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+              Search
+            </label>
+            <Input
+              id="search"
+              placeholder="Search vendor or remarks"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
             />
-          </CardHeader>
-          <CardContent>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept=".csv"
+          </div>
+          <div>
+            <label htmlFor="date-range" className="block text-sm font-medium text-gray-700 mb-1">
+              Date Range
+            </label>
+            <DatePickerWithRange
+              id="date-range"
+              date={dateRange}
+              setDate={setDateRange}
+              className="w-full"
             />
-            <TransactionsTable
-              currentTransactions={currentTransactions}
-              accountCurrencyMap={accountCurrencyMap}
-              formatCurrency={formatCurrency}
-              selectedTransactionIds={selectedTransactionIds}
-              handleSelectOne={handleSelectOne}
-              handleSelectAll={handleSelectAll}
-              isAllSelectedOnPage={isAllSelectedOnPage}
-              handleRowClick={handleRowClick}
-            />
-          </CardContent>
-          <CardFooter className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
-              </span>
-              <Select value={String(itemsPerPage)} onValueChange={(value) => setItemsPerPage(Number(value))}>
-                <SelectTrigger className="w-[80px] h-8">
-                  <SelectValue placeholder="10" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages || totalPages === 0}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </CardFooter>
-        </Card>
-        {selectedTransaction && (
-          <EditTransactionDialog
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            transaction={selectedTransaction}
-          />
-        )}
-        <ConfirmationDialog
-          isOpen={isBulkDeleteConfirmOpen}
-          onOpenChange={setIsBulkDeleteConfirmOpen}
-          onConfirm={handleBulkDelete}
-          title={`Are you sure you want to delete ${numSelected} transactions?`}
-          description="This action cannot be undone. All selected transactions and their associated transfer entries (if any) will be permanently deleted."
-          confirmText="Delete Selected"
-        />
+          </div>
+          <div>
+            <label htmlFor="account-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Account
+            </label>
+            <Select
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+            >
+              <SelectTrigger id="account-filter" className="w-full">
+                <SelectValue placeholder="Filter by Account" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingAccounts ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  accounts?.map((account) => (
+                    <SelectItem key={account} value={account}>
+                      {account}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger id="category-filter" className="w-full">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  categories?.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="vendor-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Vendor
+            </label>
+            <Select
+              value={selectedVendor}
+              onValueChange={setSelectedVendor}
+            >
+              <SelectTrigger id="vendor-filter" className="w-full">
+                <SelectValue placeholder="Filter by Vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingVendors ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  vendors?.map((vendor) => (
+                    <SelectItem key={vendor} value={vendor}>
+                      {vendor}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <Button variant="outline" onClick={handleResetFilters} className="mt-2">
+          Reset Filters
+        </Button>
       </div>
+
+      <TransactionTable
+        transactions={filteredTransactions}
+        isLoading={isLoadingTransactions}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
+
+      <TransactionDialog
+        isOpen={isTransactionDialogOpen}
+        setIsOpen={setIsTransactionDialogOpen}
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+      />
+      <ImportTransactionsDialog
+        isOpen={isImportDialogOpen}
+        setIsOpen={setIsImportDialogOpen}
+      />
+      <ExportTransactionsDialog
+        isOpen={isExportDialogOpen}
+        setIsOpen={setIsExportDialogOpen}
+      />
     </div>
   );
 };
 
-export default TransactionsPage;
+export default Transactions;
