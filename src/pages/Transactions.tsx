@@ -180,7 +180,7 @@ const Transactions = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end mb-4">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
               Search

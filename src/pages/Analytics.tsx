@@ -1,195 +1,239 @@
-import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig } from "@/components/ui/chart";
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart"; // Fixed import syntax
-import { RecentTransactions } from "@/components/RecentTransactions";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
-import { slugify } from "@/lib/utils";
-import { DatePickerWithRange } from "@/components/DatePickerWithRange";
-import { DateRange } from "react-day-picker";
-import { addDays } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/SearchInput";
+"use client";
 
-const chartConfigForAccounts = {
-  Checking: {
-    label: "Checking",
-    color: "hsl(var(--chart-2))",
-  },
-  Savings: {
-    label: "Savings",
-    color: "hsl(var(--chart-3))",
-  },
-  Credit: {
-    label: "Credit",
-    color: "hsl(var(--chart-4))",
-  },
-} satisfies ChartConfig;
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { RefreshCcw } from "lucide-react";
+import { toast } from "sonner";
 
 const Analytics = () => {
-  const { transactions, categories: allCategories } = useTransactions();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [selectedAccount, setSelectedAccount] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
+    undefined
+  );
+  const [selectedVendor, setSelectedVendor] = useState<string | undefined>(
+    undefined
+  );
 
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-    from: addDays(new Date(), -30), // Default to last 30 days
-    to: new Date(),
+  const queryClient = useQueryClient();
+
+  // Example query for analytics data (you'd replace this with actual analytics logic)
+  const { data: analyticsData, isLoading: isLoadingAnalytics } = useQuery({
+    queryKey: ["analytics", dateRange, selectedAccount, selectedCategory, selectedVendor],
+    queryFn: async () => {
+      // This is a placeholder. You would fetch actual aggregated data here.
+      // For example, fetching total spending per category within the date range.
+      let query = supabase.from("transactions").select("*");
+
+      if (dateRange?.from) {
+        query = query.gte("date", format(dateRange.from, "yyyy-MM-dd"));
+      }
+      if (dateRange?.to) {
+        query = query.lte("date", format(dateRange.to, "yyyy-MM-dd"));
+      }
+      if (selectedAccount) {
+        query = query.eq("account", selectedAccount);
+      }
+      if (selectedCategory) {
+        query = query.eq("category", selectedCategory);
+      }
+      if (selectedVendor) {
+        query = query.eq("vendor", selectedVendor);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      // In a real scenario, you'd process this data for analytics, e.g., sum amounts by category
+      return data;
+    },
   });
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
 
-  // Filter transactions to exclude future-dated ones and apply date range
-  const currentTransactions = React.useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+  const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("name")
+        .eq("is_account", true);
+      if (error) throw error;
+      return data.map((account) => account.name);
+    },
+  });
 
-    return transactions.filter(t => {
-      const transactionDate = new Date(t.date);
-      transactionDate.setHours(0, 0, 0, 0); // Normalize transaction date
+  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("name");
+      if (error) throw error;
+      return data.map((category) => category.name);
+    },
+  });
 
-      const isNotFuture = transactionDate <= today;
-      const isInDateRange =
-        (!dateRange?.from || transactionDate >= dateRange.from) &&
-        (!dateRange?.to || transactionDate <= dateRange.to);
+  const { data: vendors, isLoading: isLoadingVendors } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("name")
+        .eq("is_account", false);
+      if (error) throw error;
+      return data.map((vendor) => vendor.name);
+    },
+  });
 
-      return isNotFuture && isInDateRange;
-    });
-  }, [transactions, dateRange]);
-
-  const availableAccounts = React.useMemo(() => {
-    const uniqueAccounts = new Set<string>();
-    currentTransactions.forEach(t => uniqueAccounts.add(t.account));
-    return Array.from(uniqueAccounts).map(account => ({
-      value: slugify(account),
-      label: account,
-    }));
-  }, [currentTransactions]);
-
-  const availableCategories = React.useMemo(() => {
-    return allCategories.map(category => ({
-      value: slugify(category.name),
-      label: category.name,
-    }));
-  }, [allCategories]);
-
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(
-    availableAccounts.map(acc => acc.value)
-  );
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
-    availableCategories.map(cat => cat.value)
-  );
-
-  React.useEffect(() => {
-    setSelectedAccounts(prev => {
-      const currentAccountValues = availableAccounts.map(acc => acc.value);
-      if (prev.length === 0 || prev.length === currentAccountValues.length) {
-        return currentAccountValues;
-      }
-      return prev.filter(val => currentAccountValues.includes(val));
-    });
-  }, [availableAccounts]);
-
-  React.useEffect(() => {
-    setSelectedCategories(prev => {
-      const currentCategoryValues = availableCategories.map(cat => cat.value);
-      if (prev.length === 0 || prev.length === currentCategoryValues.length) {
-        return currentCategoryValues;
-      }
-      return prev.filter(val => currentCategoryValues.includes(val));
-    });
-  }, [availableCategories]);
-
-  const filteredTransactions = React.useMemo(() => {
-    let filtered = currentTransactions;
-
-    if (selectedAccounts.length > 0) {
-      filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
-    }
-
-    // Apply category filter for RecentTransactions and SpendingCategoriesChart
-    // Note: BalanceOverTimeChart does not use category filter
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(t => selectedCategories.includes(slugify(t.category)));
-    }
-
-    // Apply search term filter
-    if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.vendor?.toLowerCase().includes(lowerCaseSearchTerm) ||
-        t.category.toLowerCase().includes(lowerCaseSearchTerm) ||
-        t.remarks?.toLowerCase().includes(lowerCaseSearchTerm) ||
-        t.account.toLowerCase().includes(lowerCaseSearchTerm)
-      );
-    }
-
-    return filtered;
-  }, [currentTransactions, selectedAccounts, selectedCategories, searchTerm]);
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    queryClient.invalidateQueries({ queryKey: ["categories"] });
+    queryClient.invalidateQueries({ queryKey: ["vendors"] });
+    toast.info("Analytics data refreshed.");
+  };
 
   const handleResetFilters = () => {
-    setDateRange({
-      from: addDays(new Date(), -30),
-      to: new Date(),
-    });
-    setSelectedAccounts(availableAccounts.map(acc => acc.value));
-    setSelectedCategories(availableCategories.map(cat => cat.value));
-    setSearchTerm(""); // Reset search term
+    setDateRange(undefined);
+    setSelectedAccount(undefined);
+    setSelectedCategory(undefined);
+    setSelectedVendor(undefined);
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    toast.info("Filters reset.");
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end flex-wrap">
-        <SearchInput
-          id="search-input"
-          label="Search"
-          placeholder="Search transactions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-[160px]" // Standardized search bar width
-        />
-        <div className="flex flex-col gap-2">
-          <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
-          <DatePickerWithRange
-            id="date-range-filter"
-            date={dateRange}
-            onDateChange={setDateRange}
-            className="w-[160px]" // Standardized date selector width
-          />
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Analytics</h1>
+
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Filter Analytics</h2>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
-          <MultiSelectDropdown
-            id="account-filter"
-            options={availableAccounts}
-            selectedValues={selectedAccounts}
-            onSelectChange={setSelectedAccounts}
-            placeholder="Filter by Account"
-            className="w-full sm:w-[200px]"
-          />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end mb-4">
+          <div>
+            <label htmlFor="date-range" className="block text-sm font-medium text-gray-700 mb-1">
+              Date Range
+            </label>
+            <DatePickerWithRange
+              id="date-range"
+              date={dateRange}
+              setDate={setDateRange}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label htmlFor="account-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Account
+            </label>
+            <Select
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+            >
+              <SelectTrigger id="account-filter" className="w-full">
+                <SelectValue placeholder="Filter by Account" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingAccounts ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  accounts?.map((account) => (
+                    <SelectItem key={account} value={account}>
+                      {account}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger id="category-filter" className="w-full">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  categories?.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label htmlFor="vendor-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Vendor
+            </label>
+            <Select
+              value={selectedVendor}
+              onValueChange={setSelectedVendor}
+            >
+              <SelectTrigger id="vendor-filter" className="w-full">
+                <SelectValue placeholder="Filter by Vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingVendors ? (
+                  <SelectItem value="loading" disabled>
+                    Loading...
+                  </SelectItem>
+                ) : (
+                  vendors?.map((vendor) => (
+                    <SelectItem key={vendor} value={vendor}>
+                      {vendor}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
-          <MultiSelectDropdown
-            id="category-filter"
-            options={availableCategories}
-            selectedValues={selectedCategories}
-            onSelectChange={setSelectedCategories}
-            placeholder="Filter by Category"
-            className="w-full sm:w-[200px]"
-          />
-        </div>
-        <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2 shrink-0">
+        <Button variant="outline" onClick={handleResetFilters} className="mt-2">
           Reset Filters
         </Button>
-      </div>
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <BalanceOverTimeChart transactions={filteredTransactions} />
+
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Analytics Overview</h3>
+          {isLoadingAnalytics ? (
+            <p>Loading analytics data...</p>
+          ) : (
+            <div className="bg-gray-50 p-4 rounded-md">
+              <p>Display your analytics charts and summaries here.</p>
+              <p>Total transactions: {analyticsData?.length || 0}</p>
+              {/* You would add actual charts/data visualization here */}
+            </div>
+          )}
         </div>
-        <div className="lg:col-span-1">
-          <SpendingCategoriesChart transactions={filteredTransactions} />
-        </div>
       </div>
-      <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories.map(slugify)} />
     </div>
   );
 };
