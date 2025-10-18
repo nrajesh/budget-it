@@ -3,8 +3,8 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "../contexts/AuthContext"; // Corrected relative path
-import { SpendingByCategoryChart } from "../components/SpendingByCategoryChart"; // Corrected relative path
+import { useAuth } from "@/contexts/AuthContext"; // Reverted to alias
+import { SpendingByCategoryChart } from "@/components/SpendingByCategoryChart"; // Reverted to alias
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
