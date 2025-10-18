@@ -71,8 +71,8 @@ export const ImportCategoriesDialog: React.FC<ImportCategoriesDialogProps> = ({
               {isImporting ? "Importing..." : "Import"}
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

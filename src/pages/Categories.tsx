@@ -73,8 +73,8 @@ const CategoriesPage = () => {
         onOpenChange={setIsAddEditDialogOpen}
         category={selectedCategory}
         onSave={async (values) => {
-          if (selectedCategory) {
-            await managementProps.updateCategory(selectedCategory.id, values.name);
+          if (values.id) {
+            await managementProps.updateCategory(values.id, values.name);
           } else {
             await managementProps.addCategory(values.name);
           }
@@ -84,7 +84,7 @@ const CategoriesPage = () => {
       <ImportCategoriesDialog
         isOpen={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
-        onImport={importCategoriesFromCsv} // Type now matches UseMutateAsyncFunction
+        onImport={importCategoriesFromCsv}
         isImporting={managementProps.isImportingCategories}
       />
     </div>

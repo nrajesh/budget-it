@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import { useTransactions, Transaction } from "@/contexts/TransactionsContext"; // Import Transaction type from context
+import { useTransactions, Transaction } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/hooks/useCurrency"; // Corrected import path
 
 interface RecentTransactionsProps {

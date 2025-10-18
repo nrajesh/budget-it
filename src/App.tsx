@@ -19,7 +19,7 @@ import EssentialReports from "./pages/reports/EssentialReports";
 import AdvancedReports from "./pages/reports/AdvancedReports";
 
 import { TransactionsProvider } from "./contexts/TransactionsContext";
-import { CurrencyProvider } from "@/hooks/useCurrency"; // Corrected import path for CurrencyProvider
+import { CurrencyProvider } from "@/hooks/useCurrency"; // Ensure this path is correct and consistent
 
 const queryClient = new QueryClient();
 
@@ -28,7 +28,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Toaster />
       <BrowserRouter>
-        <CurrencyProvider>
+        <CurrencyProvider> {/* Wrap the entire application with CurrencyProvider */}
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Index />} />
