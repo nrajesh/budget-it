@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"; // Removed Card imports
 import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -61,18 +60,18 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
   }, [currentChartData]);
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="items-center pb-0">
+    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm"> {/* Replaced Card with div, added card styling */}
+      <div className="flex flex-col space-y-1.5 p-6 items-center pb-0"> {/* Replaced CardHeader with div */}
         <div className="flex items-center justify-between w-full">
-          <CardTitle className="w-full text-center">
+          <h2 className="w-full text-center text-2xl font-semibold leading-none tracking-tight"> {/* Replaced CardTitle with h2 */}
             Spending by Vendor
-          </CardTitle>
+          </h2>
         </div>
-        <CardDescription>
+        <p className="text-sm text-muted-foreground"> {/* Replaced CardDescription with p */}
           Total spending: {formatCurrency(currentTotalSpending)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 pb-0">
+        </p>
+      </div>
+      <div className="flex-1 p-6 pt-0"> {/* Replaced CardContent with div */}
         <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"
@@ -99,7 +98,7 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
             </Pie>
           </PieChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
