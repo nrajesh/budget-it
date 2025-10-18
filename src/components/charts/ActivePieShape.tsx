@@ -23,7 +23,6 @@ interface ActivePieShapeProps {
 export const ActivePieShape = ({
   cx,
   cy,
-  midAngle,
   innerRadius,
   outerRadius,
   startAngle,
@@ -33,45 +32,40 @@ export const ActivePieShape = ({
   value,
   formatCurrency,
 }: ActivePieShapeProps) => {
-  const RADIAN = Math.PI / 180;
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 10) * cos;
-  const sy = cy + (outerRadius + 10) * sin;
-  const mx = cx + (outerRadius + 30) * cos;
-  const my = cy; // Adjusted for better text alignment
-  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-  const ey = my;
-  const textAnchor = cos >= 0 ? "start" : "end";
+  // Increase outerRadius for the expanded effect
+  const expandedOuterRadius = outerRadius + 20; // Increased expansion
 
   return (
     <g>
-      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-lg font-bold">
-        {payload.name}
-      </text>
+      {/* Expanded Sector */}
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 10} // Slightly larger outer radius for active slice
+        outerRadius={expandedOuterRadius}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
         className="transition-all duration-200 ease-out"
       />
+      {/* Border for the expanded sector */}
       <Sector
         cx={cx}
         cy={cy}
         startAngle={startAngle}
         endAngle={endAngle}
-        innerRadius={outerRadius + 6}
-        outerRadius={outerRadius + 10}
+        innerRadius={expandedOuterRadius + 2} // Slightly larger for a border effect
+        outerRadius={expandedOuterRadius + 6}
         fill={fill}
-        className="transition-all duration-200 ease-out"
+        className="transition-all duration-200 ease-out opacity-50" // Slightly transparent border
       />
-      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-      <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">
+
+      {/* Centered text for name */}
+      <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#333" className="text-lg font-bold">
+        {payload.name}
+      </text>
+      {/* Centered text for amount */}
+      <text x={cx} y={cy + 10} dy={8} textAnchor="middle" fill="#333" className="text-md">
         {formatCurrency(value)}
       </text>
     </g>
