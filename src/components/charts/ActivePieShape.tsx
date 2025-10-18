@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
-import { Sector } from "recharts";
+import React from 'react';
+import { Sector } from 'recharts';
 
 interface ActivePieShapeProps {
   cx: number;
   cy: number;
-  midAngle: number;
   innerRadius: number;
   outerRadius: number;
   startAngle: number;
@@ -16,57 +15,34 @@ interface ActivePieShapeProps {
     name: string;
     amount: number;
   };
-  value: number;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (value: number) => string;
 }
 
-export const ActivePieShape = ({
-  cx,
-  cy,
-  innerRadius,
-  outerRadius,
-  startAngle,
-  endAngle,
-  fill,
-  payload,
-  value,
-  formatCurrency,
-}: ActivePieShapeProps) => {
-  // Increase outerRadius for the expanded effect
-  const expandedOuterRadius = outerRadius + 20; // Increased expansion
+export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, formatCurrency } = props;
+  const { name, amount } = payload;
+
+  // Calculate the position for the text label
+  const midAngle = (startAngle + endAngle) / 2;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+  const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
 
   return (
     <g>
-      {/* Expanded Sector */}
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={expandedOuterRadius}
+        outerRadius={outerRadius + 5} // Slightly larger outer radius for active state
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        className="transition-all duration-200 ease-out"
+        stroke="white"
+        strokeWidth={2}
       />
-      {/* Border for the expanded sector */}
-      <Sector
-        cx={cx}
-        cy={cy}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        innerRadius={expandedOuterRadius + 2} // Slightly larger for a border effect
-        outerRadius={expandedOuterRadius + 6}
-        fill={fill}
-        className="transition-all duration-200 ease-out opacity-50" // Slightly transparent border
-      />
-
-      {/* Centered text for name */}
-      <text x={cx} y={cy - 10} dy={8} textAnchor="middle" fill="#333" className="text-lg font-bold">
-        {payload.name}
-      </text>
-      {/* Centered text for amount */}
-      <text x={cx} y={cy + 10} dy={8} textAnchor="middle" fill="#333" className="text-md">
-        {formatCurrency(value)}
+      <text x={x} y={y} fill="black" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+        {`${name}: ${formatCurrency(amount)}`}
       </text>
     </g>
   );

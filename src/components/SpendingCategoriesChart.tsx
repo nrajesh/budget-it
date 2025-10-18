@@ -3,12 +3,44 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Cell } from "recharts"; // Removed Sector
+import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { ActivePieShape } from "./charts/ActivePieShape";
 import { usePieChartInteraction } from "@/hooks/usePieChartInteraction";
+import { ActivePieShape } from "./charts/ActivePieShape"; // Added this import
+
+// Helper function to process transactions into chart data
+interface ChartDataItem {
+  name: string;
+  amount: number;
+  fill: string;
+}
+
+function processTransactionsForChart(
+  transactions: Transaction[],
+  selectedCurrency: string,
+  convertBetweenCurrencies: (amount: number, from: string, to: string) => number,
+  filterCategory?: string
+): ChartDataItem[] {
+  const spending = transactions.reduce((acc, transaction) => {
+    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
+      if (filterCategory && transaction.category !== filterCategory) {
+        return acc;
+      }
+
+      const key = filterCategory ? (transaction.vendor || 'Unknown Vendor') : transaction.category;
+      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
+      acc[key] = (acc[key] || 0) + convertedAmount;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  return Object.entries(spending).map(([name, amount], index) => ({
+    name,
+    amount: amount,
+    fill: `hsl(var(--chart-${(index % 8) + 1}))`, // Assign colors dynamically
+  }));
+}
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
@@ -16,54 +48,22 @@ interface SpendingCategoriesChartProps {
 
 export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-  const { categories: allCategories } = useTransactions();
 
   const [selectedCategoryForDrilldown, setSelectedCategoryForDrilldown] = React.useState<string | null>(null);
   const { activeIndex: categoryActiveIndex, handlePieClick: handleCategoryPieClick, resetActiveIndex: resetCategoryActiveIndex } = usePieChartInteraction();
   const { activeIndex: vendorActiveIndex, handlePieClick: handleVendorPieClick, resetActiveIndex: resetVendorActiveIndex } = usePieChartInteraction();
 
-  // Data for initial category spending chart
   const categorySpendingData = React.useMemo(() => {
-    const spending = transactions.reduce((acc, transaction) => {
-      if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-        const category = transaction.category;
-        const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
-        acc[category] = (acc[category] || 0) + convertedAmount;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    return processTransactionsForChart(transactions, selectedCurrency, convertBetweenCurrencies);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
-    return Object.entries(spending).map(([category, amount], index) => ({
-      category,
-      amount: amount,
-      fill: `hsl(var(--chart-${(index % 8) + 1}))`, // Assign colors dynamically
-    }));
-  }, [transactions, convertBetweenCurrencies, selectedCurrency]);
-
-  // Data for vendor drill-down chart
   const vendorSpendingData = React.useMemo(() => {
     if (!selectedCategoryForDrilldown) return [];
-
-    const filteredTransactions = transactions.filter(
-      (t) => t.amount < 0 && t.category === selectedCategoryForDrilldown && t.category !== 'Transfer'
-    );
-
-    const vendorData = filteredTransactions.reduce((acc, transaction) => {
-      const vendor = transaction.vendor || 'Unknown Vendor';
-      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
-      acc[vendor] = (acc[vendor] || 0) + convertedAmount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(vendorData).map(([vendor, amount], index) => ({
-      vendor,
-      amount: amount,
-      fill: `hsl(var(--chart-${(index % 8) + 1}))`,
-    }));
-  }, [transactions, selectedCategoryForDrilldown, convertBetweenCurrencies, selectedCurrency]);
+    return processTransactionsForChart(transactions, selectedCurrency, convertBetweenCurrencies, selectedCategoryForDrilldown);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, selectedCategoryForDrilldown]);
 
   const currentChartData = selectedCategoryForDrilldown ? vendorSpendingData : categorySpendingData;
-  const currentNameKey = selectedCategoryForDrilldown ? "vendor" : "category";
+  const currentNameKey = selectedCategoryForDrilldown ? "name" : "name"; // Both use 'name' now
   const currentTotalSpending = currentChartData.reduce((sum, item) => sum + item.amount, 0);
 
   const chartConfig = React.useMemo(() => {
@@ -73,32 +73,22 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
       },
     };
 
-    currentChartData.forEach((item, index) => {
-      const name = item.category || item.vendor;
-      const colorIndex = (index % 8) + 1;
-      if (name) {
-        config[name] = {
-          label: name,
-          color: `hsl(var(--chart-${colorIndex}))`,
-        };
-      }
+    currentChartData.forEach((item) => {
+      // Use item.name directly as the key for chartConfig
+      config[item.name] = {
+        label: item.name,
+        color: item.fill,
+      };
     });
 
-    // Add 'Other' for initial category view if not already present
-    if (!selectedCategoryForDrilldown && !config['Other']) {
-      config['Other'] = {
-        label: "Other",
-        color: "hsl(var(--chart-8))",
-      };
-    }
     return config;
-  }, [currentChartData, selectedCategoryForDrilldown]);
+  }, [currentChartData]);
 
-  const handlePieSliceClick = (data: any, index: number, event: React.MouseEvent) => {
+  const handlePieSliceClick = (data: ChartDataItem, index: number, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent event from bubbling up to ChartContainer
     if (!selectedCategoryForDrilldown) {
       // Currently in category view, drill down
-      const clickedCategory = data.category;
+      const clickedCategory = data.name;
       setSelectedCategoryForDrilldown(clickedCategory);
       resetCategoryActiveIndex(); // Reset active index for category chart
       resetVendorActiveIndex(); // Ensure vendor chart has no active index initially
@@ -150,13 +140,12 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               strokeWidth={5}
               activeIndex={activeIndexForPie}
               activeShape={(props) => activeIndexForPie !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null}
-              onClick={(data, index, event) => handlePieSliceClick(data, index, event)}
+              onClick={(data, index, event) => handlePieSliceClick(data as ChartDataItem, index, event)}
             >
               {currentChartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
-            {/* The central Sector for back button is removed */}
           </PieChart>
         </ChartContainer>
       </CardContent>
