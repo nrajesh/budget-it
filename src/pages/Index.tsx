@@ -3,12 +3,12 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "../contexts/AuthContext"; // Corrected relative path
-import { SpendingByCategoryChart } from "../components/SpendingByCategoryChart"; // Corrected relative path
+import { useAuth } from "../../contexts/AuthContext.tsx"; // Corrected relative path
+import { SpendingByCategoryChart } from "../components/SpendingByCategoryChart.tsx"; // This path was already correct
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { type Transaction } from "@/data/finance-data";
+import { useCurrency } from "../../contexts/CurrencyContext.tsx"; // Corrected relative path
+import { type Transaction } from "../data/finance-data.ts"; // This path was already correct
 
 const Index = () => {
   const { user } = useAuth();
