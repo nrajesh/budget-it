@@ -1,17 +1,33 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import React from "react";
 
-export const usePieChartInteraction = () => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+export function usePieChartInteraction() {
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  const [selectedDrilldownItem, setSelectedDrilldownItem] = React.useState<string | null>(null);
 
-  const onPieClick = useCallback((data: any, index: number) => {
-    setActiveIndex(prevIndex => (prevIndex === index ? null : index));
-  }, []);
+  const handlePieClick = React.useCallback((data: any, index: number, nameKey: string) => {
+    const clickedItemName = data[nameKey];
 
-  const resetActiveIndex = useCallback(() => {
+    if (activeIndex === index && selectedDrilldownItem === clickedItemName) {
+      // If the same slice is clicked again, deselect it
+      setActiveIndex(null);
+      setSelectedDrilldownItem(null);
+    } else {
+      setActiveIndex(index);
+      setSelectedDrilldownItem(clickedItemName);
+    }
+  }, [activeIndex, selectedDrilldownItem]);
+
+  const resetDrilldown = React.useCallback(() => {
     setActiveIndex(null);
+    setSelectedDrilldownItem(null);
   }, []);
 
-  return { activeIndex, onPieClick, resetActiveIndex };
-};
+  return {
+    activeIndex,
+    selectedDrilldownItem,
+    handlePieClick,
+    resetDrilldown,
+  };
+}

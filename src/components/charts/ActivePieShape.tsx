@@ -1,70 +1,79 @@
 "use client";
 
-import React from 'react';
-import { Sector } from 'recharts';
+import React from "react";
+import { Sector } from "recharts";
 
 interface ActivePieShapeProps {
   cx: number;
   cy: number;
+  midAngle: number;
   innerRadius: number;
   outerRadius: number;
   startAngle: number;
   endAngle: number;
   fill: string;
   payload: {
-    name?: string; // For categories/vendors in CategoryPieChart
-    category?: string; // For SpendingCategoriesChart
-    vendor?: string; // For SpendingByVendorChart
+    name: string;
     amount: number;
   };
-  formatCurrency: (value: number) => string;
-  onCenterClick: () => void; // To reset activeIndex by clicking center
+  value: number;
+  formatCurrency: (amount: number) => string;
 }
 
-export const ActivePieShape = (props: ActivePieShapeProps) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, formatCurrency, onCenterClick } = props;
-  const name = payload.name || payload.category || payload.vendor;
-  const amount = payload.amount;
+export const ActivePieShape = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  startAngle,
+  endAngle,
+  fill,
+  payload,
+  value,
+  formatCurrency,
+}: ActivePieShapeProps) => {
+  const RADIAN = Math.PI / 180;
+  const sin = Math.sin(-RADIAN * midAngle);
+  const cos = Math.cos(-RADIAN * midAngle);
+  const sx = cx + (outerRadius + 10) * cos;
+  const sy = cy + (outerRadius + 10) * sin;
+  const mx = cx + (outerRadius + 30) * cos;
+  const my = cy; // Adjusted for better text alignment
+  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+  const ey = my;
+  const textAnchor = cos >= 0 ? "start" : "end";
 
   return (
     <g>
+      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} className="text-lg font-bold">
+        {payload.name}
+      </text>
       <Sector
         cx={cx}
         cy={cy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 10}
+        outerRadius={outerRadius + 10} // Slightly larger outer radius for active slice
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        className="transition-all duration-200 ease-in-out"
+        className="transition-all duration-200 ease-out"
       />
       <Sector
         cx={cx}
         cy={cy}
-        innerRadius={outerRadius + 12}
-        outerRadius={outerRadius + 16}
         startAngle={startAngle}
         endAngle={endAngle}
+        innerRadius={outerRadius + 6}
+        outerRadius={outerRadius + 10}
         fill={fill}
-        className="transition-all duration-200 ease-in-out"
+        className="transition-all duration-200 ease-out"
       />
-      {name && (
-        <text x={cx} y={cy - 10} textAnchor="middle" dominantBaseline="central" fill="#333" className="font-bold text-lg">
-          {name}
-        </text>
-      )}
-      <text x={cx} y={cy + 15} textAnchor="middle" dominantBaseline="central" fill="#666" className="text-md">
-        {formatCurrency(amount)}
+      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+      <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">
+        {formatCurrency(value)}
       </text>
-      {/* Invisible circle in the center to capture clicks for resetting */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={innerRadius} // Use innerRadius to cover the center area
-        fill="transparent"
-        onClick={onCenterClick}
-        style={{ cursor: 'pointer' }}
-      />
     </g>
   );
 };
