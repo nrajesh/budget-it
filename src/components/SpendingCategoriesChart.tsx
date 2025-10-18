@@ -158,8 +158,8 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               <Sector
                 cx={125}
                 cy={125}
-                innerRadius={0}
-                outerRadius={60}
+                innerRadius={0} // Start from the very center
+                outerRadius={80} // Extend to the outer radius of the pie slices
                 startAngle={0}
                 endAngle={360}
                 fill="rgba(128, 128, 128, 0.2)" // Temporarily visible
