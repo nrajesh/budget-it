@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { Check } from "lucide-react"; // Removed X icon as it's no longer used
 
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
@@ -16,7 +16,7 @@ interface MultiSelectDropdownProps {
   onSelectChange: React.Dispatch<React.SetStateAction<string[]>>;
   placeholder?: string;
   id?: string;
-  className?: string; // Added className prop
+  className?: string;
 }
 
 export function MultiSelectDropdown({
@@ -25,7 +25,7 @@ export function MultiSelectDropdown({
   onSelectChange,
   placeholder = "Select options...",
   id,
-  className, // Destructure className
+  className,
 }: MultiSelectDropdownProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
@@ -42,67 +42,14 @@ export function MultiSelectDropdown({
     [onSelectChange]
   );
 
-  const handleRemove = React.useCallback(
-    (value: string) => {
-      onSelectChange(prev => prev.filter(item => item !== value));
-    },
-    [onSelectChange]
-  );
-
-  const handleKeyDown = React.useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      const input = inputRef.current;
-      if (input) {
-        if (event.key === "Delete" || event.key === "Backspace") {
-          if (input.value === "") {
-            onSelectChange(prev => {
-              const newSelected = [...prev];
-              newSelected.pop();
-              return newSelected;
-            });
-          }
-        }
-        // This is not a default behaviour of the <input /> field
-        if (event.key === "Escape") {
-          input.blur();
-        }
-      }
-    },
-    [onSelectChange]
-  );
-
-  const selectables = options.filter(
-    option => !selectedValues.includes(option.value)
-  );
+  // Removed handleRemove and handleKeyDown for badge interaction
 
   return (
-    <div className={className}> {/* Apply className here */}
-      <Command onKeyDown={handleKeyDown} className="overflow-visible bg-transparent">
+    <div className={className}>
+      <Command onKeyDown={(e) => { /* Keep Command for general key handling if needed, but remove specific badge logic */ }} className="overflow-visible bg-transparent">
         <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
           <div className="flex flex-wrap gap-1">
-            {selectedValues.map(value => {
-              const option = options.find(o => o.value === value);
-              return (
-                <Badge key={value} variant="secondary">
-                  {option?.label || value}
-                  <button
-                    className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background focus:ring-ring"
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        handleRemove(value);
-                      }
-                    }}
-                    onMouseDown={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleRemove(value);
-                    }}
-                  >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                </Badge>
-              );
-            })}
+            {/* Removed selectedValues.map for badges */}
             <CommandPrimitive.Input
               ref={inputRef}
               id={id}
@@ -110,16 +57,17 @@ export function MultiSelectDropdown({
               onValueChange={setInputValue}
               onBlur={() => setOpen(false)}
               onFocus={() => setOpen(true)}
-              placeholder={placeholder}
+              placeholder={selectedValues.length > 0 ? `${selectedValues.length} selected` : placeholder}
               className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
         <div className="relative mt-2">
-          {open && selectables.length > 0 ? (
+          {open && options.length > 0 && ( // Show dropdown if open and options exist
             <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
               <CommandGroup className="h-full overflow-auto">
-                {selectables.map(option => {
+                {options.map(option => { // Iterate over all options
+                  const isSelected = selectedValues.includes(option.value);
                   return (
                     <CommandItem
                       key={option.value}
@@ -129,17 +77,18 @@ export function MultiSelectDropdown({
                       }}
                       onSelect={() => {
                         handleSelect(option);
-                        setInputValue("");
+                        setInputValue(""); // Clear input after selection
                       }}
-                      className={"cursor-pointer"}
+                      className={"cursor-pointer flex items-center justify-between"}
                     >
-                      {option.label}
+                      <span>{option.label}</span>
+                      {isSelected && <Check className="h-4 w-4" />} {/* Display checkmark for selected items */}
                     </CommandItem>
                   );
                 })}
               </CommandGroup>
             </div>
-          ) : null}
+          )}
         </div>
       </Command>
     </div>
