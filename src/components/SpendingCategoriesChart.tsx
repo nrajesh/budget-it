@@ -3,7 +3,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Cell, Sector } from "recharts"; // Import Sector
+import { Pie, PieChart, Cell, Sector } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
@@ -108,6 +108,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
   };
 
   const handleCenterClick = () => {
+    console.log("Center clicked, going back to categories."); // Debug log
     setSelectedCategoryForDrilldown(null);
     resetCategoryActiveIndex();
     resetVendorActiveIndex();
@@ -153,15 +154,15 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               ))}
             </Pie>
             {selectedCategoryForDrilldown && (
-              // Transparent sector in the center to act as a back button
+              // Semi-transparent sector in the center to act as a back button (visible for debugging)
               <Sector
-                cx={125} // Assuming center of the chart container
-                cy={125} // Assuming center of the chart container
+                cx={125}
+                cy={125}
                 innerRadius={0}
-                outerRadius={60} // Matches innerRadius of the main pie
+                outerRadius={60}
                 startAngle={0}
                 endAngle={360}
-                fill="transparent"
+                fill="rgba(128, 128, 128, 0.2)" // Temporarily visible
                 onClick={handleCenterClick}
                 style={{ cursor: 'pointer' }}
               />
