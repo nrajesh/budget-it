@@ -1,8 +1,10 @@
+"use client";
+
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig } from "@/components/ui/chart";
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart"; // Fixed import syntax
+import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
@@ -137,49 +139,56 @@ const Analytics = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end flex-wrap">
-        <SearchInput
-          id="search-input"
-          label="Search"
-          placeholder="Search transactions..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-[160px]" // Standardized search bar width
-        />
-        <div className="flex flex-col gap-2">
-          <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
-          <DatePickerWithRange
-            id="date-range-filter"
-            date={dateRange}
-            onDateChange={setDateRange}
-            className="w-[160px]" // Standardized date selector width
+      <div className="flex flex-col gap-4"> {/* Container for the two rows of filters */}
+        {/* First row: Search and Date Range */}
+        <div className="flex flex-wrap gap-4 items-end">
+          <SearchInput
+            id="search-input"
+            label="Search"
+            placeholder="Search transactions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-[160px]"
           />
+          <div className="flex flex-col gap-2">
+            <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
+            <DatePickerWithRange
+              id="date-range-filter"
+              date={dateRange}
+              onDateChange={setDateRange}
+              className="w-[160px]"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
-          <MultiSelectDropdown
-            id="account-filter"
-            options={availableAccounts}
-            selectedValues={selectedAccounts}
-            onSelectChange={setSelectedAccounts}
-            placeholder="Filter by Account"
-            className="w-full sm:w-[200px]"
-          />
+
+        {/* Second row: Account, Category, and Reset Button */}
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
+            <MultiSelectDropdown
+              id="account-filter"
+              options={availableAccounts}
+              selectedValues={selectedAccounts}
+              onSelectChange={setSelectedAccounts}
+              placeholder="Filter by Account"
+              className="w-full sm:w-[200px]"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
+            <MultiSelectDropdown
+              id="category-filter"
+              options={availableCategories}
+              selectedValues={selectedCategories}
+              onSelectChange={setSelectedCategories}
+              placeholder="Filter by Category"
+              className="w-full sm:w-[200px]"
+            />
+          </div>
+          <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2 shrink-0">
+            Reset Filters
+          </Button>
         </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
-          <MultiSelectDropdown
-            id="category-filter"
-            options={availableCategories}
-            selectedValues={selectedCategories}
-            onSelectChange={setSelectedCategories}
-            placeholder="Filter by Category"
-            className="w-full sm:w-[200px]"
-          />
-        </div>
-        <Button onClick={handleResetFilters} variant="outline" className="h-10 px-4 py-2 shrink-0">
-          Reset Filters
-        </Button>
       </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
