@@ -1,86 +1,111 @@
 "use client";
 
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import React from "react";
-import { ActivePieShape } from "./charts/ActivePieShape"; // Import the new component
-import { usePieChartInteraction } from "@/hooks/usePieChartInteraction"; // Import the new hook
+import { ActivePieShape } from "./charts/ActivePieShape";
+import { usePieChartInteraction } from "@/hooks/usePieChartInteraction";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface SpendingByVendorChartProps {
   transactions: Transaction[];
 }
 
-const getVendorChartConfig = (vendors: string[]) => {
-  const config: ChartConfig = {
-    amount: {
-      label: "Amount",
-    },
-  };
-  vendors.forEach((vendor, index) => {
-    const colorIndex = (index % 8) + 1;
-    config[vendor] = {
-      label: vendor,
-      color: `hsl(var(--chart-${colorIndex}))`,
-    };
-  });
-  return config;
-};
-
 export function SpendingByVendorChart({ transactions }: SpendingByVendorChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-  const { activeIndex, onPieClick, resetActiveIndex } = usePieChartInteraction(); // Use the new hook
+  const { activeIndex, handlePieClick, resetDrilldown, selectedDrilldownItem } = usePieChartInteraction();
 
-  const allUniqueVendors = React.useMemo(() => {
-    const vendorsSet = new Set<string>();
-    transactions.forEach(t => {
-      if (t.amount < 0 && t.category !== 'Transfer') {
-        vendorsSet.add(t.vendor);
+  // Data for initial vendor spending chart
+  const vendorSpendingData = React.useMemo(() => {
+    const spending = transactions.reduce((acc, transaction) => {
+      if (transaction.amount < 0 && transaction.category !== 'Transfer') {
+        const vendor = transaction.vendor || 'Unknown Vendor';
+        const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
+        acc[vendor] = (acc[vendor] || 0) + convertedAmount;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(spending).map(([vendor, amount], index) => ({
+      vendor,
+      amount: amount,
+      fill: `hsl(var(--chart-${(index % 8) + 1}))`, // Assign colors dynamically
+    }));
+  }, [transactions, convertBetweenCurrencies, selectedCurrency]);
+
+  // Data for category drill-down chart (when a vendor is selected)
+  const categorySpendingData = React.useMemo(() => {
+    if (!selectedDrilldownItem) return [];
+
+    const filteredTransactions = transactions.filter(
+      (t) => t.amount < 0 && t.vendor === selectedDrilldownItem && t.category !== 'Transfer'
+    );
+
+    const categoryData = filteredTransactions.reduce((acc, transaction) => {
+      const category = transaction.category || 'Unknown Category';
+      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
+      acc[category] = (acc[category] || 0) + convertedAmount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(categoryData).map(([category, amount], index) => ({
+      category,
+      amount: amount,
+      fill: `hsl(var(--chart-${(index % 8) + 1}))`,
+    }));
+  }, [transactions, selectedDrilldownItem, convertBetweenCurrencies, selectedCurrency]);
+
+  const currentChartData = selectedDrilldownItem ? categorySpendingData : vendorSpendingData;
+  const currentNameKey = selectedDrilldownItem ? "category" : "vendor";
+  const currentTotalSpending = currentChartData.reduce((sum, item) => sum + item.amount, 0);
+
+  const chartConfig = React.useMemo(() => {
+    const config: ChartConfig = {
+      amount: {
+        label: "Amount",
+      },
+    };
+
+    currentChartData.forEach((item, index) => {
+      const name = item.category || item.vendor;
+      const colorIndex = (index % 8) + 1;
+      if (name) {
+        config[name] = {
+          label: name,
+          color: `hsl(var(--chart-${colorIndex}))`,
+        };
       }
     });
-    return Array.from(vendorsSet);
-  }, [transactions]);
 
-  const comprehensiveChartConfig = React.useMemo(() => getVendorChartConfig(allUniqueVendors), [allUniqueVendors]);
-
-  const spendingData = transactions.reduce((acc, transaction) => {
-    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-      const vendor = transaction.vendor;
-      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
-      acc[vendor] = (acc[vendor] || 0) + convertedAmount;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const chartDataWithColors = Object.entries(spendingData).map(([vendor, amount]) => ({
-    vendor,
-    amount: amount,
-    fill: (comprehensiveChartConfig[vendor as keyof typeof comprehensiveChartConfig] as { color: string })?.color || "hsl(var(--chart-8))",
-  }));
-
-  const sortedChartData = chartDataWithColors.sort((a, b) => b.amount - a.amount);
-  const topVendorsCount = 5;
-  const topVendors = sortedChartData.slice(0, topVendorsCount);
-  const otherSpending = sortedChartData.slice(topVendorsCount).reduce((sum, item) => sum + item.amount, 0);
-
-  const finalChartData = topVendors;
-  if (otherSpending > 0) {
-    finalChartData.push({ vendor: "Other", amount: otherSpending, fill: "hsl(var(--chart-7))" });
-  }
-
-  const totalSpending = finalChartData.reduce((sum, item) => sum + item.amount, 0);
+    return config;
+  }, [currentChartData]);
 
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Spending by Vendor</CardTitle>
-        <CardDescription>Total spending: {formatCurrency(totalSpending)}</CardDescription>
+        <div className="flex items-center justify-between w-full">
+          {selectedDrilldownItem && (
+            <Button variant="ghost" size="icon" onClick={resetDrilldown} className="mr-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back</span>
+            </Button>
+          )}
+          <CardTitle className={selectedDrilldownItem ? "ml-auto" : ""}>
+            {selectedDrilldownItem ? `Spending with ${selectedDrilldownItem}` : "Spending by Vendor"}
+          </CardTitle>
+          {selectedDrilldownItem && <div className="w-8"></div> /* Spacer for alignment */}
+        </div>
+        <CardDescription>
+          {selectedDrilldownItem ? `Total for ${selectedDrilldownItem}: ${formatCurrency(currentTotalSpending)}` : `Total spending: ${formatCurrency(currentTotalSpending)}`}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
-          config={comprehensiveChartConfig}
+          config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"
         >
           <PieChart>
@@ -89,17 +114,17 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
               content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
             />
             <Pie
-              data={finalChartData}
+              data={currentChartData}
               dataKey="amount"
-              nameKey="vendor"
+              nameKey={currentNameKey}
               innerRadius={60}
               outerRadius={80}
               strokeWidth={5}
               activeIndex={activeIndex}
-              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} /> : null}
-              onClick={onPieClick}
+              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null}
+              onClick={(data, index) => handlePieClick(data, index, currentNameKey)}
             >
-              {finalChartData.map((entry, index) => (
+              {currentChartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
             </Pie>
