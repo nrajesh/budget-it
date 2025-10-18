@@ -45,35 +45,61 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   onResetFilters,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mt-4 items-end">
-      <Input
-        placeholder="Search vendor or remarks..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="max-w-sm w-full"
-      />
-      <MultiSelectDropdown
-        options={availableAccountOptions}
-        selectedValues={selectedAccounts}
-        onSelectChange={setSelectedAccounts}
-        placeholder="Filter by Account"
-      />
-      <MultiSelectDropdown
-        options={availableCategoryOptions}
-        selectedValues={selectedCategories}
-        onSelectChange={setSelectedCategories}
-        placeholder="Filter by Category"
-      />
-      <MultiSelectDropdown // Add new MultiSelectDropdown for vendors
-        options={availableVendorOptions}
-        selectedValues={selectedVendors}
-        onSelectChange={setSelectedVendors}
-        placeholder="Filter by Vendor"
-      />
-      <DateRangePicker dateRange={dateRange} onDateChange={onDateChange} />
-      <Button variant="outline" size="icon" onClick={onResetFilters} className="shrink-0">
-        <X className="h-4 w-4" /> {/* Use X icon for reset */}
-        <span className="sr-only">Reset Filters</span>
+    <div className="flex flex-col sm:flex-row gap-4 mt-4 items-start sm:items-end flex-wrap"> {/* Adjusted alignment and added flex-wrap */}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="search-input" className="text-sm font-medium text-foreground">Search</label>
+        <Input
+          id="search-input"
+          placeholder="Search vendor or remarks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full sm:w-[280px]" // Longer search bar
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
+        <DateRangePicker
+          id="date-range-filter"
+          date={dateRange}
+          onDateChange={onDateChange}
+          className="w-full sm:w-[180px]" // Smaller date selector
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
+        <MultiSelectDropdown
+          id="account-filter"
+          options={availableAccountOptions}
+          selectedValues={selectedAccounts}
+          onSelectChange={setSelectedAccounts}
+          placeholder="Filter by Account"
+          className="w-full sm:w-[200px]" // Consistent width
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
+        <MultiSelectDropdown
+          id="category-filter"
+          options={availableCategoryOptions}
+          selectedValues={selectedCategories}
+          onSelectChange={setSelectedCategories}
+          placeholder="Filter by Category"
+          className="w-full sm:w-[200px]" // Consistent width
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="vendor-filter" className="text-sm font-medium text-foreground">Vendor</label>
+        <MultiSelectDropdown // Add new MultiSelectDropdown for vendors
+          id="vendor-filter"
+          options={availableVendorOptions}
+          selectedValues={selectedVendors}
+          onSelectChange={setSelectedVendors}
+          placeholder="Filter by Vendor"
+          className="w-full sm:w-[200px]" // Consistent width
+        />
+      </div>
+      <Button variant="outline" onClick={onResetFilters} className="h-10 px-4 py-2 shrink-0"> {/* Updated reset button */}
+        Reset Filters
       </Button>
     </div>
   );
