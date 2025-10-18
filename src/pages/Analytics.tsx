@@ -7,6 +7,9 @@ import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
 import { slugify } from "@/lib/utils";
+import { DatePickerWithRange } from "@/components/DatePickerWithRange"; // Import the new component
+import { DateRange } from "react-day-picker";
+import { addDays } from "date-fns";
 
 const chartConfigForAccounts = {
   Checking: {
@@ -24,18 +27,30 @@ const chartConfigForAccounts = {
 } satisfies ChartConfig;
 
 const Analytics = () => {
-  const { transactions, categories: allCategories } = useTransactions(); // Get allCategories from context
+  const { transactions, categories: allCategories } = useTransactions();
 
-  // Filter transactions to exclude future-dated ones
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    from: addDays(new Date(), -30), // Default to last 30 days
+    to: new Date(),
+  });
+
+  // Filter transactions to exclude future-dated ones and apply date range
   const currentTransactions = React.useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
 
     return transactions.filter(t => {
       const transactionDate = new Date(t.date);
-      return transactionDate <= today;
+      transactionDate.setHours(0, 0, 0, 0); // Normalize transaction date
+
+      const isNotFuture = transactionDate <= today;
+      const isInDateRange =
+        (!dateRange?.from || transactionDate >= dateRange.from) &&
+        (!dateRange?.to || transactionDate <= dateRange.to);
+
+      return isNotFuture && isInDateRange;
     });
-  }, [transactions]);
+  }, [transactions, dateRange]);
 
   const availableAccounts = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();
@@ -47,7 +62,7 @@ const Analytics = () => {
   }, [currentTransactions]);
 
   const availableCategories = React.useMemo(() => {
-    return allCategories.map(category => ({ // Use allCategories from context
+    return allCategories.map(category => ({
       value: slugify(category.name),
       label: category.name,
     }));
@@ -87,12 +102,26 @@ const Analytics = () => {
       filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
     }
 
+    // Apply category filter for RecentTransactions and SpendingCategoriesChart
+    // Note: BalanceOverTimeChart does not use category filter
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(t => selectedCategories.includes(slugify(t.category)));
+    }
+
     return filtered;
-  }, [currentTransactions, selectedAccounts]);
+  }, [currentTransactions, selectedAccounts, selectedCategories]);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
+          <DatePickerWithRange
+            id="date-range-filter"
+            date={dateRange}
+            onDateChange={setDateRange}
+          />
+        </div>
         <div className="flex flex-col gap-2">
           <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
           <MultiSelectDropdown
