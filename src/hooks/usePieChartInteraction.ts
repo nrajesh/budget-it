@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from 'react';
+import React from "react";
 
-export const usePieChartInteraction = () => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+export function usePieChartInteraction() {
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
-  const handlePieClick = (data: any, index: number) => {
-    setActiveIndex(index === activeIndex ? null : index);
+  const handlePieClick = React.useCallback((index: number) => {
+    setActiveIndex((prevIndex) => (prevIndex === index ? null : index));
+  }, []);
+
+  const resetActiveIndex = React.useCallback(() => {
+    setActiveIndex(null);
+  }, []);
+
+  return {
+    activeIndex,
+    handlePieClick,
+    resetActiveIndex,
   };
-
-  return { activeIndex, handlePieClick };
-};
+}

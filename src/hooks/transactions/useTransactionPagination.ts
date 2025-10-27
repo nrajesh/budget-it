@@ -1,30 +1,28 @@
-"use client";
+import * as React from "react";
+import { Transaction } from "@/data/finance-data";
 
-import { useState, useMemo } from 'react';
-import { Transaction } from '@/types/finance';
+export const useTransactionPagination = (filteredTransactions: Transaction[]) => {
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [itemsPerPage, setItemsPerPage] = React.useState(10);
 
-const DEFAULT_PAGE_SIZE = 10;
+  const totalPages = React.useMemo(() => Math.ceil(filteredTransactions.length / itemsPerPage), [filteredTransactions.length, itemsPerPage]);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
 
-export const useTransactionPagination = (transactions: Transaction[]) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
-  const pageCount = useMemo(() => {
-    return Math.ceil(transactions.length / pageSize);
-  }, [transactions.length, pageSize]);
-
-  const paginatedTransactions = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return transactions.slice(startIndex, endIndex);
-  }, [transactions, currentPage, pageSize]);
+  // Reset pagination when filters or itemsPerPage change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredTransactions, itemsPerPage]);
 
   return {
     currentPage,
     setCurrentPage,
-    pageSize,
-    setPageSize,
-    pageCount,
-    paginatedTransactions,
+    itemsPerPage,
+    setItemsPerPage,
+    totalPages,
+    startIndex,
+    endIndex,
+    currentTransactions,
   };
 };

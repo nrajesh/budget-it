@@ -1,30 +1,38 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format, parse } from 'date-fns';
+import { format, parseISO, parse } from "date-fns"; // Import parse for custom format parsing
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currencyCode: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currencyCode,
-  }).format(amount);
+export function slugify(str: string) {
+  return str.toLowerCase().replace(/\s+/g, '-');
 }
 
-export const slugify = (text: string) =>
-  text
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-');
+/**
+ * Formats an ISO date string or Date object to "DD-MMM-YYYY" format.
+ * Example: "2023-01-15T12:00:00.000Z" or new Date(2023, 0, 15) -> "15-Jan-2023"
+ */
+export function formatDateToDDMMYYYY(dateString: string | Date): string {
+  const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+  return format(date, "dd-MMM-yyyy");
+}
 
-export const formatDateToDDMMYYYY = (date: Date | string) => format(new Date(date), 'dd/MM/yyyy');
-export const formatDateToYYYYMMDD = (date: Date | string) => format(new Date(date), 'yyyy-MM-dd');
+/**
+ * Parses a date string in "DD-MMM-YYYY" format into a Date object.
+ * Example: "15-Jan-2023" -> Date object
+ */
+export function parseDateFromDDMMYYYY(dateString: string): Date {
+  return parse(dateString, "dd-MMM-yyyy", new Date());
+}
 
-export const parseDateFromDDMMYYYY = (dateString: string) => parse(dateString, 'dd/MM/yyyy', new Date());
+/**
+ * Formats an ISO date string or Date object to "YYYY-MM-DD" format.
+ * This is typically used for HTML date input fields.
+ * Example: "2023-01-15T12:00:00.000Z" or new Date(2023, 0, 15) -> "2023-01-15"
+ */
+export function formatDateToYYYYMMDD(dateString: string | Date): string {
+  const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+  return format(date, "yyyy-MM-dd");
+}
