@@ -15,9 +15,11 @@ import SettingsPage from '@/pages/Settings';
 import Login from '@/pages/Login';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import NotificationsBell from '@/components/NotificationsBell';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TransactionsProvider } from '@/contexts/TransactionsContext';
+import { Toaster } from 'react-hot-toast';
 
-const queryClient = new QueryClient(); // Create a new QueryClient instance
+const queryClient = new QueryClient();
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, isLoading } = useAuth();
@@ -52,7 +54,7 @@ const AppRoutes: React.FC = () => {
                     <Link to="/accounts" className="hover:underline flex items-center"><Wallet className="mr-1" size={16} /> Accounts</Link>
                     <Link to="/scheduled" className="hover:underline flex items-center"><Calendar className="mr-1" size={16} /> Scheduled</Link>
                     <Link to="/categories" className="hover:underline flex items-center"><PiggyBank className="mr-1" size={16} /> Categories</Link>
-                    <Link to="/budgets" className="hover:underline flex items-center"><BarChart3 className="mr-1" size={16} /> Budgets</Link>
+                    <Link to="/budgets" className="hover:underline flex items-center"><Home className="mr-1" size={16} /> Budgets</Link>
                     <Link to="/reports" className="hover:underline flex items-center"><BarChart3 className="mr-1" size={16} /> Reports</Link>
                     <Link to="/settings" className="hover:underline flex items-center"><Settings className="mr-1" size={16} /> Settings</Link>
                     <NotificationsBell />
@@ -63,7 +65,7 @@ const AppRoutes: React.FC = () => {
                 <Outlet />
               </LayoutMain>
               <LayoutFooter>
-                © 2024 Budget-It. All rights reserved.
+                <p>&copy; 2024 Budget-It. All rights reserved.</p>
               </LayoutFooter>
             </Layout>
           </ProtectedRoute>
@@ -84,13 +86,16 @@ const AppRoutes: React.FC = () => {
 
 function App() {
   return (
-    <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <QueryClientProvider client={queryClient}> {/* Wrap with QueryClientProvider */}
-          <AppRoutes />
-        </QueryClientProvider>
+        <TransactionsProvider> {/* TransactionsProvider now correctly wraps AppRoutes */}
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </TransactionsProvider>
+        <Toaster />
       </AuthProvider>
-    </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
