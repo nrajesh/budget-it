@@ -9,7 +9,6 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import Index from "./pages/Index";
-import About from "./pages/About";
 import Budgets from "./pages/Budgets"; // Import the new Budgets page
 
 const queryClient = new QueryClient();
@@ -27,11 +26,6 @@ function App() {
               </Link>
             </li>
             <li>
-              <Link to="/about" className="hover:underline">
-                About
-              </Link>
-            </li>
-            <li>
               <Link to="/budgets" className="hover:underline">
                 Budgets
               </Link>
@@ -42,7 +36,6 @@ function App() {
         <div className="content">
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
             <Route path="/budgets" element={<Budgets />} /> {/* Add the new route */}
           </Routes>
         </div>
