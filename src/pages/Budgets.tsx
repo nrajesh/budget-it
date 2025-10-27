@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface Budget {
   id: string;
@@ -40,28 +41,16 @@ interface Budget {
   created_at: string;
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
-
 const fetchBudgets = async (): Promise<Budget[]> => {
   const { data, error } = await supabase.from("budgets").select("*");
   if (error) throw new Error(error.message);
   return data;
 };
 
-const fetchCategories = async (userId: string): Promise<Category[]> => {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, name")
-    .eq("user_id", userId);
-  if (error) throw new Error(error.message);
-  return data;
-};
-
 const Budgets = () => {
   const queryClient = useQueryClient();
+  // Use categories and loading state from the context
+  const { categories, isLoadingCategories } = useTransactions(); 
   const [selectedBudgetIds, setSelectedBudgetIds] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -79,13 +68,9 @@ const Budgets = () => {
     enabled: !!userId,
   });
 
-  const { data: categories, isLoading: isLoadingCategories } = useQuery<Category[], Error>({
-    queryKey: ["categories", userId],
-    queryFn: () => fetchCategories(userId!),
-    enabled: !!userId,
-  });
-
-  const categoryMap = new Map(categories?.map((cat) => [cat.id, cat.name]));
+  const categoryMap = React.useMemo(() => {
+    return new Map(categories?.map((cat) => [cat.id, cat.name]));
+  }, [categories]);
 
   const toggleBudgetSelection = (id: string) => {
     setSelectedBudgetIds((prev) => {
