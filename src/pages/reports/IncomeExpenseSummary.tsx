@@ -1,90 +1,32 @@
+"use client";
+
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useOutletContext } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReportOutletContextType } from './ReportLayout';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
-interface IncomeExpenseSummaryProps {
-  transactions: any[];
-}
+const IncomeExpenseSummary = () => {
+  const { combinedFilteredTransactions: transactions } = useOutletContext<ReportOutletContextType>();
+  const { formatCurrency } = useCurrency();
 
-const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transactions }) => {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-
-  const summary = React.useMemo(() => {
-    const incomeByCategory: Record<string, number> = {};
-    const expensesByCategory: Record<string, number> = {};
-    let totalIncome = 0;
-    let totalExpenses = 0;
-
-    transactions.forEach(t => {
-      if (t.category !== 'Transfer') {
-        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-        if (convertedAmount > 0) {
-          totalIncome += convertedAmount;
-          incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + convertedAmount;
-        } else {
-          totalExpenses += Math.abs(convertedAmount);
-          expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + Math.abs(convertedAmount);
-        }
-      }
-    });
-
-    return { incomeByCategory, expensesByCategory, totalIncome, totalExpenses };
-  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+  const income = transactions
+    .filter(t => t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const expenses = transactions
+    .filter(t => t.amount < 0)
+    .reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Income and Expense Summary</CardTitle>
-        <CardDescription>A breakdown of your income and expenses by category.</CardDescription>
+        <CardTitle>Income vs. Expense</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-6 md:grid-cols-2">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Income</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Object.entries(summary.incomeByCategory).map(([category, amount]) => (
-                <TableRow key={category}>
-                  <TableCell>{category}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="font-bold">
-                <TableCell>Total Income</TableCell>
-                <TableCell className="text-right">{formatCurrency(summary.totalIncome)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Expenses</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Object.entries(summary.expensesByCategory).map(([category, amount]) => (
-                <TableRow key={category}>
-                  <TableCell>{category}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="font-bold">
-                <TableCell>Total Expenses</TableCell>
-                <TableCell className="text-right">{formatCurrency(summary.totalExpenses)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+      <CardContent>
+        <p>Total Income: {formatCurrency(income)}</p>
+        <p>Total Expenses: {formatCurrency(Math.abs(expenses))}</p>
+        <p className="font-bold">Net: {formatCurrency(income + expenses)}</p>
       </CardContent>
     </Card>
   );

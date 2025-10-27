@@ -1,53 +1,38 @@
-"use client";
-
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-} from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/sonner";
+import { Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import About from "./pages/About";
-import Budgets from "./pages/Budgets"; // Import the new Budgets page
-
-const queryClient = new QueryClient();
+import Budgets from "./pages/Budgets";
+import Transactions from "./pages/Transactions";
+import ScheduledTransactions from "./pages/ScheduledTransactions";
+import Accounts from "./pages/Accounts";
+import Vendors from "./pages/Vendors";
+import Categories from "./pages/Categories";
+import Reports from "./pages/reports/Reports";
+import EssentialReports from "./pages/reports/EssentialReports";
+import AdvancedReports from "./pages/reports/AdvancedReports";
+import SettingsPage from "./pages/SettingsPage";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <Router>
-        <nav className="p-4 bg-gray-800 text-white">
-          <ul className="flex space-x-4">
-            <li>
-              <Link to="/" className="hover:underline">
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link to="/about" className="hover:underline">
-                About
-              </Link>
-            </li>
-            <li>
-              <Link to="/budgets" className="hover:underline">
-                Budgets
-              </Link>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/budgets" element={<Budgets />} /> {/* Add the new route */}
-          </Routes>
-        </div>
-      </Router>
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Index />} />
+        <Route path="about" element={<About />} />
+        <Route path="budgets" element={<Budgets />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="scheduled" element={<ScheduledTransactions />} />
+        <Route path="accounts" element={<Accounts />} />
+        <Route path="vendors" element={<Vendors />} />
+        <Route path="categories" element={<Categories />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="reports/essential" element={<EssentialReports />} />
+        <Route path="reports/advanced" element={<AdvancedReports />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+    </Routes>
   );
 }
 
