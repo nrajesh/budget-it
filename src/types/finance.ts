@@ -56,7 +56,7 @@ export interface Payee {
   is_account: boolean;
   created_at: string;
   account_id: string | null;
-  currency?: string;
+  currency?: string; // Made optional
   starting_balance?: number;
   remarks?: string | null;
   running_balance?: number;

@@ -12,7 +12,7 @@ export const useTransactionData = () => {
     vendors,
     categories,
     accountCurrencyMap,
-    isLoading: isLoadingTransactions,
+    isLoadingTransactions,
     error,
     refetchTransactions,
   } = useTransactions();
