@@ -1,36 +1,88 @@
-"use client";
-
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReportOutletContextType } from './ReportLayout';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
 
-const NetWorthStatement = () => {
-  const { accounts } = useOutletContext<ReportOutletContextType>();
-  const { formatCurrency } = useCurrency();
+interface NetWorthStatementProps {
+  transactions: any[];
+  accounts: any[];
+}
 
-  if (!accounts) return <div>Loading accounts...</div>;
+const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, accounts }) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
-  const totalAssets = accounts
-    .filter(acc => acc.running_balance >= 0)
-    .reduce((sum, acc) => sum + acc.running_balance, 0);
+  const { assets, liabilities, netWorth } = React.useMemo(() => {
+    const accountBalances: Record<string, number> = {};
 
-  const totalLiabilities = accounts
-    .filter(acc => acc.running_balance < 0)
-    .reduce((sum, acc) => sum + acc.running_balance, 0);
-    
-  const netWorth = totalAssets + totalLiabilities;
+    accounts.forEach(account => {
+      const startingBalance = account.starting_balance || 0;
+      const accountCurrency = account.currency || 'USD';
+      accountBalances[account.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
+    });
+
+    transactions.forEach(transaction => {
+      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
+      if (transaction.category !== 'Transfer') {
+        accountBalances[transaction.account] = (accountBalances[transaction.account] || 0) + convertedAmount;
+      }
+    });
+
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+
+    Object.values(accountBalances).forEach(balance => {
+      if (balance >= 0) {
+        totalAssets += balance;
+      } else {
+        totalLiabilities += Math.abs(balance);
+      }
+    });
+
+    return {
+      assets: totalAssets,
+      liabilities: totalLiabilities,
+      netWorth: totalAssets - totalLiabilities,
+    };
+  }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Net Worth Statement</CardTitle>
+        <CardDescription>A summary of your assets and liabilities.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Total Assets: {formatCurrency(totalAssets)}</p>
-        <p>Total Liabilities: {formatCurrency(Math.abs(totalLiabilities))}</p>
-        <p className="font-bold">Net Worth: {formatCurrency(netWorth)}</p>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">{formatCurrency(assets)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Liabilities</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-500">{formatCurrency(liabilities)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Worth</CardTitle>
+              <Scale className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
+            </CardContent>
+          </Card>
+        </div>
       </CardContent>
     </Card>
   );

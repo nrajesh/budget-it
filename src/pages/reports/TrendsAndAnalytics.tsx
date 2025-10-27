@@ -1,28 +1,54 @@
-"use client";
-
 import React from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReportOutletContextType } from './ReportLayout';
-import { useCurrency } from '@/contexts/CurrencyContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useCurrency } from "@/contexts/CurrencyContext";
 
-const TrendsAndAnalytics = () => {
-  const { combinedFilteredTransactions: transactions } = useOutletContext<ReportOutletContextType>();
-  const { formatCurrency } = useCurrency();
+interface TrendsAndAnalyticsProps {
+  transactions: any[];
+}
 
-  const transactionCount = transactions.length;
-  const averageTransaction = transactionCount > 0 
-    ? transactions.reduce((sum, t) => sum + t.amount, 0) / transactionCount
-    : 0;
+const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions }) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+
+  const monthlyData = React.useMemo(() => {
+    const dataByMonth: Record<string, { income: number; expenses: number }> = {};
+
+    transactions.forEach(t => {
+      const month = new Date(t.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      if (!dataByMonth[month]) {
+        dataByMonth[month] = { income: 0, expenses: 0 };
+      }
+      if (t.category !== 'Transfer') {
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        if (convertedAmount > 0) {
+          dataByMonth[month].income += convertedAmount;
+        } else {
+          dataByMonth[month].expenses += Math.abs(convertedAmount);
+        }
+      }
+    });
+
+    return Object.entries(dataByMonth).map(([month, values]) => ({ month, ...values })).reverse();
+  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trends & Analytics</CardTitle>
+        <CardTitle>Trends and Analytics</CardTitle>
+        <CardDescription>Monthly patterns in your spending and income.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Total Transactions Analyzed: {transactionCount}</p>
-        <p>Average Transaction Amount: {formatCurrency(averageTransaction)}</p>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={monthlyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+            <Legend />
+            <Bar dataKey="income" fill="#22c55e" name="Income" />
+            <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
+          </BarChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
