@@ -1,15 +1,12 @@
 "use client";
 
-import { Toaster } from 'react-hot-toast';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Link, Outlet, Navigate } from 'react-router-dom';
-import { Layout, LayoutHeader, LayoutMain, LayoutFooter } from '@/components/layout';
+import { Layout, LayoutHeader, LayoutMain, LayoutFooter } from '@/components/Layout'; // Corrected import path and casing
 import { Home, DollarSign, Calendar, Settings, Wallet, PiggyBank, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
 import Index from '@/pages/Index';
-import Accounts from '@/pages/Accounts';
 import Transactions from '@/pages/Transactions';
+import Accounts from '@/pages/Accounts';
 import ScheduledTransactions from '@/pages/ScheduledTransactions';
 import Categories from '@/pages/Categories';
 import Budgets from '@/pages/Budgets';
@@ -17,109 +14,78 @@ import Reports from '@/pages/Reports';
 import SettingsPage from '@/pages/Settings';
 import Login from '@/pages/Login';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
-import NotificationsBell from '@/components/NotificationsBell'; // Import the new component
+import NotificationsBell from '@/components/NotificationsBell';
 
-const queryClient = new QueryClient();
-
-const navItems = [
-  { name: 'Home', path: '/', icon: Home },
-  { name: 'Accounts', path: '/accounts', icon: Wallet },
-  { name: 'Transactions', path: '/transactions', icon: DollarSign },
-  { name: 'Scheduled', path: '/scheduled-transactions', icon: Calendar },
-  { name: 'Categories', path: '/categories', icon: PiggyBank },
-  { name: 'Budgets', path: '/budgets', icon: BarChart3 },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
-];
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, isLoading } = useAuth();
+
   if (isLoading) {
     return <div>Loading authentication...</div>;
   }
+
   if (!session) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+
+  return <>{children}</>;
+};
+
+const AppRoutes: React.FC = () => {
+  const { session } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <LayoutHeader>
+                <nav className="flex items-center justify-between">
+                  <Link to="/" className="text-xl font-bold">Budget-It</Link>
+                  <div className="flex items-center space-x-4">
+                    <Link to="/transactions" className="hover:underline flex items-center"><DollarSign className="mr-1" size={16} /> Transactions</Link>
+                    <Link to="/accounts" className="hover:underline flex items-center"><Wallet className="mr-1" size={16} /> Accounts</Link>
+                    <Link to="/scheduled" className="hover:underline flex items-center"><Calendar className="mr-1" size={16} /> Scheduled</Link>
+                    <Link to="/categories" className="hover:underline flex items-center"><PiggyBank className="mr-1" size={16} /> Categories</Link>
+                    <Link to="/budgets" className="hover:underline flex items-center"><BarChart3 className="mr-1" size={16} /> Budgets</Link>
+                    <Link to="/reports" className="hover:underline flex items-center"><BarChart3 className="mr-1" size={16} /> Reports</Link>
+                    <Link to="/settings" className="hover:underline flex items-center"><Settings className="mr-1" size={16} /> Settings</Link>
+                    <NotificationsBell />
+                  </div>
+                </nav>
+              </LayoutHeader>
+              <LayoutMain>
+                <Outlet />
+              </LayoutMain>
+              <LayoutFooter>
+                © 2024 Budget-It. All rights reserved.
+              </LayoutFooter>
+            </Layout>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Index />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="accounts" element={<Accounts />} />
+        <Route path="scheduled" element={<ScheduledTransactions />} />
+        <Route path="categories" element={<Categories />} />
+        <Route path="budgets" element={<Budgets />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="settings" element={<SettingsPage />} />
+      </Route>
+    </Routes>
+  );
 };
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Index />} />
-              <Route path="accounts" element={<Accounts />} />
-              <Route path="transactions" element={<Transactions />} />
-              <Route path="scheduled-transactions" element={<ScheduledTransactions />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="budgets" element={<Budgets />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-}
-
-function AppLayout() {
-  const { signOut } = useAuth();
-
-  return (
-    <TooltipProvider>
-      <Layout>
-        <LayoutHeader className="flex justify-between items-center p-4 border-b">
-          <h1 className="text-xl font-bold">Budget App</h1>
-          <div className="flex items-center space-x-4">
-            <NotificationsBell /> {/* Add the NotificationsBell here */}
-            <Button onClick={signOut} variant="outline" size="sm">
-              Sign Out
-            </Button>
-          </div>
-        </LayoutHeader>
-        <div className="flex flex-1">
-          <aside className="w-16 border-r p-2 flex flex-col items-center space-y-2">
-            {navItems.map((item) => (
-              <Tooltip key={item.name}>
-                <TooltipTrigger asChild>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10"
-                  >
-                    <Link to={item.path}>
-                      <item.icon className="h-5 w-5" />
-                      <span className="sr-only">{item.name}</span>
-                    </Link>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{item.name}</TooltipContent>
-              </Tooltip>
-            ))}
-          </aside>
-          <LayoutMain className="flex-1 p-4">
-            <Outlet />
-          </LayoutMain>
-        </div>
-        <LayoutFooter className="p-4 border-t text-center text-sm text-gray-500">
-          © 2024 Budget App
-        </LayoutFooter>
-      </Layout>
-    </TooltipProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
