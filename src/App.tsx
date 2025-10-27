@@ -1,7 +1,7 @@
 "use client";
 
 import { BrowserRouter, Routes, Route, Link, Outlet, Navigate } from 'react-router-dom';
-import { Layout, LayoutHeader, LayoutMain, LayoutFooter } from '@/components/Layout'; // Corrected import path and casing
+import { Layout, LayoutHeader, LayoutMain, LayoutFooter } from '@/components/Layout';
 import { Home, DollarSign, Calendar, Settings, Wallet, PiggyBank, BarChart3 } from 'lucide-react';
 
 import Index from '@/pages/Index';
@@ -15,6 +15,9 @@ import SettingsPage from '@/pages/Settings';
 import Login from '@/pages/Login';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import NotificationsBell from '@/components/NotificationsBell';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient and QueryClientProvider
+
+const queryClient = new QueryClient(); // Create a new QueryClient instance
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session, isLoading } = useAuth();
@@ -83,7 +86,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <QueryClientProvider client={queryClient}> {/* Wrap with QueryClientProvider */}
+          <AppRoutes />
+        </QueryClientProvider>
       </AuthProvider>
     </BrowserRouter>
   );
