@@ -1,57 +1,62 @@
-import * as React from "react";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Transaction } from "@/data/finance-data";
+"use client";
 
-export const useTransactionSelection = (currentTransactions: Transaction[], allTransactions: Transaction[]) => {
-  const { deleteMultipleTransactions } = useTransactions();
-  const [selectedTransactionIds, setSelectedTransactionIds] = React.useState<string[]>([]);
-  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = React.useState(false);
+import { useState } from 'react';
+import { Transaction } from '@/types/finance';
+import { useTransactions } from '@/contexts/TransactionsContext';
 
-  // Memoize selectable transactions on the current page (excluding scheduled origins)
-  const selectableTransactionsOnPage = React.useMemo(() => {
-    return currentTransactions.filter(t => !t.is_scheduled_origin);
-  }, [currentTransactions]);
-
-  const handleSelectOne = React.useCallback((id: string) => {
-    setSelectedTransactionIds((prev) =>
-      prev.includes(id) ? prev.filter((_id) => _id !== id) : [...prev, id]
-    );
-  }, []);
-
-  const handleSelectAll = React.useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedTransactionIds(selectableTransactionsOnPage.map((t) => t.id));
-    } else {
-      setSelectedTransactionIds([]);
-    }
-  }, [selectableTransactionsOnPage]);
-
-  const isAllSelectedOnPage = React.useMemo(() => {
-    if (selectableTransactionsOnPage.length === 0) {
-      return false;
-    }
-    return selectableTransactionsOnPage.every((t) => selectedTransactionIds.includes(t.id));
-  }, [selectableTransactionsOnPage, selectedTransactionIds]);
-
-  const handleBulkDelete = React.useCallback(() => {
-    const transactionsToDelete = selectedTransactionIds.map(id => {
-      const transaction = allTransactions.find(t => t.id === id);
-      return { id, transfer_id: transaction?.transfer_id };
-    });
-    deleteMultipleTransactions(transactionsToDelete);
-    setSelectedTransactionIds([]);
-    setIsBulkDeleteConfirmOpen(false);
-  }, [selectedTransactionIds, allTransactions, deleteMultipleTransactions]);
+export const useTransactionSelection = (pageTransactions: Transaction[]) => {
+  const { deleteMultipleTransactions, transactions: allTransactions } = useTransactions();
+  const [selectedTransactionIds, setSelectedTransactionIds] = useState<string[]>([]);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
 
   const numSelected = selectedTransactionIds.length;
+  const isAllSelectedOnPage = pageTransactions.length > 0 && numSelected === pageTransactions.length;
 
-  const clearSelection = React.useCallback(() => {
+  const handleSelectOne = (id: string) => {
+    setSelectedTransactionIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (isAllSelectedOnPage) {
+      setSelectedTransactionIds([]);
+    } else {
+      setSelectedTransactionIds(pageTransactions.map(t => t.id));
+    }
+  };
+
+  const clearSelection = () => {
     setSelectedTransactionIds([]);
-  }, []);
+  };
+
+  const handleBulkDelete = () => {
+    if (numSelected === 0 || !allTransactions) return;
+
+    const transactionsToDelete = selectedTransactionIds.flatMap(id => {
+      const transaction = allTransactions.find(t => t.id === id);
+      if (!transaction) return [];
+      
+      const items = [transaction.id];
+      if (transaction.transfer_id) {
+        const pairedTransaction = allTransactions.find(
+          p => p.id !== transaction.id && p.transfer_id === transaction.transfer_id
+        );
+        if (pairedTransaction) {
+          items.push(pairedTransaction.id);
+        }
+      }
+      return items;
+    });
+
+    const uniqueIdsToDelete = [...new Set(transactionsToDelete)];
+    deleteMultipleTransactions(uniqueIdsToDelete);
+    clearSelection();
+    setIsBulkDeleteConfirmOpen(false);
+  };
 
   return {
     selectedTransactionIds,
-    setSelectedTransactionIds,
     isBulkDeleteConfirmOpen,
     setIsBulkDeleteConfirmOpen,
     handleSelectOne,

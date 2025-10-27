@@ -1,12 +1,18 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, QueryObserverResult } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Transaction, Account, Vendor, Category, AccountCurrencyMap } from "@/types/finance";
+import { Transaction, Account, Vendor, Category } from "@/types/finance";
 
-// --- Context Type Definition ---
+// --- Type Definitions ---
+
+interface DemoDataProgress {
+  stage: string;
+  progress: number;
+  totalStages: number;
+}
 
 interface TransactionsContextType {
   // Data
@@ -14,8 +20,8 @@ interface TransactionsContextType {
   accounts: Account[] | undefined;
   vendors: Vendor[] | undefined;
   categories: Category[] | undefined;
-  accountCurrencyMap: AccountCurrencyMap;
-  demoDataProgress: number | null;
+  accountCurrencyMap: Map<string, string>;
+  demoDataProgress: DemoDataProgress | null;
 
   // Loading States
   isLoadingTransactions: boolean;
@@ -25,10 +31,10 @@ interface TransactionsContextType {
   error: Error | null;
 
   // Actions & Refetching
-  refetchTransactions: () => void;
-  refetchAccounts: () => void;
-  refetchVendors: () => void;
-  refetchCategories: () => void;
+  refetchTransactions: () => Promise<QueryObserverResult<Transaction[], Error>>;
+  refetchAccounts: () => Promise<QueryObserverResult<Account[], Error>>;
+  refetchVendors: () => Promise<QueryObserverResult<Vendor[], Error>>;
+  refetchCategories: () => Promise<QueryObserverResult<Category[], Error>>;
   invalidateAllData: () => void;
   
   addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at' | 'user_id'>) => Promise<void>;
@@ -60,11 +66,9 @@ const fetchAccounts = async (): Promise<Account[]> => {
 };
 
 const fetchVendors = async (): Promise<Vendor[]> => {
-  // Fetch non-account vendors using the stored procedure
   const { data, error } = await supabase.rpc("get_vendors_with_transaction_counts");
   if (error) throw new Error(`Failed to fetch vendors: ${error.message}`);
-  // Filter out accounts, as they are handled by fetchAccounts
-  return (data as (Vendor & { account_id: string | null })[]).filter(v => !v.is_account) as Vendor[];
+  return (data as any[]).filter(v => !v.is_account) as Vendor[];
 };
 
 const fetchCategories = async (userId: string): Promise<Category[]> => {
@@ -78,7 +82,7 @@ const fetchCategories = async (userId: string): Promise<Category[]> => {
 export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
-  const [demoDataProgress, setDemoDataProgress] = useState<number | null>(null);
+  const [demoDataProgress, setDemoDataProgress] = useState<DemoDataProgress | null>(null);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -88,68 +92,44 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
     getUserId();
   }, []);
 
-  // 1. Transactions Query
-  const { 
-    data: transactions, 
-    isLoading: isLoadingTransactions, 
-    error, 
-    refetch: refetchTransactions 
-  } = useQuery<Transaction[], Error>({
+  const { data: transactions, isLoading: isLoadingTransactions, error, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ["transactions"],
     queryFn: fetchTransactions,
     enabled: !!userId,
   });
 
-  // 2. Accounts Query
-  const { 
-    data: accounts, 
-    isLoading: isLoadingAccounts, 
-    refetch: refetchAccounts 
-  } = useQuery<Account[], Error>({
+  const { data: accounts, isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery<Account[], Error>({
     queryKey: ["accounts"],
     queryFn: fetchAccounts,
     enabled: !!userId,
   });
 
-  // 3. Vendors Query
-  const { 
-    data: vendors, 
-    isLoading: isLoadingVendors, 
-    refetch: refetchVendors 
-  } = useQuery<Vendor[], Error>({
+  const { data: vendors, isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery<Vendor[], Error>({
     queryKey: ["vendors"],
     queryFn: fetchVendors,
     enabled: !!userId,
   });
 
-  // 4. Categories Query
-  const { 
-    data: categories, 
-    isLoading: isLoadingCategories, 
-    refetch: refetchCategories 
-  } = useQuery<Category[], Error>({
+  const { data: categories, isLoading: isLoadingCategories, refetch: refetchCategories } = useQuery<Category[], Error>({
     queryKey: ["categories", userId],
     queryFn: () => fetchCategories(userId!),
     enabled: !!userId,
   });
 
-  // Derived State: Account Currency Map
-  const accountCurrencyMap: AccountCurrencyMap = React.useMemo(() => {
-    if (!accounts) return {};
-    return accounts.reduce((map, account) => {
-      map[account.name] = account.currency;
-      return map;
-    }, {} as AccountCurrencyMap);
+  const accountCurrencyMap: Map<string, string> = React.useMemo(() => {
+    if (!accounts) return new Map();
+    return new Map(accounts.map(account => [account.name, account.currency]));
   }, [accounts]);
-
-  // --- Action Functions ---
 
   const invalidateAllData = useCallback(() => {
     queryClient.invalidateQueries();
   }, [queryClient]);
 
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'created_at' | 'user_id'>) => {
-    if (!userId) return toast.error("User not authenticated.");
+    if (!userId) {
+      toast.error("User not authenticated.");
+      return;
+    }
     
     const transactionWithUserId = { ...transaction, user_id: userId };
     const { error } = await supabase.from("transactions").insert(transactionWithUserId);
@@ -196,19 +176,19 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
   }, [invalidateAllData]);
 
   const generateDiverseDemoData = useCallback(async () => {
-    if (!userId) return toast.error("User not authenticated.");
+    if (!userId) {
+      toast.error("User not authenticated.");
+      return;
+    }
     
-    // Placeholder for complex demo data generation logic
     toast.info("Generating demo data...");
-    setDemoDataProgress(0);
+    setDemoDataProgress({ stage: "Starting...", progress: 0, totalStages: 10 });
     
-    // Simulate progress
     for (let i = 1; i <= 10; i++) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      setDemoDataProgress(i * 10);
+      await new Promise(resolve => setTimeout(resolve, 150));
+      setDemoDataProgress({ stage: `Generating step ${i}/10...`, progress: i, totalStages: 10 });
     }
 
-    // In a real scenario, this would call a complex Edge Function or RPC
     await new Promise(resolve => setTimeout(resolve, 500));
     
     setDemoDataProgress(null);
@@ -217,7 +197,10 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
   }, [userId, invalidateAllData]);
 
   const clearAllTransactions = useCallback(async () => {
-    if (!userId) return toast.error("User not authenticated.");
+    if (!userId) {
+      toast.error("User not authenticated.");
+      return;
+    }
 
     const { error } = await supabase.rpc("clear_all_app_data");
 
@@ -229,7 +212,6 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [userId, invalidateAllData]);
 
-
   const contextValue: TransactionsContextType = {
     transactions,
     accounts,
@@ -237,19 +219,16 @@ export const TransactionsProvider = ({ children }: { children: ReactNode }) => {
     categories,
     accountCurrencyMap,
     demoDataProgress,
-    
     isLoadingTransactions,
     isLoadingAccounts,
     isLoadingVendors,
     isLoadingCategories,
     error,
-    
     refetchTransactions,
     refetchAccounts,
     refetchVendors,
     refetchCategories,
     invalidateAllData,
-    
     addTransaction,
     updateTransaction,
     deleteTransaction,

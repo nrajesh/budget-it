@@ -1,4 +1,6 @@
-import * as React from "react";
+"use client";
+
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,55 +9,33 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Loader2 } from "lucide-react";
+import { useTransactions } from '@/contexts/TransactionsContext';
 
-interface DemoDataProgressDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-}
-
-export const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({
-  isOpen,
-  onOpenChange,
-}) => {
+export const DemoDataProgressDialog = () => {
   const { demoDataProgress } = useTransactions();
 
-  const progressValue = demoDataProgress ? (demoDataProgress.progress / demoDataProgress.totalStages) * 100 : 0;
+  const isOpen = demoDataProgress !== null;
 
-  // Keep the dialog open until progress reaches 100%
-  const shouldClose = progressValue >= 100;
-
-  React.useEffect(() => {
-    if (shouldClose) {
-      // Use a small timeout to ensure the progress bar reaches 100% before closing
-      const timer = setTimeout(() => {
-        onOpenChange(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [shouldClose, onOpenChange]);
+  const progressValue = demoDataProgress 
+    ? (demoDataProgress.progress / demoDataProgress.totalStages) * 100 
+    : 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Generating Demo Data</DialogTitle>
           <DialogDescription>
-            Please wait while we set up your diverse demo data. This might take a moment.
+            Please wait while we populate your account with sample data. This may take a moment.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <div className="py-4">
+          <Progress value={progressValue} className="w-full" />
+          <div className="text-center mt-2">
             <p className="text-sm text-muted-foreground">
               {demoDataProgress?.stage || "Initializing..."}
             </p>
           </div>
-          <Progress value={progressValue} className="w-full" indicatorClassName="bg-primary" />
-          <p className="text-right text-sm text-muted-foreground">
-            {Math.round(progressValue)}% Complete
-          </p>
         </div>
       </DialogContent>
     </Dialog>

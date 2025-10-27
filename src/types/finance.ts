@@ -30,9 +30,13 @@ export interface Vendor {
   is_account: boolean;
   account_id: string | null;
   created_at: string;
+  total_transactions: number;
+  currency?: string;
+  starting_balance?: number;
+  remarks?: string | null;
+  running_balance?: number;
 }
 
-// Type returned by get_accounts_with_transaction_counts()
 export interface Account {
   id: string; // Vendor ID
   name: string; // Vendor Name
@@ -42,6 +46,20 @@ export interface Account {
   starting_balance: number;
   remarks: string | null;
   running_balance: number;
+  total_transactions: number;
+  created_at: string; // Added to conform to Payee type
+}
+
+export interface Payee {
+  id: string;
+  name: string;
+  is_account: boolean;
+  created_at: string;
+  account_id: string | null;
+  currency?: string;
+  starting_balance?: number;
+  remarks?: string | null;
+  running_balance?: number;
   total_transactions: number;
 }
 
