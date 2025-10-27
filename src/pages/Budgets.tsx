@@ -1,119 +1,210 @@
-import * as React from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2, RotateCcw } from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AddEditBudgetDialog } from "@/components/budgets/AddEditBudgetDialog.tsx";
-import { Budget } from "@/data/finance-data";
-import { BudgetsTable } from "@/components/budgets/BudgetsTable.tsx";
-import LoadingOverlay from "@/components/LoadingOverlay";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
-const BudgetsPage = () => {
-  const { user } = useUser();
+interface Budget {
+  id: string;
+  user_id: string;
+  category_id: string;
+  currency: string;
+  target_amount: number;
+  start_date: string;
+  frequency: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+const fetchBudgets = async (): Promise<Budget[]> => {
+  const { data, error } = await supabase.from("budgets").select("*");
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchCategories = async (userId: string): Promise<Category[]> => {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const Budgets = () => {
   const queryClient = useQueryClient();
+  const [selectedBudgetIds, setSelectedBudgetIds] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | null>(null);
 
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedBudget, setSelectedBudget] = React.useState<Budget | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [budgetToDelete, setBudgetToDelete] = React.useState<Budget | null>(null);
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    getUserId();
+  }, []);
 
-  const { data: budgets = [], isLoading: isLoadingBudgets, refetch } = useQuery<Budget[], Error>({
-    queryKey: ['budgets', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*, categories(name)')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false });
-      if (error) throw error;
-      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
-    },
-    enabled: !!user,
+  const { data: budgets, isLoading, error } = useQuery<Budget[], Error>({
+    queryKey: ["budgets"],
+    queryFn: fetchBudgets,
+    enabled: !!userId,
   });
 
-  const deleteBudgetMutation = useMutation({
-    mutationFn: async (budgetId: string) => {
-      const { error } = await supabase.from('budgets').delete().eq('id', budgetId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      showSuccess("Budget deleted successfully.");
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      setIsConfirmOpen(false);
-      setBudgetToDelete(null);
-    },
-    onError: (error: any) => showError(`Failed to delete budget: ${error.message}`),
+  const { data: categories, isLoading: isLoadingCategories } = useQuery<Category[], Error>({
+    queryKey: ["categories", userId],
+    queryFn: () => fetchCategories(userId!),
+    enabled: !!userId,
   });
 
-  const handleAddClick = () => {
-    setSelectedBudget(null);
-    setIsDialogOpen(true);
+  const categoryMap = new Map(categories?.map((cat) => [cat.id, cat.name]));
+
+  const toggleBudgetSelection = (id: string) => {
+    setSelectedBudgetIds((prev) => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      return newSelection;
+    });
   };
 
-  const handleEditClick = (budget: Budget) => {
-    setSelectedBudget(budget);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteClick = (budget: Budget) => {
-    setBudgetToDelete(budget);
-    setIsConfirmOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (budgetToDelete) {
-      deleteBudgetMutation.mutate(budgetToDelete.id);
+  const toggleSelectAll = () => {
+    if (budgets && selectedBudgetIds.size === budgets.length) {
+      setSelectedBudgetIds(new Set());
+    } else if (budgets) {
+      setSelectedBudgetIds(new Set(budgets.map((budget) => budget.id)));
     }
   };
 
+  const handleDeleteSelected = useCallback(async () => {
+    if (selectedBudgetIds.size === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from("budgets")
+        .delete()
+        .in("id", Array.from(selectedBudgetIds));
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      toast.success(`${selectedBudgetIds.size} budget(s) deleted successfully.`);
+      setSelectedBudgetIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+    } catch (err: any) {
+      toast.error(`Error deleting budgets: ${err.message}`);
+    }
+  }, [selectedBudgetIds, queryClient]);
+
+  if (isLoading || isLoadingCategories) return <div>Loading budgets...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
   return (
-    <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isLoadingBudgets} message="Loading budgets..." />
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Budgets</h2>
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleAddClick}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Budget
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoadingBudgets}>
-            {isLoadingBudgets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-            <span className="sr-only">Refresh</span>
-          </Button>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Budgets</h1>
+
+      {selectedBudgetIds.size > 0 && (
+        <div className="mb-4 flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">Delete Selected ({selectedBudgetIds.size})</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the selected budgets.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteSelected}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Your Budgets</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BudgetsTable
-            budgets={budgets}
-            onEdit={handleEditClick}
-            onDelete={handleDeleteClick}
-          />
-        </CardContent>
-      </Card>
-      <AddEditBudgetDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        budget={selectedBudget}
-        allBudgets={budgets}
-      />
-      <ConfirmationDialog
-        isOpen={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
-        onConfirm={confirmDelete}
-        title="Are you sure?"
-        description="This will permanently delete the selected budget. This action cannot be undone."
-        confirmText="Delete"
-      />
+      )}
+
+      {budgets && budgets.length > 0 ? (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={selectedBudgetIds.size === budgets.length && budgets.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Target Amount</TableHead>
+                <TableHead>Currency</TableHead>
+                <TableHead>Start Date</TableHead>
+                <TableHead>Frequency</TableHead>
+                <TableHead>End Date</TableHead>
+                <TableHead>Active</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {budgets.map((budget) => (
+                <TableRow key={budget.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedBudgetIds.has(budget.id)}
+                      onCheckedChange={() => toggleBudgetSelection(budget.id)}
+                      aria-label={`Select budget ${categoryMap.get(budget.category_id) || budget.category_id}`}
+                    />
+                  </TableCell>
+                  <TableCell>{categoryMap.get(budget.category_id) || budget.category_id}</TableCell>
+                  <TableCell>{budget.target_amount}</TableCell>
+                  <TableCell>{budget.currency}</TableCell>
+                  <TableCell>{format(new Date(budget.start_date), "PPP")}</TableCell>
+                  <TableCell>{budget.frequency}</TableCell>
+                  <TableCell>{budget.end_date ? format(new Date(budget.end_date), "PPP") : "N/A"}</TableCell>
+                  <TableCell>{budget.is_active ? "Yes" : "No"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">No budgets found. Start by adding a new budget!</p>
+      )}
     </div>
   );
 };
 
-export default BudgetsPage;
+export default Budgets;
