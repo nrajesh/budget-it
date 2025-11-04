@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { Budget } from "../types/budgets";
 import { BudgetSummary } from "../components/budgets/BudgetSummary";
@@ -26,6 +27,7 @@ export default function BudgetsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [budgetToDeleteId, setBudgetToDeleteId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -58,6 +60,16 @@ export default function BudgetsPage() {
     }
     setIsLoading(false);
   };
+
+  const filteredBudgets = useMemo(() => {
+    if (!searchTerm) {
+      return budgets;
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return budgets.filter(budget => 
+      budget.category_name.toLowerCase().includes(lowerCaseSearchTerm)
+    );
+  }, [budgets, searchTerm]);
 
   const handleOpenDialog = (budget: Budget | null = null) => {
     setSelectedBudget(budget);
@@ -112,13 +124,22 @@ export default function BudgetsPage() {
       </div>
 
       <div className="space-y-6">
-        <BudgetSummary budgets={budgets} isLoading={isLoading} />
+        <div className="mb-6">
+          <Input
+            placeholder="Search budgets by category name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-lg"
+          />
+        </div>
+
+        <BudgetSummary budgets={filteredBudgets} isLoading={isLoading} />
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
           
           <BudgetPaginationWrapper
-            budgets={budgets}
+            budgets={filteredBudgets}
             isLoading={isLoading}
             onEdit={handleOpenDialog}
             onDelete={handleDeleteClick}
