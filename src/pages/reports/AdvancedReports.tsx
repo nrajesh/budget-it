@@ -1,40 +1,48 @@
 import React from 'react';
-import ReportDataProvider from './ReportDataProvider';
-import { CashFlowForecastChart } from '@/components/charts/CashFlowForecastChart';
-import { BudgetVsActualsChart } from '@/components/charts/BudgetVsActualsChart';
-import { SpendingByPayeeChart } from '@/components/charts/SpendingByPayeeChart';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import ReportLayout from './ReportLayout';
+import SankeyChart from '@/components/reports/SankeyChart';
+import AlertsAndInsights from '@/components/reports/AlertsAndInsights';
+import TrendForecastingChart from '@/components/reports/TrendForecastingChart';
 
 const AdvancedReports = () => {
+  const [futureMonths, setFutureMonths] = React.useState(2);
+
+  React.useEffect(() => {
+    const savedMonths = localStorage.getItem('futureMonths');
+    if (savedMonths) {
+      setFutureMonths(parseInt(savedMonths, 10));
+    }
+  }, []);
+
+  const description = (
+    <p>
+      Future projections for the next {futureMonths} months. You can change this in{' '}
+      <Link to="/settings" className="text-primary underline">
+        Settings
+      </Link>
+      .
+    </p>
+  );
+
   return (
-    <ReportDataProvider>
+    <ReportLayout
+      title="Advanced Reports"
+      description={description}
+    >
       {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, accounts, budgets }) => (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="lg:col-span-3">
-            <CardHeader><CardTitle>Cash Flow Forecast</CardTitle></CardHeader>
-            <CardContent>
-              <CashFlowForecastChart
-                historicalTransactions={historicalFilteredTransactions}
-                futureTransactions={futureFilteredTransactions}
-                accounts={accounts}
-              />
-            </CardContent>
-          </Card>
-          <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>Budget vs. Actuals</CardTitle></CardHeader>
-            <CardContent>
-              <BudgetVsActualsChart transactions={combinedFilteredTransactions} budgets={budgets} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Spending by Payee</CardTitle></CardHeader>
-            <CardContent>
-              <SpendingByPayeeChart transactions={combinedFilteredTransactions} />
-            </CardContent>
-          </Card>
-        </div>
+        <>
+          <AlertsAndInsights
+            historicalTransactions={historicalFilteredTransactions}
+            futureTransactions={futureFilteredTransactions}
+            accounts={accounts}
+            budgets={budgets}
+          />
+          <TrendForecastingChart transactions={combinedFilteredTransactions} />
+          <SankeyChart transactions={historicalFilteredTransactions} accounts={accounts} />
+        </>
       )}
-    </ReportDataProvider>
+    </ReportLayout>
   );
 };
 

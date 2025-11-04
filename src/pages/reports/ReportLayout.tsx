@@ -1,37 +1,158 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import * as React from 'react';
+import { Link } from 'react-router-dom';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { TransactionFilters } from '@/components/transactions/TransactionFilters';
+import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
+import { useTransactionData } from '@/hooks/transactions/useTransactionData';
 import { useTransactions } from '@/contexts/TransactionsContext';
-import { ReportTabs } from './ReportTabs';
+import { showSuccess, showError } from '@/utils/toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useQuery } from '@tanstack/react-query';
+import { useUser } from '@/contexts/UserContext';
+import { Budget } from '@/data/finance-data';
+import { supabase } from '@/integrations/supabase/client';
 
-const ReportLayout = () => {
-  const { isLoadingTransactions: isLoading } = useTransactions();
-  const { dateRange, setDateRange, filteredTransactions } = useTransactionFilters();
+interface ReportLayoutProps {
+  title: string;
+  description: React.ReactNode;
+  children: (props: {
+    historicalFilteredTransactions: any[];
+    combinedFilteredTransactions: any[];
+    futureFilteredTransactions: any[];
+    accounts: any[];
+    budgets: Budget[];
+  }) => React.ReactNode;
+}
 
-  const contextValue = {
-    transactions: filteredTransactions,
-    isLoading,
-    dateRange,
+const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
+  const { accounts } = useTransactions();
+  const { user } = useUser();
+  const filterProps = useTransactionFilters();
+  const dataProps = useTransactionData(filterProps);
+
+  const { data: budgets = [] } = useQuery<Budget[], Error>({
+    queryKey: ['budgets', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*, categories(name)')
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+    },
+    enabled: !!user,
+  });
+
+  const { historicalFilteredTransactions, futureFilteredTransactions } = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const historical = dataProps.filteredTransactions.filter(t => new Date(t.date) <= today);
+    const future = dataProps.filteredTransactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
+    return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
+  }, [dataProps.filteredTransactions]);
+
+  const handlePdfExport = () => {
+    try {
+      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      let yPos = 20;
+
+      doc.setFontSize(18);
+      doc.text(title, 14, yPos);
+      yPos += 15;
+
+      const reportContent = document.getElementById('report-content');
+      if (!reportContent) {
+        showError("Could not find report content to export.");
+        return;
+      }
+
+      const tables = Array.from(reportContent.querySelectorAll('table'));
+
+      if (tables.length === 0) {
+        showError("No tabular data found in the report to export.");
+        return;
+      }
+
+      doc.setFontSize(10);
+      doc.setTextColor(150);
+      doc.text("Note: This PDF export includes tabular data only. Charts and other visual elements are not included.", 14, yPos);
+      yPos += 15;
+      doc.setTextColor(0);
+
+      tables.forEach((table) => {
+        if (yPos > 260) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        const card = table.closest('div[class*="rounded-lg border"]');
+        let finalTitle = "Data Table";
+        if (card) {
+          const cardTitleEl = card.querySelector('h3');
+          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
+          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
+        }
+
+        doc.setFontSize(14);
+        doc.text(finalTitle, 14, yPos);
+        yPos += 10;
+
+        autoTable(doc, {
+          html: table,
+          startY: yPos,
+          theme: 'grid',
+          headStyles: { fillColor: '#16a34a' }, // green-600
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 15;
+      });
+
+      doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
+      showSuccess("PDF export started. Your download will begin shortly.");
+    } catch (error: any) {
+      console.error("PDF Export failed:", error);
+      showError(`PDF Export failed: ${error.message}`);
+    }
   };
 
-  return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Analyze your financial trends.</p>
-        </div>
-        <DateRangePicker
-          date={dateRange}
-          onDateChange={setDateRange}
-        />
-      </header>
-      
-      <ReportTabs />
+  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
+  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
 
-      <div className="mt-6">
-        <Outlet context={contextValue} />
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
+          <div className="text-muted-foreground">{description}</div>
+        </div>
+        <ExportButtons
+          onPdfExport={handlePdfExport}
+          onExcelExport={handleExcelExport}
+          onCsvExport={handleCsvExport}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Report Filters</CardTitle>
+          <TransactionFilters
+            {...filterProps}
+            onDateChange={filterProps.setDateRange}
+            onResetFilters={filterProps.handleResetFilters}
+          />
+        </CardHeader>
+      </Card>
+
+      <div className="space-y-4" id="report-content">
+        {children({
+          historicalFilteredTransactions,
+          combinedFilteredTransactions: dataProps.filteredTransactions,
+          futureFilteredTransactions,
+          accounts,
+          budgets,
+        })}
       </div>
     </div>
   );

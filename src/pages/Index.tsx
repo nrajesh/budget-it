@@ -14,14 +14,20 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrency } from "@/contexts/CurrencyContext";
+
+// A simple currency formatting helper
+const formatCurrency = (amount: number, currency: string = "USD") => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(amount);
+};
 
 const Index = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  
-  const { selectedCurrency, rates, formatCurrency, convertBetweenCurrencies } = useCurrency();
 
   const fetchBudgets = useCallback(async (userId: string) => {
     setLoading(true);
@@ -41,7 +47,6 @@ const Index = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      
       if (user) {
         setUser(user);
         fetchBudgets(user.id);
@@ -53,7 +58,7 @@ const Index = () => {
   }, [fetchBudgets]);
 
   const summary = useMemo(() => {
-    if (!budgets.length || !rates) {
+    if (!budgets.length) {
       return { monthlyBudget: 0, monthlySpent: 0 };
     }
 
@@ -67,20 +72,17 @@ const Index = () => {
           quarterly: 3,
           yearly: 12,
           "one-time": 1,
-        }[budget.frequency.toLowerCase()] || 1;
+        }[budget.frequency.toLowerCase()] || 1; // <-- FIX: Make case-insensitive
 
-      const monthlyAmount = budget.target_amount / monthlyFactor;
-      const spentAmount = budget.spent_amount;
-
-      totalBudgetNormalized += convertBetweenCurrencies(monthlyAmount, budget.currency, selectedCurrency);
-      totalSpent += convertBetweenCurrencies(spentAmount, budget.currency, selectedCurrency);
+      totalBudgetNormalized += budget.target_amount / monthlyFactor;
+      totalSpent += budget.spent_amount;
     });
 
     return {
       monthlyBudget: totalBudgetNormalized,
       monthlySpent: totalSpent,
     };
-  }, [budgets, rates, selectedCurrency, convertBetweenCurrencies]);
+  }, [budgets]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -98,7 +100,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget, selectedCurrency)}
+              {formatCurrency(summary.monthlyBudget)}
             </p>
           </CardContent>
         </Card>
@@ -108,7 +110,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlySpent, selectedCurrency)}
+              {formatCurrency(summary.monthlySpent)}
             </p>
           </CardContent>
         </Card>
@@ -118,7 +120,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget - summary.monthlySpent, selectedCurrency)}
+              {formatCurrency(summary.monthlyBudget - summary.monthlySpent)}
             </p>
           </CardContent>
         </Card>

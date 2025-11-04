@@ -1,86 +1,127 @@
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useTransactions } from '@/contexts/TransactionsContext';
-import { useUser } from '@/hooks/useUser';
-import { createCategoriesService } from '@/services/categoriesService';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
-import { Category } from '@/types/finance';
-import Papa from 'papaparse';
+import * as React from "react";
+import { useEntityManagement } from "./useEntityManagement";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { Category } from "@/data/finance-data";
+import Papa from "papaparse";
+import { showError, showSuccess } from "@/utils/toast";
+import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from "@/contexts/UserContext";
 
 export const useCategoryManagement = () => {
   const { user } = useUser();
-  const { categories, isLoadingCategories, invalidateAllData } = useTransactions();
+  const { categories, isLoadingCategories, refetchCategories, invalidateAllData } = useTransactions();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const categoriesService = createCategoriesService(supabase, user?.id);
+  const navigate = useNavigate();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+  const managementProps = useEntityManagement<Category>({
+    entityName: "Category",
+    entityNamePlural: "categories",
+    queryKey: ['categories', user?.id],
+    deleteRpcFn: 'delete_categories_batch', // This RPC needs to be created or logic adjusted
+    isDeletable: (item) => item.name !== 'Others',
+    onSuccess: invalidateAllData,
+  });
 
-  const handleAdd = () => {
-    setEditingCategory(undefined);
-    setIsDialogOpen(true);
-  };
+  // Specific mutations for categories that don't fit the generic RPC model
+  const addCategoryMutation = useMutation({
+    mutationFn: async (newCategoryName: string) => {
+      if (!user) throw new Error("User not logged in.");
+      const { error } = await supabase.from('categories').insert({ name: newCategoryName.trim(), user_id: user.id });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      showSuccess("Category added successfully!");
+      await refetchCategories();
+    },
+    onError: (error: any) => showError(`Failed to add category: ${error.message}`),
+  });
 
-  const handleEdit = (category: Category) => {
-    setEditingCategory(category);
-    setIsDialogOpen(true);
-  };
+  const batchUpsertCategoriesMutation = useMutation({
+    mutationFn: async (categoryNames: string[]) => {
+      if (!user) throw new Error("User not logged in.");
+      const categoriesToInsert = categoryNames.map((name: string) => ({ name: name.trim(), user_id: user.id }));
+      const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    onSuccess: async (data, variables) => {
+      showSuccess(`${variables.length} categories imported successfully!`);
+      await refetchCategories();
+      if (managementProps.fileInputRef.current) managementProps.fileInputRef.current.value = "";
+    },
+    onError: (error: any) => showError(`Import failed: ${error.message}`),
+    onSettled: () => (managementProps as any).setIsImporting(false),
+  });
 
-  const handleDelete = async (ids: string[]) => {
-    try {
-      await categoriesService.deleteCategoriesBatch(ids);
-      toast({ title: 'Success', description: `${ids.length} categories deleted.` });
-      invalidateAllData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+  const handleAddClick = () => {
+    const newCategoryName = prompt("Enter new category name:");
+    if (newCategoryName?.trim()) {
+      addCategoryMutation.mutate(newCategoryName);
     }
   };
 
-  const handleSave = async (data: { name: string }) => {
-    try {
-      if (editingCategory?.id) {
-        await categoriesService.updateCategory(editingCategory.id, data);
-        toast({ title: 'Success', description: 'Category updated.' });
-      } else {
-        await categoriesService.addCategory(data);
-        toast({ title: 'Success', description: 'Category added.' });
-      }
-      invalidateAllData();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
-  };
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+    (managementProps as any).setIsImporting(true);
 
-  const handleImport = (file: File) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
-        const importedCategories = results.data as { name: string }[];
-        const categoryNames = importedCategories.map(c => c.name).filter(Boolean);
-        try {
-          await categoriesService.batchUpsertCategories(categoryNames);
-          toast({ title: 'Import Successful', description: `${categoryNames.length} categories imported.` });
-          invalidateAllData();
-        } catch (error: any) {
-          toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
+      complete: (results) => {
+        const hasHeader = results.meta.fields?.includes("Category Name");
+        if (!hasHeader) {
+          showError(`CSV is missing required header: "Category Name"`);
+          (managementProps as any).setIsImporting(false);
+          return;
         }
+        const categoryNames = results.data.map((row: any) => row["Category Name"]).filter(Boolean);
+        if (categoryNames.length === 0) {
+          showError("No valid category names found in the CSV file.");
+          (managementProps as any).setIsImporting(false);
+          return;
+        }
+        batchUpsertCategoriesMutation.mutate(categoryNames);
+      },
+      error: (error: any) => {
+        showError(`CSV parsing error: ${error.message}`);
+        (managementProps as any).setIsImporting(false);
       },
     });
   };
 
+  const handleExportClick = () => {
+    if (categories.length === 0) {
+      showError("No categories to export.");
+      return;
+    }
+    const dataToExport = categories.map(cat => ({ "Category Name": cat.name }));
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    link.setAttribute("download", "categories_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleCategoryNameClick = (categoryName: string) => {
+    navigate('/transactions', { state: { filterCategory: categoryName } });
+  };
+
   return {
+    ...managementProps,
     categories,
-    isLoading: isLoadingCategories,
-    isDialogOpen,
-    setIsDialogOpen,
-    editingCategory,
-    handleAdd,
-    handleEdit,
-    handleDelete,
-    handleSave,
-    handleImport,
+    isLoadingCategories,
+    refetchCategories,
+    addCategoryMutation,
+    deleteCategoriesMutation: managementProps.deleteMutation,
+    handleAddClick,
+    handleFileChange,
+    handleExportClick,
+    handleCategoryNameClick,
+    isLoadingMutation: addCategoryMutation.isPending || managementProps.deleteMutation.isPending || batchUpsertCategoriesMutation.isPending,
   };
 };
