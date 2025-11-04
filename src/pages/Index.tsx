@@ -174,17 +174,15 @@ const Index = () => {
               return (
                 <Card key={budget.id} className="flex flex-col">
                   <CardHeader>
-                    <div className="flex flex-col items-start sm:flex-row sm:items-baseline sm:justify-between">
-                      <CardTitle className="text-xl mb-1 sm:mb-0">
-                        {budget.category_name}
-                      </CardTitle>
-                      <Badge
-                        variant="outline"
-                        className="capitalize text-sm font-normal"
-                      >
-                        {budget.frequency}
-                      </Badge>
-                    </div>
+                    <CardTitle className="text-xl">
+                      {budget.category_name}
+                    </CardTitle>
+                    <Badge
+                      variant="outline"
+                      className="capitalize text-sm font-normal self-start"
+                    >
+                      {budget.frequency}
+                    </Badge>
                     <CardDescription>
                       {format(new Date(budget.start_date), "MMM d, yyyy")} -{" "}
                       {budget.end_date
