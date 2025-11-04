@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrency } from "@/contexts/CurrencyContext"; // Import Currency Context
 
 // A simple currency formatting helper
 const formatCurrency = (amount: number, currency: string = "USD") => {
@@ -28,7 +29,9 @@ const Index = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [defaultCurrency, setDefaultCurrency] = useState<string>("USD"); // State to hold the user's default currency
+  
+  // Use the selected currency from the context
+  const { selectedCurrency } = useCurrency(); 
 
   const fetchBudgets = useCallback(async (userId: string) => {
     setLoading(true);
@@ -51,23 +54,7 @@ const Index = () => {
       
       if (user) {
         setUser(user);
-
-        // 1. Fetch user profile to get default currency
-        const { data: profileData, error: profileError } = await supabase
-          .from("user_profile")
-          .select("default_currency")
-          .eq("id", user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching user profile:", profileError);
-        }
-
-        if (profileData?.default_currency) {
-          setDefaultCurrency(profileData.default_currency);
-        }
-
-        // 2. Fetch budgets
+        // We no longer need to fetch default_currency here, as we use selectedCurrency from context
         fetchBudgets(user.id);
       } else {
         setLoading(false);
@@ -119,7 +106,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget, defaultCurrency)}
+              {formatCurrency(summary.monthlyBudget, selectedCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -129,7 +116,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlySpent, defaultCurrency)}
+              {formatCurrency(summary.monthlySpent, selectedCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -139,7 +126,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget - summary.monthlySpent, defaultCurrency)}
+              {formatCurrency(summary.monthlyBudget - summary.monthlySpent, selectedCurrency)}
             </p>
           </CardContent>
         </Card>
