@@ -72,7 +72,7 @@ const Index = () => {
           quarterly: 3,
           yearly: 12,
           "one-time": 1,
-        }[budget.frequency] || 1;
+        }[budget.frequency.toLowerCase()] || 1; // <-- FIX: Make case-insensitive
 
       totalBudgetNormalized += budget.target_amount / monthlyFactor;
       totalSpent += budget.spent_amount;
@@ -80,7 +80,7 @@ const Index = () => {
 
     return {
       monthlyBudget: totalBudgetNormalized,
-      monthlySpent: totalSpent, // Correctly sum the total spent amount
+      monthlySpent: totalSpent,
     };
   }, [budgets]);
 
