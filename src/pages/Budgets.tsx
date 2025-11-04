@@ -1,137 +1,119 @@
-import { useEffect, useState } from "react";
+import * as React from "react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PlusCircle, Loader2, RotateCcw } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Budget } from "@/types/budgets";
-import { BudgetSummary } from "@/components/budgets/BudgetSummary";
-import { BudgetCard } from "@/components/budgets/BudgetCard";
-import { BudgetDialog } from "@/components/budgets/BudgetDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
-import { PlusCircle } from "lucide-react";
+import { showError, showSuccess } from "@/utils/toast";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AddEditBudgetDialog } from "@/components/budgets/AddEditBudgetDialog.tsx";
+import { Budget } from "@/data/finance-data";
+import { BudgetsTable } from "@/components/budgets/BudgetsTable.tsx";
+import LoadingOverlay from "@/components/LoadingOverlay";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
-export default function BudgetsPage() {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const { toast } = useToast();
+const BudgetsPage = () => {
+  const { user } = useUser();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        fetchBudgets(user.id);
-      } else {
-        setIsLoading(false);
-      }
-    };
-    getUser();
-  }, []);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [selectedBudget, setSelectedBudget] = React.useState<Budget | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [budgetToDelete, setBudgetToDelete] = React.useState<Budget | null>(null);
 
-  const fetchBudgets = async (currentUserId: string) => {
-    setIsLoading(true);
-    const { data, error } = await supabase.rpc('get_budgets_with_spending', {
-      p_user_id: currentUserId,
-    });
+  const { data: budgets = [], isLoading: isLoadingBudgets, refetch } = useQuery<Budget[], Error>({
+    queryKey: ['budgets', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('*, categories(name)')
+        .eq('user_id', user.id)
+        .order('start_date', { ascending: false });
+      if (error) throw error;
+      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+    },
+    enabled: !!user,
+  });
 
-    if (error) {
-      toast({
-        title: "Error fetching budgets",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setBudgets(data || []);
-    }
-    setIsLoading(false);
+  const deleteBudgetMutation = useMutation({
+    mutationFn: async (budgetId: string) => {
+      const { error } = await supabase.from('budgets').delete().eq('id', budgetId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      showSuccess("Budget deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      setIsConfirmOpen(false);
+      setBudgetToDelete(null);
+    },
+    onError: (error: any) => showError(`Failed to delete budget: ${error.message}`),
+  });
+
+  const handleAddClick = () => {
+    setSelectedBudget(null);
+    setIsDialogOpen(true);
   };
 
-  const handleOpenDialog = (budget: Budget | null = null) => {
+  const handleEditClick = (budget: Budget) => {
     setSelectedBudget(budget);
     setIsDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setSelectedBudget(null);
-    setIsDialogOpen(false);
+  const handleDeleteClick = (budget: Budget) => {
+    setBudgetToDelete(budget);
+    setIsConfirmOpen(true);
   };
 
-  const handleSave = () => {
-    if (userId) {
-      fetchBudgets(userId);
-    }
-  };
-
-  const handleDelete = async (budgetId: string) => {
-    const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
-    if (error) {
-      toast({
-        title: "Error deleting budget",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Budget deleted",
-        description: "The budget has been successfully deleted.",
-      });
-      handleSave();
+  const confirmDelete = () => {
+    if (budgetToDelete) {
+      deleteBudgetMutation.mutate(budgetToDelete.id);
     }
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Budgets</h1>
-        <Button onClick={() => handleOpenDialog()}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
-        </Button>
-      </div>
-
-      <div className="space-y-6">
-        <BudgetSummary budgets={budgets} isLoading={isLoading} />
-
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Skeleton className="h-48" />
-              <Skeleton className="h-48" />
-              <Skeleton className="h-48" />
-            </div>
-          ) : budgets.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {budgets.map((budget) => (
-                <BudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  onEdit={handleOpenDialog}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <h3 className="text-lg font-medium">No budgets found</h3>
-              <p className="text-sm text-muted-foreground">
-                Get started by creating your first budget.
-              </p>
-            </div>
-          )}
+    <div className="flex-1 space-y-4">
+      <LoadingOverlay isLoading={isLoadingBudgets} message="Loading budgets..." />
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Budgets</h2>
+        <div className="flex items-center space-x-2">
+          <Button onClick={handleAddClick}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Budget
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoadingBudgets}>
+            {isLoadingBudgets ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+            <span className="sr-only">Refresh</span>
+          </Button>
         </div>
       </div>
-
-      {userId && (
-        <BudgetDialog
-          isOpen={isDialogOpen}
-          onClose={handleCloseDialog}
-          onSave={handleSave}
-          budget={selectedBudget}
-          userId={userId}
-        />
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Manage Your Budgets</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BudgetsTable
+            budgets={budgets}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+          />
+        </CardContent>
+      </Card>
+      <AddEditBudgetDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        budget={selectedBudget}
+        allBudgets={budgets}
+      />
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={confirmDelete}
+        title="Are you sure?"
+        description="This will permanently delete the selected budget. This action cannot be undone."
+        confirmText="Delete"
+      />
     </div>
   );
-}
+};
+
+export default BudgetsPage;
