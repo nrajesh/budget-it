@@ -73,18 +73,14 @@ const Index = () => {
           yearly: 12,
           "one-time": 1,
         }[budget.frequency] || 1;
-      
+
       totalBudgetNormalized += budget.target_amount / monthlyFactor;
       totalSpent += budget.spent_amount;
     });
-    
-    // This is a simplification. A more accurate monthly spent would consider timeframes.
-    const avgMonthlySpent = budgets.length > 0 ? totalSpent / budgets.length : 0;
-
 
     return {
       monthlyBudget: totalBudgetNormalized,
-      monthlySpent: avgMonthlySpent,
+      monthlySpent: totalSpent, // Correctly sum the total spent amount
     };
   }, [budgets]);
 
@@ -110,7 +106,7 @@ const Index = () => {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Avg. Monthly Spent</CardTitle>
+            <CardTitle>Total Monthly Spent</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
@@ -120,7 +116,7 @@ const Index = () => {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Avg. Monthly Remaining</CardTitle>
+            <CardTitle>Total Monthly Remaining</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
