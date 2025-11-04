@@ -14,24 +14,14 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCurrency } from "@/contexts/CurrencyContext"; // Import Currency Context
-
-// A simple currency formatting helper
-const formatCurrency = (amount: number, currency: string = "USD") => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-};
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const Index = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   
-  // Use the selected currency from the context
-  const { selectedCurrency } = useCurrency(); 
+  const { selectedCurrency, rates, formatCurrency, convertBetweenCurrencies } = useCurrency();
 
   const fetchBudgets = useCallback(async (userId: string) => {
     setLoading(true);
@@ -54,7 +44,6 @@ const Index = () => {
       
       if (user) {
         setUser(user);
-        // We no longer need to fetch default_currency here, as we use selectedCurrency from context
         fetchBudgets(user.id);
       } else {
         setLoading(false);
@@ -64,7 +53,7 @@ const Index = () => {
   }, [fetchBudgets]);
 
   const summary = useMemo(() => {
-    if (!budgets.length) {
+    if (!budgets.length || !rates) {
       return { monthlyBudget: 0, monthlySpent: 0 };
     }
 
@@ -80,15 +69,18 @@ const Index = () => {
           "one-time": 1,
         }[budget.frequency.toLowerCase()] || 1;
 
-      totalBudgetNormalized += budget.target_amount / monthlyFactor;
-      totalSpent += budget.spent_amount;
+      const monthlyAmount = budget.target_amount / monthlyFactor;
+      const spentAmount = budget.spent_amount;
+
+      totalBudgetNormalized += convertBetweenCurrencies(monthlyAmount, budget.currency, selectedCurrency);
+      totalSpent += convertBetweenCurrencies(spentAmount, budget.currency, selectedCurrency);
     });
 
     return {
       monthlyBudget: totalBudgetNormalized,
       monthlySpent: totalSpent,
     };
-  }, [budgets]);
+  }, [budgets, rates, selectedCurrency, convertBetweenCurrencies]);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
