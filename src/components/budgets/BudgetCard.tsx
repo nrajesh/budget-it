@@ -23,11 +23,10 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
   return (
     <Card className={isOverBudget ? "border-red-500 shadow-lg" : ""}>
       <CardHeader>
-        <CardTitle className="flex justify-between items-start">
-          {budget.category_name}
-          <span className="text-sm font-normal text-muted-foreground">{budget.frequency}</span>
-        </CardTitle>
+        <CardTitle>{budget.category_name}</CardTitle>
         <CardDescription>
+          {budget.frequency}
+          <br />
           {startDate} - {endDate}
         </CardDescription>
       </CardHeader>
