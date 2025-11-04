@@ -1,97 +1,84 @@
-import * as React from "react";
-import { useEntityManagement } from "./useEntityManagement";
+import { useState } from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { Payee } from "@/components/AddEditPayeeDialog";
+import { Payee } from "@/types/finance";
 import Papa from "papaparse";
-import { showError } from "@/utils/toast";
-import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import { createPayeesService } from "@/services/payeesService";
+import { supabase } from "@/integrations/supabase/client";
+
+const payeesService = createPayeesService(supabase);
 
 export const usePayeeManagement = (isAccount: boolean) => {
-  const { invalidateAllData } = useTransactions();
-  const navigate = useNavigate();
+  const { accounts, vendors, addPayee, updatePayee, deletePayee } = useTransactions();
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPayee, setSelectedPayee] = useState<Payee | undefined>(undefined);
 
-  const entityName = isAccount ? "Account" : "Vendor";
-  const entityNamePlural = isAccount ? "accounts" : "vendors";
+  const data = isAccount ? accounts : vendors;
 
-  const managementProps = useEntityManagement<Payee>({
-    entityName,
-    entityNamePlural,
-    queryKey: [entityNamePlural],
-    deleteRpcFn: 'delete_payees_batch',
-    batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
-    batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
-    isDeletable: (item) => item.name !== 'Others',
-    onSuccess: invalidateAllData,
-  });
+  const handleAdd = () => {
+    setSelectedPayee(undefined);
+    setIsDialogOpen(true);
+  };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    managementProps.batchUpsertMutation.reset(); // Reset mutation state
-    const setIsImporting = (managementProps as any).setIsImporting; // A bit of a hack, ideally the hook would expose this
-    setIsImporting(true);
+  const handleEdit = (payee: Payee) => {
+    setSelectedPayee(payee);
+    setIsDialogOpen(true);
+  };
 
+  const handleDelete = async (ids: string[]) => {
+    try {
+      await payeesService.deletePayeesBatch(ids);
+      toast({ title: "Success", description: `${ids.length} item(s) deleted.` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleSave = async (data: any) => {
+    try {
+      if (selectedPayee?.id) {
+        await updatePayee(selectedPayee.id, data);
+        toast({ title: "Success", description: "Item updated." });
+      } else {
+        await addPayee(data);
+        toast({ title: "Success", description: "Item added." });
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleImport = (file: File) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        const requiredHeaders = isAccount ? ["Account Name", "Currency", "Starting Balance", "Remarks"] : ["Vendor Name"];
-        const hasAllHeaders = requiredHeaders.every(h => results.meta.fields?.includes(h));
-
-        if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
-          setIsImporting(false);
-          return;
+      complete: async (results) => {
+        const payees = results.data as any[];
+        try {
+          if (isAccount) {
+            await payeesService.batchUpsertAccounts(payees);
+          } else {
+            const names = payees.map(p => p.name).filter(Boolean);
+            await payeesService.batchUpsertVendors(names);
+          }
+          toast({ title: "Import Successful", description: `${payees.length} records imported.` });
+        } catch (error: any) {
+          toast({ title: "Import Failed", description: error.message, variant: "destructive" });
         }
-
-        const dataToUpsert = results.data.map((row: any) => isAccount
-          ? { name: row["Account Name"], currency: row["Currency"], starting_balance: parseFloat(row["Starting Balance"]) || 0, remarks: row["Remarks"] }
-          : { name: row["Vendor Name"] }
-        ).filter(item => item.name);
-
-        if (dataToUpsert.length === 0) {
-          showError(`No valid ${entityName.toLowerCase()} data found in the CSV file.`);
-          setIsImporting(false);
-          return;
-        }
-        managementProps.batchUpsertMutation.mutate(dataToUpsert);
-      },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
       },
     });
   };
 
-  const handleExportClick = (payees: Payee[]) => {
-    if (payees.length === 0) {
-      showError(`No ${entityNamePlural} to export.`);
-      return;
-    }
-    const dataToExport = payees.map(p => isAccount
-      ? { "Account Name": p.name, "Currency": p.currency, "Starting Balance": p.starting_balance, "Remarks": p.remarks }
-      : { "Vendor Name": p.name }
-    );
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `${entityNamePlural}_export.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handlePayeeNameClick = (payeeName: string) => {
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: payeeName } });
-  };
-
   return {
-    ...managementProps,
-    handleFileChange,
-    handleExportClick,
-    handlePayeeNameClick,
-    selectedPayee: managementProps.selectedEntity, // Alias for clarity
+    data,
+    isDialogOpen,
+    setIsDialogOpen,
+    selectedPayee,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handleSave,
+    handleImport,
   };
 };

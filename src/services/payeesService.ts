@@ -1,63 +1,79 @@
-import { supabase } from '@/integrations/supabase/client';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { showError } from '@/utils/toast';
-import { Payee } from '@/components/AddEditPayeeDialog';
+import { Payee } from '@/types/finance';
 
-interface PayeesServiceProps {
-  // No longer need setVendors, setAccounts as react-query will manage state
-  convertAmount: (amount: number) => number;
-}
-
-export const createPayeesService = ({ convertAmount }: PayeesServiceProps) => {
-
-  // These functions are now primarily for react-query's queryFn, not direct state manipulation
-  const fetchVendors = async () => {
-    const { data, error } = await supabase
-      .rpc('get_vendors_with_transaction_counts');
-
+export const createPayeesService = (supabase: SupabaseClient) => {
+  const getAccounts = async (): Promise<Payee[]> => {
+    const { data, error } = await supabase.rpc('get_accounts_with_transaction_counts');
     if (error) {
-      throw error; // Throw error for react-query to catch
+      showError(`Failed to fetch accounts: ${error.message}`);
+      throw error;
     }
-    // Map the data to include the totalTransactions field
-    const vendorsWithCounts: Payee[] = data.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      is_account: item.is_account,
-      created_at: item.created_at,
-      account_id: item.account_id,
-      currency: item.currency,
-      starting_balance: item.starting_balance,
-      remarks: item.remarks,
-      running_balance: item.running_balance,
-      totalTransactions: item.total_transactions || 0,
-    }));
-    return vendorsWithCounts;
+    return data || [];
   };
 
-  const fetchAccounts = async () => {
-    const { data, error } = await supabase
-      .rpc('get_accounts_with_transaction_counts');
-
+  const getVendors = async (): Promise<Payee[]> => {
+    const { data, error } = await supabase.rpc('get_vendors_with_transaction_counts');
     if (error) {
-      throw error; // Throw error for react-query to catch
+      showError(`Failed to fetch vendors: ${error.message}`);
+      throw error;
     }
-    // Map the data to include the totalTransactions field
-    const accountsWithCounts: Payee[] = data.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      is_account: item.is_account,
-      created_at: item.created_at,
-      account_id: item.account_id,
-      currency: item.currency,
-      starting_balance: item.starting_balance,
-      remarks: item.remarks,
-      running_balance: item.running_balance,
-      totalTransactions: item.total_transactions || 0,
-    }));
-    return accountsWithCounts;
+    return data || [];
+  };
+
+  const addPayee = async (payee: Omit<Payee, 'id'>) => {
+    if (payee.is_account) {
+      const { error } = await supabase.rpc('batch_upsert_accounts', {
+        p_accounts: [{
+          name: payee.name,
+          currency: payee.currency,
+          starting_balance: payee.starting_balance,
+          remarks: payee.remarks,
+        }],
+      });
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('vendors').insert({ name: payee.name, is_account: false });
+      if (error) throw error;
+    }
+  };
+
+  const updatePayee = async (id: string, updates: Partial<Payee>) => {
+    const { error } = await supabase.rpc('update_vendor_name', {
+      p_vendor_id: id,
+      p_new_name: updates.name,
+    });
+    if (error) throw error;
+  };
+
+  const deletePayee = async (id: string) => {
+    const { error } = await supabase.rpc('delete_vendor_and_update_transactions', { p_vendor_id: id });
+    if (error) throw error;
+  };
+
+  const deletePayeesBatch = async (ids: string[]) => {
+    const { error } = await supabase.rpc('delete_payees_batch', { p_vendor_ids: ids });
+    if (error) throw error;
+  };
+
+  const batchUpsertAccounts = async (accounts: any[]) => {
+    const { error } = await supabase.rpc('batch_upsert_accounts', { p_accounts: accounts });
+    if (error) throw error;
+  };
+
+  const batchUpsertVendors = async (names: string[]) => {
+    const { error } = await supabase.rpc('batch_upsert_vendors', { p_names: names });
+    if (error) throw error;
   };
 
   return {
-    fetchVendors,
-    fetchAccounts,
+    getAccounts,
+    getVendors,
+    addPayee,
+    updatePayee,
+    deletePayee,
+    deletePayeesBatch,
+    batchUpsertAccounts,
+    batchUpsertVendors,
   };
 };

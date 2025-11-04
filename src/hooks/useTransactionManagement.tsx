@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
 export const useTransactionManagement = () => {
-  const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions();
+  const { transactions: allTransactions, accountCurrencyMap, deleteMultipleTransactions } = useTransactions();
   const { formatCurrency } = useCurrency();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -25,12 +25,10 @@ export const useTransactionManagement = () => {
   };
 
   const handleDelete = (ids: string[]) => {
-    // This should be handled by a new function in the context
-    console.log("Deleting transactions:", ids);
+    deleteMultipleTransactions(ids);
   };
 
   const handleImport = (file: File) => {
-    // This should be handled by a new function in the context
     console.log("Importing file:", file.name);
   };
 
@@ -58,6 +56,5 @@ export const useTransactionManagement = () => {
     handleImport,
     columnVisibility,
     setColumnVisibility,
-    refetchTransactions,
   };
 };
