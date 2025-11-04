@@ -28,6 +28,7 @@ const Index = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [defaultCurrency, setDefaultCurrency] = useState<string>("USD"); // State to hold the user's default currency
 
   const fetchBudgets = useCallback(async (userId: string) => {
     setLoading(true);
@@ -47,8 +48,26 @@ const Index = () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      
       if (user) {
         setUser(user);
+
+        // 1. Fetch user profile to get default currency
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profile")
+          .select("default_currency")
+          .eq("id", user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching user profile:", profileError);
+        }
+
+        if (profileData?.default_currency) {
+          setDefaultCurrency(profileData.default_currency);
+        }
+
+        // 2. Fetch budgets
         fetchBudgets(user.id);
       } else {
         setLoading(false);
@@ -72,7 +91,7 @@ const Index = () => {
           quarterly: 3,
           yearly: 12,
           "one-time": 1,
-        }[budget.frequency.toLowerCase()] || 1; // <-- FIX: Make case-insensitive
+        }[budget.frequency.toLowerCase()] || 1;
 
       totalBudgetNormalized += budget.target_amount / monthlyFactor;
       totalSpent += budget.spent_amount;
@@ -100,7 +119,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget)}
+              {formatCurrency(summary.monthlyBudget, defaultCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -110,7 +129,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlySpent)}
+              {formatCurrency(summary.monthlySpent, defaultCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -120,7 +139,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget - summary.monthlySpent)}
+              {formatCurrency(summary.monthlyBudget - summary.monthlySpent, defaultCurrency)}
             </p>
           </CardContent>
         </Card>
