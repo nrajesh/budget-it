@@ -1,16 +1,15 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { CurrencyProvider } from "./contexts/CurrencyContext.tsx";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
+import { Toaster } from "@/components/ui/toaster";
 
-createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
-      <CurrencyProvider>
-        <App />
-      </CurrencyProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <App />
+      <Toaster />
+    </BrowserRouter>
   </React.StrictMode>
 );
