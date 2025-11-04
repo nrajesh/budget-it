@@ -52,8 +52,8 @@ const Index = () => {
         if (transactionsError || lastMonthError) {
           console.error(transactionsError || lastMonthError);
         } else if (transactions) {
-          const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);
-          const previousMonthSpent = lastMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+          const totalSpent = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+          const previousMonthSpent = lastMonthTransactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
           
           setStats({
             totalSpent,
@@ -63,12 +63,12 @@ const Index = () => {
           setRecentTransactions(transactions.slice(0, 5));
 
           const categorySpending = transactions.reduce((acc, t) => {
-            acc[t.category] = (acc[t.category] || 0) + t.amount;
+            acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
             return acc;
           }, {} as Record<string, number>);
 
-          const chartData = Object.entries(categorySpending)
-            .map(([name, amount]) => ({ name, amount }))
+          const chartData: {name: string, amount: number}[] = Object.entries(categorySpending)
+            .map(([name, amount]) => ({ name, amount: Number(amount) }))
             .sort((a, b) => b.amount - a.amount);
           
           setSpendingByCategory(chartData);
