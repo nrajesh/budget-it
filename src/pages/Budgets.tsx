@@ -3,9 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Budget } from "../types/budgets";
 import { BudgetSummary } from "../components/budgets/BudgetSummary";
-import { BudgetCard } from "../components/budgets/BudgetCard";
 import { BudgetDialog } from "../components/budgets/BudgetDialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { PlusCircle } from "lucide-react";
 import {
@@ -18,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BudgetPaginationWrapper } from "../components/budgets/BudgetPaginationWrapper";
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -117,31 +116,13 @@ export default function BudgetsPage() {
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Skeleton className="h-48" />
-              <Skeleton className="h-48" />
-              <Skeleton className="h-48" />
-            </div>
-          ) : budgets.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {budgets.map((budget) => (
-                <BudgetCard
-                  key={budget.id}
-                  budget={budget}
-                  onEdit={handleOpenDialog}
-                  onDelete={handleDeleteClick}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <h3 className="text-lg font-medium">No budgets found</h3>
-              <p className="text-sm text-muted-foreground">
-                Get started by creating your first budget.
-              </p>
-            </div>
-          )}
+          
+          <BudgetPaginationWrapper
+            budgets={budgets}
+            isLoading={isLoading}
+            onEdit={handleOpenDialog}
+            onDelete={handleDeleteClick}
+          />
         </div>
       </div>
 
