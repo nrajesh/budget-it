@@ -2,6 +2,7 @@ import React from 'react';
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Plus, Upload, Trash2 } from 'lucide-react';
 import { AddTransactionDialog } from '@/components/AddTransactionDialog';
 import { EditTransactionDialog } from '@/components/EditTransactionDialog';
