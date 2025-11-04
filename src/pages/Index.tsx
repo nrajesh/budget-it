@@ -28,6 +28,7 @@ const Index = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   const fetchBudgets = useCallback(async (userId: string) => {
     setLoading(true);
@@ -43,19 +44,53 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    const getUserAndBudgets = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const getInitialUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        fetchBudgets(user.id);
       } else {
         setLoading(false);
       }
     };
-    getUserAndBudgets();
-  }, [fetchBudgets]);
+    getInitialUser();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchInitialDataAndSubscribe = async () => {
+      const { data: userProfile } = await supabase
+        .from('user_profile')
+        .select('default_currency')
+        .eq('id', user.id)
+        .single();
+      setProfile(userProfile);
+      
+      fetchBudgets(user.id);
+    };
+
+    fetchInitialDataAndSubscribe();
+
+    const channel = supabase
+      .channel(`profile_changes_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profile',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          setProfile(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchBudgets]);
 
   const summary = useMemo(() => {
     if (!budgets.length) {
@@ -72,7 +107,7 @@ const Index = () => {
           quarterly: 3,
           yearly: 12,
           "one-time": 1,
-        }[budget.frequency.toLowerCase()] || 1; // <-- FIX: Make case-insensitive
+        }[budget.frequency.toLowerCase()] || 1;
 
       totalBudgetNormalized += budget.target_amount / monthlyFactor;
       totalSpent += budget.spent_amount;
@@ -83,6 +118,8 @@ const Index = () => {
       monthlySpent: totalSpent,
     };
   }, [budgets]);
+
+  const displayCurrency = profile?.default_currency || 'USD';
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -100,7 +137,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget)}
+              {formatCurrency(summary.monthlyBudget, displayCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -110,7 +147,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlySpent)}
+              {formatCurrency(summary.monthlySpent, displayCurrency)}
             </p>
           </CardContent>
         </Card>
@@ -120,7 +157,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">
-              {formatCurrency(summary.monthlyBudget - summary.monthlySpent)}
+              {formatCurrency(summary.monthlyBudget - summary.monthlySpent, displayCurrency)}
             </p>
           </CardContent>
         </Card>
