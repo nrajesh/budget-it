@@ -4,7 +4,8 @@ import ToastProvider from './ToastProvider';
 
 const Layout: React.FC = () => {
   return (
-    <ToastProvider>
+    <>
+      <ToastProvider />
       <div className="min-h-screen flex flex-col">
         <header className="border-b bg-white">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -28,7 +29,7 @@ const Layout: React.FC = () => {
           &copy; {new Date().getFullYear()} Finance App
         </footer>
       </div>
-    </ToastProvider>
+    </>
   );
 };
 
