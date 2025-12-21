@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCategoryManagement, Category } from '@/hooks/useCategoryManagement';
 import { DataTable, CustomColumnDef } from '@/components/DataTable';
-import { EntityManagementPage } from '@/components/management/EntityManagementPage';
+import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Corrected: named import
 import { AddEditCategoryDialog } from '@/components/AddEditCategoryDialog';
 
 const Categories: React.FC = () => {
@@ -56,7 +56,7 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <EntityManagementPage<Category> // Specify generic type
+    <EntityManagementPage<Category>
       title="Manage Categories"
       addPlaceholder="New category name"
       onAdd={managementProps.addCategory}
@@ -65,7 +65,7 @@ const Categories: React.FC = () => {
       columns={columns}
       onDelete={managementProps.deleteCategories}
       isAccountContext={false}
-      isCategoryContext={true} // Indicate this is for categories
+      isCategoryContext={true}
       selectedEntity={managementProps.selectedCategory}
       isDialogOpen={managementProps.isDialogOpen}
       setIsDialogOpen={managementProps.setIsDialogOpen}

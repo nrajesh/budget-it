@@ -2,7 +2,7 @@ import React from 'react';
 import { usePayeeManagement, Payee } from '@/hooks/usePayeeManagement';
 import { CustomColumnDef } from '@/components/DataTable';
 import { useCurrency } from '@/hooks/useCurrency';
-import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Correct named import
+import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Corrected: named import
 
 const ManageAccounts: React.FC = () => {
   const { formatCurrency } = useCurrency();
@@ -65,7 +65,7 @@ const ManageAccounts: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage<Payee> // Specify generic type
+    <EntityManagementPage<Payee>
       title="Manage Accounts"
       addPlaceholder="New account name"
       onAdd={managementProps.addPayee}

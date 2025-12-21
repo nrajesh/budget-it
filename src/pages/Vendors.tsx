@@ -2,10 +2,10 @@ import React from 'react';
 import { usePayeeManagement, Payee } from '@/hooks/usePayeeManagement';
 import { CustomColumnDef } from '@/components/DataTable';
 import { useCurrency } from '@/hooks/useCurrency';
-import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Correct named import
+import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Corrected: named import
 
 const Vendors: React.FC = () => {
-  const { formatCurrency } = useCurrency(); // Keep useCurrency for consistency, though not directly used in vendor table
+  const { formatCurrency } = useCurrency();
   const managementProps = usePayeeManagement(false); // Pass false for vendors
 
   const columns: CustomColumnDef<Payee>[] = [
@@ -45,11 +45,10 @@ const Vendors: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage<Payee> // Specify generic type
+    <EntityManagementPage<Payee>
       title="Manage Vendors"
       addPlaceholder="New vendor name"
       onAdd={managementProps.addPayee}
-      // No onFileChange for vendors as per previous decision
       isLoading={managementProps.isLoading}
       data={managementProps.payees}
       columns={columns}

@@ -2,14 +2,17 @@ import React, { useState } from 'react';
 import { PlusCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DataTable, CustomColumnDef } from '@/components/DataTable'; // Corrected import
+import { DataTable, CustomColumnDef } from '@/components/DataTable';
 import { Payee } from '@/hooks/usePayeeManagement';
-import { Category } from '@/hooks/useCategoryManagement'; // Import Category type
+import { Category } from '@/hooks/useCategoryManagement';
 import { AddEditAccountDialog } from '@/components/AddEditAccountDialog';
 import { AddEditVendorDialog } from '@/components/AddEditVendorDialog';
-import { AddEditCategoryDialog } from '@/components/AddEditCategoryDialog'; // Import Category dialog
+import { AddEditCategoryDialog } from '@/components/AddEditCategoryDialog';
 
-interface EntityManagementPageProps<TEntity extends { id: string }> {
+// Define a union type for entities that can be managed
+type ManagedEntity = Payee | Category;
+
+interface EntityManagementPageProps<TEntity extends ManagedEntity> {
   title: string;
   addPlaceholder: string;
   onAdd: (name: string, currency?: string, starting_balance?: number, remarks?: string) => Promise<void>;
@@ -17,10 +20,10 @@ interface EntityManagementPageProps<TEntity extends { id: string }> {
   isImporting?: boolean;
   isLoading: boolean;
   data: TEntity[];
-  columns: CustomColumnDef<TEntity>[]; // Use CustomColumnDef with generic type
+  columns: CustomColumnDef<TEntity>[];
   onDelete: (selectedIds: string[]) => Promise<void>;
   isAccountContext: boolean;
-  isCategoryContext?: boolean; // New prop to distinguish categories
+  isCategoryContext?: boolean;
   selectedEntity: TEntity | null;
   isDialogOpen: boolean;
   setIsDialogOpen: (open: boolean) => void;
@@ -28,7 +31,7 @@ interface EntityManagementPageProps<TEntity extends { id: string }> {
   onSave: (id: string, name: string, currency?: string, starting_balance?: number, remarks?: string) => Promise<void>;
 }
 
-export const EntityManagementPage = <TEntity extends { id: string }>({ // Make component generic
+export const EntityManagementPage = <TEntity extends ManagedEntity>({
   title,
   addPlaceholder,
   onAdd,
@@ -39,7 +42,7 @@ export const EntityManagementPage = <TEntity extends { id: string }>({ // Make c
   columns,
   onDelete,
   isAccountContext,
-  isCategoryContext = false, // Default to false
+  isCategoryContext = false,
   selectedEntity,
   isDialogOpen,
   setIsDialogOpen,
@@ -107,7 +110,7 @@ export const EntityManagementPage = <TEntity extends { id: string }>({ // Make c
         <AddEditAccountDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          selectedEntity={selectedEntity as Payee | null} // Cast to Payee
+          selectedEntity={selectedEntity as Payee | null}
           onSave={onSave as (id: string, name: string, currency: string, starting_balance: number, remarks: string) => Promise<void>}
           onAdd={onAdd as (name: string, currency: string, starting_balance: number, remarks: string) => Promise<void>}
         />
@@ -115,7 +118,7 @@ export const EntityManagementPage = <TEntity extends { id: string }>({ // Make c
         <AddEditCategoryDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          selectedEntity={selectedEntity as Category | null} // Cast to Category
+          selectedEntity={selectedEntity as Category | null}
           onSave={onSave as (id: string, name: string) => Promise<void>}
           onAdd={onAdd as (name: string) => Promise<void>}
         />
@@ -123,7 +126,7 @@ export const EntityManagementPage = <TEntity extends { id: string }>({ // Make c
         <AddEditVendorDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          selectedEntity={selectedEntity as Payee | null} // Cast to Payee
+          selectedEntity={selectedEntity as Payee | null}
           onSave={onSave as (id: string, name: string) => Promise<void>}
           onAdd={onAdd as (name: string) => Promise<void>}
         />
