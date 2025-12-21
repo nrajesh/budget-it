@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
-import { PlusCircle, Upload } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React from 'react';
 import { usePayeeManagement, Payee } from '@/hooks/usePayeeManagement';
-import { DataTable, ColumnDefinition } from '@/components/DataTable'; // Correct import
-import { useCurrency } from '@/hooks/useCurrency'; // Correct import
-import { AddEditAccountDialog } from '@/components/AddEditAccountDialog'; // Correct import
+import { CustomColumnDef } from '@/components/DataTable';
+import { useCurrency } from '@/hooks/useCurrency';
+import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Correct named import
 
 const ManageAccounts: React.FC = () => {
   const { formatCurrency } = useCurrency();
   const managementProps = usePayeeManagement(true); // Pass true for accounts
 
-  const columns: ColumnDefinition<Payee>[] = [
+  const columns: CustomColumnDef<Payee>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -67,61 +64,24 @@ const ManageAccounts: React.FC = () => {
     },
   ];
 
-  const [newAccountName, setNewAccountName] = useState('');
-
-  const handleAddAccount = async () => {
-    if (newAccountName.trim()) {
-      await managementProps.addPayee(newAccountName.trim(), 'USD', 0, ''); // Default values for new account
-      setNewAccountName('');
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Manage Accounts</h1>
-
-      <div className="flex items-center space-x-2">
-        <Input
-          placeholder="New account name"
-          value={newAccountName}
-          onChange={(e) => setNewAccountName(e.target.value)}
-          className="max-w-sm"
-        />
-        <Button onClick={handleAddAccount}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Account
-        </Button>
-        <Input
-          type="file"
-          accept=".csv"
-          onChange={managementProps.handleFileChange}
-          className="hidden"
-          id="account-csv-upload"
-        />
-        <label htmlFor="account-csv-upload">
-          <Button asChild variant="outline" disabled={managementProps.isImporting}>
-            <span>
-              <Upload className="mr-2 h-4 w-4" /> Import CSV
-            </span>
-          </Button>
-        </label>
-        {managementProps.isImporting && <p>Importing...</p>}
-      </div>
-
-      <DataTable
-        data={managementProps.payees}
-        isLoading={managementProps.isLoading}
-        columns={columns}
-        onDelete={(selectedIds) => managementProps.deletePayees(selectedIds)}
-      />
-
-      <AddEditAccountDialog
-        open={managementProps.isDialogOpen}
-        onOpenChange={managementProps.setIsDialogOpen}
-        selectedEntity={managementProps.selectedPayee}
-        onSave={managementProps.updatePayee}
-        onAdd={managementProps.addPayee}
-      />
-    </div>
+    <EntityManagementPage<Payee> // Specify generic type
+      title="Manage Accounts"
+      addPlaceholder="New account name"
+      onAdd={managementProps.addPayee}
+      onFileChange={managementProps.handleFileChange}
+      isImporting={managementProps.isImporting}
+      isLoading={managementProps.isLoading}
+      data={managementProps.payees}
+      columns={columns}
+      onDelete={managementProps.deletePayees}
+      isAccountContext={true}
+      selectedEntity={managementProps.selectedPayee}
+      isDialogOpen={managementProps.isDialogOpen}
+      setIsDialogOpen={managementProps.setIsDialogOpen}
+      handleEntityNameClick={managementProps.handlePayeeNameClick}
+      onSave={managementProps.updatePayee}
+    />
   );
 };
 

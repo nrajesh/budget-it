@@ -1,176 +1,133 @@
-import * as React from "react";
-import {
-  Card, CardContent, CardFooter, CardHeader, CardTitle
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious
-} from "@/components/ui/pagination";
-import { PlusCircle, Trash2, Loader2, RotateCcw, Upload, Download } from "lucide-react";
-import LoadingOverlay from "@/components/LoadingOverlay";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { EntityTable, ColumnDefinition } from "./EntityTable";
+import React, { useState } from 'react';
+import { PlusCircle, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DataTable, CustomColumnDef } from '@/components/DataTable'; // Corrected import
+import { Payee } from '@/hooks/usePayeeManagement';
+import { Category } from '@/hooks/useCategoryManagement'; // Import Category type
+import { AddEditAccountDialog } from '@/components/AddEditAccountDialog';
+import { AddEditVendorDialog } from '@/components/AddEditVendorDialog';
+import { AddEditCategoryDialog } from '@/components/AddEditCategoryDialog'; // Import Category dialog
 
-interface EntityManagementPageProps<T extends { id: string; name: string }> {
+interface EntityManagementPageProps<TEntity extends { id: string }> {
   title: string;
-  entityName: string;
-  entityNamePlural: string;
-  data: T[];
+  addPlaceholder: string;
+  onAdd: (name: string, currency?: string, starting_balance?: number, remarks?: string) => Promise<void>;
+  onFileChange?: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  isImporting?: boolean;
   isLoading: boolean;
-  columns: ColumnDefinition<T>[];
-  AddEditDialogComponent?: React.FC<any>;
-  isDeletable?: (item: T) => boolean;
-  isEditable?: (item: T) => boolean;
-  customEditHandler?: (item: T) => void;
-  isEditing?: (id: string) => boolean;
-  isUpdating?: boolean;
-  // Management props are now explicit
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  currentPage: number;
-  setCurrentPage: (page: number) => void;
-  itemsPerPage: number;
-  selectedRows: string[];
-  isImporting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  isLoadingMutation: boolean;
-  handleAddClick: () => void;
-  handleEditClick: (item: T) => void;
-  handleDeleteClick: (item: T) => void;
-  confirmDelete: () => void;
-  handleBulkDeleteClick: () => void;
-  handleSelectAll: (checked: boolean, currentItems: T[]) => void;
-  handleRowSelect: (id: string, checked: boolean) => void;
-  handleImportClick: () => void;
-  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleExportClick: (items: T[]) => void;
-  isConfirmOpen: boolean;
-  setIsConfirmOpen: (isOpen: boolean) => void;
+  data: TEntity[];
+  columns: CustomColumnDef<TEntity>[]; // Use CustomColumnDef with generic type
+  onDelete: (selectedIds: string[]) => Promise<void>;
+  isAccountContext: boolean;
+  isCategoryContext?: boolean; // New prop to distinguish categories
+  selectedEntity: TEntity | null;
   isDialogOpen: boolean;
-  setIsDialogOpen: (isOpen: boolean) => void;
-  selectedEntity: T | null;
-  refetch?: () => void;
+  setIsDialogOpen: (open: boolean) => void;
+  handleEntityNameClick: (entity: TEntity) => void;
+  onSave: (id: string, name: string, currency?: string, starting_balance?: number, remarks?: string) => Promise<void>;
 }
 
-const EntityManagementPage = <T extends { id: string; name: string }>({
+export const EntityManagementPage = <TEntity extends { id: string }>({ // Make component generic
   title,
-  entityName,
-  entityNamePlural,
-  data,
+  addPlaceholder,
+  onAdd,
+  onFileChange,
+  isImporting = false,
   isLoading,
+  data,
   columns,
-  AddEditDialogComponent,
-  isDeletable = () => true,
-  isEditable = () => true,
-  customEditHandler,
-  isEditing = () => false,
-  isUpdating = false,
-  // Destructure all management props
-  searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
-  isDialogOpen, setIsDialogOpen, selectedEntity,
-  isConfirmOpen, setIsConfirmOpen,
-  selectedRows,
-  isImporting, fileInputRef,
-  isLoadingMutation,
-  handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
-  handleSelectAll, handleRowSelect,
-  handleImportClick, handleFileChange, handleExportClick,
-  refetch,
-}: EntityManagementPageProps<T>) => {
+  onDelete,
+  isAccountContext,
+  isCategoryContext = false, // Default to false
+  selectedEntity,
+  isDialogOpen,
+  setIsDialogOpen,
+  handleEntityNameClick,
+  onSave,
+}: EntityManagementPageProps<TEntity>) => {
+  const [newEntityName, setNewEntityName] = useState('');
 
-  const filteredData = React.useMemo(() => {
-    return data.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [data, searchTerm]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
-
-  const numSelected = selectedRows.length;
+  const handleAddEntity = async () => {
+    if (newEntityName.trim()) {
+      if (isAccountContext) {
+        await onAdd(newEntityName.trim(), 'USD', 0, ''); // Default values for new account
+      } else if (isCategoryContext) {
+        await onAdd(newEntityName.trim()); // Categories only need name
+      } else {
+        await onAdd(newEntityName.trim()); // Vendors only need name
+      }
+      setNewEntityName('');
+    }
+  };
 
   return (
-    <div className="flex-1 space-y-4">
-      <LoadingOverlay isLoading={isLoading || isImporting || isLoadingMutation} message={isImporting ? `Importing ${entityNamePlural}...` : `Loading ${entityNamePlural}...`} />
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-        <div className="flex items-center space-x-2">
-          {numSelected > 0 && (
-            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>
-              {isLoadingMutation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete ({numSelected})
-            </Button>
-          )}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            Import CSV
-          </Button>
-          <Button onClick={() => handleExportClick(data)} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button onClick={handleAddClick}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
-          </Button>
-          <Button variant="outline" size="icon" onClick={async () => await refetch?.()} disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-            <span className="sr-only">Refresh</span>
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">{title}</h1>
+
+      <div className="flex items-center space-x-2">
+        <Input
+          placeholder={addPlaceholder}
+          value={newEntityName}
+          onChange={(e) => setNewEntityName(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button onClick={handleAddEntity}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add {isAccountContext ? 'Account' : (isCategoryContext ? 'Category' : 'Vendor')}
+        </Button>
+        {onFileChange && (
+          <>
+            <Input
+              type="file"
+              accept=".csv"
+              onChange={onFileChange}
+              className="hidden"
+              id="entity-csv-upload"
+            />
+            <label htmlFor="entity-csv-upload">
+              <Button asChild variant="outline" disabled={isImporting}>
+                <span>
+                  <Upload className="mr-2 h-4 w-4" /> Import CSV
+                </span>
+              </Button>
+            </label>
+            {isImporting && <p>Importing...</p>}
+          </>
+        )}
       </div>
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Your {title}</CardTitle>
-          <div className="mt-4">
-            <Input placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <EntityTable
-            data={currentData}
-            columns={columns}
-            isLoading={isLoading}
-            selectedRows={selectedRows}
-            handleRowSelect={(id, checked) => {
-              if (id.includes(',')) {
-                handleSelectAll(checked, currentData);
-              } else {
-                handleRowSelect(id, checked);
-              }
-            }}
-            handleEditClick={customEditHandler || handleEditClick}
-            handleDeleteClick={handleDeleteClick}
-            isDeletable={isDeletable}
-            isEditing={isEditing}
-            isUpdating={isUpdating}
-          />
-        </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {numSelected > 0 ? `${numSelected} of ${filteredData.length} row(s) selected.` : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} ${entityNamePlural}`}
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} /></PaginationItem>
-              <PaginationItem><PaginationNext onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardFooter>
-      </Card>
-      {AddEditDialogComponent && (
-        <AddEditDialogComponent
-          isOpen={isDialogOpen}
+
+      <DataTable
+        data={data}
+        isLoading={isLoading}
+        columns={columns}
+        onDelete={onDelete}
+      />
+
+      {isAccountContext ? (
+        <AddEditAccountDialog
+          open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          payee={selectedEntity} // Use generic selectedEntity
+          selectedEntity={selectedEntity as Payee | null} // Cast to Payee
+          onSave={onSave as (id: string, name: string, currency: string, starting_balance: number, remarks: string) => Promise<void>}
+          onAdd={onAdd as (name: string, currency: string, starting_balance: number, remarks: string) => Promise<void>}
+        />
+      ) : isCategoryContext ? (
+        <AddEditCategoryDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          selectedEntity={selectedEntity as Category | null} // Cast to Category
+          onSave={onSave as (id: string, name: string) => Promise<void>}
+          onAdd={onAdd as (name: string) => Promise<void>}
+        />
+      ) : (
+        <AddEditVendorDialog
+          open={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
+          selectedEntity={selectedEntity as Payee | null} // Cast to Payee
+          onSave={onSave as (id: string, name: string) => Promise<void>}
+          onAdd={onAdd as (name: string) => Promise<void>}
         />
       )}
-      <ConfirmationDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={confirmDelete} title="Are you sure?" description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone." confirmText="Delete" />
     </div>
   );
 };
-
-export default EntityManagementPage;

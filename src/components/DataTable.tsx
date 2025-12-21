@@ -20,13 +20,13 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Extend ColumnDef to include a custom cellRenderer for more flexibility
-export interface ColumnDefinition<TData> extends ColumnDef<TData> {
+// Define a type that combines ColumnDef with our custom cellRenderer
+export type CustomColumnDef<TData> = ColumnDef<TData> & {
   cellRenderer?: (item: TData) => React.ReactNode;
-}
+};
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDefinition<TData>[];
+interface DataTableProps<TData extends { id: string }, TValue> {
+  columns: CustomColumnDef<TData>[];
   data: TData[];
   isLoading: boolean;
   onDelete?: (selectedIds: string[]) => void;
@@ -102,8 +102,8 @@ export function DataTable<TData extends { id: string }, TValue>({
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
-                    {(cell.column.columnDef as ColumnDefinition<TData>).cellRenderer
-                      ? (cell.column.columnDef as ColumnDefinition<TData>).cellRenderer!(row.original)
+                    {(cell.column.columnDef as CustomColumnDef<TData>).cellRenderer
+                      ? (cell.column.columnDef as CustomColumnDef<TData>).cellRenderer!(row.original)
                       : flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
