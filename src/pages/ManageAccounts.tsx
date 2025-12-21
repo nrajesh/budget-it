@@ -2,7 +2,7 @@ import React from 'react';
 import { usePayeeManagement, Payee } from '@/hooks/usePayeeManagement';
 import { CustomColumnDef } from '@/components/DataTable';
 import { useCurrency } from '@/hooks/useCurrency';
-import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // FIX: Changed to named import
+import { EntityManagementPage } from '@/components/management/EntityManagementPage'; // Fixed: Changed to named import
 
 const ManageAccounts: React.FC = () => {
   const { formatCurrency } = useCurrency();
@@ -32,10 +32,13 @@ const ManageAccounts: React.FC = () => {
       id: 'name',
       header: 'Account Name',
       cellRenderer: (item) => (
-        <div onClick={() => managementProps.handlePayeeNameClick(item)} className="cursor-pointer font-medium hover:text-primary hover:underline">
+        <div
+          onClick={() => managementProps.handlePayeeNameClick(item)} // Fixed: Passing full item object
+          className="cursor-pointer font-medium hover:text-primary hover:underline"
+        >
           {item.name}
         </div>
-      ), // FIX: Passing the full 'item' (Payee) object instead of 'item.name' (string)
+      ),
     },
     {
       id: 'currency',
