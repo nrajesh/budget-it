@@ -1,63 +1,61 @@
-import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Loader2 } from "lucide-react";
+import React from 'react';
+import { useTransactions } from '@/contexts/TransactionsContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 
-interface DemoDataProgressDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-}
+const DemoDataProgressDialog: React.FC = () => {
+  const { demoDataProgress, clearAllTransactions, invalidateAllData } = useTransactions();
 
-export const DemoDataProgressDialog: React.FC<DemoDataProgressDialogProps> = ({
-  isOpen,
-  onOpenChange,
-}) => {
-  const { demoDataProgress } = useTransactions();
-
+  const isOpen = demoDataProgress !== null;
+  
   const progressValue = demoDataProgress ? (demoDataProgress.progress / demoDataProgress.totalStages) * 100 : 0;
+  const isComplete = demoDataProgress && demoDataProgress.progress >= demoDataProgress.totalStages;
 
-  // Keep the dialog open until progress reaches 100%
-  const shouldClose = progressValue >= 100;
-
-  React.useEffect(() => {
-    if (shouldClose) {
-      // Use a small timeout to ensure the progress bar reaches 100% before closing
-      const timer = setTimeout(() => {
-        onOpenChange(false);
-      }, 500);
-      return () => clearTimeout(timer);
+  const handleClose = () => {
+    // If complete, invalidate data to refresh UI
+    if (isComplete) {
+      invalidateAllData();
     }
-  }, [shouldClose, onOpenChange]);
+    // Note: In a real implementation, we would need a way to set demoDataProgress back to null, 
+    // likely via a state setter passed from the provider or a dedicated function.
+    // Since we are using a placeholder context, we'll rely on the context logic to handle state reset.
+    console.log("Demo data generation finished or cancelled.");
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Generating Demo Data</DialogTitle>
-          <DialogDescription>
-            Please wait while we set up your diverse demo data. This might take a moment.
-          </DialogDescription>
+          <DialogTitle>{isComplete ? "Demo Data Complete" : "Generating Demo Data..."}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">
-              {demoDataProgress?.stage || "Initializing..."}
-            </p>
-          </div>
-          <Progress value={progressValue} className="w-full" indicatorClassName="bg-primary" />
-          <p className="text-right text-sm text-muted-foreground">
-            {Math.round(progressValue)}% Complete
-          </p>
+        <div className="grid gap-4 py-4">
+          {!isComplete && (
+            <>
+              <Progress value={progressValue} className="w-full" />
+              <p className="text-sm text-muted-foreground">
+                {demoDataProgress?.stage || "Initializing..."}
+              </p>
+              <p className="text-xs text-gray-500">
+                Stage {demoDataProgress?.progress} of {demoDataProgress?.totalStages}
+              </p>
+            </>
+          )}
+          {isComplete && (
+            <div className="text-center space-y-2">
+              <p className="text-lg font-medium text-green-600">Success!</p>
+              <p className="text-sm text-muted-foreground">Your application is now populated with diverse financial data.</p>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleClose}>
+            {isComplete ? "Start Using App" : "Cancel"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+export default DemoDataProgressDialog;

@@ -4,6 +4,13 @@ import { Transaction, ScheduledTransaction } from '@/types/transaction';
 import { Category } from '@/types/category';
 import { Payee } from '@/types/payee';
 
+// New type definition for demo data progress
+interface DemoProgress {
+  progress: number;
+  totalStages: number;
+  stage: string;
+}
+
 interface TransactionsContextType {
   transactions: Transaction[];
   scheduledTransactions: ScheduledTransaction[];
@@ -17,20 +24,17 @@ interface TransactionsContextType {
   isLoadingVendors: boolean;
   isLoadingCategories: boolean;
   
-  // Fixed type to Map for .has/.get methods
   accountCurrencyMap: Map<string, string>; 
-  demoDataProgress: number | null; // Added
-
-  // CRUD/Refetch functions
+  demoDataProgress: DemoProgress | null; // Updated type
+  
   addTransaction: (data: any) => Promise<void>;
   updateTransaction: (id: string, data: any) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  deleteMultipleTransactions: (ids: string[]) => Promise<void>; // Added
+  deleteMultipleTransactions: (ids: string[]) => Promise<void>;
   
   generateDiverseDemoData: () => Promise<void>;
   clearAllTransactions: () => Promise<void>;
   
-  // Refetch functions
   refetchTransactions: () => void;
   refetchScheduledTransactions: () => void;
   refetchVendors: () => void;
@@ -59,8 +63,8 @@ export const TransactionsProvider: React.FC<{ children: ReactNode }> = ({ childr
     isLoadingVendors: isLoadingUser,
     isLoadingCategories: isLoadingUser,
     
-    accountCurrencyMap: new Map(), // Initialized as Map
-    demoDataProgress: null,
+    accountCurrencyMap: new Map(),
+    demoDataProgress: null, // Initialized as null
     
     addTransaction: async () => console.log('Add transaction placeholder'),
     updateTransaction: async () => console.log('Update transaction placeholder'),
