@@ -1,7 +1,12 @@
 import React from 'react';
-import { Payee } from '@/types/payee';
 
-interface EntityManagementPageProps<T> {
+interface Entity {
+  id: string;
+  name: string;
+  // Add other common properties that both Payee and Category have
+}
+
+interface EntityManagementPageProps<T extends Entity> {
   title: string;
   addPlaceholder: string;
   onAdd: (name: string) => Promise<void>;
@@ -19,10 +24,29 @@ interface EntityManagementPageProps<T> {
   onSave: (entity: T) => Promise<void>;
 }
 
-const EntityManagementPage = <T extends Payee>({
-  // ... props
+const EntityManagementPage = <T extends Entity>({
+  title,
+  addPlaceholder,
+  onAdd,
+  onFileChange,
+  isImporting,
+  isLoading,
+  data,
+  columns,
+  onDelete,
+  isAccountContext,
+  selectedEntity,
+  isDialogOpen,
+  setIsDialogOpen,
+  handleEntityNameClick,
+  onSave,
 }: EntityManagementPageProps<T>) => {
-  // ... component implementation
+  // Component implementation
+  return (
+    <div>
+      {/* Render your component content here */}
+    </div>
+  );
 };
 
 export default EntityManagementPage;

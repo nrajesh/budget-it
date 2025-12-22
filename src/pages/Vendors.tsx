@@ -10,7 +10,19 @@ const Vendors: React.FC = () => {
   const managementProps = usePayeeManagement(false); // Pass false for vendors
 
   const columns: CustomColumnDef<Payee>[] = [
-    // ... existing column definitions ...
+    {
+      id: 'name',
+      header: 'Vendor Name',
+      cellRenderer: (item) => (
+        <div
+          onClick={() => managementProps.handlePayeeNameClick(item)}
+          className="cursor-pointer font-medium hover:text-primary hover:underline"
+        >
+          {item.name}
+        </div>
+      ),
+    },
+    // ... other column definitions
   ];
 
   return (

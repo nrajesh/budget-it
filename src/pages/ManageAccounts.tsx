@@ -10,7 +10,7 @@ const ManageAccounts: React.FC = () => {
   const managementProps = usePayeeManagement(true); // Pass true for accounts
 
   const columns: CustomColumnDef<Payee>[] = [
-    // ... existing column definitions ...
+    // ... column definitions
   ];
 
   return (
