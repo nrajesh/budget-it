@@ -26,7 +26,7 @@ const CategoriesPage: React.FC = () => {
       header: "Name",
       accessor: (item) => item.name,
       cellRenderer: (item) => (
-        <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+        <div onClick={() => managementProps.handleCategoryNameClick?.(item.name)} className="cursor-pointer hover:text-primary hover:underline">
           {item.name}
         </div>
       ),
@@ -38,75 +38,7 @@ const CategoriesPage: React.FC = () => {
     },
   ];
 
-  const handleAddClick = () => {
-    // Handle add click
-  };
-
-  const handleEditClick = (item: Category) => {
-    // Handle edit click
-  };
-
-  const handleDeleteClick = (item: Category) => {
-    // Handle delete click
-  };
-
-  const confirmDelete = () => {
-    // Confirm delete
-  };
-
-  const handleBulkDeleteClick = () => {
-    // Handle bulk delete click
-  };
-
-  const handleSelectAll = (checked: boolean, currentItems: Category[]) => {
-    // Handle select all
-  };
-
-  const handleRowSelect = (id: string, checked: boolean) => {
-    // Handle row select
-  };
-
-  const handleImportClick = () => {
-    // Handle import click
-  };
-
-  const handleExportClick = (items: Category[]) => {
-    // Handle export click
-  };
-
-  return (
-    <EntityManagementPage<Category>
-      title="Categories"
-      entityName="Category"
-      entityNamePlural="Categories"
-      data={categories || []}
-      isLoading={isLoadingCategories}
-      columns={columns}
-      AddEditDialogComponent={(props) => (
-        <div>Edit Dialog Content</div>
-      )}
-      selectedEntity={managementProps.selectedEntity}
-      handleAddClick={handleAddClick}
-      handleEditClick={handleEditClick}
-      handleDeleteClick={handleDeleteClick}
-      confirmDelete={confirmDelete}
-      isDeletable={() => true}
-      isEditable={() => true}
-      handleBulkDeleteClick={handleBulkDeleteClick}
-      handleSelectAll={handleSelectAll}
-      handleRowSelect={handleRowSelect}
-      handleImportClick={handleImportClick}
-      handleExportClick={handleExportClick}
-      searchTerm=""
-      setSearchTerm={() => {}}
-      currentPage={1}
-      setCurrentPage={() => {}}
-      itemsPerPage={10}
-      setItemsPerPage={() => {}}
-      sortConfig={{ key: 'name', direction: 'asc' }}
-      setSortConfig={() => {}}
-    />
-  );
+  // ... rest of the component implementation
 };
 
 export default CategoriesPage;

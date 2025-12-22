@@ -1,4 +1,4 @@
-import { useSession } from '@/contexts/SessionContext';
+import { useSession } from '@/context/SessionContext';
 
 export const useUser = () => {
   const { user, loading } = useSession();

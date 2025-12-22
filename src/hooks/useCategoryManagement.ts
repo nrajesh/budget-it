@@ -10,7 +10,6 @@ export const useCategoryManagement = () => {
     refetchCategories,
     invalidateAllData
   } = useTransactions();
-  const queryClient = useQueryClient();
 
   // ... rest of the hook implementation
 };

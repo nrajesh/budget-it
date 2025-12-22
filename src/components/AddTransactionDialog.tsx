@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/hooks/useCurrency';
-import { Transaction } from '@/types/transaction';
 
 interface AddTransactionDialogProps {
   onOpenChange: (open: boolean) => void;
