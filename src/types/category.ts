@@ -1,7 +1,7 @@
 export interface Category {
   id: string;
-  name: string;
   user_id: string;
+  name: string;
   created_at: string;
-  total_transactions?: number;
+  total_transactions?: number; // Added by RPC function
 }

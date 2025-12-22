@@ -31,7 +31,7 @@ const VendorsPage: React.FC = () => {
   const AddEditVendorDialog = (props: any) => <div>Add/Edit Vendor Dialog Content</div>;
 
   return (
-    <EntityManagementPage<Payee>
+    <EntityManagementPage
       title="Vendors"
       entityName="Vendor"
       entityNamePlural="Vendors"

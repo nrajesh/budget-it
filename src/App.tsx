@@ -11,6 +11,8 @@ import VendorsPage from './pages/Vendors';
 import SettingsPage from './pages/SettingsPage';
 import EssentialReports from './pages/reports/EssentialReports';
 import AdvancedReports from './pages/reports/AdvancedReports';
+import AnalyticsPage from './pages/Analytics'; // Added
+import ProfilePage from './pages/ProfilePage'; // Added
 import { UserProvider } from './contexts/UserContext';
 import { TransactionsProvider } from './contexts/TransactionsContext';
 
@@ -33,6 +35,8 @@ function App() {
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="reports/essential" element={<EssentialReports />} />
                 <Route path="reports/advanced" element={<AdvancedReports />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
                 {/* Add more routes here */}
               </Route>
             </Routes>

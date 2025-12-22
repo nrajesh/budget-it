@@ -1,30 +1,42 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useUser } from './UserContext';
-
-// Placeholder types
-interface Transaction { id: string; date: string; amount: number; }
-interface Account { id: string; name: string; currency: string; starting_balance: number; running_balance: number; }
-interface Category { id: string; name: string; }
-interface Payee { id: string; name: string; }
+import { Transaction, ScheduledTransaction } from '@/types/transaction';
+import { Category } from '@/types/category';
+import { Payee } from '@/types/payee';
 
 interface TransactionsContextType {
   transactions: Transaction[];
-  scheduledTransactions: Transaction[];
-  accounts: Account[];
+  scheduledTransactions: ScheduledTransaction[];
+  accounts: Payee[];
   vendors: Payee[];
   categories: Category[];
+  
   isLoadingTransactions: boolean;
   isLoadingScheduledTransactions: boolean;
   isLoadingAccounts: boolean;
   isLoadingVendors: boolean;
   isLoadingCategories: boolean;
-  accountCurrencyMap: Record<string, string>;
+  
+  // Fixed type to Map for .has/.get methods
+  accountCurrencyMap: Map<string, string>; 
+  demoDataProgress: number | null; // Added
+
+  // CRUD/Refetch functions
   addTransaction: (data: any) => Promise<void>;
   updateTransaction: (id: string, data: any) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  deleteMultipleTransactions: (ids: string[]) => Promise<void>; // Added
+  
   generateDiverseDemoData: () => Promise<void>;
   clearAllTransactions: () => Promise<void>;
+  
+  // Refetch functions
+  refetchTransactions: () => void;
+  refetchScheduledTransactions: () => void;
+  refetchVendors: () => void;
+  refetchAccounts: () => void;
   refetchCategories: () => void;
+  
   invalidateAllData: () => void;
 }
 
@@ -40,18 +52,30 @@ export const TransactionsProvider: React.FC<{ children: ReactNode }> = ({ childr
     accounts: [],
     vendors: [],
     categories: [],
+    
     isLoadingTransactions: isLoadingUser,
     isLoadingScheduledTransactions: isLoadingUser,
     isLoadingAccounts: isLoadingUser,
     isLoadingVendors: isLoadingUser,
     isLoadingCategories: isLoadingUser,
-    accountCurrencyMap: {},
+    
+    accountCurrencyMap: new Map(), // Initialized as Map
+    demoDataProgress: null,
+    
     addTransaction: async () => console.log('Add transaction placeholder'),
     updateTransaction: async () => console.log('Update transaction placeholder'),
     deleteTransaction: async () => console.log('Delete transaction placeholder'),
+    deleteMultipleTransactions: async () => console.log('Delete multiple transactions placeholder'),
+    
     generateDiverseDemoData: async () => console.log('Generate demo data placeholder'),
     clearAllTransactions: async () => console.log('Clear data placeholder'),
+    
+    refetchTransactions: () => console.log('Refetch transactions placeholder'),
+    refetchScheduledTransactions: () => console.log('Refetch scheduled transactions placeholder'),
+    refetchVendors: () => console.log('Refetch vendors placeholder'),
+    refetchAccounts: () => console.log('Refetch accounts placeholder'),
     refetchCategories: () => console.log('Refetch categories placeholder'),
+    
     invalidateAllData: () => console.log('Invalidate all data placeholder'),
   };
 
