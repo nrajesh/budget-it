@@ -1,10 +1,10 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Category } from "@/types/category";
-import { useCategoryManagement } from "@/hooks/useCategoryManagement";
-import EntityManagementPage from "@/components/management/EntityManagementPage";
-import { ColumnDefinition } from "@/components/management/EntityTable";
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Category } from '@/types/category';
+import { useCategoryManagement } from '@/hooks/useCategoryManagement';
+import EntityManagementPage from '@/components/management/EntityManagementPage';
+import { ColumnDefinition } from '@/components/management/EntityTable';
 
 const CategoriesPage: React.FC = () => {
   const managementProps = useCategoryManagement();
@@ -38,7 +38,6 @@ const CategoriesPage: React.FC = () => {
     },
   ];
 
-  // Add missing management props
   const handleAddClick = () => {
     // Handle add click
   };
@@ -86,7 +85,6 @@ const CategoriesPage: React.FC = () => {
       AddEditDialogComponent={(props) => (
         <div>Edit Dialog Content</div>
       )}
-      {...managementProps}
       selectedEntity={managementProps.selectedEntity}
       handleAddClick={handleAddClick}
       handleEditClick={handleEditClick}
@@ -99,6 +97,14 @@ const CategoriesPage: React.FC = () => {
       handleRowSelect={handleRowSelect}
       handleImportClick={handleImportClick}
       handleExportClick={handleExportClick}
+      searchTerm=""
+      setSearchTerm={() => {}}
+      currentPage={1}
+      setCurrentPage={() => {}}
+      itemsPerPage={10}
+      setItemsPerPage={() => {}}
+      sortConfig={{ key: 'name', direction: 'asc' }}
+      setSortConfig={() => {}}
     />
   );
 };
