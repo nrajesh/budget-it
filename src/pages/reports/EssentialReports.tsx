@@ -1,17 +1,21 @@
 import React from 'react';
 import ReportLayout from './ReportLayout';
+import NetWorthStatement from '@/components/reports/NetWorthStatement';
+import IncomeExpenseSummary from '@/components/reports/IncomeExpenseSummary';
+import TrendsAndAnalytics from '@/components/reports/TrendsAndAnalytics';
 
-const EssentialReports: React.FC = () => {
+const EssentialReports = () => {
   return (
     <ReportLayout
       title="Essential Reports"
-      description="Core financial reports for your transactions"
+      description="Your core financial summaries and trends based on historical data."
     >
       {({ historicalFilteredTransactions, accounts, budgets }) => (
-        <div className="p-4 border rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Essential Report Data</h2>
-          <p>Historical Transactions Count: {historicalFilteredTransactions.length}</p>
-        </div>
+        <>
+          <NetWorthStatement transactions={historicalFilteredTransactions} accounts={accounts} />
+          <IncomeExpenseSummary transactions={historicalFilteredTransactions} budgets={budgets} />
+          <TrendsAndAnalytics transactions={historicalFilteredTransactions} budgets={budgets} />
+        </>
       )}
     </ReportLayout>
   );
