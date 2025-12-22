@@ -79,6 +79,50 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   refetch,
 }: EntityManagementPageProps<T>) => {
 
+  // Function to generate CSV content
+  const generateCSV = (items: T[]): string => {
+    if (items.length === 0) {
+      // Return sample CSV with headers when no data exists
+      return `id,name,created_at,is_account,account_id,currency,starting_balance,remarks
+1,Sample Account,${new Date().toISOString()},true,acc-001,USD,1000.00,Sample account for demonstration
+2,Another Account,${new Date().toISOString()},true,acc-002,EUR,500.00,Another sample account`;
+    }
+
+    // Get headers from column definitions
+    const headers = columns.map(col => col.header).join(',');
+
+    // Get data rows
+    const rows = items.map(item => {
+      return columns.map(col => {
+        // Check if accessor is a function before calling it
+        const value = typeof col.accessor === 'function' ? col.accessor(item) : '';
+        return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
+      }).join(',');
+    });
+
+    return [headers, ...rows].join('\n');
+  };
+
+  // Function to trigger CSV download
+  const downloadCSV = (csvContent: string, filename: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Updated export handler
+  const handleExport = (items: T[]) => {
+    const csvContent = generateCSV(items);
+    const filename = `${entityNamePlural.toLowerCase()}_export_${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(csvContent, filename);
+  };
+
   const filteredData = React.useMemo(() => {
     return data.filter((item) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -108,7 +152,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
           </Button>
-          <Button onClick={() => handleExportClick(data)} variant="outline">
+          <Button onClick={() => handleExport(data)} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
