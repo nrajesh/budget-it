@@ -10,7 +10,19 @@ const Accounts: React.FC = () => {
   const managementProps = usePayeeManagement(true); // Pass true for accounts
 
   const columns: CustomColumnDef<Payee>[] = [
-    // ... column definitions
+    {
+      id: 'name',
+      header: 'Account Name',
+      cellRenderer: (item) => (
+        <div
+          onClick={() => managementProps.handlePayeeNameClick(item)}
+          className="cursor-pointer font-medium hover:text-primary hover:underline"
+        >
+          {item.name}
+        </div>
+      ),
+    },
+    // Add other columns as needed
   ];
 
   return (

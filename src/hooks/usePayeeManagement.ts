@@ -7,7 +7,7 @@ import { useUser } from '@/hooks/useUser';
 export const usePayeeManagement = (isAccountContext: boolean) => {
   const [payees, setPayees] = useState<Payee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(false); // Added proper state initialization
+  const [isImporting, setIsImporting] = useState(false);
   const [selectedPayee, setSelectedPayee] = useState<Payee | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { user } = useUser();
@@ -122,7 +122,7 @@ export const usePayeeManagement = (isAccountContext: boolean) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsImporting(true); // Properly set the importing state
+    setIsImporting(true);
     try {
       const text = await file.text();
       const lines = text.split('\n');
@@ -155,7 +155,7 @@ export const usePayeeManagement = (isAccountContext: boolean) => {
       console.error('Error importing payees:', error);
       showError(`Failed to import ${isAccountContext ? 'accounts' : 'vendors'}`);
     } finally {
-      setIsImporting(false); // Reset the importing state
+      setIsImporting(false);
     }
   };
 
