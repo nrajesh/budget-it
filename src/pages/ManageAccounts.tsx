@@ -5,9 +5,9 @@ import { CustomColumnDef } from '@/components/DataTable';
 import { useCurrency } from '@/hooks/useCurrency';
 import EntityManagementPage from '@/components/management/EntityManagementPage';
 
-const Vendors: React.FC = () => {
+const ManageAccounts: React.FC = () => {
   const { formatCurrency } = useCurrency();
-  const managementProps = usePayeeManagement(false); // Pass false for vendors
+  const managementProps = usePayeeManagement(true); // Pass true for accounts
 
   const columns: CustomColumnDef<Payee>[] = [
     // ... existing column definitions ...
@@ -15,14 +15,16 @@ const Vendors: React.FC = () => {
 
   return (
     <EntityManagementPage<Payee>
-      title="Manage Vendors"
-      addPlaceholder="New vendor name"
+      title="Manage Accounts"
+      addPlaceholder="New account name"
       onAdd={managementProps.addPayee}
+      onFileChange={managementProps.handleFileChange}
+      isImporting={managementProps.isImporting}
       isLoading={managementProps.isLoading}
       data={managementProps.payees}
       columns={columns}
       onDelete={managementProps.deletePayees}
-      isAccountContext={false}
+      isAccountContext={true}
       selectedEntity={managementProps.selectedPayee}
       isDialogOpen={managementProps.isDialogOpen}
       setIsDialogOpen={managementProps.setIsDialogOpen}
@@ -32,4 +34,4 @@ const Vendors: React.FC = () => {
   );
 };
 
-export default Vendors;
+export default ManageAccounts;

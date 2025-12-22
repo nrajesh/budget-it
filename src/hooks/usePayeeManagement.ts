@@ -1,97 +1,175 @@
-import * as React from "react";
-import { useEntityManagement } from "./useEntityManagement";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Payee } from "@/components/AddEditPayeeDialog";
-import Papa from "papaparse";
-import { showError } from "@/utils/toast";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { showError, showSuccess } from '@/utils/toast';
+import { Payee } from '@/types/payee';
+import { useUser } from '@/hooks/useUser';
 
-export const usePayeeManagement = (isAccount: boolean) => {
-  const { invalidateAllData } = useTransactions();
-  const navigate = useNavigate();
+export const usePayeeManagement = (isAccountContext: boolean) => {
+  const [payees, setPayees] = useState<Payee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false); // Added proper state initialization
+  const [selectedPayee, setSelectedPayee] = useState<Payee | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { user } = useUser();
 
-  const entityName = isAccount ? "Account" : "Vendor";
-  const entityNamePlural = isAccount ? "accounts" : "vendors";
+  const fetchPayees = useCallback(async () => {
+    if (!user) return;
 
-  const managementProps = useEntityManagement<Payee>({
-    entityName,
-    entityNamePlural,
-    queryKey: [entityNamePlural],
-    deleteRpcFn: 'delete_payees_batch',
-    batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
-    batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
-    isDeletable: (item) => item.name !== 'Others',
-    onSuccess: invalidateAllData,
-  });
+    setIsLoading(true);
+    try {
+      const { data, error } = isAccountContext
+        ? await supabase.rpc('get_accounts_with_transaction_counts')
+        : await supabase.rpc('get_vendors_with_transaction_counts');
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (error) throw error;
+
+      setPayees(data || []);
+    } catch (error) {
+      console.error('Error fetching payees:', error);
+      showError('Failed to fetch payees');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, isAccountContext]);
+
+  useEffect(() => {
+    fetchPayees();
+  }, [fetchPayees]);
+
+  const addPayee = async (name: string) => {
+    if (!user) return;
+
+    try {
+      if (isAccountContext) {
+        const { error } = await supabase.rpc('batch_upsert_accounts', {
+          p_accounts: [{ name, currency: 'USD', starting_balance: 0, remarks: '' }]
+        });
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('batch_upsert_vendors', {
+          p_names: [name]
+        });
+
+        if (error) throw error;
+      }
+
+      showSuccess(`${isAccountContext ? 'Account' : 'Vendor'} added successfully`);
+      await fetchPayees();
+    } catch (error) {
+      console.error('Error adding payee:', error);
+      showError(`Failed to add ${isAccountContext ? 'account' : 'vendor'}`);
+    }
+  };
+
+  const updatePayee = async (updatedPayee: Payee) => {
+    if (!user) return;
+
+    try {
+      if (isAccountContext) {
+        const { error } = await supabase.rpc('batch_upsert_accounts', {
+          p_accounts: [{
+            name: updatedPayee.name,
+            currency: updatedPayee.currency || 'USD',
+            starting_balance: updatedPayee.starting_balance || 0,
+            remarks: updatedPayee.remarks || ''
+          }]
+        });
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('update_vendor_name', {
+          p_vendor_id: updatedPayee.id,
+          p_new_name: updatedPayee.name
+        });
+
+        if (error) throw error;
+      }
+
+      showSuccess(`${isAccountContext ? 'Account' : 'Vendor'} updated successfully`);
+      await fetchPayees();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating payee:', error);
+      showError(`Failed to update ${isAccountContext ? 'account' : 'vendor'}`);
+    }
+  };
+
+  const deletePayees = async (payeeIds: string[]) => {
+    if (!user) return;
+
+    try {
+      const { error } = isAccountContext
+        ? await supabase.rpc('delete_payees_batch', { p_vendor_ids: payeeIds })
+        : await supabase.rpc('delete_payees_batch', { p_vendor_ids: payeeIds });
+
+      if (error) throw error;
+
+      showSuccess(`${payeeIds.length} ${isAccountContext ? 'accounts' : 'vendors'} deleted successfully`);
+      await fetchPayees();
+    } catch (error) {
+      console.error('Error deleting payees:', error);
+      showError(`Failed to delete ${isAccountContext ? 'accounts' : 'vendors'}`);
+    }
+  };
+
+  const handlePayeeNameClick = (payee: Payee) => {
+    setSelectedPayee(payee);
+    setIsDialogOpen(true);
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    managementProps.batchUpsertMutation.reset(); // Reset mutation state
-    const setIsImporting = (managementProps as any).setIsImporting; // A bit of a hack, ideally the hook would expose this
-    setIsImporting(true);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const requiredHeaders = isAccount ? ["Account Name", "Currency", "Starting Balance", "Remarks"] : ["Vendor Name"];
-        const hasAllHeaders = requiredHeaders.every(h => results.meta.fields?.includes(h));
+    setIsImporting(true); // Properly set the importing state
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      const names = lines.map(line => line.trim()).filter(line => line);
 
-        if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
-          setIsImporting(false);
-          return;
-        }
+      if (isAccountContext) {
+        const accounts = names.map(name => ({
+          name,
+          currency: 'USD',
+          starting_balance: 0,
+          remarks: ''
+        }));
 
-        const dataToUpsert = results.data.map((row: any) => isAccount
-          ? { name: row["Account Name"], currency: row["Currency"], starting_balance: parseFloat(row["Starting Balance"]) || 0, remarks: row["Remarks"] }
-          : { name: row["Vendor Name"] }
-        ).filter(item => item.name);
+        const { error } = await supabase.rpc('batch_upsert_accounts', {
+          p_accounts: accounts
+        });
 
-        if (dataToUpsert.length === 0) {
-          showError(`No valid ${entityName.toLowerCase()} data found in the CSV file.`);
-          setIsImporting(false);
-          return;
-        }
-        managementProps.batchUpsertMutation.mutate(dataToUpsert);
-      },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
-      },
-    });
-  };
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('batch_upsert_vendors', {
+          p_names: names
+        });
 
-  const handleExportClick = (payees: Payee[]) => {
-    if (payees.length === 0) {
-      showError(`No ${entityNamePlural} to export.`);
-      return;
+        if (error) throw error;
+      }
+
+      showSuccess(`Successfully imported ${names.length} ${isAccountContext ? 'accounts' : 'vendors'}`);
+      await fetchPayees();
+    } catch (error) {
+      console.error('Error importing payees:', error);
+      showError(`Failed to import ${isAccountContext ? 'accounts' : 'vendors'}`);
+    } finally {
+      setIsImporting(false); // Reset the importing state
     }
-    const dataToExport = payees.map(p => isAccount
-      ? { "Account Name": p.name, "Currency": p.currency, "Starting Balance": p.starting_balance, "Remarks": p.remarks }
-      : { "Vendor Name": p.name }
-    );
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `${entityNamePlural}_export.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handlePayeeNameClick = (payeeName: string) => {
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: payeeName } });
   };
 
   return {
-    ...managementProps,
-    handleFileChange,
-    handleExportClick,
+    payees,
+    isLoading,
+    isImporting,
+    selectedPayee,
+    isDialogOpen,
+    setIsDialogOpen,
+    addPayee,
+    updatePayee,
+    deletePayees,
     handlePayeeNameClick,
-    selectedPayee: managementProps.selectedEntity, // Alias for clarity
+    handleFileChange
   };
 };
