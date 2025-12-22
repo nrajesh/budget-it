@@ -58,6 +58,26 @@ const VendorsPage: React.FC = () => {
     // Confirm delete
   };
 
+  const handleBulkDeleteClick = () => {
+    // Handle bulk delete click
+  };
+
+  const handleSelectAll = (checked: boolean, currentItems: Payee[]) => {
+    // Handle select all
+  };
+
+  const handleRowSelect = (id: string, checked: boolean) => {
+    // Handle row select
+  };
+
+  const handleImportClick = () => {
+    // Handle import click
+  };
+
+  const handleExportClick = (items: Payee[]) => {
+    // Handle export click
+  };
+
   return (
     <EntityManagementPage<Payee>
       title="Vendors"
@@ -77,6 +97,11 @@ const VendorsPage: React.FC = () => {
       confirmDelete={confirmDelete}
       isDeletable={() => true}
       isEditable={() => true}
+      handleBulkDeleteClick={handleBulkDeleteClick}
+      handleSelectAll={handleSelectAll}
+      handleRowSelect={handleRowSelect}
+      handleImportClick={handleImportClick}
+      handleExportClick={handleExportClick}
     />
   );
 };

@@ -7,4 +7,5 @@ export interface Payee {
   currency: string;
   starting_balance: number;
   remarks: string | null;
+  total_transactions?: number; // Add this property
 }
