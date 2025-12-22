@@ -22,5 +22,5 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   const { formatCurrency } = useCurrency();
 
-  // ... rest of the component implementation
+  return <div>Add Transaction Dialog Content</div>;
 };

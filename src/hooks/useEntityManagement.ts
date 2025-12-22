@@ -1,144 +1,113 @@
-import * as React from "react";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import Papa from "papaparse";
+import { useState, useMemo } from 'react';
+import { SortConfig } from '@/types/sort';
 
-interface UseEntityManagementProps<T> {
-  entityName: string;
-  entityNamePlural: string;
-  queryKey: string[];
-  deleteRpcFn: string;
-  batchUpsertRpcFn?: string; // Optional for categories
-  batchUpsertPayloadKey?: string; // Optional for categories
-  isDeletable?: (item: T) => boolean;
-  onSuccess?: () => void;
+interface EntityWithId {
+  id: string;
 }
 
-export const useEntityManagement = <T extends { id: string; name: string }>({
-  entityName,
-  entityNamePlural,
-  queryKey,
-  deleteRpcFn,
-  batchUpsertRpcFn,
-  batchUpsertPayloadKey,
-  isDeletable = () => true,
-  onSuccess,
-}: UseEntityManagementProps<T>) => {
-  const queryClient = useQueryClient();
+export const useEntityManagement = <T extends EntityWithId>(initialData: T[]) => {
+  const [selectedEntity, setSelectedEntity] = useState<T | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
-  // State Management
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage] = React.useState(10);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedEntity, setSelectedEntity] = React.useState<T | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [entityToDelete, setEntityToDelete] = React.useState<T | null>(null);
-  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
-
-  // Mutations
-  const deleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.rpc(deleteRpcFn, { p_vendor_ids: ids }); // Assuming the param name is consistent
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      await queryClient.invalidateQueries({ queryKey });
-      if (onSuccess) onSuccess();
-      setIsConfirmOpen(false);
-      setEntityToDelete(null);
-      setSelectedRows([]);
-      setIsBulkDelete(false);
-    },
-    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
-  });
-
-  const batchUpsertMutation = useMutation({
-    mutationFn: async (dataToUpsert: any[]) => {
-      if (!batchUpsertRpcFn || !batchUpsertPayloadKey) {
-        throw new Error("Batch upsert RPC function or payload key is not defined.");
-      }
-      const payload = { [batchUpsertPayloadKey]: dataToUpsert };
-      const { error } = await supabase.rpc(batchUpsertRpcFn, payload);
-      if (error) throw error;
-    },
-    onSuccess: async (data, variables) => {
-      showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
-      await queryClient.invalidateQueries({ queryKey });
-      if (onSuccess) onSuccess();
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    onError: (error: any) => showError(`Import failed: ${error.message}`),
-    onSettled: () => setIsImporting(false),
-  });
-
-  // Handlers
+  // Placeholder functions
   const handleAddClick = () => {
     setSelectedEntity(null);
     setIsDialogOpen(true);
   };
 
-  const handleEditClick = (entity: T) => {
-    setSelectedEntity(entity);
+  const handleEditClick = (item: T) => {
+    setSelectedEntity(item);
     setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (entity: T) => {
-    setEntityToDelete(entity);
-    setIsBulkDelete(false);
-    setIsConfirmOpen(true);
+  const handleDeleteClick = (item: T) => {
+    setSelectedEntity(item);
+    setIsConfirmDeleteOpen(true);
   };
 
   const handleBulkDeleteClick = () => {
-    setEntityToDelete(null);
-    setIsBulkDelete(true);
-    setIsConfirmOpen(true);
+    setIsBulkDeleteOpen(true);
   };
 
-  const confirmDelete = () => {
-    const idsToDelete = isBulkDelete ? selectedRows : (entityToDelete ? [entityToDelete.id] : []);
-    if (idsToDelete.length > 0) {
-      deleteMutation.mutate(idsToDelete);
+  const handleSelectAll = (checked: boolean, currentItems: T[]) => {
+    if (checked) {
+      setSelectedIds(currentItems.map(item => item.id));
     } else {
-      setIsConfirmOpen(false);
+      setSelectedIds([]);
     }
   };
 
-  const handleSelectAll = (checked: boolean, currentEntities: T[]) => {
-    setSelectedRows(checked ? currentEntities.filter(isDeletable).map(p => p.id) : []);
-  };
-
   const handleRowSelect = (id: string, checked: boolean) => {
-    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
+    setSelectedIds(prev =>
+      checked ? [...prev, id] : prev.filter(itemId => itemId !== id)
+    );
   };
 
-  const handleImportClick = () => fileInputRef.current?.click();
+  // Sorting and filtering logic (simplified for placeholder)
+  const filteredData = useMemo(() => {
+    return initialData.filter(item => 
+      JSON.stringify(item).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [initialData, searchTerm]);
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key) return filteredData;
+    
+    return [...filteredData].sort((a, b) => {
+      const aValue = (a as any)[sortConfig.key];
+      const bValue = (b as any)[sortConfig.key];
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredData, sortConfig]);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return sortedData.slice(start, end);
+  }, [sortedData, currentPage, itemsPerPage]);
+
 
   return {
-    searchTerm, setSearchTerm,
-    currentPage, setCurrentPage,
-    itemsPerPage,
-    isDialogOpen, setIsDialogOpen,
+    // State
     selectedEntity,
-    isConfirmOpen, setIsConfirmOpen,
-    selectedRows,
-    isImporting, fileInputRef,
-    deleteMutation,
-    batchUpsertMutation,
-    isLoadingMutation: deleteMutation.isPending || batchUpsertMutation.isPending,
+    searchTerm,
+    currentPage,
+    itemsPerPage,
+    sortConfig,
+    selectedIds,
+    isDialogOpen,
+    isConfirmDeleteOpen,
+    isBulkDeleteOpen,
+    paginatedData,
+    totalItems: filteredData.length,
+
+    // Setters
+    setSelectedEntity,
+    setSearchTerm,
+    setCurrentPage,
+    setItemsPerPage,
+    setSortConfig,
+    setIsDialogOpen,
+    setIsConfirmDeleteOpen,
+    setIsBulkDeleteOpen,
+    setSelectedIds,
+
+    // Handlers
     handleAddClick,
     handleEditClick,
     handleDeleteClick,
-    confirmDelete,
     handleBulkDeleteClick,
     handleSelectAll,
     handleRowSelect,
-    handleImportClick,
   };
 };

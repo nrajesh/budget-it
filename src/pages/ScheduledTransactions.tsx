@@ -11,7 +11,7 @@ const ScheduledTransactionsPage: React.FC = () => {
     isLoadingVendors
   } = useTransactions();
 
-  // ... rest of the component implementation
+  return <div>Scheduled Transactions Page Content</div>;
 };
 
 export default ScheduledTransactionsPage;

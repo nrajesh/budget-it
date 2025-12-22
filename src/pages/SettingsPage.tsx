@@ -6,7 +6,7 @@ const SettingsPage: React.FC = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
 
-  // ... rest of the component implementation
+  return <div>Settings Page Content</div>;
 };
 
 export default SettingsPage;

@@ -10,7 +10,7 @@ const TransactionsPage: React.FC = () => {
     isLoadingCategories
   } = useTransactions();
 
-  // ... rest of the component implementation
+  return <div>Transactions Page Content</div>;
 };
 
 export default TransactionsPage;

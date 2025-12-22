@@ -26,7 +26,23 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ children, title, descriptio
     return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
   }, [dataProps.filteredTransactions]);
 
-  // ... rest of the component implementation
+  const combinedFilteredTransactions = [...historicalFilteredTransactions, ...futureFilteredTransactions];
+  const accounts = []; // Placeholder
+  const budgets = []; // Placeholder
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">{title}</h1>
+      <p className="text-muted-foreground">{description}</p>
+      {children({
+        historicalFilteredTransactions,
+        combinedFilteredTransactions,
+        futureFilteredTransactions,
+        accounts,
+        budgets,
+      })}
+    </div>
+  );
 };
 
 export default ReportLayout;

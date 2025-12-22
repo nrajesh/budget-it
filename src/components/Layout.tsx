@@ -5,7 +5,16 @@ import Footer from './Footer';
 import { AddTransactionDialog } from './AddTransactionDialog';
 
 const Layout: React.FC = () => {
-  // ... rest of the component implementation
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow container mx-auto p-4">
+        <Outlet />
+      </main>
+      <Footer />
+      <AddTransactionDialog onOpenChange={() => {}} />
+    </div>
+  );
 };
 
 export default Layout;

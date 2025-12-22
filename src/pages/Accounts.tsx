@@ -23,7 +23,7 @@ const AccountsPage: React.FC = () => {
     // ... other columns
   ];
 
-  // ... rest of the component implementation
+  return <div>Accounts Page Content</div>;
 };
 
 export default AccountsPage;

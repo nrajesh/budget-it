@@ -26,7 +26,7 @@ const CategoriesPage: React.FC = () => {
       header: "Name",
       accessor: (item) => item.name,
       cellRenderer: (item) => (
-        <div onClick={() => managementProps.handleCategoryNameClick?.(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+        <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
           {item.name}
         </div>
       ),
@@ -38,7 +38,47 @@ const CategoriesPage: React.FC = () => {
     },
   ];
 
-  // ... rest of the component implementation
+  const handleAddClick = () => {};
+  const handleEditClick = (item: Category) => {};
+  const handleDeleteClick = (item: Category) => {};
+  const confirmDelete = () => {};
+  const handleBulkDeleteClick = () => {};
+  const handleSelectAll = (checked: boolean, currentItems: Category[]) => {};
+  const handleRowSelect = (id: string, checked: boolean) => {};
+  const handleImportClick = () => {};
+  const handleExportClick = (items: Category[]) => {};
+
+  return (
+    <EntityManagementPage<Category>
+      title="Categories"
+      entityName="Category"
+      entityNamePlural="Categories"
+      data={categories || []}
+      isLoading={isLoadingCategories}
+      columns={columns}
+      AddEditDialogComponent={() => <div>Edit Dialog Content</div>}
+      selectedEntity={managementProps.selectedEntity}
+      handleAddClick={handleAddClick}
+      handleEditClick={handleEditClick}
+      handleDeleteClick={handleDeleteClick}
+      confirmDelete={confirmDelete}
+      isDeletable={() => true}
+      isEditable={() => true}
+      handleBulkDeleteClick={handleBulkDeleteClick}
+      handleSelectAll={handleSelectAll}
+      handleRowSelect={handleRowSelect}
+      handleImportClick={handleImportClick}
+      handleExportClick={handleExportClick}
+      searchTerm={managementProps.searchTerm}
+      setSearchTerm={managementProps.setSearchTerm}
+      currentPage={managementProps.currentPage}
+      setCurrentPage={managementProps.setCurrentPage}
+      itemsPerPage={managementProps.itemsPerPage}
+      setItemsPerPage={managementProps.setItemsPerPage}
+      sortConfig={managementProps.sortConfig}
+      setSortConfig={managementProps.setSortConfig}
+    />
+  );
 };
 
 export default CategoriesPage;

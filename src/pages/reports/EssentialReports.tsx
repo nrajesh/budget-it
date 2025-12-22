@@ -8,7 +8,10 @@ const EssentialReports: React.FC = () => {
       description="Core financial reports for your transactions"
     >
       {({ historicalFilteredTransactions, accounts, budgets }) => (
-        // ... report content
+        <div className="p-4 border rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Essential Report Data</h2>
+          <p>Historical Transactions Count: {historicalFilteredTransactions.length}</p>
+        </div>
       )}
     </ReportLayout>
   );

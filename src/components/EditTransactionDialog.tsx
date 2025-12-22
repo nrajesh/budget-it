@@ -26,5 +26,5 @@ export const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const { formatCurrency } = useCurrency();
 
-  // ... rest of the component implementation
+  return <div>Edit Transaction Dialog Content</div>;
 };

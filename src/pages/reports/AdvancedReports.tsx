@@ -8,7 +8,10 @@ const AdvancedReports: React.FC = () => {
       description={<div>Advanced financial reports and analysis tools</div>}
     >
       {({ historicalFilteredTransactions, combinedFilteredTransactions, futureFilteredTransactions, accounts, budgets }) => (
-        // ... report content
+        <div className="p-4 border rounded-lg">
+          <h2 className="text-xl font-semibold mb-4">Advanced Report Data</h2>
+          <p>Historical Transactions Count: {historicalFilteredTransactions.length}</p>
+        </div>
       )}
     </ReportLayout>
   );
