@@ -1,97 +1,113 @@
-import * as React from "react";
-import { useEntityManagement } from "./useEntityManagement";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { Payee } from "@/components/AddEditPayeeDialog";
-import Papa from "papaparse";
-import { showError } from "@/utils/toast";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useCallback } from 'react';
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { Payee } from "@/types/payee";
 
-export const usePayeeManagement = (isAccount: boolean) => {
-  const { invalidateAllData } = useTransactions();
-  const navigate = useNavigate();
+interface UsePayeeManagementProps {
+  initialData?: Payee[];
+  onImportComplete?: () => void;
+  isAccount?: boolean;
+}
 
-  const entityName = isAccount ? "Account" : "Vendor";
-  const entityNamePlural = isAccount ? "accounts" : "vendors";
+export const usePayeeManagement = ({ initialData = [], onImportComplete, isAccount = false }: UsePayeeManagementProps = {}) => {
+  const [isImporting, setIsImporting] = useState(false);
+  const [isLoadingMutation, setIsLoadingMutation] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState<Payee | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const managementProps = useEntityManagement<Payee>({
-    entityName,
-    entityNamePlural,
-    queryKey: [entityNamePlural],
-    deleteRpcFn: 'delete_payees_batch',
-    batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
-    batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
-    isDeletable: (item) => item.name !== 'Others',
-    onSuccess: invalidateAllData,
-  });
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    managementProps.batchUpsertMutation.reset(); // Reset mutation state
-    const setIsImporting = (managementProps as any).setIsImporting; // A bit of a hack, ideally the hook would expose this
+
     setIsImporting(true);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const requiredHeaders = isAccount ? ["Account Name", "Currency", "Starting Balance", "Remarks"] : ["Vendor Name"];
-        const hasAllHeaders = requiredHeaders.every(h => results.meta.fields?.includes(h));
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const content = e.target?.result as string;
+        const lines = content.split('\n').filter(line => line.trim() !== '');
 
-        if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
-          setIsImporting(false);
+        // Skip header row if it exists
+        const dataLines = lines.length > 0 && lines[0].includes('name') ? lines.slice(1) : lines;
+
+        if (dataLines.length === 0) {
+          toast({
+            title: "No data found",
+            description: "The CSV file doesn't contain any valid data to import.",
+            variant: "destructive",
+          });
           return;
         }
 
-        const dataToUpsert = results.data.map((row: any) => isAccount
-          ? { name: row["Account Name"], currency: row["Currency"], starting_balance: parseFloat(row["Starting Balance"]) || 0, remarks: row["Remarks"] }
-          : { name: row["Vendor Name"] }
-        ).filter(item => item.name);
+        const payeesToInsert = dataLines.map(line => {
+          const [name] = line.split(',');
+          return { name: name.trim() };
+        });
 
-        if (dataToUpsert.length === 0) {
-          showError(`No valid ${entityName.toLowerCase()} data found in the CSV file.`);
-          setIsImporting(false);
-          return;
-        }
-        managementProps.batchUpsertMutation.mutate(dataToUpsert);
-      },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
-        setIsImporting(false);
-      },
-    });
-  };
+        const { error } = await supabase.rpc('batch_upsert_vendors', {
+          p_names: payeesToInsert.map(p => p.name)
+        });
 
-  const handleExportClick = (payees: Payee[]) => {
-    if (payees.length === 0) {
-      showError(`No ${entityNamePlural} to export.`);
-      return;
+        if (error) throw error;
+
+        toast({
+          title: "Import successful",
+          description: `${payeesToInsert.length} payees were imported successfully.`,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['payees'] });
+        onImportComplete?.();
+      };
+
+      reader.readAsText(file);
+    } catch (error) {
+      console.error("Error importing CSV:", error);
+      toast({
+        title: "Import failed",
+        description: "There was an error importing the CSV file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-    const dataToExport = payees.map(p => isAccount
-      ? { "Account Name": p.name, "Currency": p.currency, "Starting Balance": p.starting_balance, "Remarks": p.remarks }
-      : { "Vendor Name": p.name }
-    );
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `${entityNamePlural}_export.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  }, [fileInputRef, onImportComplete, queryClient, toast]);
 
-  const handlePayeeNameClick = (payeeName: string) => {
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: payeeName } });
+  const handlePayeeNameClick = (name: string) => {
+    // Implementation for handling payee name click
+    console.log(`Payee clicked: ${name}`);
   };
 
   return {
-    ...managementProps,
+    isImporting,
+    setIsImporting,
+    isLoadingMutation,
+    selectedRows,
+    setSelectedRows,
+    isConfirmOpen,
+    setIsConfirmOpen,
+    isDialogOpen,
+    setIsDialogOpen,
+    selectedEntity,
+    setSelectedEntity,
+    searchTerm,
+    setSearchTerm,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    fileInputRef,
     handleFileChange,
-    handleExportClick,
     handlePayeeNameClick,
-    selectedPayee: managementProps.selectedEntity, // Alias for clarity
   };
 };
