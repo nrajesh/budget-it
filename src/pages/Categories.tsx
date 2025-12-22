@@ -28,7 +28,7 @@ const Categories: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage
+    <EntityManagementPage<Category>
       title="Categories"
       addPlaceholder="New category name"
       onAdd={managementProps.addCategory}
