@@ -26,7 +26,7 @@ const Accounts: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage<Payee>
+    <EntityManagementPage
       title="Accounts"
       addPlaceholder="New account name"
       onAdd={managementProps.addPayee}

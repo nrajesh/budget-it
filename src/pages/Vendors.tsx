@@ -26,7 +26,7 @@ const Vendors: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage<Payee>
+    <EntityManagementPage
       title="Manage Vendors"
       addPlaceholder="New vendor name"
       onAdd={managementProps.addPayee}
