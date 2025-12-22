@@ -6,21 +6,12 @@ interface CurrencyHook {
   formatCurrency: (amount: number, currency?: string) => string;
 }
 
-// Simple map for currency symbols (can be expanded)
-const currencySymbols: Record<string, string> = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
-
 export const useCurrency = (): CurrencyHook => {
-  // Default currency is USD, but should ideally come from user profile
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
 
   const formatCurrency = useCallback((amount: number, currency?: string): string => {
     const effectiveCurrency = currency || selectedCurrency;
-    const symbol = currencySymbols[effectiveCurrency] || effectiveCurrency;
-
+    
     // Use Intl.NumberFormat for robust formatting
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -29,6 +20,7 @@ export const useCurrency = (): CurrencyHook => {
       maximumFractionDigits: 2,
     });
 
+    // Ensure the return value is explicitly the formatted string
     return formatter.format(amount);
   }, [selectedCurrency]);
 
