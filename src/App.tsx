@@ -1,64 +1,53 @@
-import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Layout from "@/components/Layout";
-import { Toaster } from "@/components/ui/sonner";
-import { TransactionsProvider } from "./contexts/TransactionsContext";
-import { UserProvider } from "./contexts/UserContext";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Toaster } from "@/components/ui/toaster";
+import { SessionProvider } from "@/context/SessionContext";
+import Layout from "@/components/layout/Layout";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+
+// Lazy load pages
+const IndexPage = lazy(() => import('@/pages/Index'));
+const AccountsPage = lazy(() => import('@/pages/Accounts'));
+const VendorsPage = lazy(() => import('@/pages/Vendors'));
+const CategoriesPage = lazy(() => import('@/pages/Categories'));
+const TransactionsPage = lazy(() => import('@/pages/Transactions'));
+const ScheduledTransactionsPage = lazy(() => import('@/pages/ScheduledTransactions'));
+const BudgetsPage = lazy(() => import('@/pages/Budgets'));
+const ReportsPage = lazy(() => import('@/pages/Reports'));
+const SettingsPage = lazy(() => import('@/pages/Settings'));
+const LoginPage = lazy(() => import('@/pages/Login'));
+const ProfilePage = lazy(() => import('@/pages/Profile'));
 
 const queryClient = new QueryClient();
-
-// Lazy load page components
-const Index = lazy(() => import("@/pages/Index"));
-const Analytics = lazy(() => import("@/pages/Analytics"));
-const Transactions = lazy(() => import("@/pages/Transactions"));
-const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
-const Login = lazy(() => import("@/pages/Login"));
-const Accounts = lazy(() => import("@/pages/Accounts"));
-const Vendors = lazy(() => import("@/pages/Vendors"));
-const Categories = lazy(() => import("@/pages/Categories"));
-const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions"));
-const Budgets = lazy(() => import("@/pages/Budgets"));
-const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
-const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <TransactionsProvider>
-          <Router>
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                {/* Protected routes */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<Index />} />
-                    <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/vendors" element={<Vendors />} />
-                    <Route path="/accounts" element={<Accounts />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/scheduled" element={<ScheduledTransactions />} />
-                    <Route path="/budgets" element={<Budgets />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/reports/essential" element={<EssentialReports />} />
-                    <Route path="/reports/advanced" element={<AdvancedReports />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
-                </Route>
-              </Routes>
-            </Suspense>
-          </Router>
-        </TransactionsProvider>
-      </UserProvider>
-      <Toaster />
+      <SessionProvider>
+        <Router>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<IndexPage />} />
+                <Route path="accounts" element={<AccountsPage />} />
+                <Route path="vendors" element={<VendorsPage />} />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="transactions" element={<TransactionsPage />} />
+                <Route path="scheduled-transactions" element={<ScheduledTransactionsPage />} />
+                <Route path="budgets" element={<BudgetsPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
+              <Route path="login" element={<LoginPage />} />
+            </Routes>
+          </Suspense>
+        </Router>
+        <Toaster />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </SessionProvider>
     </QueryClientProvider>
   );
 }
