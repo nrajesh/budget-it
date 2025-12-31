@@ -1,54 +1,117 @@
-import React from 'react';
+import * as React from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, Loader2 } from "lucide-react";
 
 export interface ColumnDefinition<T> {
   header: string;
-  accessor: (item: T) => React.ReactNode;
+  accessor: keyof T | ((item: T) => React.ReactNode);
+  cellRenderer?: (item: T) => React.ReactNode;
+  className?: string;
 }
 
 interface EntityTableProps<T extends { id: string; name: string }> {
   data: T[];
   columns: ColumnDefinition<T>[];
   isLoading: boolean;
+  selectedRows: string[];
+  handleRowSelect: (id: string, checked: boolean) => void;
   handleEditClick: (item: T) => void;
   handleDeleteClick: (item: T) => void;
+  isEditing: (id: string) => boolean;
+  isUpdating: boolean;
   isDeletable?: (item: T) => boolean;
-  isEditable?: (item: T) => boolean;
-  onRowSelect: (id: string, selected: boolean) => void;
-  onSelectAll: (selectedIds: string[]) => void;
 }
 
-export function EntityTable<T extends { id: string; name: string }>(props: EntityTableProps<T>) {
-  if (props.isLoading) return <div>Loading...</div>;
-
+export const EntityTable = <T extends { id: string; name: string }>({
+  data,
+  columns,
+  isLoading,
+  selectedRows,
+  handleRowSelect,
+  handleEditClick,
+  handleDeleteClick,
+  isEditing,
+  isUpdating,
+  isDeletable = () => true,
+}: EntityTableProps<T>) => {
   return (
-    <div className="rounded-md border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/50">
-            {props.columns.map((col, i) => (
-              <th key={i} className="h-10 px-4 text-left font-medium">{col.header}</th>
+    <div className="border rounded-md overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[50px]">
+              <Checkbox
+                checked={data.length > 0 && selectedRows.length === data.filter(item => isDeletable(item)).length}
+                onCheckedChange={(checked) => {
+                  const selectableIds = data.filter(item => isDeletable(item)).map(item => item.id);
+                  if (checked) {
+                    handleRowSelect(selectableIds.join(','), true); // A bit of a hack to pass all ids
+                  } else {
+                    handleRowSelect('', false);
+                  }
+                }}
+                aria-label="Select all"
+              />
+            </TableHead>
+            {columns.map((col) => (
+              <TableHead key={String(col.header)} className={col.className}>{col.header}</TableHead>
             ))}
-            <th className="h-10 px-4 text-right font-medium">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {props.data.map((item) => (
-            <tr key={item.id} className="border-b">
-              {props.columns.map((col, i) => (
-                <td key={i} className="p-4">{col.accessor(item)}</td>
-              ))}
-              <td className="p-4 text-right">
-                {(!props.isEditable || props.isEditable(item)) && (
-                  <button onClick={() => props.handleEditClick(item)} className="mr-2">Edit</button>
-                )}
-                {(!props.isDeletable || props.isDeletable(item)) && (
-                  <button onClick={() => props.handleDeleteClick(item)}>Delete</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableRow><TableCell colSpan={columns.length + 2} className="text-center">Loading...</TableCell></TableRow>
+          ) : data.length === 0 ? (
+            <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-4 text-muted-foreground">No items found.</TableCell></TableRow>
+          ) : (
+            data.map((item) => (
+              <TableRow key={item.id} data-state={selectedRows.includes(item.id) && "selected"}>
+                <TableCell>
+                  <Checkbox
+                    checked={selectedRows.includes(item.id)}
+                    onCheckedChange={(checked) => handleRowSelect(item.id, Boolean(checked))}
+                    aria-label="Select row"
+                    disabled={!isDeletable(item)}
+                  />
+                </TableCell>
+                {columns.map((col) => (
+                  <TableCell key={String(col.header)} className={col.className}>
+                    {col.cellRenderer
+                      ? col.cellRenderer(item)
+                      : typeof col.accessor === 'function'
+                      ? col.accessor(item)
+                      : (item[col.accessor as keyof T] as React.ReactNode) || "-"}
+                  </TableCell>
+                ))}
+                <TableCell className="text-right">
+                  {isUpdating && isEditing(item.id) ? (
+                    <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                  ) : (
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
-}
+};

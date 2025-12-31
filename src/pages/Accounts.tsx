@@ -1,58 +1,52 @@
-import React from 'react';
-import { Payee } from '@/types/payee';
-import EntityManagementPage from '@/components/management/EntityManagementPage';
-import { ColumnDefinition } from '@/components/management/EntityTable';
-import { usePayeeManagement } from '@/hooks/usePayeeManagement';
+import * as React from "react";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { usePayeeManagement } from "@/hooks/usePayeeManagement";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
+import { ColumnDefinition } from "@/components/management/EntityTable";
+import EntityManagementPage from "@/components/management/EntityManagementPage";
 
-const AccountsPage: React.FC = () => {
+const AccountsPage = () => {
+  const { accounts, isLoadingAccounts, invalidateAllData } = useTransactions();
+  const { formatCurrency } = useCurrency();
   const managementProps = usePayeeManagement(true);
 
   const columns: ColumnDefinition<Payee>[] = [
     {
       header: "Account Name",
-      accessor: (item) => (
-        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline font-medium">
+      accessor: "name",
+      cellRenderer: (item) => (
+        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer font-medium hover:text-primary hover:underline">
           {item.name}
         </div>
       ),
     },
+    { header: "Currency", accessor: "currency" },
     {
-      header: "Currency",
-      accessor: (item) => item.currency || 'USD',
+      header: "Starting Balance",
+      accessor: (item) => formatCurrency(item.starting_balance || 0, item.currency || 'USD'),
     },
     {
-      header: "Balance",
-      accessor: (item) => item.running_balance?.toFixed(2) || '0.00',
+      header: "Running Balance",
+      accessor: (item) => formatCurrency(item.running_balance || 0, item.currency || 'USD'),
     },
+    { header: "Remarks", accessor: "remarks" },
   ];
 
   return (
     <EntityManagementPage
       title="Accounts"
       entityName="Account"
-      entityNamePlural="Accounts"
-      data={managementProps.paginatedData}
-      isLoading={managementProps.isLoading}
+      entityNamePlural="accounts"
+      data={accounts}
+      isLoading={isLoadingAccounts}
       columns={columns}
-      AddEditDialogComponent={() => <div>Add/Edit Account Dialog</div>}
-      selectedEntity={managementProps.selectedEntity}
-      handleAddClick={managementProps.handleAddClick}
-      handleEditClick={managementProps.handleEditClick}
-      handleDeleteClick={managementProps.handleDeleteClick}
-      confirmDelete={() => managementProps.deleteMutation.mutate([managementProps.selectedEntity?.id || ''])}
-      handleBulkDeleteClick={managementProps.handleBulkDeleteClick}
-      handleSelectAll={managementProps.handleSelectAll}
-      handleRowSelect={managementProps.handleRowSelect}
-      handleImport={managementProps.handleImport}
-      handleExportClick={() => {}}
-      searchTerm={managementProps.searchTerm}
-      setSearchTerm={managementProps.setSearchTerm}
-      currentPage={managementProps.currentPage}
-      setCurrentPage={managementProps.setCurrentPage}
-      itemsPerPage={managementProps.itemsPerPage}
-      setItemsPerPage={managementProps.setItemsPerPage}
-      sortConfig={managementProps.sortConfig}
-      setSortConfig={managementProps.setSortConfig}
+      AddEditDialogComponent={(props) => (
+        <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} isAccountOnly={true} />
+      )}
+      // Pass all management props explicitly
+      {...managementProps}
+      selectedEntity={managementProps.selectedPayee}
     />
   );
 };
