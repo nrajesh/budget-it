@@ -1,12 +1,16 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
-import ToastProvider from './components/ToastProvider';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.tsx";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { CurrencyProvider } from "./contexts/CurrencyContext.tsx";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ToastProvider />
-    <App />
-  </React.StrictMode>,
+    <ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
+      <CurrencyProvider>
+        <App />
+      </CurrencyProvider>
+    </ThemeProvider>
+  </React.StrictMode>
 );

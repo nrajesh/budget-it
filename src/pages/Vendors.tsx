@@ -23,7 +23,7 @@ const VendorsPage: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage
+    <EntityManagementPage<Payee>
       title="Vendors"
       entityName="Vendor"
       entityNamePlural="Vendors"

@@ -23,7 +23,7 @@ const CategoriesPage: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage
+    <EntityManagementPage<Category>
       title="Categories"
       entityName="Category"
       entityNamePlural="Categories"
