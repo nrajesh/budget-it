@@ -17,7 +17,7 @@ interface EntityTableProps<T extends { id: string; name: string }> {
   onSelectAll: (selectedIds: string[]) => void;
 }
 
-export const EntityTable = <T extends { id: string; name: string }>(props: EntityTableProps<T>) => {
+export function EntityTable<T extends { id: string; name: string }>(props: EntityTableProps<T>) {
   if (props.isLoading) return <div>Loading...</div>;
 
   return (
@@ -51,4 +51,4 @@ export const EntityTable = <T extends { id: string; name: string }>(props: Entit
       </table>
     </div>
   );
-};
+}

@@ -29,10 +29,10 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   setItemsPerPage: (count: number) => void;
   sortConfig: any;
   setSortConfig: (config: any) => void;
-  refetch?: () => void; // Added for Category page
+  refetch?: () => void;
 }
 
-const EntityManagementPage = <T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) => {
+function EntityManagementPage<T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -42,7 +42,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>(props: Ent
         </button>
       </div>
       
-      <EntityTable<T>
+      <EntityTable
         data={props.data}
         columns={props.columns}
         isLoading={props.isLoading}
@@ -60,6 +60,6 @@ const EntityManagementPage = <T extends { id: string; name: string }>(props: Ent
       />
     </div>
   );
-};
+}
 
 export default EntityManagementPage;
