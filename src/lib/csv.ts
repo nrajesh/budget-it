@@ -1,52 +1,52 @@
 import Papa from 'papaparse';
 import { AccountUpsertType } from '@/types/database';
 
-/**
- * Parses a CSV file containing account data and returns an array of AccountUpsertType objects.
- * Expected CSV headers (case-insensitive): Name, Currency, Starting Balance, Remarks
- */
-export function parseAccountsCsv(file: File): Promise<AccountUpsertType[]> {
+export interface AccountImportRow {
+  Name: string;
+  Currency: string;
+  'Starting Balance': string; // Read as string from CSV
+  Remarks: string;
+}
+
+export const parseAccountsCsv = (file: File): Promise<AccountUpsertType[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       dynamicTyping: false,
-      transformHeader: (header) => header.trim().toLowerCase().replace(/\s/g, '_'),
       complete: (results) => {
-        const requiredHeaders = ['name', 'currency', 'starting_balance'];
+        const parsedData: AccountUpsertType[] = [];
         
-        // Check if headers are present
-        const missingHeaders = requiredHeaders.filter(h => !results.meta.fields?.includes(h));
-        if (missingHeaders.length > 0) {
-          return reject(new Error(`CSV is missing required columns: ${missingHeaders.join(', ')}`));
+        if (results.errors.length > 0) {
+            console.error("CSV Parsing Errors:", results.errors);
+            reject(new Error("Failed to parse CSV file. Check console for details."));
+            return;
         }
 
-        const accounts: AccountUpsertType[] = results.data
-          .map((row: any) => {
-            const name = row.name?.trim();
-            const currency = row.currency?.trim() || 'USD';
-            const startingBalance = parseFloat(row.starting_balance);
-            const remarks = row.remarks?.trim() || null;
+        (results.data as AccountImportRow[]).forEach((row, index) => {
+          // Basic validation and transformation
+          const name = row.Name?.trim();
+          const currency = row.Currency?.trim() || 'USD';
+          const startingBalanceStr = row['Starting Balance']?.replace(/[^0-9.-]/g, '');
+          const starting_balance = parseFloat(startingBalanceStr || '0');
+          const remarks = row.Remarks?.trim() || null;
 
-            // Basic validation
-            if (!name || isNaN(startingBalance)) {
-              return null;
-            }
-
-            return {
+          if (name) {
+            parsedData.push({
               name,
               currency,
-              starting_balance: startingBalance,
+              starting_balance: isNaN(starting_balance) ? 0 : starting_balance,
               remarks,
-            } as AccountUpsertType;
-          })
-          .filter((account): account is AccountUpsertType => account !== null);
-
-        resolve(accounts);
+            });
+          } else {
+            console.warn(`Skipping row ${index + 1}: Name is missing.`);
+          }
+        });
+        resolve(parsedData);
       },
       error: (error) => {
-        reject(new Error(`CSV parsing failed: ${error.message}`));
+        reject(error);
       },
     });
   });
-}
+};
