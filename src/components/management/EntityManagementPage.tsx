@@ -29,7 +29,7 @@ interface EntityManagementPageProps<T> {
   handleDeleteClick: (item: T) => void;
   confirmDelete: () => void;
   handleBulkDeleteClick: () => void;
-  handleSelectAll: (checked: boolean) => void;
+  handleSelectAll: (selectedIds: string[]) => void;
   handleRowSelect: (id: string, checked: boolean) => void;
   handleImport: (file: File) => void;
   handleExportClick: () => void;
@@ -57,7 +57,6 @@ const EntityManagementPage = <T extends { id: string, name: string }>({
   handleEditClick,
   handleDeleteClick,
   confirmDelete,
-  handleBulkDeleteClick,
   handleSelectAll,
   handleRowSelect,
   handleImport,
@@ -133,9 +132,8 @@ const EntityManagementPage = <T extends { id: string, name: string }>({
         isDeletable={isDeletable as any}
         handleEditClick={handleEditClick as any}
         handleDeleteClick={handleDeleteClick as any}
-        handleBulkDeleteClick={handleBulkDeleteClick}
-        handleSelectAll={handleSelectAll}
-        handleRowSelect={handleRowSelect}
+        onSelectAll={handleSelectAll}
+        onRowSelect={handleRowSelect}
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         itemsPerPage={itemsPerPage}
