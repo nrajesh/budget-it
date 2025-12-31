@@ -29,6 +29,7 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   setItemsPerPage: (count: number) => void;
   sortConfig: any;
   setSortConfig: (config: any) => void;
+  refetch?: () => void; // Added for Category page
 }
 
 const EntityManagementPage = <T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) => {
@@ -36,11 +37,12 @@ const EntityManagementPage = <T extends { id: string; name: string }>(props: Ent
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">{props.title}</h1>
+        <button onClick={props.handleAddClick} className="bg-primary text-white px-4 py-2 rounded">
+          Add {props.entityName}
+        </button>
       </div>
       
-      {/* Search and Action Bar placeholder */}
-      
-      <EntityTable
+      <EntityTable<T>
         data={props.data}
         columns={props.columns}
         isLoading={props.isLoading}
@@ -54,7 +56,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>(props: Ent
       
       <props.AddEditDialogComponent 
         entity={props.selectedEntity} 
-        onClose={() => {}} 
+        onClose={() => props.handleEditClick(null as any)} 
       />
     </div>
   );

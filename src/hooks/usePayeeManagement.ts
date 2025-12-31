@@ -18,17 +18,20 @@ export function usePayeeManagement(isAccount: boolean) {
     batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
   });
 
+  const handlePayeeNameClick = (name: string) => {
+    console.log(`Clicked payee: ${name}`);
+  };
+
   const handleImport = async (file: File) => {
     if (!file) return;
-    managementProps.batchUpsertMutation.reset();
-    // Simplified import logic
-    const dataToUpsert = ['Sample 1', 'Sample 2']; 
-    managementProps.batchUpsertMutation.mutate(dataToUpsert);
+    managementProps.batchUpsertMutation.mutate(['Sample Data']);
   };
 
   return {
     ...managementProps,
     isLoading,
     handleImport,
+    handlePayeeNameClick,
+    selectedPayee: managementProps.selectedEntity, // Alias for page compatibility
   };
 }

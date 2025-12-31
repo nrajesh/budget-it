@@ -18,6 +18,10 @@ export function useCategoryManagement() {
     deleteRpcFn: 'delete_categories_batch',
   });
 
+  const handleCategoryNameClick = (name: string) => {
+    console.log(`Clicked category: ${name}`);
+  };
+
   const addCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       const { error } = await supabase.from('categories').insert([{ name, user_id: user?.id }]);
@@ -34,5 +38,9 @@ export function useCategoryManagement() {
     addCategoryMutation,
     deleteCategoriesMutation: managementProps.deleteMutation,
     isLoadingMutation: addCategoryMutation.isPending || managementProps.deleteMutation.isPending,
+    handleCategoryNameClick,
+    categories: managementProps.paginatedData, // Alias for page compatibility
+    isLoadingCategories, // Property from context
+    refetchCategories, // Property from context
   };
 }
