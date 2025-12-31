@@ -1,5 +1,8 @@
 import React from 'react';
 import { ColumnDefinition, EntityTable } from './EntityTable';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus, Download, Upload, Search } from 'lucide-react';
 
 interface EntityManagementPageProps<T extends { id: string; name: string }> {
   title: string;
@@ -34,25 +37,50 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
 
 function EntityManagementPage<T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">{props.title}</h1>
-        <button onClick={props.handleAddClick} className="bg-primary text-white px-4 py-2 rounded">
-          Add {props.entityName}
-        </button>
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">{props.title}</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={props.handleImportClick}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => props.handleExportClick([])}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button size="sm" onClick={props.handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add {props.entityName}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={`Search ${props.entityNamePlural.toLowerCase()}...`}
+            className="pl-8"
+            value={props.searchTerm}
+            onChange={(e) => props.setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
       
-      <EntityTable
-        data={props.data}
-        columns={props.columns}
-        isLoading={props.isLoading}
-        handleEditClick={props.handleEditClick}
-        handleDeleteClick={props.handleDeleteClick}
-        isDeletable={props.isDeletable}
-        isEditable={props.isEditable}
-        onRowSelect={props.handleRowSelect}
-        onSelectAll={props.handleSelectAll}
-      />
+      <div className="rounded-md border bg-card text-card-foreground shadow-sm">
+        <EntityTable
+          data={props.data}
+          columns={props.columns}
+          isLoading={props.isLoading}
+          handleEditClick={props.handleEditClick}
+          handleDeleteClick={props.handleDeleteClick}
+          isDeletable={props.isDeletable}
+          isEditable={props.isEditable}
+          onRowSelect={props.handleRowSelect}
+          onSelectAll={props.handleSelectAll}
+        />
+      </div>
       
       <props.AddEditDialogComponent 
         entity={props.selectedEntity} 
