@@ -1,144 +1,105 @@
-import * as React from "react";
+import { useState, useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import Papa from "papaparse";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-interface UseEntityManagementProps<T> {
+export interface UseEntityManagementProps<T> {
+  data: T[];
   entityName: string;
   entityNamePlural: string;
-  queryKey: string[];
-  deleteRpcFn: string;
-  batchUpsertRpcFn?: string; // Optional for categories
-  batchUpsertPayloadKey?: string; // Optional for categories
-  isDeletable?: (item: T) => boolean;
-  onSuccess?: () => void;
+  queryKey: any[];
+  deleteRpcFn?: string | ((ids: string[]) => Promise<any>);
+  batchUpsertRpcFn?: string | ((data: any[]) => Promise<any>);
 }
 
-export const useEntityManagement = <T extends { id: string; name: string }>({
-  entityName,
-  entityNamePlural,
-  queryKey,
-  deleteRpcFn,
-  batchUpsertRpcFn,
-  batchUpsertPayloadKey,
-  isDeletable = () => true,
-  onSuccess,
-}: UseEntityManagementProps<T>) => {
+export function useEntityManagement<T extends { id: string; name: string }>(props: UseEntityManagementProps<T>) {
   const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedEntity, setSelectedEntity] = useState<T | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof T; direction: 'asc' | 'desc' } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // State Management
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [itemsPerPage] = React.useState(10);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [selectedEntity, setSelectedEntity] = React.useState<T | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
-  const [entityToDelete, setEntityToDelete] = React.useState<T | null>(null);
-  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isBulkDelete, setIsBulkDelete] = React.useState(false);
-
-  // Mutations
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.rpc(deleteRpcFn, { p_vendor_ids: ids }); // Assuming the param name is consistent
-      if (error) throw error;
+      if (!props.deleteRpcFn) throw new Error("No delete RPC function provided");
+      if (typeof props.deleteRpcFn === 'string') {
+        const { error } = await supabase.rpc(props.deleteRpcFn, { p_vendor_ids: ids });
+        if (error) throw error;
+      } else {
+        await props.deleteRpcFn(ids);
+      }
     },
-    onSuccess: async () => {
-      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      await queryClient.invalidateQueries({ queryKey });
-      if (onSuccess) onSuccess();
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: props.queryKey });
+      toast.success(`${props.entityNamePlural} deleted successfully`);
       setIsConfirmOpen(false);
-      setEntityToDelete(null);
-      setSelectedRows([]);
-      setIsBulkDelete(false);
     },
-    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
+    onError: (error: any) => {
+      toast.error(`Error deleting ${props.entityName.toLowerCase()}: ${error.message}`);
+    }
   });
 
   const batchUpsertMutation = useMutation({
-    mutationFn: async (dataToUpsert: any[]) => {
-      if (!batchUpsertRpcFn || !batchUpsertPayloadKey) {
-        throw new Error("Batch upsert RPC function or payload key is not defined.");
+    mutationFn: async (data: any[]) => {
+      if (!props.batchUpsertRpcFn) throw new Error("No batch upsert RPC function provided");
+      if (typeof props.batchUpsertRpcFn === 'string') {
+        const { error } = await supabase.rpc(props.batchUpsertRpcFn, { p_names: data });
+        if (error) throw error;
+      } else {
+        await props.batchUpsertRpcFn(data);
       }
-      const payload = { [batchUpsertPayloadKey]: dataToUpsert };
-      const { error } = await supabase.rpc(batchUpsertRpcFn, payload);
-      if (error) throw error;
     },
-    onSuccess: async (data, variables) => {
-      showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
-      await queryClient.invalidateQueries({ queryKey });
-      if (onSuccess) onSuccess();
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: props.queryKey });
+      toast.success(`${props.entityNamePlural} imported successfully`);
     },
-    onError: (error: any) => showError(`Import failed: ${error.message}`),
-    onSettled: () => setIsImporting(false),
+    onError: (error: any) => {
+      toast.error(`Error importing ${props.entityNamePlural.toLowerCase()}: ${error.message}`);
+    }
   });
 
-  // Handlers
-  const handleAddClick = () => {
-    setSelectedEntity(null);
-    setIsDialogOpen(true);
-  };
+  const filteredData = useMemo(() => {
+    return props.data.filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [props.data, searchTerm]);
 
-  const handleEditClick = (entity: T) => {
-    setSelectedEntity(entity);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteClick = (entity: T) => {
-    setEntityToDelete(entity);
-    setIsBulkDelete(false);
-    setIsConfirmOpen(true);
-  };
-
-  const handleBulkDeleteClick = () => {
-    setEntityToDelete(null);
-    setIsBulkDelete(true);
-    setIsConfirmOpen(true);
-  };
-
-  const confirmDelete = () => {
-    const idsToDelete = isBulkDelete ? selectedRows : (entityToDelete ? [entityToDelete.id] : []);
-    if (idsToDelete.length > 0) {
-      deleteMutation.mutate(idsToDelete);
-    } else {
-      setIsConfirmOpen(false);
-    }
-  };
-
-  const handleSelectAll = (checked: boolean, currentEntities: T[]) => {
-    setSelectedRows(checked ? currentEntities.filter(isDeletable).map(p => p.id) : []);
-  };
-
-  const handleRowSelect = (id: string, checked: boolean) => {
-    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
-  };
-
-  const handleImportClick = () => fileInputRef.current?.click();
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
 
   return {
-    searchTerm, setSearchTerm,
-    currentPage, setCurrentPage,
+    searchTerm,
+    setSearchTerm,
+    currentPage,
+    setCurrentPage,
     itemsPerPage,
-    isDialogOpen, setIsDialogOpen,
+    setItemsPerPage,
     selectedEntity,
-    isConfirmOpen, setIsConfirmOpen,
-    selectedRows,
-    isImporting, fileInputRef,
+    setSelectedEntity,
+    isConfirmOpen,
+    setIsConfirmOpen,
+    sortConfig,
+    setSortConfig,
+    filteredData,
+    paginatedData,
+    fileInputRef,
     deleteMutation,
     batchUpsertMutation,
-    isLoadingMutation: deleteMutation.isPending || batchUpsertMutation.isPending,
-    handleAddClick,
-    handleEditClick,
-    handleDeleteClick,
-    confirmDelete,
-    handleBulkDeleteClick,
-    handleSelectAll,
-    handleRowSelect,
-    handleImportClick,
+    handleAddClick: () => setSelectedEntity(null),
+    handleEditClick: (entity: T) => setSelectedEntity(entity),
+    handleDeleteClick: (entity: T) => {
+      setSelectedEntity(entity);
+      setIsConfirmOpen(true);
+    },
+    handleBulkDeleteClick: () => setIsConfirmOpen(true),
+    handleSelectAll: () => {},
+    handleRowSelect: () => {},
+    handleImportClick: () => fileInputRef.current?.click(),
+    handleExportClick: () => {},
   };
-};
+}
