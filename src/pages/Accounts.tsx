@@ -27,7 +27,7 @@ const AccountsPage: React.FC = () => {
   ];
 
   return (
-    <EntityManagementPage<Payee>
+    <EntityManagementPage
       title="Accounts"
       entityName="Account"
       entityNamePlural="Accounts"
