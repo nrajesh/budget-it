@@ -106,7 +106,7 @@ const AccountsPage: React.FC = () => {
 
   const handleExportClick = () => {
     // Export logic placeholder
-    toast.info("Export functionality is not yet implemented.");
+    toast("Export functionality is not yet implemented.");
   };
 
   const handleImport = async (file: File) => {
