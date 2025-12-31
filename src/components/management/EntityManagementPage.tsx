@@ -1,10 +1,20 @@
 import React, { useRef } from 'react';
-import { ColumnDefinition, EntityTable } from './EntityTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Download, Upload, Search } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus, Upload, Download, Search } from "lucide-react";
+import { EntityTable, ColumnDefinition } from './EntityTable';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface EntityManagementPageProps<T extends { id: string; name: string }> {
+interface EntityManagementPageProps<T> {
   title: string;
   entityName: string;
   entityNamePlural: string;
@@ -12,105 +22,146 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   isLoading: boolean;
   columns: ColumnDefinition<T>[];
   AddEditDialogComponent: React.ComponentType<any>;
+  isDeletable?: (item: T) => boolean;
   selectedEntity: T | null;
   handleAddClick: () => void;
-  handleEditClick: (entity: T) => void;
-  handleDeleteClick: (entity: T) => void;
+  handleEditClick: (item: T) => void;
+  handleDeleteClick: (item: T) => void;
   confirmDelete: () => void;
-  isDeletable?: (entity: T) => boolean;
-  isEditable?: (entity: T) => boolean;
   handleBulkDeleteClick: () => void;
-  handleSelectAll: (selectedIds: string[]) => void;
-  handleRowSelect: (id: string, selected: boolean) => void;
-  handleImport: (file: File) => void; // Updated prop name to handle the file
-  handleExportClick: (items: T[]) => void;
+  handleSelectAll: (checked: boolean) => void;
+  handleRowSelect: (id: string, checked: boolean) => void;
+  handleImport: (file: File) => void;
+  handleExportClick: () => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   currentPage: number;
   setCurrentPage: (page: number) => void;
   itemsPerPage: number;
   setItemsPerPage: (count: number) => void;
-  sortConfig: any;
-  setSortConfig: (config: any) => void;
+  sortConfig: { key: keyof T; direction: 'asc' | 'desc' } | null;
+  setSortConfig: (config: { key: keyof T; direction: 'asc' | 'desc' } | null) => void;
   refetch?: () => void;
 }
 
-function EntityManagementPage<T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) {
+const EntityManagementPage = <T extends { id: string, name: string }>({
+  title,
+  entityName,
+  entityNamePlural,
+  data,
+  isLoading,
+  columns,
+  isDeletable,
+  selectedEntity,
+  handleAddClick,
+  handleEditClick,
+  handleDeleteClick,
+  confirmDelete,
+  handleBulkDeleteClick,
+  handleSelectAll,
+  handleRowSelect,
+  handleImport,
+  handleExportClick,
+  searchTerm,
+  setSearchTerm,
+  currentPage,
+  setCurrentPage,
+  itemsPerPage,
+  setItemsPerPage,
+  sortConfig,
+  setSortConfig,
+}: EntityManagementPageProps<T>) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onImportClick = () => {
-    fileInputRef.current?.click();
-  };
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      props.handleImport(file);
-      // Reset input so the same file can be selected again if needed
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      handleImport(file);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto py-10 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">{props.title}</h1>
-        <div className="flex items-center gap-2">
-          {/* Hidden File Input */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <p className="text-muted-foreground">Manage your {entityNamePlural.toLowerCase()} and their details.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <input
             type="file"
             ref={fileInputRef}
-            onChange={onFileChange}
-            accept=".csv"
             className="hidden"
+            accept=".csv"
+            onChange={onFileChange}
           />
-          <Button variant="outline" size="sm" onClick={onImportClick}>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
             <Upload className="mr-2 h-4 w-4" />
-            Import CSV
+            Import
           </Button>
-          <Button variant="outline" size="sm" onClick={() => props.handleExportClick(props.data)}>
+          <Button variant="outline" onClick={handleExportClick}>
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            Export
           </Button>
-          <Button size="sm" onClick={props.handleAddClick}>
+          <Button onClick={handleAddClick}>
             <Plus className="mr-2 h-4 w-4" />
-            Add {props.entityName}
+            Add {entityName}
           </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-2 max-w-sm">
+        <div className="relative w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={`Search ${props.entityNamePlural.toLowerCase()}...`}
+            type="search"
+            placeholder={`Search ${entityNamePlural.toLowerCase()}...`}
             className="pl-8"
-            value={props.searchTerm}
-            onChange={(e) => props.setSearchTerm(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
-      
-      <div className="rounded-md border bg-card text-card-foreground shadow-sm">
-        <EntityTable
-          data={props.data}
-          columns={props.columns}
-          isLoading={props.isLoading}
-          handleEditClick={props.handleEditClick}
-          handleDeleteClick={props.handleDeleteClick}
-          isDeletable={props.isDeletable}
-          isEditable={props.isEditable}
-          onRowSelect={props.handleRowSelect}
-          onSelectAll={props.handleSelectAll}
-        />
-      </div>
-      
-      <props.AddEditDialogComponent 
-        entity={props.selectedEntity} 
-        onClose={() => props.handleEditClick(null as any)} 
+
+      <EntityTable
+        data={data as any}
+        isLoading={isLoading}
+        columns={columns as any}
+        isDeletable={isDeletable as any}
+        handleEditClick={handleEditClick as any}
+        handleDeleteClick={handleDeleteClick as any}
+        handleBulkDeleteClick={handleBulkDeleteClick}
+        handleSelectAll={handleSelectAll}
+        handleRowSelect={handleRowSelect}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        itemsPerPage={itemsPerPage}
+        setItemsPerPage={setItemsPerPage}
+        sortConfig={sortConfig as any}
+        setSortConfig={setSortConfig as any}
       />
+
+      <AlertDialog open={!!selectedEntity} onOpenChange={(open) => !open && handleDeleteClick(null as any)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the {entityName.toLowerCase()} and remove its data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleDeleteClick(null as any)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-}
+};
 
 export default EntityManagementPage;
