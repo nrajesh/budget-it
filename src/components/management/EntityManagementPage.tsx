@@ -134,13 +134,10 @@ const EntityManagementPage = <T extends { id: string, name: string }>({
         handleDeleteClick={handleDeleteClick as any}
         onSelectAll={handleSelectAll}
         onRowSelect={handleRowSelect}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        itemsPerPage={itemsPerPage}
-        setItemsPerPage={setItemsPerPage}
-        sortConfig={sortConfig as any}
-        setSortConfig={setSortConfig as any}
       />
+
+      {/* Pagination controls could be added here if needed, 
+          since data passed to EntityTable is likely already paginated */}
 
       <AlertDialog open={!!selectedEntity} onOpenChange={(open) => !open && handleDeleteClick(null as any)}>
         <AlertDialogContent>
