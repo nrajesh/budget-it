@@ -11,7 +11,7 @@ const CategoriesPage: React.FC = () => {
     {
       header: "Category Name",
       accessor: (item) => (
-        <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+        <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline font-medium">
           {item.name}
         </div>
       ),
@@ -40,7 +40,7 @@ const CategoriesPage: React.FC = () => {
       handleBulkDeleteClick={managementProps.handleBulkDeleteClick}
       handleSelectAll={managementProps.handleSelectAll}
       handleRowSelect={managementProps.handleRowSelect}
-      handleImportClick={managementProps.handleImportClick}
+      handleImport={managementProps.handleImport}
       handleExportClick={() => {}}
       searchTerm={managementProps.searchTerm}
       setSearchTerm={managementProps.setSearchTerm}

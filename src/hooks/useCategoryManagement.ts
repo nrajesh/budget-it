@@ -22,6 +22,10 @@ export function useCategoryManagement() {
     console.log(`Clicked category: ${name}`);
   };
 
+  const handleImport = async (file: File) => {
+    console.log("Importing category file:", file.name);
+  };
+
   const addCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       const { error } = await supabase.from('categories').insert([{ name, user_id: user?.id }]);
@@ -39,8 +43,9 @@ export function useCategoryManagement() {
     deleteCategoriesMutation: managementProps.deleteMutation,
     isLoadingMutation: addCategoryMutation.isPending || managementProps.deleteMutation.isPending,
     handleCategoryNameClick,
-    categories: managementProps.paginatedData, // Alias for page compatibility
-    isLoadingCategories, // Property from context
-    refetchCategories, // Property from context
+    handleImport,
+    categories: managementProps.paginatedData,
+    isLoadingCategories,
+    refetchCategories,
   };
 }

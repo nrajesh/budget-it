@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ColumnDefinition, EntityTable } from './EntityTable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   handleBulkDeleteClick: () => void;
   handleSelectAll: (selectedIds: string[]) => void;
   handleRowSelect: (id: string, selected: boolean) => void;
-  handleImportClick: () => void;
+  handleImport: (file: File) => void; // Updated prop name to handle the file
   handleExportClick: (items: T[]) => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -36,16 +36,39 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
 }
 
 function EntityManagementPage<T extends { id: string; name: string }>(props: EntityManagementPageProps<T>) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      props.handleImport(file);
+      // Reset input so the same file can be selected again if needed
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">{props.title}</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={props.handleImportClick}>
+          {/* Hidden File Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={onFileChange}
+            accept=".csv"
+            className="hidden"
+          />
+          <Button variant="outline" size="sm" onClick={onImportClick}>
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={() => props.handleExportClick([])}>
+          <Button variant="outline" size="sm" onClick={() => props.handleExportClick(props.data)}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
