@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import TransactionDialog from "@/components/transactions/TransactionDialog";
 import { useSession } from "@/hooks/useSession";
+import Papa from "papaparse";
 
 const Transactions = () => {
   const session = useSession();
@@ -16,6 +17,20 @@ const Transactions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // The exact headers required by the importer based on the error message
+  const REQUIRED_HEADERS = [
+    "Date",
+    "Account",
+    "Vendor",
+    "Category",
+    "Amount",
+    "Remarks",
+    "Currency",
+    "Frequency",
+    "End Date",
+    "Transfer ID"
+  ];
 
   const fetchTransactions = async () => {
     try {
@@ -45,125 +60,188 @@ const Transactions = () => {
   }, [session?.user?.id]);
 
   const handleExport = () => {
-    const headers = [
-      "Date",
-      "Account",
-      "Currency",
-      "Vendor",
-      "Amount",
-      "Remarks",
-      "Category",
-      "Transfer ID"
-    ];
+    let dataToExport = transactions.map(t => ({
+      "Date": t.date,
+      "Account": t.account,
+      "Vendor": t.vendor,
+      "Category": t.category,
+      "Amount": t.amount,
+      "Remarks": t.remarks,
+      "Currency": t.currency,
+      "Frequency": t.recurrence_frequency || "",
+      "End Date": t.recurrence_end_date || "",
+      "Transfer ID": t.transfer_id || ""
+    }));
 
-    let dataToExport = transactions;
     let fileName = "transactions.csv";
 
     if (transactions.length === 0) {
       const today = new Date().toISOString().split("T")[0];
-      const transferId = "TRF-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+      const transferId1 = "TRF-SAME-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+      const transferId2 = "TRF-DIFF-" + Math.random().toString(36).substr(2, 4).toUpperCase();
       
       dataToExport = [
         {
-          date: today,
-          account: "Cash",
-          currency: "USD",
-          vendor: "Starbucks",
-          amount: -5.5,
-          remarks: "Morning coffee",
-          category: "Food & Drink",
-          transfer_id: ""
+          "Date": today,
+          "Account": "Cash",
+          "Vendor": "Starbucks",
+          "Category": "Food & Drink",
+          "Amount": -5.5,
+          "Remarks": "Morning coffee",
+          "Currency": "USD",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": ""
         },
         {
-          date: today,
-          account: "Main Bank",
-          currency: "USD",
-          vendor: "Employer Corp",
-          amount: 3000.0,
-          remarks: "Monthly Salary",
-          category: "Income",
-          transfer_id: ""
+          "Date": today,
+          "Account": "Checking",
+          "Vendor": "Employer",
+          "Category": "Income",
+          "Amount": 3000,
+          "Remarks": "Monthly Salary",
+          "Currency": "USD",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": ""
+        },
+        // Same Currency Transfer
+        {
+          "Date": today,
+          "Account": "Checking",
+          "Vendor": "Transfer",
+          "Category": "Transfer",
+          "Amount": -500,
+          "Remarks": "To Savings",
+          "Currency": "USD",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": transferId1
         },
         {
-          date: today,
-          account: "Main Bank",
-          currency: "USD",
-          vendor: "Internal Transfer",
-          amount: -500.0,
-          remarks: "Moving funds to Savings",
-          category: "Transfer",
-          transfer_id: transferId
+          "Date": today,
+          "Account": "Savings",
+          "Vendor": "Transfer",
+          "Category": "Transfer",
+          "Amount": 500,
+          "Remarks": "From Checking",
+          "Currency": "USD",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": transferId1
+        },
+        // Different Currency Transfer (e.g. USD to EUR)
+        {
+          "Date": today,
+          "Account": "Checking (USD)",
+          "Vendor": "Currency Exchange",
+          "Category": "Transfer",
+          "Amount": -100,
+          "Remarks": "Exchange 100 USD to EUR",
+          "Currency": "USD",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": transferId2
         },
         {
-          date: today,
-          account: "Savings Account",
-          currency: "USD",
-          vendor: "Internal Transfer",
-          amount: 500.0,
-          remarks: "Moving funds from Main Bank",
-          category: "Transfer",
-          transfer_id: transferId
+          "Date": today,
+          "Account": "Wallet (EUR)",
+          "Vendor": "Currency Exchange",
+          "Category": "Transfer",
+          "Amount": 92,
+          "Remarks": "Received EUR from USD exchange",
+          "Currency": "EUR",
+          "Frequency": "",
+          "End Date": "",
+          "Transfer ID": transferId2
         }
       ];
       fileName = "transaction_template.csv";
       toast({
         title: "Template Downloaded",
-        description: "No transactions found. A template file has been generated with examples.",
+        description: "A template with headers and example transfers has been generated.",
       });
     }
 
-    const csvRows = dataToExport.map((t) => [
-      t.date,
-      `"${t.account || ""}"`,
-      t.currency || "USD",
-      `"${t.vendor || ""}"`,
-      t.amount,
-      `"${t.remarks || ""}"`,
-      `"${t.category || ""}"`,
-      `"${t.transfer_id || ""}"`
-    ]);
-
-    const csvContent = [headers.join(","), ...csvRows.map((row) => row.join(","))].join(
-      "\n"
-    );
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", fileName);
-    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    if (transactions.length > 0) {
-      toast({
-        title: "Export Successful",
-        description: "Your transactions have been exported to CSV.",
-      });
-    }
   };
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Basic implementation of CSV import trigger
-    toast({
-      title: "Importing...",
-      description: `Processing ${file.name}. Please wait.`,
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const headers = results.meta.fields || [];
+        const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h));
+
+        if (missingHeaders.length > 0) {
+          toast({
+            title: "Import Failed",
+            description: `CSV is missing required headers: ${missingHeaders.join(", ")}.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        try {
+          const transactionsToInsert = results.data.map((row: any) => ({
+            user_id: session?.user?.id,
+            date: row.Date,
+            account: row.Account,
+            vendor: row.Vendor,
+            category: row.Category,
+            amount: parseFloat(row.Amount),
+            remarks: row.Remarks,
+            currency: row.Currency,
+            recurrence_frequency: row.Frequency || null,
+            recurrence_end_date: row["End Date"] || null,
+            transfer_id: row["Transfer ID"] || null,
+          }));
+
+          const { error } = await supabase
+            .from("transactions")
+            .insert(transactionsToInsert);
+
+          if (error) throw error;
+
+          toast({
+            title: "Import Successful",
+            description: `Successfully imported ${transactionsToInsert.length} transactions.`,
+          });
+          fetchTransactions();
+        } catch (error: any) {
+          toast({
+            title: "Error importing transactions",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      },
+      error: (error) => {
+        toast({
+          title: "File reading error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     });
 
-    // Reset input
     event.target.value = '';
-    
-    // In a real scenario, you'd parse the CSV here using a library like PapaParse
-    // For now, we're just ensuring the UI and trigger are present.
   };
 
   return (
