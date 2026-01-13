@@ -27,6 +27,7 @@ const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 const PodcastCover = lazy(() => import("@/components/PodcastCover"));
+const AppFeatureInfographic = lazy(() => import("@/components/AppFeatureInfographic"));
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/podcast-cover" element={<PodcastCover />} />
+                  <Route path="/app-infographic" element={<AppFeatureInfographic />} />
                   {/* Protected routes */}
                   <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<Layout />}>
