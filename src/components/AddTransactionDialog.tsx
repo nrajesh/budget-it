@@ -23,7 +23,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
-import { supabase } from "@/integrations/supabase/client";
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
@@ -41,6 +40,7 @@ interface AddTransactionFormValues {
   account: string;
   vendor: string;
   category: string;
+  sub_category?: string;
   amount: number;
   remarks?: string;
   receivingAmount?: number;
@@ -53,6 +53,7 @@ const formSchema = z.object({
   account: z.string().min(1, "Account is required"),
   vendor: z.string().min(1, "Vendor is required"),
   category: z.string().min(1, "Category is required"),
+  sub_category: z.string().optional(),
   amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
   remarks: z.string().optional(),
   receivingAmount: z.coerce.number().optional(),
@@ -80,7 +81,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
+  const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
 
   const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
@@ -97,6 +98,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       account: "",
       vendor: "",
       category: "",
+      sub_category: "",
       amount: 0,
       remarks: "",
       receivingAmount: 0,
@@ -113,6 +115,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
         account: "",
         vendor: "",
         category: "",
+        sub_category: "",
         amount: 0,
         remarks: "",
         receivingAmount: 0,
@@ -190,6 +193,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       account: values.account,
       vendor: values.vendor,
       category: values.category,
+      sub_category: values.sub_category,
       amount: values.amount,
       remarks: values.remarks,
       receivingAmount: values.receivingAmount,
@@ -208,7 +212,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
     disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   })), [baseAccountOptions, vendorValue, allAccounts]);
 
-  const combinedBaseVendorOptions = React.useMemo(() => [...baseAccountOptions, ...baseVendorOptions], [baseAccountOptions, baseVendorOptions]);
+  const combinedBaseVendorOptions = React.useMemo(() => [...baseAccountOptions, ...baseVendorOptions].sort((a, b) => a.label.localeCompare(b.label)), [baseAccountOptions, baseVendorOptions]);
 
   const filteredCombinedVendorOptions = React.useMemo(() => combinedBaseVendorOptions.map(option => ({
     ...option,
@@ -216,6 +220,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   })), [combinedBaseVendorOptions, accountValue]);
 
   const categoryOptions = React.useMemo(() => allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })), [allCategories]);
+  const subCategoryOptions = React.useMemo(() => allSubCategories.map(sub => ({ value: sub, label: sub })), [allSubCategories]);
 
   const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
 
@@ -260,6 +265,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                       options={filteredAccountOptions}
                       value={field.value}
                       onChange={field.onChange}
+                      onCreate={(value) => field.onChange(value)}
                       placeholder="Select an account..."
                       searchPlaceholder="Search accounts..."
                       emptyPlaceholder="No account found."
@@ -278,6 +284,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                       options={filteredCombinedVendorOptions}
                       value={field.value}
                       onChange={field.onChange}
+                      onCreate={(value) => field.onChange(value)}
                       placeholder="Select a vendor or account..."
                       searchPlaceholder="Search..."
                       emptyPlaceholder="No results found."
@@ -296,9 +303,30 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                       options={categoryOptions}
                       value={field.value}
                       onChange={field.onChange}
+                      onCreate={(value) => field.onChange(value)}
                       placeholder="Select a category..."
                       searchPlaceholder="Search categories..."
                       emptyPlaceholder="No category found."
+                      disabled={isTransfer}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sub_category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sub-category</FormLabel>
+                    <Combobox
+                      options={subCategoryOptions}
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onCreate={(value) => field.onChange(value)}
+                      placeholder="Select or create..."
+                      searchPlaceholder="Search sub-categories..."
+                      emptyPlaceholder="No sub-category found."
                       disabled={isTransfer}
                     />
                     <FormMessage />

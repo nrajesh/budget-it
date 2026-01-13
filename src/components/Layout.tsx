@@ -2,21 +2,14 @@ import * as React from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { useTheme } from "next-themes";
 import {
-  Home,
-  ArrowRightLeft,
-  BarChart2,
-  Settings,
   Users,
   Mountain,
   LayoutGrid,
   BarChart3,
   Phone,
-  ShoppingCart,
   Newspaper,
-  MessageSquare,
   ChevronDown,
   FileText,
-  Notebook,
   Mail,
   Moon,
   Sun,
@@ -27,7 +20,6 @@ import {
   Tag,
   Calendar,
 } from "lucide-react";
-import { useTransactions } from "@/contexts/TransactionsContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,7 +110,9 @@ const Layout = () => {
   const avatarFallback = (userProfile?.first_name?.charAt(0) || "") + (userProfile?.last_name?.charAt(0) || "");
 
   return (
-    <SidebarProvider className="min-h-screen">
+    <SidebarProvider
+      className="min-h-screen"
+    >
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"; // Import Input component
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap } from "lucide-react";
@@ -14,6 +15,7 @@ import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
+  const { dashboardStyle, setDashboardStyle } = useTheme();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
@@ -40,11 +42,18 @@ const SettingsPage = () => {
     }
   };
 
+  const handleDashboardStyleChange = (value: string) => {
+    setDashboardStyle(value as any); // Cast because select value is string
+    showSuccess(`Dashboard style set to ${value}.`);
+  };
+
   const handleResetData = async () => {
     try {
       const { error } = await supabase.rpc('clear_all_app_data');
+
+
       if (error) throw error;
-      
+
       clearAllTransactions();
       showSuccess("All application data has been reset.");
     } catch (error: any) {
@@ -86,6 +95,25 @@ const SettingsPage = () => {
                     {currency.name} ({currency.code})
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        {/* Dashboard Style Selection Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dashboard Style</CardTitle>
+            <CardDescription>Choose your preferred dashboard layout.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select value={dashboardStyle} onValueChange={handleDashboardStyleChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="financial-pulse">Financial Pulse</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>

@@ -10,6 +10,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 
 export interface ColumnDefinition<T> {
   header: string;
@@ -75,39 +82,55 @@ export const EntityTable = <T extends { id: string; name: string }>({
             <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-4 text-muted-foreground">No items found.</TableCell></TableRow>
           ) : (
             data.map((item) => (
-              <TableRow key={item.id} data-state={selectedRows.includes(item.id) && "selected"}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedRows.includes(item.id)}
-                    onCheckedChange={(checked) => handleRowSelect(item.id, Boolean(checked))}
-                    aria-label="Select row"
-                    disabled={!isDeletable(item)}
-                  />
-                </TableCell>
-                {columns.map((col) => (
-                  <TableCell key={String(col.header)} className={col.className}>
-                    {col.cellRenderer
-                      ? col.cellRenderer(item)
-                      : typeof col.accessor === 'function'
-                      ? col.accessor(item)
-                      : (item[col.accessor as keyof T] as React.ReactNode) || "-"}
-                  </TableCell>
-                ))}
-                <TableCell className="text-right">
-                  {isUpdating && isEditing(item.id) ? (
-                    <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
-                  ) : (
-                    <>
-                      <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                  <TableRow data-state={selectedRows.includes(item.id) && "selected"}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedRows.includes(item.id)}
+                        onCheckedChange={(checked) => handleRowSelect(item.id, Boolean(checked))}
+                        aria-label="Select row"
+                        disabled={!isDeletable(item)}
+                      />
+                    </TableCell>
+                    {columns.map((col) => (
+                      <TableCell key={String(col.header)} className={col.className}>
+                        {col.cellRenderer
+                          ? col.cellRenderer(item)
+                          : typeof col.accessor === 'function'
+                            ? col.accessor(item)
+                            : (item[col.accessor as keyof T] as React.ReactNode) || "-"}
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      {isUpdating && isEditing(item.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-48">
+                  <ContextMenuItem inset onClick={() => handleRowSelect(item.id, !selectedRows.includes(item.id))}>
+                    {selectedRows.includes(item.id) ? "Deselect" : "Select"}
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem inset onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
+                    <Edit className="h-4 w-4 mr-2" /> Edit
+                  </ContextMenuItem>
+                  <ContextMenuItem inset className="text-red-600" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             ))
           )}
         </TableBody>

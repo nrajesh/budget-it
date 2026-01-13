@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Combobox } from "@/components/ui/combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -205,9 +206,14 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <select {...field} className="w-full p-2 border rounded-md">
-                        {availableCurrencies.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
-                      </select>
+                      <Combobox
+                        options={availableCurrencies.map(c => ({ value: c.code, label: c.code })).sort((a, b) => a.label.localeCompare(b.label))}
+                        value={field.value || "EUR"}
+                        onChange={field.onChange}
+                        placeholder="Select currency"
+                        searchPlaceholder="Search currency..."
+                        emptyPlaceholder="No currency found."
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

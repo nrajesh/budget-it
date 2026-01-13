@@ -37,7 +37,7 @@ const ScheduledTransactionsPage = () => {
     handleImportClick, handleFileChange, handleExportClick,
     handleFormSubmit,
     handleAccountClick, handleVendorClick, handleCategoryClick,
-    accounts, allPayees, categories,
+    accounts, allPayees, categories, allSubCategories,
   } = useScheduledTransactionManagement();
 
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
@@ -229,6 +229,7 @@ const ScheduledTransactionsPage = () => {
         accounts={accounts}
         allPayees={allPayees}
         categories={categories}
+        allSubCategories={allSubCategories}
         isLoading={isLoading}
       />
       <ConfirmationDialog

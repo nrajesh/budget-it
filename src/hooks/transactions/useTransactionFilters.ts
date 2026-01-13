@@ -6,6 +6,7 @@ import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { CategoryNode } from "@/components/CategoryTreeFilter";
 
 interface Option {
   value: string;
@@ -39,8 +40,10 @@ export const useTransactionFilters = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);
+  const [selectedSubCategories, setSelectedSubCategories] = React.useState<string[]>([]);
   const [selectedVendors, setSelectedVendors] = React.useState<string[]>([]);
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [excludeTransfers, setExcludeTransfers] = React.useState(false);
 
   // Fetch available account options using react-query
   const { data: availableAccountOptions = [] } = useQuery<Option[], Error>({
@@ -56,6 +59,19 @@ export const useTransactionFilters = () => {
     enabled: !!user?.id && !isLoadingUser,
   });
 
+  const categoryTreeData: CategoryNode[] = React.useMemo(() => {
+    return allCategories.map((category: any) => ({
+      id: category.id || category.name, // Fallback if id missing
+      name: category.name,
+      slug: slugify(category.name),
+      subCategories: category.sub_categories ? category.sub_categories.map((sub: any) => ({
+        id: sub.id || sub.name,
+        name: sub.name,
+        slug: slugify(sub.name)
+      })) : []
+    }));
+  }, [allCategories]);
+
   const availableCategoryOptions = React.useMemo(() => {
     return allCategories.map(category => ({
       value: slugify(category.name),
@@ -68,6 +84,7 @@ export const useTransactionFilters = () => {
     if (!user?.id) {
       setSelectedAccounts([]);
       setSelectedCategories([]);
+      setSelectedSubCategories([]);
       setSelectedVendors([]);
     }
   }, [user?.id]);
@@ -138,10 +155,15 @@ export const useTransactionFilters = () => {
     setSelectedAccounts,
     selectedCategories,
     setSelectedCategories,
+    selectedSubCategories,
+    setSelectedSubCategories,
+    categoryTreeData,
     selectedVendors,
     setSelectedVendors,
     dateRange,
     setDateRange,
+    excludeTransfers,
+    setExcludeTransfers,
     availableAccountOptions,
     availableCategoryOptions,
     availableVendorOptions,

@@ -270,3 +270,50 @@ export async function fetchUserCategories(userId: string): Promise<{ id: string;
     return [];
   }
 }
+
+/**
+ * Ensures a sub-category exists in the 'sub_categories' table, creating it if it doesn't.
+ * @param name The name of the sub-category.
+ * @param categoryId The ID of the parent category.
+ * @param userId The ID of the user.
+ * @returns The ID of the existing or newly created sub-category, or null if an error occurred.
+ */
+export async function ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null> {
+  if (!name || !categoryId || !userId) {
+    // It's okay if name is empty, we just don't create anything. But catId and userId are required.
+    if (name) console.warn("ensureSubCategoryExists called with missing params:", { name, categoryId, userId });
+    return null;
+  }
+
+  try {
+    // Check if sub-category already exists for this category/user
+    let { data: existingSub, error: fetchError } = await supabase
+      .from('sub_categories')
+      .select('id')
+      .eq('name', name)
+      .eq('category_id', categoryId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      throw fetchError;
+    }
+
+    if (existingSub) {
+      return existingSub.id;
+    } else {
+      // Create it
+      const { data: newSub, error: insertError } = await supabase
+        .from('sub_categories')
+        .insert({ name, category_id: categoryId, user_id: userId })
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+      return newSub.id;
+    }
+  } catch (error: any) {
+    console.error(`Error in ensureSubCategoryExists for "${name}":`, error.message);
+    showError(`Error ensuring sub-category "${name}" exists: ${error.message}`);
+    return null;
+  }
+}

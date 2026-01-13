@@ -61,7 +61,8 @@
   }
 
   .dark {
-    --background: 220 13% 15%; /* Updated to a dark blue-grey */
+    --background: 220 13% 15%;
+    /* Updated to a dark blue-grey */
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
@@ -115,5 +116,68 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  [data-dashboard-style="financial-pulse"] {
+    --background: 220 13% 15%;
+    /* Dark Blue-Grey */
+    --foreground: 210 40% 98%;
+    /* White */
+
+    --card: 222.2 84% 4.9%;
+    /* Dark Card */
+    --card-foreground: 210 40% 98%;
+    /* White */
+
+    --popover: 222.2 84% 4.9%;
+    /* Dark Popover */
+    --popover-foreground: 210 40% 98%;
+    /* White */
+
+    --primary: 210 40% 98%;
+    /* White Primary */
+    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Dark Foreground for Primary */
+
+    --secondary: 217.2 32.6% 17.5%;
+    /* Dark Secondary */
+    --secondary-foreground: 210 40% 98%;
+    /* White */
+
+    --muted: 217.2 32.6% 17.5%;
+    /* Dark Muted */
+    --muted-foreground: 215 20.2% 65.1%;
+    /* Light Gray */
+
+    --accent: 217.2 32.6% 17.5%;
+    /* Dark Accent */
+    --accent-foreground: 210 40% 98%;
+    /* White */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0 0% 100% / 0.1;
+    /* Translucent White Border */
+    --input: 217.2 32.6% 17.5%;
+    /* Dark Input */
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  [data-dashboard-style="financial-pulse"] h1,
+  [data-dashboard-style="financial-pulse"] h2,
+  [data-dashboard-style="financial-pulse"] h3,
+  [data-dashboard-style="financial-pulse"] h4,
+  [data-dashboard-style="financial-pulse"] h5,
+  [data-dashboard-style="financial-pulse"] h6 {
+    @apply font-black tracking-tighter;
+    font-weight: 900 !important;
+    letter-spacing: -0.05em !important;
+  }
+
+  [data-dashboard-style="financial-pulse"] .recharts-text {
+    @apply uppercase tracking-widest font-semibold;
+    font-size: 11px !important;
+    fill: rgba(255, 255, 255, 0.7) !important;
   }
 }

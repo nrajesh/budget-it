@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis, Area, AreaChart, BarChart, Bar, Cell } from "recharts";
+import { CartesianGrid, Line, XAxis, YAxis, BarChart, Bar, Cell, Area, ComposedChart } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { formatDateToDDMMYYYY, slugify } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,8 +18,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
+import { DateRange } from "react-day-picker";
+
 interface BalanceOverTimeChartProps {
   transactions: Transaction[];
+  projectedTransactions?: Transaction[];
+  dateRange?: DateRange;
 }
 
 const chartConfig = {
@@ -28,10 +33,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ChartType = 'line' | 'bar-stacked' | 'waterfall'; // Updated ChartType
+type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 
-export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps) {
+export function BalanceOverTimeChart({ transactions, projectedTransactions = [], dateRange }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { isFinancialPulse } = useTheme();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
@@ -57,26 +63,119 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
   const accountsToDisplay = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();
     transactions.forEach(t => uniqueAccounts.add(t.account));
+    projectedTransactions.forEach(t => uniqueAccounts.add(t.account));
     return Array.from(uniqueAccounts);
-  }, [transactions]);
+  }, [transactions, projectedTransactions]);
 
   // Data for Line and Area Charts (daily running balances)
   const dailyRunningBalanceData = React.useMemo(() => {
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const dailyBalances: { [date: string]: { [account: string]: number } } = {};
-
     const initialBalances: { [account: string]: number } = {};
+
     allDefinedAccounts.forEach(account => {
       initialBalances[account] = 0;
     });
-    dailyBalances['initial'] = initialBalances;
 
-    sortedTransactions.forEach(transaction => {
+    // We don't have historical data prior to the filtered range, so we start at 0 or the first transaction's value.
+    // Ideally we would want the OPENING balance for the selected period, but that requires more data.
+    // For now, we will just track changes within the visible set.
+
+    // HOWEVER, to support proper date ranges, we must iterate through EVERY DAY in the range.
+
+    let startDate: Date;
+    let endDate: Date;
+
+    if (dateRange?.from && dateRange?.to) {
+      startDate = new Date(dateRange.from);
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(dateRange.to);
+      endDate.setHours(0, 0, 0, 0);
+    } else if (sortedTransactions.length > 0) {
+      startDate = new Date(sortedTransactions[0].date);
+      endDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
+    } else {
+      return [];
+    }
+
+    // Initialize daily balances map with zero for the start
+    // If we rely on 'initial', we need to be careful.
+    // Let's just build a map of date -> balances.
+
+    const transactionMap: { [date: string]: Transaction[] } = {};
+    sortedTransactions.forEach(t => {
+      const d = new Date(t.date).toISOString().split('T')[0];
+      if (!transactionMap[d]) transactionMap[d] = [];
+      transactionMap[d].push(t);
+    });
+
+    const result = [];
+    let currentBalances = { ...initialBalances };
+
+    // Improve: If we have transactions BEFORE startDate in the sorted list (shouldn't happen if filtered correctly upstream),
+    // we should process them to get the "opening balance". 
+    // But currently 'transactions' passed in are already filtered by date in Analytics.tsx. 
+    // So visual balance starts at 0 + daily changes.
+    // NOTE: This means the chart shows "change in balance over period", not absolute balance, unless 
+    // we fetch opening balance. This is an existing limitation we are preserving, just fixing the X-axis range.
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      // Use local time to construct YYYY-MM-DD to avoid UTC timezone shifts causing off-by-one errors
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
+      // Apply transactions for this day
+      const daysTransactions = transactionMap[dateStr] || [];
+      daysTransactions.forEach(t => {
+        if (currentBalances[t.account] !== undefined) {
+          const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+          currentBalances[t.account] += convertedAmount;
+        } else {
+          // Initialize if not in initial list (e.g. account not in allDefinedAccounts yet)
+          const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+          currentBalances[t.account] = convertedAmount;
+        }
+      });
+
+      // Store snapshot
+      const obj: { date: string;[key: string]: number | string } = { date: formatDateToDDMMYYYY(dateStr) };
+      accountsToDisplay.forEach(account => {
+        obj[account] = currentBalances[account] || 0;
+      });
+      result.push(obj);
+
+      // Next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return result;
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, dateRange]);
+
+  // Data for Projected Line Chart
+  const projectedDailyRunningBalanceData = React.useMemo(() => {
+    if (!projectedTransactions || projectedTransactions.length === 0) return [];
+
+    const lastActualDataPoint = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
+    if (!lastActualDataPoint) return [];
+
+    const startingBalances: { [account: string]: number } = {};
+    accountsToDisplay.forEach(account => {
+      startingBalances[account] = (lastActualDataPoint[account] as number) || 0;
+    });
+
+    const sortedProjectedTransactions = [...projectedTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const dailyBalances: { [date: string]: { [account: string]: number } } = {};
+    dailyBalances['start_projection'] = startingBalances;
+
+    sortedProjectedTransactions.forEach(transaction => {
       const date = new Date(transaction.date).toISOString().split('T')[0];
       if (!dailyBalances[date]) {
-        const previousDate = Object.keys(dailyBalances).sort().pop();
-        dailyBalances[date] = previousDate ? { ...dailyBalances[previousDate] } : { ...dailyBalances['initial'] };
+        const previousDates = Object.keys(dailyBalances).sort();
+        const lastDate = previousDates[previousDates.length - 1];
+        dailyBalances[date] = { ...dailyBalances[lastDate] };
       }
 
       if (dailyBalances[date][transaction.account] !== undefined) {
@@ -86,18 +185,34 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     });
 
     const formattedData = Object.entries(dailyBalances)
-      .filter(([date]) => date !== 'initial')
+      .filter(([date]) => date !== 'start_projection')
       .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
       .map(([date, balances]) => {
-        const obj: { date: string; [key: string]: number | string } = { date: formatDateToDDMMYYYY(date) };
+        const obj: { date: string;[key: string]: number | string } = { date: formatDateToDDMMYYYY(date) };
         accountsToDisplay.forEach(account => {
-          obj[account] = balances[account] || 0;
+          obj[`${account}_projected`] = balances[account] || 0;
         });
         return obj;
       });
 
     return formattedData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
+  }, [projectedTransactions, dailyRunningBalanceData, accountsToDisplay, convertBetweenCurrencies, selectedCurrency]);
+
+  // Combined data for Line Chart specifically
+  const combinedLineChartData = React.useMemo(() => {
+    if (chartType !== 'line') return dailyRunningBalanceData;
+
+    if (dailyRunningBalanceData.length === 0) return [];
+
+    const lastActual = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
+
+    const bridgePoint = { ...lastActual };
+    accountsToDisplay.forEach(account => {
+      bridgePoint[`${account}_projected`] = lastActual[account];
+    });
+
+    return [...dailyRunningBalanceData, bridgePoint, ...projectedDailyRunningBalanceData];
+  }, [dailyRunningBalanceData, projectedDailyRunningBalanceData, chartType, accountsToDisplay]);
 
   // Data for Stacked Bar Chart (monthly ending balances)
   const monthlyStackedBarChartData = React.useMemo(() => {
@@ -136,7 +251,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       }
     }
 
-    const finalMonthlyData: { month: string; [key: string]: number | string }[] = [];
+    const finalMonthlyData: { month: string;[key: string]: number | string }[] = [];
     let lastMonthBalances: { [account: string]: number } = {};
     allDefinedAccounts.forEach(account => lastMonthBalances[account] = 0);
 
@@ -144,7 +259,7 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       if (monthlyData[monthKey]) {
         lastMonthBalances = { ...monthlyData[monthKey] };
       }
-      const obj: { month: string; [key: string]: number | string } = { month: monthKey };
+      const obj: { month: string;[key: string]: number | string } = { month: monthKey };
       accountsToDisplay.forEach(account => {
         obj[account] = lastMonthBalances[account] || 0;
       });
@@ -159,10 +274,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     const data = dailyRunningBalanceData;
     if (data.length === 0) return [];
 
-    const netChanges: { date: string; totalChange: number; [key: string]: number | string }[] = [];
+    const netChanges: { date: string; totalChange: number;[key: string]: number | string }[] = [];
     let previousDayBalances: { [account: string]: number } = {};
 
-    // Initialize previousDayBalances with the first day's balances if available, otherwise 0
     if (data.length > 0) {
       accountsToDisplay.forEach(account => {
         previousDayBalances[account] = (data[0][account] as number) || 0;
@@ -171,10 +285,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
 
     data.forEach((currentDay, index) => {
       if (index === 0) {
-        // For the first day, the change is its balance (assuming start from 0 or initial balance)
-        const firstDayChange: { date: string; totalChange: number; [key: string]: number | string } = {
+        const firstDayChange: { date: string; totalChange: number;[key: string]: number | string } = {
           date: currentDay.date,
-          totalChange: 0, // Will be calculated below
+          totalChange: 0,
         };
         let dayTotalChange = 0;
         accountsToDisplay.forEach(account => {
@@ -185,9 +298,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         firstDayChange.totalChange = dayTotalChange;
         netChanges.push(firstDayChange);
       } else {
-        const dayChange: { date: string; totalChange: number; [key: string]: number | string } = {
+        const dayChange: { date: string; totalChange: number;[key: string]: number | string } = {
           date: currentDay.date,
-          totalChange: 0, // Will be calculated below
+          totalChange: 0,
         };
         let dayTotalChange = 0;
         accountsToDisplay.forEach(account => {
@@ -201,7 +314,6 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         netChanges.push(dayChange);
       }
 
-      // Update previousDayBalances for the next iteration
       accountsToDisplay.forEach(account => {
         previousDayBalances[account] = (currentDay[account] as number) || 0;
       });
@@ -216,14 +328,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     if (chartType === 'bar-stacked') {
       dataToUse = monthlyStackedBarChartData;
     } else if (chartType === 'waterfall') {
-      // For waterfall, total balance is the sum of all changes, which is the final running balance
-      if (dailyRunningBalanceData.length === 0) return 0;
-      const lastDayBalances = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
-      return accountsToDisplay.reduce((sum, account) => {
-        const balance = lastDayBalances[account];
-        return sum + (typeof balance === 'number' ? balance : 0);
-      }, 0);
-    } else { // line chart
+      dataToUse = dailyNetChangeData;
+    } else {
       dataToUse = dailyRunningBalanceData;
     }
 
@@ -247,13 +353,11 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     return newConfig;
   }, [allDefinedAccounts]);
 
-  // Handler for clicking a line/area
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine(prevActiveLine => (prevActiveLine === dataKey ? null : dataKey));
   }, []);
 
-  // Handler for clicking a bar
-  const handleBarClick = React.useCallback((data: any, monthIndex: number, clickedDataKey: string) => {
+  const handleBarClick = React.useCallback((_data: any, monthIndex: number, clickedDataKey: string) => {
     setActiveBar(prevActiveBar => {
       if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
         return null;
@@ -273,8 +377,8 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
     } else if (chartType === 'waterfall') {
       dataToUse = dailyNetChangeData;
       xAxisDataKey = 'date';
-    } else { // line chart
-      dataToUse = dailyRunningBalanceData;
+    } else {
+      dataToUse = combinedLineChartData;
       xAxisDataKey = 'date';
     }
 
@@ -302,50 +406,93 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         content={
           <ChartTooltipContent
             indicator="dashed"
-            formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`}
+            formatter={(value, name) => {
+              const formattedName = String(name).replace('_projected', ' (Projected)');
+              return `${formattedName}: ${formatCurrency(Number(value))}`;
+            }}
           />
         }
       />
     );
 
     let ChartComponent: React.ElementType;
-    let ItemComponent: React.ElementType;
+    let ItemComponent: any;
 
     switch (chartType) {
       case 'line':
-        ChartComponent = LineChart;
-        ItemComponent = Line;
+        ChartComponent = ComposedChart; // Use ComposedChart to support mixed Area and Line
+        ItemComponent = Area;
 
         return (
           <ChartComponent {...commonChartProps}>
-            <CartesianGrid vertical={false} />
+            <defs>
+              {accountsToDisplay.map(account => {
+                const color = dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888';
+                const id = `gradient-${slugify(account)}`;
+                return (
+                  <linearGradient key={id} id={id} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
+            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
-              <ItemComponent
-                key={account}
-                dataKey={account}
-                type="monotone"
-                stroke={
-                  activeLine === null
-                    ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                    : (activeLine === account
+              <React.Fragment key={account}>
+                <ItemComponent
+                  dataKey={account}
+                  type="monotone"
+                  stroke={
+                    activeLine === null
                       ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
-                      : '#ccc')
-                }
-                strokeWidth={2}
-                dot={false}
-                onClick={() => handleLineClick(account)}
-                style={{ cursor: 'pointer' }}
-              />
+                      : (activeLine === account
+                        ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                        : '#ccc')
+                  }
+                  fill={`url(#gradient-${slugify(account)})`}
+                  fillOpacity={1}
+                  strokeWidth={3}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  dot={false}
+                  onClick={() => handleLineClick(account)}
+                  style={{ cursor: 'pointer' }}
+                  connectNulls
+                />
+                {/* Visual projection line - keep as Line or make Area if continuous */}
+                <Line
+                  dataKey={`${account}_projected`}
+                  type="monotone"
+                  stroke={
+                    activeLine === null
+                      ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                      : (activeLine === account
+                        ? (dynamicChartConfig[account as keyof typeof dynamicChartConfig]?.color || '#888')
+                        : '#ccc')
+                  }
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  onClick={() => handleLineClick(account)}
+                  style={{ cursor: 'pointer', opacity: 0.8 }}
+                  connectNulls
+                  isAnimationActive={false} /* Reduce noise on projection updates */
+                />
+              </React.Fragment>
             ))}
           </ChartComponent>
         );
@@ -353,15 +500,19 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       case 'bar-stacked':
         return (
           <BarChart {...commonChartProps}>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value.slice(0, 7)}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
@@ -370,9 +521,9 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
                 dataKey={account}
                 stackId="a"
                 radius={4}
-                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
+                onClick={(_data, monthIndex) => handleBarClick(_data, monthIndex, account)}
               >
-                {dataToUse.map((entry, monthIndex) => (
+                {dataToUse.map((_entry, monthIndex) => (
                   <Cell
                     key={`bar-cell-${account}-${monthIndex}`}
                     fill={
@@ -392,28 +543,32 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
       case 'waterfall':
         return (
           <BarChart {...commonChartProps}>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
               <Bar
                 key={account}
                 dataKey={account}
-                stackId="a" // Stack bars to show total daily change
+                stackId="a"
                 radius={4}
-                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)} // Reusing bar click handler
+                onClick={(data, monthIndex) => handleBarClick(data, monthIndex, account)}
               >
                 {dataToUse.map((entry, index) => {
                   const value = entry[account] as number;
-                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))'; // Green for positive, Red for negative
+                  const color = value >= 0 ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-2))';
                   return (
                     <Cell
                       key={`waterfall-cell-${account}-${index}`}
@@ -433,18 +588,18 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
         );
 
       default:
-        return null;
+        return <></>;
     }
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+    <ThemedCard>
+      <ThemedCardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center p-6">
-          <CardTitle>Balance Over Time</CardTitle>
-          <CardDescription>
+          <ThemedCardTitle>Balance Over Time</ThemedCardTitle>
+          <ThemedCardDescription>
             Total balance: {formatCurrency(totalBalance)}
-          </CardDescription>
+          </ThemedCardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
           <DropdownMenu>
@@ -472,15 +627,15 @@ export function BalanceOverTimeChart({ transactions }: BalanceOverTimeChartProps
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      </ThemedCardHeader>
+      <ThemedCardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
           config={dynamicChartConfig}
           className="aspect-auto h-[250px] w-full"
         >
           {renderChart()}
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 }

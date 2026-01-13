@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line } from 'recharts';
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Budget } from '@/data/finance-data';
 
 interface TrendsAndAnalyticsProps {
@@ -44,27 +45,70 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({ transactions, b
     }).reverse();
   }, [transactions, budgets, selectedCurrency, convertBetweenCurrencies]);
 
+  const { isFinancialPulse } = useTheme();
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Trends and Analytics</CardTitle>
-        <CardDescription>Monthly patterns in your spending and income.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <ThemedCard className="col-span-full">
+      <ThemedCardHeader>
+        <ThemedCardTitle>Trends and Analytics</ThemedCardTitle>
+        <ThemedCardDescription>Monthly patterns in your spending and income.</ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={monthlyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
-            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+          <AreaChart data={monthlyData}>
+            <defs>
+              <linearGradient id="gradientIncome" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gradientExpenses" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+            <XAxis
+              dataKey="month"
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+            />
+            <YAxis
+              tickFormatter={(value) => formatCurrency(Number(value))}
+              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+            />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value))}
+              contentStyle={{
+                backgroundColor: isFinancialPulse ? 'rgba(0,0,0,0.8)' : 'white',
+                borderColor: isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb',
+                color: isFinancialPulse ? 'white' : 'black'
+              }}
+            />
             <Legend />
-            <Bar dataKey="income" fill="#22c55e" name="Income" />
-            <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
+            <Area
+              type="monotone"
+              dataKey="income"
+              name="Income"
+              stroke="#22c55e"
+              fill="url(#gradientIncome)"
+              fillOpacity={1}
+              strokeWidth={2}
+            />
+            <Area
+              type="monotone"
+              dataKey="expenses"
+              name="Expenses"
+              stroke="#ef4444"
+              fill="url(#gradientExpenses)"
+              fillOpacity={1}
+              strokeWidth={2}
+            />
             <Line type="monotone" dataKey="budgetTarget" stroke="#ff7300" strokeWidth={2} name="Budget Target" dot={false} />
-          </BarChart>
+          </AreaChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

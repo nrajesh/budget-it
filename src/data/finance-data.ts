@@ -59,6 +59,7 @@ export type Transaction = {
   created_at: string;
   user_id: string; // Added user_id here
   is_scheduled_origin?: boolean; // Added optional property to reflect DB column
+  sub_category?: string;
   recurrence_id?: string | null; // Added recurrence fields
   recurrence_frequency?: string | null;
   recurrence_end_date?: string | null; // Added recurrence_end_date
@@ -72,11 +73,21 @@ export type Category = {
   totalTransactions?: number;
 };
 
+export type SubCategory = {
+  id: string;
+  category_id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+};
+
 export type Budget = {
   id: string;
   user_id: string;
   category_id: string;
   category_name?: string;
+  sub_category_id?: string | null;
+  sub_category_name?: string | null;
   currency: string;
   target_amount: number;
   start_date: string;

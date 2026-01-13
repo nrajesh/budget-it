@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useUser } from "@/contexts/UserContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -31,13 +32,14 @@ interface AddEditBudgetDialogProps {
 
 export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets }) => {
   const { user } = useUser();
-  const { categories } = useTransactions();
+  const { categories, subCategories } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const formSchema = React.useMemo(() => z.object({
     category_id: z.string().min(1, "Category is required"),
+    sub_category_id: z.string().nullable().optional(),
     target_amount: z.coerce.number().positive("Target amount must be positive"),
     currency: z.string().min(1, "Currency is required"),
     start_date: z.string().min(1, "Start date is required"),
@@ -53,6 +55,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     const isDuplicate = allBudgets.some(b =>
       b.id !== budget?.id &&
       b.category_id === data.category_id &&
+      b.sub_category_id === (data.sub_category_id || null) && // Check for exact match (including null)
       b.frequency === frequency &&
       new Date(b.start_date).toLocaleDateString('en-CA') === startDate
     );
@@ -75,15 +78,26 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       currency: selectedCurrency,
       frequency_value: 1,
       frequency_unit: 'm',
+      sub_category_id: null,
     },
   });
 
+  // Watch category_id to filter sub-categories
+  const selectedCategoryId = form.watch("category_id");
+
+  const filteredSubCategories = React.useMemo(() => {
+    if (!selectedCategoryId) return [];
+    return subCategories.filter(sub => sub.category_id === selectedCategoryId);
+  }, [selectedCategoryId, subCategories]);
+
+  // Reset logic
   React.useEffect(() => {
     if (isOpen) {
       if (budget) {
         const frequencyMatch = budget.frequency.match(/^(\d+)([dwmy])$/);
         form.reset({
           category_id: budget.category_id,
+          sub_category_id: budget.sub_category_id,
           target_amount: budget.target_amount,
           currency: budget.currency,
           start_date: formatDateToYYYYMMDD(budget.start_date),
@@ -95,6 +109,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       } else {
         form.reset({
           category_id: "",
+          sub_category_id: null,
           target_amount: 0,
           currency: selectedCurrency,
           start_date: formatDateToYYYYMMDD(new Date()),
@@ -115,6 +130,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     const dbPayload = {
       user_id: user.id,
       category_id: values.category_id,
+      sub_category_id: values.sub_category_id || null, // Ensure explicit null
       target_amount: values.target_amount,
       currency: values.currency,
       start_date: new Date(values.start_date).toISOString(),
@@ -147,7 +163,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{budget ? "Edit" : "Create"} Budget</DialogTitle>
-          <DialogDescription>Set a spending target for a specific category.</DialogDescription>
+          <DialogDescription>Set a spending target for a category or sub-category.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -157,12 +173,38 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {categories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    options={categories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.id, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))}
+                    value={field.value}
+                    onChange={(val) => {
+                      field.onChange(val);
+                      // Reset sub-category when category changes
+                      form.setValue("sub_category_id", null);
+                    }}
+                    placeholder="Select a category"
+                    searchPlaceholder="Search categories..."
+                    emptyPlaceholder="No category found."
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="sub_category_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sub-category (Optional)</FormLabel>
+                  <Combobox
+                    options={filteredSubCategories.map(sub => ({ value: sub.id, label: sub.name })).sort((a, b) => a.label.localeCompare(b.label))}
+                    value={field.value || ""}
+                    onChange={(val) => field.onChange(val || null)}
+                    placeholder={selectedCategoryId ? (filteredSubCategories.length > 0 ? "Select a sub-category" : "No sub-categories found") : "Select a category first"}
+                    searchPlaceholder="Search sub-categories..."
+                    emptyPlaceholder={selectedCategoryId ? "No sub-categories found" : "Select a category first"}
+                    disabled={!selectedCategoryId || filteredSubCategories.length === 0}
+                  />
+                  <FormDescription>Select a sub-category to target specifically, or leave empty for the whole category.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

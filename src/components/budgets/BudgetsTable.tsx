@@ -17,7 +17,7 @@ interface BudgetsTableProps {
 
 export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onDelete }) => {
   const { formatCurrency, convertBetweenCurrencies } = useCurrency();
-  const { transactions } = useTransactions();
+  const { transactions, categories, subCategories } = useTransactions();
 
   const budgetProgress = React.useMemo(() => {
     const progressMap = new Map<string, { actual: number; percentage: number }>();
@@ -33,13 +33,29 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+      const category = categories.find(c => c.id === budget.category_id);
+      const categoryName = category?.name || budget.category_name;
+
+      const subCategory = budget.sub_category_id ? subCategories.find(s => s.id === budget.sub_category_id) : null;
+      const subCategoryName = subCategory?.name || budget.sub_category_name;
+
       const actualSpending = transactions
-        .filter(t =>
-          t.category === budget.category_name &&
-          new Date(t.date) >= periodStart &&
-          new Date(t.date) <= periodEnd &&
-          t.amount < 0
-        )
+        .filter(t => {
+          const isCategoryMatch = t.category === categoryName;
+          const isDateMatch = new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd;
+          const isAmountMatch = t.amount < 0;
+
+          if (!isCategoryMatch || !isDateMatch || !isAmountMatch) return false;
+
+          // If budget has a sub-category, transaction MUST match it
+          if (budget.sub_category_id) {
+            // If we can't resolve the name, we can't match, so return false to be safe
+            if (!subCategoryName) return false;
+            return t.sub_category === subCategoryName;
+          }
+
+          return true;
+        })
         .reduce((sum, t) => {
           const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, budget.currency);
           return sum + convertedAmount;
@@ -49,7 +65,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
       progressMap.set(budget.id, { actual: actualSpending, percentage });
     });
     return progressMap;
-  }, [budgets, transactions, convertBetweenCurrencies]);
+  }, [budgets, transactions, convertBetweenCurrencies, categories, subCategories]);
 
   return (
     <div className="border rounded-md overflow-x-auto">
@@ -72,9 +88,19 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
             budgets.map((budget) => {
               const progress = budgetProgress.get(budget.id) || { actual: 0, percentage: 0 };
               const progressColor = progress.percentage > 100 ? "bg-destructive" : "bg-primary";
+
+              const subCategoryName = budget.sub_category_id
+                ? subCategories.find(s => s.id === budget.sub_category_id)?.name
+                : budget.sub_category_name;
+
               return (
                 <TableRow key={budget.id}>
-                  <TableCell className="font-medium">{budget.category_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{budget.category_name}</div>
+                    {subCategoryName && (
+                      <div className="text-xs text-muted-foreground mt-0.5">↳ {subCategoryName}</div>
+                    )}
+                  </TableCell>
                   <TableCell>{formatCurrency(budget.target_amount, budget.currency)}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">

@@ -18,7 +18,7 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
 
     accounts.forEach(account => {
       const startingBalance = account.starting_balance || 0;
-      const accountCurrency = account.currency || 'USD';
+      const accountCurrency = account.currency || selectedCurrency;
       accountBalances[account.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
     });
 

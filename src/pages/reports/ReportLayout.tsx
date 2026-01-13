@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTheme } from "@/contexts/ThemeContext";
+import { ThemedCard, ThemedCardHeader, ThemedCardTitle } from '@/components/ThemedCard';
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { Budget } from '@/data/finance-data';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils'; // Make sure to import cn
 
 interface ReportLayoutProps {
   title: string;
@@ -30,7 +31,11 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const { accounts } = useTransactions();
   const { user } = useUser();
   const filterProps = useTransactionFilters();
-  const dataProps = useTransactionData(filterProps);
+  const dataProps = useTransactionData({
+    ...filterProps,
+    excludeTransfers: filterProps.excludeTransfers,
+  });
+  const { isFinancialPulse } = useTheme();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
     queryKey: ['budgets', user?.id],
@@ -121,11 +126,14 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
 
   return (
-    <div className="space-y-6">
+    <div className={cn(
+      "space-y-6 transition-colors duration-500",
+      isFinancialPulse ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6 rounded-xl -m-6 min-h-[calc(100vh-100px)] text-white" : ""
+    )}>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-          <div className="text-muted-foreground">{description}</div>
+          <h2 className={cn("text-3xl font-bold tracking-tight", isFinancialPulse ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400" : "")}>{title}</h2>
+          <div className={cn("text-muted-foreground", isFinancialPulse ? "text-slate-400" : "")}>{description}</div>
         </div>
         <ExportButtons
           onPdfExport={handlePdfExport}
@@ -134,16 +142,17 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Filters</CardTitle>
+      <ThemedCard>
+        <ThemedCardHeader>
+          <ThemedCardTitle>Report Filters</ThemedCardTitle>
           <TransactionFilters
             {...filterProps}
             onDateChange={filterProps.setDateRange}
+            onExcludeTransfersChange={filterProps.setExcludeTransfers}
             onResetFilters={filterProps.handleResetFilters}
           />
-        </CardHeader>
-      </Card>
+        </ThemedCardHeader>
+      </ThemedCard>
 
       <div className="space-y-4" id="report-content">
         {children({

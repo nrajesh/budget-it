@@ -5,7 +5,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { ScheduledTransaction as ScheduledTransactionType, createScheduledTransactionsService } from '@/services/scheduledTransactionsService';
-import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
+import { ensurePayeeExists, ensureCategoryExists, ensureSubCategoryExists } from "@/integrations/supabase/utils";
 import Papa from "papaparse";
 import { parseDateFromDDMMYYYY } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +13,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 export const useScheduledTransactionManagement = () => {
   const { user, isLoadingUser } = useUser();
-  const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions } = useTransactions();
+  const { accounts, vendors, categories, isLoadingAccounts, isLoadingVendors, isLoadingCategories, refetchTransactions: refetchMainTransactions, allSubCategories } = useTransactions();
   const { convertBetweenCurrencies } = useCurrency();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -70,13 +70,19 @@ export const useScheduledTransactionManagement = () => {
       const isVendorAnAccount = allPayees.find(p => p.value === data.vendor)?.isAccount || false;
       await ensurePayeeExists(data.account, true);
       await ensurePayeeExists(data.vendor, isVendorAnAccount);
-      if (data.category !== 'Transfer') await ensureCategoryExists(data.category, user.id);
+      if (data.category !== 'Transfer') {
+        const categoryId = await ensureCategoryExists(data.category, user.id);
+        if (categoryId && data.sub_category) {
+          await ensureSubCategoryExists(data.sub_category, categoryId, user.id);
+        }
+      }
 
       const dbPayload = {
         date: new Date(data.date).toISOString(),
         account: data.account,
         vendor: data.vendor,
         category: data.category,
+        sub_category: data.sub_category || null,
         amount: data.amount,
         remarks: data.remarks || null,
         frequency: `${data.frequency_value}${data.frequency_unit}`,
@@ -202,6 +208,6 @@ export const useScheduledTransactionManagement = () => {
     handleImportClick, handleFileChange, handleExportClick,
     handleFormSubmit: saveMutation.mutate,
     handleAccountClick, handleVendorClick, handleCategoryClick,
-    accounts, allPayees, categories,
+    accounts, allPayees, categories, allSubCategories,
   };
 };

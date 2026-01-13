@@ -4,6 +4,12 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { SearchInput } from "@/components/SearchInput";
+import { X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useTheme } from "@/contexts/ThemeContext";
+import { cn } from "@/lib/utils";
+import { CategoryTreeFilter, CategoryNode } from "@/components/CategoryTreeFilter";
 
 interface Option {
   value: string;
@@ -15,15 +21,22 @@ interface TransactionFiltersProps {
   setSearchTerm: (term: string) => void;
   availableAccountOptions: Option[];
   selectedAccounts: string[];
-  setSelectedAccounts: (values: string[]) => void;
-  availableCategoryOptions: Option[];
+  setSelectedAccounts: React.Dispatch<React.SetStateAction<string[]>>;
+
+  // New props for CategoryTree
+  categoryTreeData: CategoryNode[];
   selectedCategories: string[];
   setSelectedCategories: (values: string[]) => void;
+  selectedSubCategories: string[];
+  setSelectedSubCategories: (values: string[]) => void; // Expecting simple state setter or wrapper
+
   availableVendorOptions: Option[];
   selectedVendors: string[];
-  setSelectedVendors: (values: string[]) => void;
+  setSelectedVendors: React.Dispatch<React.SetStateAction<string[]>>;
   dateRange: DateRange | undefined;
   onDateChange: (date: DateRange | undefined) => void;
+  excludeTransfers: boolean;
+  onExcludeTransfersChange: (exclude: boolean) => void;
   onResetFilters: () => void;
 }
 
@@ -33,76 +46,108 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   availableAccountOptions,
   selectedAccounts,
   setSelectedAccounts,
-  availableCategoryOptions,
+  categoryTreeData,
   selectedCategories,
   setSelectedCategories,
+  selectedSubCategories,
+  setSelectedSubCategories,
   availableVendorOptions,
   selectedVendors,
   setSelectedVendors,
   dateRange,
   onDateChange,
+  excludeTransfers,
+  onExcludeTransfersChange,
   onResetFilters,
 }) => {
+  const { isFinancialPulse } = useTheme();
+
+  const inputStyles = isFinancialPulse
+    ? "bg-black/20 border-indigo-500/30 text-white placeholder:text-slate-400 focus-visible:ring-indigo-500"
+    : "";
+
+  const containerStyles = isFinancialPulse ? "text-white" : "";
+
   return (
-    <div className="flex flex-col gap-4 mt-4"> {/* Container for the two rows of filters */}
-      {/* First row: Search and Date Range */}
-      <div className="flex flex-wrap gap-4 items-end">
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 w-full items-end", containerStyles)}>
+      {/* Search Input */}
+      <div className="lg:col-span-3">
         <SearchInput
           id="search-input"
-          label="Search"
-          placeholder="Search vendor or remarks..."
+          placeholder="Search transactions..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-[160px]" // Standardized search bar width
+          className="w-full"
+          inputClassName={inputStyles}
         />
-        <div className="flex flex-col gap-2">
-          <label htmlFor="date-range-filter" className="text-sm font-medium text-foreground">Date Range</label>
-          <DateRangePicker
-            id="date-range-filter"
-            date={dateRange}
-            onDateChange={onDateChange}
-            className="w-[160px]" // Standardized date selector width
-          />
-        </div>
       </div>
 
-      {/* Second row: Account, Category, Vendor, and Reset Button */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="account-filter" className="text-sm font-medium text-foreground">Account</label>
-          <MultiSelectDropdown
-            id="account-filter"
-            options={availableAccountOptions}
-            selectedValues={selectedAccounts}
-            onSelectChange={setSelectedAccounts}
-            placeholder="Filter by Account"
-            className="w-full sm:w-[200px]"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="category-filter" className="text-sm font-medium text-foreground">Category</label>
-          <MultiSelectDropdown
-            id="category-filter"
-            options={availableCategoryOptions}
-            selectedValues={selectedCategories}
-            onSelectChange={setSelectedCategories}
-            placeholder="Filter by Category"
-            className="w-full sm:w-[200px]"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label htmlFor="vendor-filter" className="text-sm font-medium text-foreground">Vendor</label>
-          <MultiSelectDropdown
-            id="vendor-filter"
-            options={availableVendorOptions}
-            selectedValues={selectedVendors}
-            onSelectChange={setSelectedVendors}
-            placeholder="Filter by Vendor"
-            className="w-full sm:w-[200px]"
-          />
-        </div>
-        <Button variant="outline" onClick={onResetFilters} className="h-10 px-4 py-2 shrink-0">
-          Reset Filters
+      {/* Date Range Picker */}
+      <div className="lg:col-span-3">
+        <DateRangePicker
+          id="date-range-filter"
+          date={dateRange}
+          onDateChange={onDateChange}
+          className="w-full"
+          triggerClassName={inputStyles}
+        />
+      </div>
+
+      {/* Account Filter */}
+      <div className="lg:col-span-1">
+        <MultiSelectDropdown
+          id="account-filter"
+          options={availableAccountOptions}
+          selectedValues={selectedAccounts}
+          onSelectChange={setSelectedAccounts}
+          placeholder="Account"
+          className="w-full"
+          triggerClassName={inputStyles}
+        />
+      </div>
+
+      {/* Category Filter - UPDATED to Tree */}
+      <div className="lg:col-span-2">
+        <CategoryTreeFilter
+          data={categoryTreeData}
+          selectedCategories={selectedCategories}
+          selectedSubCategories={selectedSubCategories}
+          onCategoryChange={setSelectedCategories}
+          onSubCategoryChange={setSelectedSubCategories}
+          triggerClassName={inputStyles}
+        />
+      </div>
+
+      {/* Vendor Filter */}
+      <div className="lg:col-span-1">
+        <MultiSelectDropdown
+          id="vendor-filter"
+          options={availableVendorOptions}
+          selectedValues={selectedVendors}
+          onSelectChange={setSelectedVendors}
+          placeholder="Vendor"
+          className="w-full"
+          triggerClassName={inputStyles}
+        />
+      </div>
+
+      <div className="lg:col-span-2 flex items-center space-x-2 h-10">
+        <Switch
+          id="exclude-transfers"
+          checked={excludeTransfers}
+          onCheckedChange={onExcludeTransfersChange}
+          className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500 data-[state=unchecked]:bg-slate-700" : ""}
+        />
+        <Label htmlFor="exclude-transfers" className={isFinancialPulse ? "text-slate-300" : ""}>Exclude xfers</Label>
+        {/* Reset Filters Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onResetFilters}
+          className={cn("h-8 w-8 ml-auto text-muted-foreground hover:text-foreground", isFinancialPulse ? "hover:text-white hover:bg-white/10" : "")}
+          title="Reset Filters"
+        >
+          <X className="h-4 w-4" />
         </Button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
 
@@ -49,43 +49,43 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
   }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Net Worth Statement</CardTitle>
-        <CardDescription>A summary of your assets and liabilities.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <ThemedCard>
+      <ThemedCardHeader>
+        <ThemedCardTitle>Net Worth Statement</ThemedCardTitle>
+        <ThemedCardDescription>A summary of your assets and liabilities.</ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent>
         <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+          <ThemedCard>
+            <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <ThemedCardTitle className="text-sm font-medium">Total Assets</ThemedCardTitle>
               <TrendingUp className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
+            </ThemedCardHeader>
+            <ThemedCardContent>
               <div className="text-2xl font-bold text-green-500">{formatCurrency(assets)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Liabilities</CardTitle>
+            </ThemedCardContent>
+          </ThemedCard>
+          <ThemedCard>
+            <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <ThemedCardTitle className="text-sm font-medium">Total Liabilities</ThemedCardTitle>
               <TrendingDown className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
+            </ThemedCardHeader>
+            <ThemedCardContent>
               <div className="text-2xl font-bold text-red-500">{formatCurrency(liabilities)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Net Worth</CardTitle>
+            </ThemedCardContent>
+          </ThemedCard>
+          <ThemedCard>
+            <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <ThemedCardTitle className="text-sm font-medium">Net Worth</ThemedCardTitle>
               <Scale className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
+            </ThemedCardHeader>
+            <ThemedCardContent>
               <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
-            </CardContent>
-          </Card>
+            </ThemedCardContent>
+          </ThemedCard>
         </div>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

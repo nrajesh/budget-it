@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
 import { ScheduledTransaction as ScheduledTransactionType } from '@/services/scheduledTransactionsService';
 import { formatDateToYYYYMMDD } from "@/lib/utils";
@@ -44,6 +45,7 @@ interface AddEditScheduledTransactionDialogProps {
   accounts: Payee[];
   allPayees: { value: string; label: string; isAccount: boolean }[];
   categories: Category[];
+  allSubCategories: string[];
   isLoading: boolean;
 }
 
@@ -56,6 +58,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
   accounts,
   allPayees,
   categories,
+  allSubCategories,
   isLoading,
 }) => {
   const formSchema = React.useMemo(() => z.object({
@@ -63,6 +66,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
     account: z.string().min(1, "Account is required"),
     vendor: z.string().min(1, "Vendor is required"),
     category: z.string().min(1, "Category is required"),
+    sub_category: z.string().optional(),
     amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
     frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
     frequency_unit: z.string().min(1, "Frequency unit is required"),
@@ -106,6 +110,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           account: transaction.account,
           vendor: transaction.vendor,
           category: transaction.category,
+          sub_category: transaction.sub_category || '',
           amount: transaction.amount,
           frequency_value: frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1,
           frequency_unit: frequencyMatch ? frequencyMatch[2] : 'm',
@@ -118,6 +123,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           account: '',
           vendor: '',
           category: '',
+          sub_category: '',
           amount: 0,
           frequency_value: 1,
           frequency_unit: 'm',
@@ -136,6 +142,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
   React.useEffect(() => {
     if (isVendorAnAccount) {
       form.setValue("category", "Transfer", { shouldValidate: true });
+      form.setValue("sub_category", "", { shouldValidate: true });
     } else if (form.getValues("category") === "Transfer") {
       form.setValue("category", "", { shouldValidate: true });
     }
@@ -197,12 +204,15 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Account</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {accounts.map(account => <SelectItem key={account.id} value={account.name}>{account.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        options={accounts.map(account => ({ value: account.name, label: account.name }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select account"
+                        searchPlaceholder="Search accounts..."
+                        emptyPlaceholder="No account found."
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -213,12 +223,15 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Vendor / Account</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select vendor or account" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {allPayees.map(payee => <SelectItem key={payee.value} value={payee.value}>{payee.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        options={allPayees.map(payee => ({ value: payee.value, label: payee.label }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select vendor or account"
+                        searchPlaceholder="Search vendors..."
+                        emptyPlaceholder="No vendor found."
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -229,12 +242,36 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isVendorAnAccount}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {categories.map(category => <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        options={categories.map(category => ({ value: category.name, label: category.name }))}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select category"
+                        searchPlaceholder="Search categories..."
+                        emptyPlaceholder="No category found."
+                        disabled={isVendorAnAccount}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sub_category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sub-category</FormLabel>
+                      <Combobox
+                        options={allSubCategories.map(sub => ({ value: sub, label: sub }))}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select or create..."
+                        searchPlaceholder="Search sub-categories..."
+                        emptyPlaceholder="No sub-category found."
+                        disabled={isVendorAnAccount}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

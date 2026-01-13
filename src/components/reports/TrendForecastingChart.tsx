@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { ResponsiveContainer, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface TrendForecastingChartProps {
   transactions: any[]; // This will now include future scheduled transactions
@@ -9,6 +10,7 @@ interface TrendForecastingChartProps {
 
 const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transactions }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { isFinancialPulse } = useTheme();
 
   const chartData = React.useMemo(() => {
     const today = new Date();
@@ -54,10 +56,10 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
     // 3. Aggregate future scheduled transactions by month
     const futureMonthlyImpact: { [key: string]: number } = {};
     futureScheduledTransactions.forEach(t => {
-        const date = new Date(t.date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-        futureMonthlyImpact[monthKey] = (futureMonthlyImpact[monthKey] || 0) + convertedAmount;
+      const date = new Date(t.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+      futureMonthlyImpact[monthKey] = (futureMonthlyImpact[monthKey] || 0) + convertedAmount;
     });
 
     // 4. Generate combined data for chart
@@ -92,26 +94,51 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
   }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Net Income Trend & Forecast</CardTitle>
-        <CardDescription>
+    <ThemedCard>
+      <ThemedCardHeader>
+        <ThemedCardTitle>Net Income Trend & Forecast</ThemedCardTitle>
+        <ThemedCardDescription>
           Historical net income with a 6-month forecast, including scheduled transactions.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
-              <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').trim()]} />
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="gradientActual" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradientForecast" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+                stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              />
+              <YAxis
+                tickFormatter={(value) => formatCurrency(Number(value))}
+                tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
+                stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              />
+              <Tooltip
+                formatter={(value: number, name: string) => [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').trim()]}
+                contentStyle={{
+                  backgroundColor: isFinancialPulse ? 'rgba(0,0,0,0.8)' : 'white',
+                  borderColor: isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb',
+                  color: isFinancialPulse ? 'white' : 'black'
+                }}
+              />
               <Legend />
-              <Line type="monotone" dataKey="actual" stroke="#8884d8" name="Actual Net Income" strokeWidth={2} />
-              <Line type="monotone" dataKey="baselineForecast" stroke="#cccccc" strokeDasharray="5 5" name="Baseline Trend" />
-              <Line type="monotone" dataKey="finalForecast" stroke="#82ca9d" strokeWidth={2} name="Forecast with Scheduled" />
-            </LineChart>
+              <Area type="monotone" dataKey="actual" stroke="#8884d8" fill="url(#gradientActual)" name="Actual Net Income" strokeWidth={2} />
+              <Line type="monotone" dataKey="baselineForecast" stroke="#cccccc" strokeDasharray="5 5" name="Baseline Trend" dot={false} />
+              <Area type="monotone" dataKey="finalForecast" stroke="#82ca9d" fill="url(#gradientForecast)" strokeWidth={2} name="Forecast with Scheduled" />
+            </AreaChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-64 text-center">
@@ -120,8 +147,8 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

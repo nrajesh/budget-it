@@ -3,10 +3,9 @@
 import * as React from "react";
 import { Check } from "lucide-react"; // Removed X icon as it's no longer used
 
-import { Badge } from "@/components/ui/badge";
 import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type Option = Record<"value" | "label", string>;
 
@@ -16,7 +15,8 @@ interface MultiSelectDropdownProps {
   onSelectChange: React.Dispatch<React.SetStateAction<string[]>>;
   placeholder?: string;
   id?: string;
-  className?: string;
+  className?: string; // Container class
+  triggerClassName?: string; // Trigger/Input area class
 }
 
 export function MultiSelectDropdown({
@@ -26,6 +26,7 @@ export function MultiSelectDropdown({
   placeholder = "Select options...",
   id,
   className,
+  triggerClassName,
 }: MultiSelectDropdownProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
@@ -44,10 +45,14 @@ export function MultiSelectDropdown({
 
   // Removed handleRemove and handleKeyDown for badge interaction
 
+
+
+  // ... (assuming standard import exists or I will add it)
+
   return (
     <div className={className}>
-      <Command onKeyDown={(e) => { /* Keep Command for general key handling if needed, but remove specific badge logic */ }} className="overflow-visible bg-transparent">
-        <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+      <Command onKeyDown={() => { /* Keep Command for general key handling */ }} className="overflow-visible bg-transparent">
+        <div className={cn("group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 min-h-10 flex items-center", triggerClassName)}>
           <div className="flex flex-wrap gap-1">
             {/* Removed selectedValues.map for badges */}
             <CommandPrimitive.Input

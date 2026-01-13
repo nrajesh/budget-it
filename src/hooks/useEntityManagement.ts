@@ -2,7 +2,6 @@ import * as React from "react";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import Papa from "papaparse";
 
 interface UseEntityManagementProps<T> {
   entityName: string;
@@ -40,6 +39,11 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isBulkDelete, setIsBulkDelete] = React.useState(false);
 
+  // Reset pagination when search term changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   // Mutations
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
@@ -68,7 +72,7 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       const { error } = await supabase.rpc(batchUpsertRpcFn, payload);
       if (error) throw error;
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: async (_data, variables) => {
       showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
       await queryClient.invalidateQueries({ queryKey });
       if (onSuccess) onSuccess();

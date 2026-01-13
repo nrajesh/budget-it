@@ -6,14 +6,16 @@ import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pencil, Loader2 } from "lucide-react";
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
+import VendorReconciliationDialog from "@/components/management/VendorReconciliationDialog";
+import { RefreshCw } from "lucide-react";
 
 const VendorsPage = () => {
   const { vendors, isLoadingVendors, invalidateAllData } = useTransactions();
   const managementProps = usePayeeManagement(false);
+  const [isReconcileOpen, setIsReconcileOpen] = React.useState(false);
 
   const [editingVendorId, setEditingVendorId] = React.useState<string | null>(null);
   const [editedName, setEditedName] = React.useState<string>("");
@@ -46,7 +48,7 @@ const VendorsPage = () => {
     updateVendorNameMutation.mutate({ vendorId, newName: editedName.trim() });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, vendor: { id: string; name: string }) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') event.currentTarget.blur();
     else if (event.key === 'Escape') setEditingVendorId(null);
   };
@@ -62,7 +64,7 @@ const VendorsPage = () => {
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
             onBlur={() => handleSaveName(item.id, item.name)}
-            onKeyDown={(e) => handleKeyDown(e, item)}
+            onKeyDown={(e) => handleKeyDown(e)}
             disabled={updateVendorNameMutation.isPending}
             className="h-8"
           />
@@ -72,28 +74,48 @@ const VendorsPage = () => {
           </div>
         ),
     },
+    {
+      header: "Transactions",
+      accessor: "totalTransactions",
+      cellRenderer: (item) => (
+        <span className="text-sm font-medium">
+          {item.totalTransactions || 0}
+        </span>
+      ),
+    },
   ];
 
   return (
-    <EntityManagementPage
-      title="Vendors"
-      entityName="Vendor"
-      entityNamePlural="vendors"
-      data={vendors}
-      isLoading={isLoadingVendors}
-      columns={columns}
-      AddEditDialogComponent={(props) => (
-        <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} />
-      )}
-      isDeletable={(item) => item.name !== 'Others'}
-      isEditable={(item) => item.name !== 'Others'}
-      customEditHandler={startEditing}
-      isEditing={id => editingVendorId === id}
-      isUpdating={updateVendorNameMutation.isPending}
-      // Pass all management props explicitly
-      {...managementProps}
-      selectedEntity={managementProps.selectedPayee}
-    />
+    <>
+      <EntityManagementPage
+        title="Vendors"
+        entityName="Vendor"
+        entityNamePlural="vendors"
+        data={vendors}
+        isLoading={isLoadingVendors}
+        columns={columns}
+        AddEditDialogComponent={(props) => (
+          <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} />
+        )}
+        isDeletable={(item) => item.name !== 'Others'}
+        customEditHandler={startEditing}
+        isEditing={id => editingVendorId === id}
+        isUpdating={updateVendorNameMutation.isPending}
+        // Pass all management props explicitly
+        {...managementProps}
+        selectedEntity={managementProps.selectedPayee}
+        extraActions={
+          <Button onClick={() => setIsReconcileOpen(true)} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reconcile
+          </Button>
+        }
+      />
+      <VendorReconciliationDialog
+        isOpen={isReconcileOpen}
+        onClose={() => setIsReconcileOpen(false)}
+      />
+    </>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { AlertTriangle, BarChart2, ShoppingCart, Banknote } from 'lucide-react';
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { differenceInDays } from 'date-fns';
@@ -141,14 +141,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
   }, [historicalTransactions]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Alerts and Insights</CardTitle>
-        <CardDescription>
+    <ThemedCard>
+      <ThemedCardHeader>
+        <ThemedCardTitle>Alerts and Insights</ThemedCardTitle>
+        <ThemedCardDescription>
           Automated analysis of your financial data based on the selected filters.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-6 md:grid-cols-2">
+        </ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2 text-destructive" />
@@ -241,8 +241,8 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

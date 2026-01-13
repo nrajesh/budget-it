@@ -1,13 +1,12 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/data/finance-data";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { useQuery } from '@tanstack/react-query';
 import { ScheduledTransaction, createScheduledTransactionsService, generateFutureTransactions } from '@/services/scheduledTransactionsService';
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { filterTransactions } from "@/utils/nlp-search";
 
 interface Option {
   value: string;
@@ -23,6 +22,7 @@ interface UseTransactionDataProps {
   availableAccountOptions: Option[];
   availableCategoryOptions: Option[];
   availableVendorOptions: Option[];
+  excludeTransfers?: boolean;
 }
 
 export const useTransactionData = ({
@@ -34,6 +34,7 @@ export const useTransactionData = ({
   availableAccountOptions,
   availableCategoryOptions,
   availableVendorOptions,
+  excludeTransfers = false,
 }: UseTransactionDataProps) => {
   const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
   const { user, isLoadingUser } = useUser();
@@ -61,12 +62,7 @@ export const useTransactionData = ({
     let filtered = combinedTransactions;
 
     if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.vendor.toLowerCase().includes(lowerCaseSearchTerm) ||
-          (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm))
-      );
+      filtered = filterTransactions(filtered, searchTerm);
     }
 
     if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
@@ -91,6 +87,14 @@ export const useTransactionData = ({
       });
     }
 
+    if (excludeTransfers) {
+      filtered = filtered.filter((t) => {
+        const isTransfer = t.category?.toLowerCase() === 'transfer';
+        const isBlank = !t.category || t.category.trim() === '';
+        return !isTransfer && !isBlank;
+      });
+    }
+
     return filtered;
   }, [
     combinedTransactions,
@@ -102,6 +106,7 @@ export const useTransactionData = ({
     availableAccountOptions.length,
     availableCategoryOptions.length,
     availableVendorOptions.length,
+    excludeTransfers,
   ]);
 
   return {

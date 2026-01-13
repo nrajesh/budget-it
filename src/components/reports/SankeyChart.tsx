@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -104,21 +104,21 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     // Calculate dynamic height based on the number of nodes to prevent excessive white space
     const dynamicHeight = Math.max(150, nodes.length * 40);
 
-    return { 
-      sankeyData: { nodes, links: filteredLinks }, 
-      chartHeight: dynamicHeight 
+    return {
+      sankeyData: { nodes, links: filteredLinks },
+      chartHeight: dynamicHeight
     };
   }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
   return (
-    <Card className="col-span-1 md:col-span-2">
-      <CardHeader>
-        <CardTitle>Financial Flow (Sankey Chart)</CardTitle>
-        <CardDescription>
+    <ThemedCard className="col-span-1 md:col-span-2">
+      <ThemedCardHeader>
+        <ThemedCardTitle>Financial Flow (Sankey Chart)</ThemedCardTitle>
+        <ThemedCardDescription>
           Visualizes the flow of money from income sources through accounts to expense categories.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        </ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent>
         {sankeyData.nodes.length > 1 && sankeyData.links.length > 0 ? (
           <ResponsiveContainer width="100%" height={chartHeight}>
             <Sankey
@@ -142,8 +142,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

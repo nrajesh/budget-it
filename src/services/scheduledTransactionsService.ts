@@ -15,6 +15,7 @@ export type ScheduledTransaction = {
   account: string;
   vendor: string;
   category: string;
+  sub_category?: string;
   amount: number;
   frequency: string;
   remarks?: string;
@@ -70,6 +71,7 @@ export const generateFutureTransactions = (
         account: st.account,
         vendor: st.vendor,
         category: st.category,
+        sub_category: st.sub_category,
         amount: st.amount,
         remarks: st.remarks,
         currency: accountCurrencyMap.get(st.account) || 'USD',
@@ -143,7 +145,7 @@ export const createScheduledTransactionsService = ({ refetchTransactions, userId
       for (const st of scheduledTransactions) {
         let nextDateToProcess = new Date(st.date);
         nextDateToProcess.setHours(0, 0, 0, 0);
-        let latestProcessedDateForThisST = st.last_processed_date ? new Date(st.last_processed_date) : null;
+        const latestProcessedDateForThisST = st.last_processed_date ? new Date(st.last_processed_date) : null;
         if (latestProcessedDateForThisST) latestProcessedDateForThisST.setHours(0, 0, 0, 0);
         let newLastProcessedDateCandidate = latestProcessedDateForThisST;
         const recurrenceEndDate = st.recurrence_end_date ? new Date(st.recurrence_end_date) : null;
@@ -158,6 +160,7 @@ export const createScheduledTransactionsService = ({ refetchTransactions, userId
               account: st.account,
               vendor: st.vendor,
               category: st.category,
+              sub_category: st.sub_category,
               amount: st.amount,
               remarks: st.remarks || undefined,
               currency: currencyMap.get(st.account) || 'USD',

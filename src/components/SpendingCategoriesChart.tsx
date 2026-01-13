@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Pie, PieChart, Cell } from "recharts";
 import { type Transaction } from "@/data/finance-data";
@@ -109,18 +109,18 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
   const activeIndexForPie = selectedCategoryForDrilldown ? vendorActiveIndex : categoryActiveIndex;
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="items-center pb-0">
+    <ThemedCard className="flex flex-col h-full">
+      <ThemedCardHeader className="items-center pb-0">
         <div className="flex items-center justify-between w-full">
-          <CardTitle className="w-full text-center">
+          <ThemedCardTitle className="w-full text-center">
             {selectedCategoryForDrilldown ? `Spending in ${selectedCategoryForDrilldown}` : "Spending by Category"}
-          </CardTitle>
+          </ThemedCardTitle>
         </div>
-        <CardDescription>
+        <ThemedCardDescription>
           {selectedCategoryForDrilldown ? `Total for ${selectedCategoryForDrilldown}: ${formatCurrency(currentTotalSpending)}` : `Total spending: ${formatCurrency(currentTotalSpending)}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 pb-0">
+        </ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
           className="mx-auto aspect-square max-h-[250px]"
@@ -148,7 +148,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
             </Pie>
           </PieChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 }

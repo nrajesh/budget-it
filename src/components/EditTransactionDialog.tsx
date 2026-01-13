@@ -32,7 +32,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2, Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
-import { supabase } from "@/integrations/supabase/client";
+/* Removed unused variables */
 import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
@@ -45,6 +45,7 @@ const formSchema = z.object({
   amount: z.coerce.number(),
   remarks: z.string().optional(),
   category: z.string().min(1, "Category is required"),
+  sub_category: z.string().optional(),
   recurrenceFrequency: z.string().optional(),
   recurrenceEndDate: z.string().optional(),
 }).refine(data => data.account !== data.vendor, {
@@ -64,19 +65,19 @@ interface EditTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   transaction: Transaction;
+  origin?: { x: number; y: number };
 }
 
 const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
   transaction,
+  origin,
 }) => {
-  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories } = useTransactions();
-  const { currencySymbols, convertBetweenCurrencies } = useCurrency();
+  const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
+  const { currencySymbols } = useCurrency();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
-  const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
-  const [displayReceivingAmount, setDisplayReceivingAmount] = React.useState<number>(0);
   const [isSaving, setIsSaving] = React.useState(false);
 
   const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
@@ -89,6 +90,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
       date: formatDateToYYYYMMDD(transaction.date),
       recurrenceFrequency: transaction.recurrence_frequency || "None",
       recurrenceEndDate: transaction.recurrence_end_date ? formatDateToYYYYMMDD(transaction.recurrence_end_date) : "",
+      sub_category: transaction.sub_category || "",
     },
   });
 
@@ -99,6 +101,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
         date: formatDateToYYYYMMDD(transaction.date),
         recurrenceFrequency: transaction.recurrence_frequency || "None",
         recurrenceEndDate: transaction.recurrence_end_date ? formatDateToYYYYMMDD(transaction.recurrence_end_date) : "",
+        sub_category: transaction.sub_category || "",
       });
       setIsSaving(false);
     }
@@ -106,7 +109,6 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
-  const amountValue = form.watch("amount");
   const recurrenceFrequency = form.watch("recurrenceFrequency");
   const isTransfer = allAccounts.includes(vendorValue);
 
@@ -122,17 +124,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     updateCurrencySymbol();
   }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
 
-  React.useEffect(() => {
-    const fetchDestinationCurrency = async () => {
-      if (isTransfer && vendorValue) {
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
-        setDestinationAccountCurrency(currencyCode);
-      } else {
-        setDestinationAccountCurrency(null);
-      }
-    };
-    fetchDestinationCurrency();
-  }, [vendorValue, isTransfer, accountCurrencyMap]);
+
 
   React.useEffect(() => {
     if (isTransfer) {
@@ -172,7 +164,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
     disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
   }));
 
-  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions];
+  const combinedBaseVendorOptions = [...baseAccountOptions, ...baseVendorOptions].sort((a, b) => a.label.localeCompare(b.label));
 
   const filteredCombinedVendorOptions = combinedBaseVendorOptions.map(option => ({
     ...option,
@@ -180,13 +172,20 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   }));
 
   const categoryOptions = allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name }));
+  const subCategoryOptions = allSubCategories.map(sub => ({ value: sub, label: sub }));
 
   const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent>
+        <DialogContent
+          style={origin ? {
+            '--origin-x': `${origin.x - window.innerWidth / 2}px`,
+            '--origin-y': `${origin.y - window.innerHeight / 2}px`,
+          } as React.CSSProperties : {}}
+          className={origin ? "data-[state=open]:animate-zoom-in-from-row data-[state=closed]:animate-zoom-out-to-row pointer-events-auto" : ""}
+        >
           <LoadingOverlay isLoading={isSaving || isFormLoading} message={isSaving ? "Saving changes..." : "Loading form data..."} />
           <DialogHeader>
             <DialogTitle>Edit Transaction</DialogTitle>
@@ -221,6 +220,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                         options={filteredAccountOptions}
                         value={field.value}
                         onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
                         placeholder="Select an account"
                         searchPlaceholder="Search accounts..."
                         emptyPlaceholder="No account found."
@@ -239,6 +239,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                         options={filteredCombinedVendorOptions}
                         value={field.value}
                         onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
                         placeholder="Select a vendor or account"
                         searchPlaceholder="Search..."
                         emptyPlaceholder="No results found."
@@ -253,16 +254,36 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isTransfer}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {allCategories.filter(c => c.name !== 'Transfer').map(cat => <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        options={categoryOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select a category"
+                        searchPlaceholder="Search categories..."
+                        emptyPlaceholder="No category found."
+                        disabled={isTransfer}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sub_category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sub-category</FormLabel>
+                      <Combobox
+                        options={subCategoryOptions}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        onCreate={(value) => field.onChange(value)}
+                        placeholder="Select or create..."
+                        searchPlaceholder="Search sub-categories..."
+                        emptyPlaceholder="No sub-category found."
+                        disabled={isTransfer}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

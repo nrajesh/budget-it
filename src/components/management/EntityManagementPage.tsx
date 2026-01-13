@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious
 } from "@/components/ui/pagination";
-import { PlusCircle, Trash2, Loader2, RotateCcw, Upload, Download } from "lucide-react";
+import { PlusCircle, Loader2, RotateCcw, Upload, Download } from "lucide-react";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { EntityTable, ColumnDefinition } from "./EntityTable";
@@ -21,7 +21,6 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   columns: ColumnDefinition<T>[];
   AddEditDialogComponent?: React.FC<any>;
   isDeletable?: (item: T) => boolean;
-  isEditable?: (item: T) => boolean;
   customEditHandler?: (item: T) => void;
   isEditing?: (id: string) => boolean;
   isUpdating?: boolean;
@@ -51,6 +50,8 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   setIsDialogOpen: (isOpen: boolean) => void;
   selectedEntity: T | null;
   refetch?: () => void;
+  extraActions?: React.ReactNode;
+  customFilter?: (data: T[], searchTerm: string) => T[];
 }
 
 const EntityManagementPage = <T extends { id: string; name: string }>({
@@ -62,7 +63,6 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   columns,
   AddEditDialogComponent,
   isDeletable = () => true,
-  isEditable = () => true,
   customEditHandler,
   isEditing = () => false,
   isUpdating = false,
@@ -77,13 +77,18 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   handleSelectAll, handleRowSelect,
   handleImportClick, handleFileChange, handleExportClick,
   refetch,
+  extraActions,
+  customFilter,
 }: EntityManagementPageProps<T>) => {
 
   const filteredData = React.useMemo(() => {
+    if (customFilter) {
+      return customFilter(data, searchTerm);
+    }
     return data.filter((item) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [data, searchTerm]);
+  }, [data, searchTerm, customFilter]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -104,6 +109,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
               Delete ({numSelected})
             </Button>
           )}
+          {extraActions}
           <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
             {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import CSV
@@ -126,7 +132,12 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         <CardHeader>
           <CardTitle>Manage Your {title}</CardTitle>
           <div className="mt-4">
-            <Input placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
+            <Input
+              placeholder={customFilter ? "Search by name, currency, e.g. 'negative', '> 1000'..." : "Search by name..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
           </div>
         </CardHeader>
         <CardContent>

@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists } from '@/integrations/supabase/utils';
+import { ensurePayeeExists, checkIfPayeeIsAccount, getAccountCurrency, ensureCategoryExists, ensureSubCategoryExists } from '@/integrations/supabase/utils';
 import { Transaction } from '@/data/finance-data';
 import { QueryObserverResult } from '@tanstack/react-query';
 
@@ -18,18 +18,18 @@ interface TransactionsServiceProps {
 
 export const createTransactionsService = ({ refetchTransactions, invalidateAllData, convertBetweenCurrencies, userId }: TransactionsServiceProps) => {
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'currency' | 'created_at' | 'transfer_id' | 'user_id' | 'is_scheduled_origin'> & { date: string; currency?: string; receivingAmount?: number; recurrenceFrequency?: string; recurrenceEndDate?: string }) => {
     if (!userId) {
       showError("User not logged in. Cannot add transaction.");
       throw new Error("User not logged in.");
     }
-    const { receivingAmount, recurrenceFrequency, recurrenceEndDate, ...restOfTransaction } = transaction;
+    const { receivingAmount, recurrenceFrequency, recurrenceEndDate, currency, ...restOfTransaction } = transaction;
     const newDateISO = new Date(restOfTransaction.date).toISOString();
     const baseRemarks = restOfTransaction.remarks || "";
 
     try {
       await ensurePayeeExists(restOfTransaction.account, true);
-      const accountCurrency = await getAccountCurrency(restOfTransaction.account);
+      const accountCurrency = currency || await getAccountCurrency(restOfTransaction.account);
 
       const isTransfer = await checkIfPayeeIsAccount(restOfTransaction.vendor);
       if (isTransfer) {
@@ -38,7 +38,10 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         await ensurePayeeExists(restOfTransaction.vendor, false);
       }
 
-      await ensureCategoryExists(restOfTransaction.category, userId);
+      const categoryId = await ensureCategoryExists(restOfTransaction.category, userId);
+      if (categoryId && restOfTransaction.sub_category) {
+        await ensureSubCategoryExists(restOfTransaction.sub_category, categoryId, userId);
+      }
 
       let recurrenceId: string | null = null;
       if (recurrenceFrequency && recurrenceFrequency !== 'None') {
@@ -110,7 +113,11 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
       const isScheduledOrigin = updatedTransaction.is_scheduled_origin || false;
       const accountCurrency = updatedTransaction.currency || 'USD';
       const newDateISO = new Date(updatedTransaction.date).toISOString();
-      await ensureCategoryExists(updatedTransaction.category, userId);
+
+      const categoryId = await ensureCategoryExists(updatedTransaction.category, userId);
+      if (categoryId && updatedTransaction.sub_category) {
+        await ensureSubCategoryExists(updatedTransaction.sub_category, categoryId, userId);
+      }
 
       let { recurrence_id: recurrenceId, recurrence_frequency: recurrenceFrequency, recurrence_end_date: recurrenceEndDate } = updatedTransaction;
       if (recurrenceFrequency === "None") {
@@ -124,6 +131,7 @@ export const createTransactionsService = ({ refetchTransactions, invalidateAllDa
         account: updatedTransaction.account,
         vendor: updatedTransaction.vendor,
         category: updatedTransaction.category,
+        sub_category: updatedTransaction.sub_category, /* Ensure sub_category is updated */
         amount: updatedTransaction.amount,
         remarks: updatedTransaction.remarks,
         currency: accountCurrency,

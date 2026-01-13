@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Budget } from '@/data/finance-data';
@@ -50,12 +50,12 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
   }, [transactions, budgets, selectedCurrency, convertBetweenCurrencies]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Income and Expense Summary</CardTitle>
-        <CardDescription>A breakdown of your income and expenses by category.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-6 md:grid-cols-2">
+    <ThemedCard>
+      <ThemedCardHeader>
+        <ThemedCardTitle>Income and Expense Summary</ThemedCardTitle>
+        <ThemedCardDescription>A breakdown of your income and expenses by category.</ThemedCardDescription>
+      </ThemedCardHeader>
+      <ThemedCardContent className="grid gap-6 md:grid-cols-2">
         <div>
           <h3 className="text-lg font-semibold mb-2">Income</h3>
           <Table>
@@ -119,8 +119,8 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
             </TableBody>
           </Table>
         </div>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 };
 

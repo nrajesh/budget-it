@@ -22,12 +22,22 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+import { FinancialPulseDashboard } from "@/components/dashboard/FinancialPulseDashboard";
+
+import { useTheme } from "@/contexts/ThemeContext";
+
 const Index = () => {
   const { transactions } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { dashboardStyle } = useTheme();
 
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  if (dashboardStyle === 'financial-pulse') {
+    return <FinancialPulseDashboard />;
+  }
+
   // State to track the active bar in the Income vs. Expenses chart
   const [activeBar, setActiveBar] = useState<{ monthIndex: number; dataKey: 'income' | 'expenses' } | null>(null);
 
