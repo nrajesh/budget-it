@@ -1,0 +1,22 @@
+**Image Prompt for "Budget It!" Podcast Cover**
+
+**Subject:** A cinematic, high-contrast visualization of financial clarity cutting through chaos.
+
+**Scene Description:**
+The viewer is standing at the entrance of a dark, complex maze or a foggy crossroads made of stone walls, representing financial confusion and "lumpy" expenses. The lighting is dim, blue-grey, and misty.
+
+However, cutting through the center of this dark maze is a single, vibrant, illuminated path. This path is glowing with a warm, golden-emerald light (representing the "Money GPS").
+
+At the far end of this illuminated path, in the distance, is a brilliant source of light—a glowing "pot of gold" or a radiant golden sunrise breaking through the tunnel, symbolizing financial freedom and peace of mind.
+
+**Style & Mood:**
+- **Style:** 3D render, isometric or low-angle perspective, clean modern aesthetics mixed with a slight fantasy/adventure vibe.
+- **Lighting:** Volumetric lighting, glowing path effects, deep shadows in the maze vs. bright light on the path.
+- **Color Palette:** Dark Slate/Charcoal (Background/Maze) vs. Emerald Green & Gold (The Path/Goal).
+
+**Overlay Text (for reference, can be added post-generation):**
+- Main Title: "BUDGET IT! PODCAST"
+- Subtitle: "Clarity, Control, & Peace of Mind"
+
+**Keywords:**
+Financial freedom, glowing path, maze, light at the end of the tunnel, money GPS, gold, emerald, clarity, cinematic, 8k resolution, isometric, minimal yet detailed.

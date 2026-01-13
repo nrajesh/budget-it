@@ -26,6 +26,7 @@ const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions")
 const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
+const PodcastCover = lazy(() => import("@/components/PodcastCover"));
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
               <Suspense fallback={<LoadingSpinner />}>
                 <Routes>
                   <Route path="/login" element={<Login />} />
+                  <Route path="/podcast-cover" element={<PodcastCover />} />
                   {/* Protected routes */}
                   <Route element={<ProtectedRoute />}>
                     <Route path="/" element={<Layout />}>
