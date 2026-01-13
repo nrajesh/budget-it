@@ -1,11 +1,7 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { useQuery } from '@tanstack/react-query';
-import { ScheduledTransaction, createScheduledTransactionsService, generateFutureTransactions } from '@/services/scheduledTransactionsService';
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { filterTransactions } from "@/utils/nlp-search";
 
 interface Option {
@@ -36,27 +32,15 @@ export const useTransactionData = ({
   availableVendorOptions,
   excludeTransfers = false,
 }: UseTransactionDataProps) => {
-  const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
-  const { user, isLoadingUser } = useUser();
-  const { convertBetweenCurrencies } = useCurrency();
+  const { transactions } = useTransactions();
 
-  // Fetch scheduled transactions using react-query
-  const { fetchScheduledTransactions } = createScheduledTransactionsService({
-    refetchTransactions: refetchMainTransactions,
-    userId: user?.id,
-    convertBetweenCurrencies,
-  });
-
-  const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({
-    queryKey: ['scheduledTransactions', user?.id],
-    queryFn: fetchScheduledTransactions,
-    enabled: !!user?.id && !isLoadingUser,
-  });
+  // Stubbed for local migration
+  const scheduledTransactions: any[] = [];
 
   const combinedTransactions = React.useMemo(() => {
-    const futureTransactions = generateFutureTransactions(scheduledTransactions, accountCurrencyMap);
-    return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+    // No future transactions generation for now
+    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = combinedTransactions;

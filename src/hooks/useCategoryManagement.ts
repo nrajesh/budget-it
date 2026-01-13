@@ -6,19 +6,21 @@ import Papa from "papaparse";
 import { showError, showSuccess } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@/contexts/UserContext";
+import { useDataProvider } from '@/context/DataProviderContext';
+import { db } from '@/lib/dexieDB';
 
 export const useCategoryManagement = () => {
   const { user } = useUser();
   const { categories, isLoadingCategories, refetchCategories, invalidateAllData } = useTransactions();
   const navigate = useNavigate();
+  const dataProvider = useDataProvider();
 
   const managementProps = useEntityManagement<Category>({
     entityName: "Category",
     entityNamePlural: "categories",
     queryKey: ['categories', user?.id || ''],
-    deleteRpcFn: 'delete_categories_batch', // This RPC needs to be created or logic adjusted
+    deleteRpcFn: 'delete_categories_batch', // Ignored in local version as generic hook likely needs update too
     isDeletable: (item) => item.name !== 'Others',
     onSuccess: invalidateAllData,
   });
@@ -26,9 +28,8 @@ export const useCategoryManagement = () => {
   // Specific mutations for categories that don't fit the generic RPC model
   const addCategoryMutation = useMutation({
     mutationFn: async (newCategoryName: string) => {
-      if (!user) throw new Error("User not logged in.");
-      const { error } = await supabase.from('categories').insert({ name: newCategoryName.trim(), user_id: user.id });
-      if (error) throw error;
+      if (!user?.id) throw new Error("User not logged in.");
+      await dataProvider.ensureCategoryExists(newCategoryName.trim(), user.id);
     },
     onSuccess: async () => {
       showSuccess("Category added successfully!");
@@ -39,10 +40,8 @@ export const useCategoryManagement = () => {
 
   const batchUpsertCategoriesMutation = useMutation({
     mutationFn: async (categoryNames: string[]) => {
-      if (!user) throw new Error("User not logged in.");
-      const categoriesToInsert = categoryNames.map((name: string) => ({ name: name.trim(), user_id: user.id }));
-      const { error } = await supabase.from('categories').upsert(categoriesToInsert, { onConflict: 'name', ignoreDuplicates: true });
-      if (error) throw error;
+      if (!user?.id) throw new Error("User not logged in.");
+      await Promise.all(categoryNames.map(name => dataProvider.ensureCategoryExists(name.trim(), user.id)));
     },
     onSuccess: async (_data, variables) => {
       showSuccess(`${variables.length} categories imported successfully!`);
@@ -55,19 +54,11 @@ export const useCategoryManagement = () => {
 
   const addSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, name }: { categoryId: string; name: string }) => {
-      if (!user) throw new Error("User not logged in.");
-      const { error } = await supabase
-        .from('sub_categories')
-        .insert({
-          category_id: categoryId,
-          name: name.trim(),
-          user_id: user.id
-        });
-      if (error) throw error;
+      if (!user?.id) throw new Error("User not logged in.");
+      await dataProvider.ensureSubCategoryExists(name.trim(), categoryId, user.id);
     },
     onSuccess: async () => {
       showSuccess("Sub-category added successfully!");
-      // We need to invalidate sub-categories to update the list
       await invalidateAllData();
     },
     onError: (error: any) => showError(`Failed to add sub-category: ${error.message}`),
@@ -75,40 +66,16 @@ export const useCategoryManagement = () => {
 
   const renameSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, categoryName, oldSubCategoryName, newSubCategoryName }: { categoryId: string; categoryName: string; oldSubCategoryName: string; newSubCategoryName: string }) => {
-      if (!user) throw new Error("User not logged in.");
+      if (!user?.id) throw new Error("User not logged in.");
 
-      // Update DB if exists (it might not if it was a legacy sub-category)
-      // We accept error if row doesn't exist (handled by filter or separate UPSERT logic? 
-      // Simpler: Try update, if 0 rows modified, Insert?
-      // Actually, if we are renaming, we should ensure the new name exists in DB.
-      // Strategy: 
-      // 1. Update DB entry if exists.
-      // 2. Update Transactions.
+      // Pragmatic fix: use db directly for complex updates not in provider interface yet
+      await db.sub_categories
+        .where({ category_id: categoryId, name: oldSubCategoryName })
+        .modify({ name: newSubCategoryName.trim() });
 
-      // 1. Update DB
-      const { error: dbError } = await supabase
-        .from('sub_categories')
-        .update({ name: newSubCategoryName.trim() })
-        .eq('user_id', user.id)
-        .eq('category_id', categoryId)
-        .eq('name', oldSubCategoryName);
-
-      // If dbError, it might be unique constraint or something.
-      // If just no row found, that's fine (legacy sub-category), we should Insert the new one?
-      // Or maybe we leave it as legacy?
-      // Better UX: Upsert the NEW name linked to this category IF we want to persist it.
-      // But for now, let's just Try Update.
-      if (dbError) throw dbError;
-
-      // 2. Update Transactions
-      const { error } = await supabase
-        .from('transactions')
-        .update({ sub_category: newSubCategoryName.trim() })
-        .eq('user_id', user.id)
-        .eq('category', categoryName)
-        .eq('sub_category', oldSubCategoryName);
-
-      if (error) throw error;
+      await db.transactions
+        .where({ category: categoryName, sub_category: oldSubCategoryName })
+        .modify({ sub_category: newSubCategoryName.trim() });
     },
     onSuccess: async () => {
       showSuccess("Sub-category renamed successfully!");
@@ -119,27 +86,16 @@ export const useCategoryManagement = () => {
 
   const deleteSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, categoryName, subCategoryName }: { categoryId: string; categoryName: string; subCategoryName: string }) => {
-      if (!user) throw new Error("User not logged in.");
+      if (!user?.id) throw new Error("User not logged in.");
 
-      // 1. Delete from DB
-      const { error: dbError } = await supabase
-        .from('sub_categories')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('category_id', categoryId)
-        .eq('name', subCategoryName);
+      // Pragmatic fix: use db directly
+       await db.sub_categories
+        .where({ category_id: categoryId, name: subCategoryName })
+        .delete();
 
-      if (dbError) throw dbError;
-
-      // 2. Update Transactions (set to null)
-      const { error } = await supabase
-        .from('transactions')
-        .update({ sub_category: null })
-        .eq('user_id', user.id)
-        .eq('category', categoryName)
-        .eq('sub_category', subCategoryName);
-
-      if (error) throw error;
+       await db.transactions
+        .where({ category: categoryName, sub_category: subCategoryName })
+        .modify({ sub_category: null });
     },
     onSuccess: async () => {
       showSuccess("Sub-category deleted successfully!");

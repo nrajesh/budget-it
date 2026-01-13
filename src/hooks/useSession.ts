@@ -1,27 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+
+// Mock Session interface to satisfy TS consumers
+export interface Session {
+  user: {
+    id: string;
+    email?: string;
+    user_metadata?: {
+        avatar_url?: string;
+        full_name?: string;
+    }
+  }
+}
 
 export const useSession = () => {
-  const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    // Listen for changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [session, setSession] = useState<Session | null>({
+      user: {
+          id: "local-user",
+          email: "local@user.com",
+          user_metadata: {
+              full_name: "Local User"
+          }
+      }
+  });
 
   return session;
 };

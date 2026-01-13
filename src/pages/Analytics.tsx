@@ -2,12 +2,8 @@ import * as React from "react";
 import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
-import { ScheduledTransactionsTable } from "@/components/ScheduledTransactionsTable";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
-import { generateFutureTransactions, createScheduledTransactionsService } from "@/services/scheduledTransactionsService";
 import { slugify, cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { addDays } from "date-fns";
@@ -15,40 +11,17 @@ import { useTransactionPairing } from "@/hooks/transactions/useTransactionPairin
 import { useTheme } from "@/contexts/ThemeContext";
 
 const Analytics = () => {
-  const { transactions, categories: allCategories, subCategories: allSubCategories, accountCurrencyMap, refetchTransactions } = useTransactions();
-  const { user } = useUser();
-  const { convertBetweenCurrencies } = useCurrency();
+  const { transactions, categories: allCategories, subCategories: allSubCategories, accountCurrencyMap } = useTransactions();
   const { isFinancialPulse } = useTheme();
-  const [scheduledTransactions, setScheduledTransactions] = React.useState<any[]>([]);
 
-  // Memoize the service creation
-  const scheduledTransactionsService = React.useMemo(() =>
-    createScheduledTransactionsService({
-      refetchTransactions,
-      userId: user?.id,
-      convertBetweenCurrencies
-    }),
-    [refetchTransactions, user?.id, convertBetweenCurrencies]);
-
-  React.useEffect(() => {
-    const loadScheduled = async () => {
-      try {
-        const data = await scheduledTransactionsService.fetchScheduledTransactions();
-        setScheduledTransactions(data);
-      } catch (error) {
-        console.error("Failed to fetch scheduled transactions", error);
-      }
-    };
-    loadScheduled();
-  }, [scheduledTransactionsService]);
+  // Stubbed scheduled transactions for now
+  const scheduledTransactions: any[] = [];
 
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
 
-  // Filter transactions to exclude future-dated ones and apply date range
-  // This logic is moved/kept but we will also filter projected transactions similarly
   const currentTransactions = React.useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -66,29 +39,12 @@ const Analytics = () => {
     });
   }, [transactions, dateRange]);
 
-  const projectedTransactions = React.useMemo(() => {
-    const allProjected = generateFutureTransactions(scheduledTransactions, accountCurrencyMap);
-
-    // Filter projected transactions based on date range
-    if (!dateRange?.to && !dateRange?.from) return allProjected;
-    // Actually we should filter by FROM as well if set?
-    // "Scheduled" implies future usually, but if date range is future-only, we want correct subset.
-
-    return allProjected.filter(t => {
-      const tDate = new Date(t.date);
-
-      const isInRange =
-        (!dateRange?.from || tDate >= dateRange.from) &&
-        (!dateRange?.to || tDate <= dateRange.to);
-
-      return isInRange;
-    });
-  }, [scheduledTransactions, accountCurrencyMap, dateRange]);
+  // Projected transactions stubbed
+  const projectedTransactions: any[] = [];
 
   const [searchTerm, setSearchTerm] = React.useState<string>("");
   const [excludeTransfers, setExcludeTransfers] = React.useState<boolean>(false);
 
-  // Filter transactions to exclude future-dated ones and apply date range
   const { pairedTransactionIds } = useTransactionPairing(currentTransactions);
 
   const availableAccounts = React.useMemo(() => {
@@ -118,7 +74,6 @@ const Analytics = () => {
     }));
   }, [allCategories]);
 
-  // Construct Category Tree Data
   const categoryTreeData = React.useMemo(() => {
     return allCategories.map(cat => ({
       id: cat.id,
@@ -135,22 +90,17 @@ const Analytics = () => {
     })).sort((a, b) => a.name.localeCompare(b.name));
   }, [allCategories, allSubCategories]);
 
-  // ...
-
   const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(() => {
-    // Calculate transaction counts per account
     const accountCounts = new Map<string, number>();
     currentTransactions.forEach(t => {
       accountCounts.set(t.account, (accountCounts.get(t.account) || 0) + 1);
     });
 
-    // Sort accounts by frequency descending
     const sortedAccounts = availableAccounts.map(acc => ({
       ...acc,
       count: accountCounts.get(acc.label) || 0
     })).sort((a, b) => b.count - a.count);
 
-    // Pick top 4 or all if less than 4
     return sortedAccounts.slice(0, 4).map(acc => acc.value);
   });
 
@@ -158,39 +108,23 @@ const Analytics = () => {
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
     availableCategories.map(cat => cat.value)
   );
-  // Initialize to empty on first load or all? Usually empty means 'all implicitly' or 'none'. 
-  // Given current logic for categories is "if empty, return all", let's replicate that or manage 'all selected'.
-  // But wait, the previous logic explicitly initialized with ALL.
-  // "availableCategories.map(cat => cat.value)"
-  // So let's initialize sub-categories with ALL too? Or empty?
-  // If we select a category, we usually select all its sub-cats.
-  // So if all categories are selected, all sub-cats should be selected.
+
   const [selectedSubCategories, setSelectedSubCategories] = React.useState<string[]>([]);
 
-  // Consolidated effect to initialize/sync categories and sub-categories
   React.useEffect(() => {
-    // 1. Initialize Categories
     setSelectedCategories(prev => {
       const currentCategoryValues = availableCategories.map(cat => cat.value);
-      // If none selected (initial) or if the count matches available (likely "select all" state), ensure all are selected
       if (prev.length === 0 || prev.length === currentCategoryValues.length) {
         return currentCategoryValues;
       }
-      // Otherwise, keep only those that are still available
       return prev.filter(val => currentCategoryValues.includes(val));
     });
 
-    // 2. Initialize Sub-categories
     setSelectedSubCategories(prev => {
       const currentSubCategoryValues = allSubCategories.map(s => slugify(s.name));
-
-      // If we are in the "select all" state (which is indistinguishable from initial empty state currently, 
-      // but usually desired on load), select all.
-      // We check if prev is empty.
       if (prev.length === 0 && currentSubCategoryValues.length > 0) {
         return currentSubCategoryValues;
       }
-
       return prev;
     });
   }, [availableCategories, allSubCategories]);
@@ -205,7 +139,6 @@ const Analytics = () => {
       const currentAccountValues = availableAccounts.map(acc => acc.value);
 
       if (prev.length === 0 && currentAccountValues.length > 0) {
-        // Calculate top 4
         const accountCounts = new Map<string, number>();
         currentTransactions.forEach(t => {
           accountCounts.set(t.account, (accountCounts.get(t.account) || 0) + 1);
@@ -232,18 +165,7 @@ const Analytics = () => {
     });
   }, [availableVendors]);
 
-  React.useEffect(() => {
-    setSelectedVendors(prev => {
-      const currentVendorValues = availableVendors.map(v => v.value);
-      if (prev.length === 0 || prev.length === currentVendorValues.length) {
-        return currentVendorValues;
-      }
-      return prev.filter(val => currentVendorValues.includes(val));
-    });
-  }, [availableVendors]);
 
-
-  // Common filtering function reusable for both recent and scheduled
   const filterTransactionData = React.useCallback((data: any[]) => {
     let filtered = data;
 
@@ -283,14 +205,6 @@ const Analytics = () => {
     }
 
     if (excludeTransfers) {
-      // For Scheduled, simple category check since pairing might not exist yet?
-      // Or assume 'Transfer' category. 
-      // Current pairing logic works on IDs. Projected ones have IDs? 
-      // generateFutureTransactions usually gives pseudo IDs.
-      // So using pairedTransactionIds set on scheduled might not work unless we pair them too.
-      // For now, let's assume strict 'Transfer' category or if ID matches known pair (for recent).
-
-      // Since function is generic, we check if ID is in list OR category is Transfer (fallback)
       filtered = filtered.filter(t => !pairedTransactionIds.has(t.id) && t.category !== 'Transfer');
     }
 
@@ -312,7 +226,6 @@ const Analytics = () => {
     });
     setSelectedAccounts(availableAccounts.map(acc => acc.value));
     setSelectedCategories(availableCategories.map(cat => cat.value));
-    // Reset subs to all
     setSelectedSubCategories(allSubCategories.map(s => slugify(s.name)));
     setSelectedVendors(availableVendors.map(v => v.value));
     setSearchTerm("");
@@ -340,7 +253,6 @@ const Analytics = () => {
         selectedAccounts={selectedAccounts}
         setSelectedAccounts={setSelectedAccounts}
 
-        // Pass Tree Data
         categoryTreeData={categoryTreeData}
         selectedCategories={selectedCategories}
         setSelectedCategories={setSelectedCategories}
@@ -372,8 +284,6 @@ const Analytics = () => {
       {filteredTransactions.length > 0 && (
         <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories.map(slugify)} />
       )}
-
-      <ScheduledTransactionsTable transactions={filteredScheduledTransactions} />
     </div>
   );
 };

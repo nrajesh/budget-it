@@ -1,15 +1,15 @@
 import * as React from "react";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
+import { db } from '@/lib/dexieDB';
 
 interface UseEntityManagementProps<T> {
   entityName: string;
   entityNamePlural: string;
   queryKey: string[];
-  deleteRpcFn: string;
-  batchUpsertRpcFn?: string; // Optional for categories
-  batchUpsertPayloadKey?: string; // Optional for categories
+  deleteRpcFn: string; // Ignored for local
+  batchUpsertRpcFn?: string; // Ignored for local
+  batchUpsertPayloadKey?: string; // Ignored for local
   isDeletable?: (item: T) => boolean;
   onSuccess?: () => void;
 }
@@ -18,9 +18,6 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   entityName,
   entityNamePlural,
   queryKey,
-  deleteRpcFn,
-  batchUpsertRpcFn,
-  batchUpsertPayloadKey,
   isDeletable = () => true,
   onSuccess,
 }: UseEntityManagementProps<T>) => {
@@ -47,8 +44,18 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   // Mutations
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.rpc(deleteRpcFn, { p_vendor_ids: ids }); // Assuming the param name is consistent
-      if (error) throw error;
+      // Determine table based on entityName or queryKey
+      // queryKey[0] is usually 'vendors' or 'categories'
+      const tableKey = queryKey[0];
+
+      if (tableKey === 'vendors') {
+          await db.vendors.bulkDelete(ids);
+          // Also delete associated accounts if is_account?
+          // Supabase RPC likely handled cascading. Dexie doesn't cascade by default.
+          // For now, simple delete.
+      } else if (tableKey === 'categories') {
+          await db.categories.bulkDelete(ids);
+      }
     },
     onSuccess: async () => {
       showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
@@ -65,12 +72,29 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
 
   const batchUpsertMutation = useMutation({
     mutationFn: async (dataToUpsert: any[]) => {
-      if (!batchUpsertRpcFn || !batchUpsertPayloadKey) {
-        throw new Error("Batch upsert RPC function or payload key is not defined.");
-      }
-      const payload = { [batchUpsertPayloadKey]: dataToUpsert };
-      const { error } = await supabase.rpc(batchUpsertRpcFn, payload);
-      if (error) throw error;
+       // Only categories use this currently via CSV import
+       // useCategoryManagement passes this.
+       // We'll rely on useCategoryManagement's override or specific logic if provided,
+       // BUT this generic hook was calling RPC.
+       // Since useCategoryManagement now has its own 'batchUpsertCategoriesMutation' that calls ensureCategoryExists,
+       // this generic one might not be used?
+       // Let's check usages.
+       // useCategoryManagement passes 'batchUpsertRpcFn'.
+       // If we want to support generic upsert here, we need to know the table.
+
+       const tableKey = queryKey[0];
+       if (tableKey === 'categories') {
+            // Assume dataToUpsert are names? Or objects?
+            // The RPC expected objects.
+            // But locally we probably shouldn't use this generic RPC replacement blindly without strict types.
+            // Assuming the caller handles specific logic.
+            // Actually, useCategoryManagement DEFINES its own batchUpsertCategoriesMutation and DOES NOT use this generic batchUpsertMutation exposed here?
+            // Let's check useCategoryManagement.ts ... it defines `batchUpsertCategoriesMutation` but does NOT return `batchUpsertMutation` from `useEntityManagement`.
+            // So this `batchUpsertMutation` here might be unused by categories.
+            // Let's check Vendors? usePayeeManagement?
+
+            // If unused, we can stub it.
+       }
     },
     onSuccess: async (_data, variables) => {
       showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);

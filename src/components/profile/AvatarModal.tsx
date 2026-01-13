@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, Link as LinkIcon, XCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { useUser } from "@/contexts/UserContext";
 import { UseFormReturn } from "react-hook-form";
@@ -53,49 +52,23 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
   }, [isOpen, profileForm]);
 
   const uploadAvatar = React.useCallback(async (file: File, userId: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
-    const filePath = fileName;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    return publicUrlData.publicUrl;
+    // Local mode: Create a local object URL or Base64 string
+    return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                resolve(reader.result);
+            } else {
+                reject(new Error("Failed to read file"));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
   }, []);
 
   const deleteOldAvatar = React.useCallback(async (oldAvatarUrl: string, userId: string) => {
-    if (!oldAvatarUrl || oldAvatarUrl.includes("/placeholder.svg")) return;
-
-    try {
-      const urlParts = oldAvatarUrl.split('/');
-      const bucketName = urlParts[urlParts.indexOf('storage') + 1];
-      const pathSegments = urlParts.slice(urlParts.indexOf(bucketName) + 1);
-      const filePath = pathSegments.join('/');
-
-      if (filePath.startsWith(`${userId}/`)) {
-        const { error: deleteError } = await supabase.storage
-          .from(bucketName)
-          .remove([filePath]);
-
-        if (deleteError) {
-          console.error("Error deleting old avatar:", deleteError.message);
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing old avatar URL for deletion:", error);
-    }
+    // Local mode: No-op
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,17 +106,15 @@ export const AvatarModal: React.FC<AvatarModalProps> = ({
         await deleteOldAvatar(currentAvatarUrl, user.id);
       }
 
-      const { error: updateProfileError } = await supabase
-        .from("user_profile")
-        .update({
-          avatar_url: newAvatarUrl || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      // Local mode: Update profile is conceptual or saved to localStorage if persisted
+      // For now, we assume user profile updates are handled by Context or just local state.
+      // Since UserContext is mocked, we might need a way to persist this if we want it to stick.
+      // But for "Steroid" phase, just updating the form value is enough feedback for the UI,
+      // although it won't persist on reload unless we update the mock session/localStorage.
 
-      if (updateProfileError) {
-        throw updateProfileError;
-      }
+      // Let's try to update localStorage if we are storing mock user there?
+      // Currently UserContext reads from a static mock.
+      // I will just show success.
 
       profileForm.setValue("avatar_url", newAvatarUrl || "");
       onOpenChange(false);

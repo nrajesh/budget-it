@@ -3,28 +3,24 @@ import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Budget } from '@/data/finance-data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
+import { useDataProvider } from '@/context/DataProviderContext';
 
 export const BudgetHealthWidget = () => {
   const { user } = useUser();
   const { transactions } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const dataProvider = useDataProvider();
 
   const { data: budgets = [], isLoading } = useQuery<Budget[], Error>({
     queryKey: ['budgets', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*, categories(name)')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-      if (error) throw error;
-      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+      const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+      return budgets;
     },
     enabled: !!user,
   });

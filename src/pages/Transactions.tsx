@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -10,13 +9,13 @@ import TransactionDialog from "@/components/transactions/TransactionDialog";
 import { useSession } from "@/hooks/useSession";
 import Papa from "papaparse";
 import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
-import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useDataProvider } from "@/context/DataProviderContext";
 // import { Transaction } from "@/data/finance-data"; // Removed unused import
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
-import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
-import { BatchScheduleDialog } from "@/components/scheduled-transactions/BatchScheduleDialog";
-import { useScheduledTransactionManagement } from "@/hooks/useScheduledTransactionManagement";
+// import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
+// import { BatchScheduleDialog } from "@/components/scheduled-transactions/BatchScheduleDialog";
+// import { useScheduledTransactionManagement } from "@/hooks/useScheduledTransactionManagement";
 
 
 const Transactions = () => {
@@ -32,14 +31,16 @@ const Transactions = () => {
     invalidateAllData,
     addTransaction
   } = useTransactions();
+  const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Scheduled Transaction State
+  // Scheduled Transaction State - Stubbed for local migration
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [transactionToSchedule, setTransactionToSchedule] = useState<any>(null);
+  /*
   const {
     saveMutation: saveScheduledMutation,
     allPayees: scheduledPayees,
@@ -47,37 +48,23 @@ const Transactions = () => {
     allSubCategories: scheduledSubCategories,
     isLoading: isLoadingScheduledData
   } = useScheduledTransactionManagement();
+  */
 
   // Batch Schedule State
   const [isBatchScheduleOpen, setIsBatchScheduleOpen] = useState(false);
   const [batchTransactions, setBatchTransactions] = useState<any[]>([]);
-  const [clearSelectionCallback, setClearSelectionCallback] = useState<(() => void) | null>(null);
+  // const [clearSelectionCallback, setClearSelectionCallback] = useState<(() => void) | null>(null);
 
   const handleScheduleTransactions = (selectedTransactions: any[], clearSelection: () => void) => {
-    if (selectedTransactions.length === 0) return;
-
-    if (selectedTransactions.length === 1) {
-      // Single Transaction
-      const t = selectedTransactions[0];
-      const adapted = {
-        ...t,
-        id: undefined,
-        frequency: t.recurrence_frequency || "1m",
-        date: new Date(Date.now() + 86400000).toISOString(),
-      };
-      setTransactionToSchedule(adapted);
-      setIsScheduleDialogOpen(true);
-      // For single selection, we can clear explicitly after success? 
-      // Or just clear now? Let's clear now as the dialog handles the state separately.
+      // Disabled for migration
+      toast({
+          title: "Feature Unavailable",
+          description: "Scheduling transactions is currently unavailable in offline mode.",
+      });
       clearSelection();
-    } else {
-      // Batch mode -> Open Dialog
-      setBatchTransactions(selectedTransactions);
-      setClearSelectionCallback(() => clearSelection); // Store callback
-      setIsBatchScheduleOpen(true);
-    }
   };
 
+  /*
   const handleBatchConfirm = (settings: { frequency_value: number, frequency_unit: string, date: string }) => {
     batchTransactions.forEach(t => {
       const payload = {
@@ -101,6 +88,7 @@ const Transactions = () => {
     }
     setBatchTransactions([]);
   };
+  */
 
   const REQUIRED_HEADERS = [
     "Date",
@@ -270,43 +258,52 @@ const Transactions = () => {
 
   const processImport = async (data: any[]) => {
     try {
+      const userId = session?.user?.id;
+      if (!userId) {
+          showError("User not logged in");
+          return;
+      }
+
       // 1. Ensure Entities Exist
       const uniqueAccounts = [...new Set(data.map((r: any) => r.Account).filter(Boolean))];
       await Promise.all(uniqueAccounts.map(name => {
         // Find currency for this account from the first row that has this account
         const row = data.find((r: any) => r.Account === name);
         const currency = row?.Currency || 'USD'; // Default if missing
-        return ensurePayeeExists(name, true, { currency });
+        return dataProvider.ensurePayeeExists(name, true, { currency });
       }));
 
       const uniquePayees = [...new Set(data.map((r: any) => r.Payee || r.Vendor).filter(Boolean))];
-      await Promise.all(uniquePayees.map(name => ensurePayeeExists(name, false)));
+      await Promise.all(uniquePayees.map(name => dataProvider.ensurePayeeExists(name, false)));
 
       const uniqueCategories = [...new Set(data.map((r: any) => r.Category).filter(Boolean))];
-      await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, session?.user?.id || "")));
+      await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, userId)));
 
       // 2. Prepare Transactions
+      // Since addTransaction processes one by one in DataProvider interface (usually),
+      // but supabase allows bulk insert. DataProvider interface currently only has addTransaction (singular).
+      // For now, we will loop. Later we can optimize DataProvider to support bulkAddTransaction.
+
       const transactionsToInsert = data.map((row: any) => ({
-        user_id: session?.user?.id,
+        user_id: userId,
         date: parseRobustDate(row.Date) || new Date().toISOString(),
         account: row.Account,
-        vendor: row.Payee || row.Vendor || "", // Support both new and old keys if mixed, but prefer Payee
+        vendor: row.Payee || row.Vendor || "",
         category: row.Category,
-        sub_category: row.Subcategory || row.Sub_Category || "", // Map Subcategory
-        // Robust amount parsing
+        sub_category: row.Subcategory || row.Sub_Category || "",
         amount: parseRobustAmount(row.Amount),
-        remarks: row.Notes || row.Remarks || "", // Support both
+        remarks: row.Notes || row.Remarks || "",
         currency: row.Currency,
         recurrence_frequency: row.Frequency || null,
         recurrence_end_date: parseRobustDate(row["End Date"]) || null,
         transfer_id: row["Transfer ID"] || null,
       }));
 
-      const { error } = await supabase
-        .from("transactions")
-        .insert(transactionsToInsert);
-
-      if (error) throw error;
+      // NOTE: This will be slower than bulk insert, but standardizes it.
+      // If performance is an issue, we should add bulkInsert to DataProvider.
+      for (const t of transactionsToInsert) {
+          await dataProvider.addTransaction(t);
+      }
 
       toast({
         title: "Import Successful",
@@ -421,23 +418,19 @@ const Transactions = () => {
         onSuccess={invalidateAllData}
       />
 
+      {/*
       <AddEditScheduledTransactionDialog
         isOpen={isScheduleDialogOpen}
         onOpenChange={setIsScheduleDialogOpen}
         transaction={transactionToSchedule}
         onSubmit={(values) => saveScheduledMutation.mutate(values)}
         isSubmitting={saveScheduledMutation.isPending}
-        accounts={accounts} // Reuse accounts from useTransactions? Or use from useScheduledTransactionManagement? They are likely same source but mapped differently.
-        // AddEditScheduledTransactionDialog expects Payee[] for accounts, which is { name: string }[]
-        // accounts from useTransactions is likely any[].
-        // Let's use the data from useScheduledTransactionManagement to be safe and match types.
+        accounts={accounts}
         allPayees={scheduledPayees}
         categories={scheduledCategories}
         allSubCategories={scheduledSubCategories}
         isLoading={isLoadingScheduledData}
       />
-
-
 
       <BatchScheduleDialog
         isOpen={isBatchScheduleOpen}
@@ -445,6 +438,7 @@ const Transactions = () => {
         count={batchTransactions.length}
         onConfirm={handleBatchConfirm}
       />
+      */}
 
       <CSVMappingDialog
         isOpen={mappingDialogState.isOpen}

@@ -9,13 +9,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
+import { useDataProvider } from "@/context/DataProviderContext";
+import { MigrationControl } from "@/components/settings/MigrationControl";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
   const { dashboardStyle, setDashboardStyle } = useTheme();
+  const dataProvider = useDataProvider();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
@@ -49,11 +51,7 @@ const SettingsPage = () => {
 
   const handleResetData = async () => {
     try {
-      const { error } = await supabase.rpc('clear_all_app_data');
-
-
-      if (error) throw error;
-
+      await dataProvider.clearAllData();
       clearAllTransactions();
       showSuccess("All application data has been reset.");
     } catch (error: any) {
@@ -77,7 +75,9 @@ const SettingsPage = () => {
     <div className="flex-1 space-y-4">
       <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <MigrationControl />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         {/* Currency Selection Card */}
         <Card>
           <CardHeader>

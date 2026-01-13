@@ -7,8 +7,8 @@ import { CartesianGrid, Line, XAxis, YAxis, BarChart, Bar, Cell, Area, ComposedC
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY, slugify } from "@/lib/utils";
+import { useTransactions } from "@/contexts/TransactionsContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,27 +38,18 @@ type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 export function BalanceOverTimeChart({ transactions, projectedTransactions = [], dateRange }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { isFinancialPulse } = useTheme();
+  const { accounts } = useTransactions();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>('line');
 
   React.useEffect(() => {
-    const fetchAccountNames = async () => {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('name')
-        .eq('is_account', true);
-
-      if (error) {
-        console.error("Error fetching account names for chart:", error.message);
-        setAllDefinedAccounts([]);
-      } else {
-        setAllDefinedAccounts(data.map(item => item.name));
-      }
-    };
-    fetchAccountNames();
-  }, []);
+    // Use accounts from context instead of Supabase
+    if (accounts) {
+        setAllDefinedAccounts(accounts.map(a => a.name));
+    }
+  }, [accounts]);
 
   const accountsToDisplay = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();

@@ -32,11 +32,10 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { Trash2, Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
-/* Removed unused variables */
-import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import LoadingOverlay from "./LoadingOverlay";
+import { useDataProvider } from '@/context/DataProviderContext';
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -76,6 +75,7 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
 }) => {
   const { updateTransaction, deleteTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
   const { currencySymbols } = useCurrency();
+  const dataProvider = useDataProvider();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
   const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
   const [isSaving, setIsSaving] = React.useState(false);
@@ -115,14 +115,14 @@ const EditTransactionDialog: React.FC<EditTransactionDialogProps> = ({
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
+        const currencyCode = accountCurrencyMap.get(accountValue) || await dataProvider.getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap]);
+  }, [accountValue, currencySymbols, isOpen, accountCurrencyMap, dataProvider]);
 
 
 

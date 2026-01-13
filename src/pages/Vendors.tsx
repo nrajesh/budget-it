@@ -7,7 +7,6 @@ import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import VendorReconciliationDialog from "@/components/management/VendorReconciliationDialog";
 import { RefreshCw } from "lucide-react";
@@ -23,8 +22,9 @@ const VendorsPage = () => {
 
   const updateVendorNameMutation = useMutation({
     mutationFn: async ({ vendorId, newName }: { vendorId: string; newName: string }) => {
-      const { error } = await supabase.rpc('update_vendor_name', { p_vendor_id: vendorId, p_new_name: newName });
-      if (error) throw error;
+        // Similar pragmatic fix as Categories.tsx
+        const { db } = await import('@/lib/dexieDB');
+        await db.vendors.update(vendorId, { name: newName.trim() });
     },
     onSuccess: async () => {
       showSuccess("Vendor name updated successfully!");

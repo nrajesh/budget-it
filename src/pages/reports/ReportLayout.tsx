@@ -12,8 +12,8 @@ import autoTable from 'jspdf-autotable';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { Budget } from '@/data/finance-data';
-import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils'; // Make sure to import cn
+import { useDataProvider } from '@/context/DataProviderContext';
 
 interface ReportLayoutProps {
   title: string;
@@ -36,17 +36,18 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     excludeTransfers: filterProps.excludeTransfers,
   });
   const { isFinancialPulse } = useTheme();
+  const dataProvider = useDataProvider();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
     queryKey: ['budgets', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*, categories(name)')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+      // Use data provider to fetch budgets. DataProvider returns budgets with category_name usually.
+      // But getBudgetsWithSpending might be overkill if we just want basic list?
+      // Actually, ReportLayout just wants the list to calculate things maybe.
+      // Let's use getBudgetsWithSpending as it is the main getter we implemented.
+      const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+      return budgets;
     },
     enabled: !!user,
   });

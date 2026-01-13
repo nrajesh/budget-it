@@ -16,9 +16,9 @@ import { Combobox } from "@/components/ui/combobox";
 import { useUser } from "@/contexts/UserContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
+import { useDataProvider } from '@/context/DataProviderContext';
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
@@ -35,6 +35,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
   const { categories, subCategories } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
+  const dataProvider = useDataProvider();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const formSchema = React.useMemo(() => z.object({
@@ -127,26 +128,31 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     setIsSubmitting(true);
 
     const frequency = `${values.frequency_value}${values.frequency_unit}`;
-    const dbPayload = {
+    const selectedCategory = categories.find(c => c.id === values.category_id);
+    // Note: subCategories in context might be empty if we didn't implement fetching them yet,
+    // but the UI relies on them. If they are empty, this name lookup fails gracefully.
+    const subCatName = values.sub_category_id ? subCategories.find(s => s.id === values.sub_category_id)?.name : null;
+
+    const dbPayload: any = {
       user_id: user.id,
       category_id: values.category_id,
-      sub_category_id: values.sub_category_id || null, // Ensure explicit null
+      category_name: selectedCategory?.name || '',
+      sub_category_id: values.sub_category_id || null,
+      sub_category_name: subCatName,
       target_amount: values.target_amount,
       currency: values.currency,
       start_date: new Date(values.start_date).toISOString(),
-      frequency,
+      frequency: frequency as any,
       end_date: values.end_date ? new Date(values.end_date).toISOString() : null,
       is_active: values.is_active,
     };
 
     try {
       if (budget) {
-        const { error } = await supabase.from('budgets').update(dbPayload).eq('id', budget.id);
-        if (error) throw error;
+        await dataProvider.updateBudget({ ...budget, ...dbPayload });
         showSuccess("Budget updated successfully!");
       } else {
-        const { error } = await supabase.from('budgets').insert(dbPayload);
-        if (error) throw error;
+        await dataProvider.addBudget(dbPayload);
         showSuccess("Budget created successfully!");
       }
       queryClient.invalidateQueries({ queryKey: ['budgets'] });

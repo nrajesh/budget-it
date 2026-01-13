@@ -23,10 +23,11 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
-import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useDataProvider } from '@/context/DataProviderContext';
+import { db } from '@/lib/dexieDB';
 
 export type Payee = {
   id: string;
@@ -66,6 +67,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
 }) => {
   const { availableCurrencies } = useCurrency();
   const { invalidateAllData } = useTransactions();
+  const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -102,48 +104,29 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (payee) {
+        // Pragmatic update for payee using db directly
         if (payee.name !== values.name) {
-          const { error: rpcError } = await supabase.rpc('update_vendor_name', {
-            p_vendor_id: payee.id,
-            p_new_name: values.name,
-          });
-          if (rpcError) throw rpcError;
+           await db.vendors.update(payee.id, { name: values.name });
+           // Also update transactions? Supabase RPC did it.
+           // Ideally we cascade update transactions vendor field
+           await db.transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
+           await db.transactions.where('account').equals(payee.name).modify({ account: values.name });
         }
+
         if (payee.is_account && payee.account_id) {
-          const { error } = await supabase
-            .from("accounts")
-            .update({
+           await db.accounts.update(payee.account_id, {
               currency: values.currency,
-              starting_balance: values.starting_balance,
-              remarks: values.remarks,
-            })
-            .eq("id", payee.account_id);
-          if (error) throw error;
+              starting_balance: values.starting_balance || 0,
+              remarks: values.remarks || "",
+           });
         }
         showSuccess("Payee updated successfully!");
       } else {
-        if (values.is_account) {
-          const { data: accountData, error: accountError } = await supabase
-            .from("accounts")
-            .insert({
-              currency: values.currency,
-              starting_balance: values.starting_balance,
-              remarks: values.remarks,
-            })
-            .select()
-            .single();
-          if (accountError) throw accountError;
-
-          const { error: vendorError } = await supabase.from("vendors").insert({
-            name: values.name,
-            is_account: true,
-            account_id: accountData.id,
-          });
-          if (vendorError) throw vendorError;
-        } else {
-          const { error } = await supabase.from("vendors").insert({ name: values.name });
-          if (error) throw error;
-        }
+        await dataProvider.ensurePayeeExists(values.name, values.is_account, {
+            currency: values.currency,
+            startingBalance: values.starting_balance,
+            remarks: values.remarks
+        });
         showSuccess("Payee added successfully!");
       }
       onSuccess();

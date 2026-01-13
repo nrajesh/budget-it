@@ -23,9 +23,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
-import { getAccountCurrency } from "@/integrations/supabase/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
+import { useDataProvider } from '@/context/DataProviderContext';
 import { Loader2 } from 'lucide-react'; // Import Loader2
 import {
   Select,
@@ -83,6 +83,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 }) => {
   const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
+  const dataProvider = useDataProvider();
 
   const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
   const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
@@ -137,19 +138,19 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await getAccountCurrency(accountValue);
+        const currencyCode = accountCurrencyMap.get(accountValue) || await dataProvider.getAccountCurrency(accountValue);
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
       } else {
         setAccountCurrencySymbol('$');
       }
     };
     updateCurrencySymbol();
-  }, [accountValue, currencySymbols, accountCurrencyMap]);
+  }, [accountValue, currencySymbols, accountCurrencyMap, dataProvider]);
 
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await getAccountCurrency(vendorValue);
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await dataProvider.getAccountCurrency(vendorValue);
         setDestinationAccountCurrency(currencyCode);
       } else {
         setDestinationAccountCurrency(null);

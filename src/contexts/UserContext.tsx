@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { showError } from '@/utils/toast';
-import { User } from '@supabase/supabase-js'; // Import User type
+import { useSession, Session } from '@/hooks/useSession';
 
 interface UserProfile {
   id: string;
@@ -13,7 +11,7 @@ interface UserProfile {
 }
 
 interface UserContextType {
-  user: User | null;
+  user: Session['user'] | null;
   userProfile: UserProfile | null;
   isLoadingUser: boolean;
   fetchUserProfile: () => Promise<void>;
@@ -22,62 +20,30 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const session = useSession();
+  const [user, setUser] = useState<Session['user'] | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   const fetchUserProfile = React.useCallback(async () => {
-    setIsLoadingUser(true);
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-    if (authError) {
-      console.error("Error fetching auth user:", authError.message);
-      setUser(null);
-      setUserProfile(null);
-      setIsLoadingUser(false);
-      return;
-    }
-
-    setUser(authUser);
-
-    if (authUser) {
-      const { data, error } = await supabase
-        .from("user_profile")
-        .select("id, first_name, last_name, avatar_url, email, updated_at")
-        .eq("id", authUser.id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user profile:", error.message);
-        // If profile not found, create a basic one with available user info
-        setUserProfile({
-          id: authUser.id,
-          first_name: null,
-          last_name: null,
-          avatar_url: null,
-          email: authUser.email,
-          updated_at: null,
-        });
-      } else if (data) {
-        setUserProfile(data);
-      }
-    } else {
-      setUserProfile(null);
-    }
+    // In local mode, we just use the session mock
     setIsLoadingUser(false);
-  }, []); // Dependencies removed, as it only uses stable supabase client and state setters
+  }, []);
 
   useEffect(() => {
-    fetchUserProfile();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        fetchUserProfile();
+      if (session?.user) {
+          setUser(session.user);
+          setUserProfile({
+              id: session.user.id,
+              first_name: session.user.user_metadata?.full_name?.split(' ')[0] || "Local",
+              last_name: session.user.user_metadata?.full_name?.split(' ')[1] || "User",
+              avatar_url: session.user.user_metadata?.avatar_url || null,
+              email: session.user.email || null,
+              updated_at: new Date().toISOString()
+          });
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchUserProfile]);
+      setIsLoadingUser(false);
+  }, [session]);
 
   const value = React.useMemo(() => ({
     user,

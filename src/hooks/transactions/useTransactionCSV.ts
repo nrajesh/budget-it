@@ -1,11 +1,10 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
-import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
 import Papa from "papaparse";
+import { useDataProvider } from "@/context/DataProviderContext";
 
 export const useTransactionCSV = () => {
   const {
@@ -16,6 +15,7 @@ export const useTransactionCSV = () => {
     accountCurrencyMap,
   } = useTransactions();
   const { user } = useUser();
+  const dataProvider = useDataProvider();
 
   const [isImporting, setIsImporting] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -27,7 +27,7 @@ export const useTransactionCSV = () => {
   const handleFileChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!user) {
+    if (!user?.id) {
       showError("You must be logged in to import transactions.");
       setIsImporting(false);
       return;
@@ -64,21 +64,21 @@ export const useTransactionCSV = () => {
           })).filter(item => item.name);
 
           await Promise.all(uniqueAccountsData.map(async (acc) => {
-            await ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
+            await dataProvider.ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
           }));
 
           const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
           await Promise.all(uniqueVendors.map(name => {
             const row = parsedData.find(r => r.Vendor === name);
             const isTransfer = row?.Category === 'Transfer';
-            return ensurePayeeExists(name, isTransfer);
+            return dataProvider.ensurePayeeExists(name, isTransfer);
           }));
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
-          await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, user.id)));
+          await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, user.id)));
 
-          await Promise.all([refetchVendors(), refetchAccounts()]); // Refresh all payees (including accounts) and categories to ensure maps are up-to-date
+          await Promise.all([refetchVendors(), refetchAccounts()]);
 
           // Step 3: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData.map(row => {
@@ -100,6 +100,7 @@ export const useTransactionCSV = () => {
             }
 
             return {
+              user_id: user.id, // Required by type
               date: parseDateFromDDMMYYYY(row.Date).toISOString(),
               account: row.Account,
               vendor: row.Vendor,
@@ -122,8 +123,10 @@ export const useTransactionCSV = () => {
           }
 
           // Step 4: Insert transactions
-          const { error } = await supabase.from('transactions').insert(transactionsToInsert);
-          if (error) throw error;
+          // Loop insertion
+          for (const t of transactionsToInsert) {
+              await dataProvider.addTransaction(t);
+          }
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
           refetchTransactions();

@@ -62,7 +62,6 @@ import {
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -302,8 +301,9 @@ const Layout = () => {
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
-                await supabase.auth.signOut();
+              <DropdownMenuItem onClick={() => {
+                // No-op for local mode or reset state
+                window.location.reload();
               }}>
                 Log out
               </DropdownMenuItem>
@@ -362,8 +362,8 @@ const Layout = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  await supabase.auth.signOut();
+                <DropdownMenuItem onClick={() => {
+                  window.location.reload();
                 }}>
                   Log out
                 </DropdownMenuItem>
