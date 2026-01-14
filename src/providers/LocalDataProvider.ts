@@ -120,32 +120,34 @@ export class LocalDataProvider implements DataProvider {
 
   async mergePayees(targetName: string, sourceNames: string[]): Promise<void> {
     await db.transaction('rw', db.transactions, db.vendors, db.accounts, async () => {
-        // 1. Update Transactions
-        // Find transactions where account is in sourceNames
-        await db.transactions.where('account').anyOf(sourceNames).modify({ account: targetName });
+      // 1. Update Transactions
+      // Find transactions where account is in sourceNames
+      await db.transactions.where('account').anyOf(sourceNames).modify({ account: targetName });
 
-        // Find transactions where vendor is in sourceNames
-        await db.transactions.where('vendor').anyOf(sourceNames).modify({ vendor: targetName });
+      // Find transactions where vendor is in sourceNames
+      await db.transactions.where('vendor').anyOf(sourceNames).modify({ vendor: targetName });
 
-        // 2. Delete source vendors/accounts
-        // Get IDs of source vendors to delete accounts if linked
-        const sourceVendors = await db.vendors.where('name').anyOf(sourceNames).toArray();
-        const accountIdsToDelete = sourceVendors.map(v => v.account_id).filter(id => id != null) as string[];
+      // 2. Delete source vendors/accounts
+      // Get IDs of source vendors to delete accounts if linked
+      const sourceVendors = await db.vendors.where('name').anyOf(sourceNames).toArray();
+      const accountIdsToDelete = sourceVendors.map(v => v.account_id).filter(id => id != null) as string[];
 
-        // Delete from vendors
-        await db.vendors.where('name').anyOf(sourceNames).delete();
+      // Delete from vendors
+      await db.vendors.where('name').anyOf(sourceNames).delete();
 
-        // Delete from accounts
-        if (accountIdsToDelete.length > 0) {
-            await db.accounts.bulkDelete(accountIdsToDelete);
-        }
+      // Delete from accounts
+      if (accountIdsToDelete.length > 0) {
+        await db.accounts.bulkDelete(accountIdsToDelete);
+      }
     });
   }
 
   async deletePayee(id: string): Promise<void> {
-      await db.vendors.delete(id);
-      // We might want to delete linked account if is_account is true?
-      // For now, simple delete as per request.
+    await db.vendors.delete(id);
+    // We might want to delete linked account if is_account is true?
+    // For now, simple delete as per request.
+  }
+
   async getAllAccounts(): Promise<Account[]> {
     return await db.accounts.toArray();
   }
@@ -197,33 +199,33 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async mergeCategories(targetName: string, sourceNames: string[]): Promise<void> {
-      await db.transaction('rw', db.transactions, db.categories, db.sub_categories, db.budgets, async () => {
-          // 1. Update Transactions
-          await db.transactions.where('category').anyOf(sourceNames).modify({ category: targetName });
+    await db.transaction('rw', db.transactions, db.categories, db.sub_categories, db.budgets, async () => {
+      // 1. Update Transactions
+      await db.transactions.where('category').anyOf(sourceNames).modify({ category: targetName });
 
-          // 2. Update Budgets?
-          // If a budget is set for a merged category, we should probably update it too or delete duplicate budgets?
-          // For simplicity, we update the name.
-          await db.budgets.where('category_name').anyOf(sourceNames).modify({ category_name: targetName });
+      // 2. Update Budgets?
+      // If a budget is set for a merged category, we should probably update it too or delete duplicate budgets?
+      // For simplicity, we update the name.
+      await db.budgets.where('category_name').anyOf(sourceNames).modify({ category_name: targetName });
 
-          // 3. Move Sub-categories?
-          // Sub-categories are linked to category_id. We need to move them to the target category's ID.
-          const targetCategory = await db.categories.where('name').equals(targetName).first();
-          if (targetCategory) {
-              const sourceCategories = await db.categories.where('name').anyOf(sourceNames).toArray();
-              const sourceIds = sourceCategories.map(c => c.id);
+      // 3. Move Sub-categories?
+      // Sub-categories are linked to category_id. We need to move them to the target category's ID.
+      const targetCategory = await db.categories.where('name').equals(targetName).first();
+      if (targetCategory) {
+        const sourceCategories = await db.categories.where('name').anyOf(sourceNames).toArray();
+        const sourceIds = sourceCategories.map(c => c.id);
 
-              // Move sub-categories
-              await db.sub_categories.where('category_id').anyOf(sourceIds).modify({ category_id: targetCategory.id });
-          }
+        // Move sub-categories
+        await db.sub_categories.where('category_id').anyOf(sourceIds).modify({ category_id: targetCategory.id });
+      }
 
-          // 4. Delete source categories
-          await db.categories.where('name').anyOf(sourceNames).delete();
-      });
+      // 4. Delete source categories
+      await db.categories.where('name').anyOf(sourceNames).delete();
+    });
   }
 
   async deleteCategory(id: string): Promise<void> {
-      await db.categories.delete(id);
+    await db.categories.delete(id);
   }
 
   // Budgets
@@ -236,11 +238,7 @@ export class LocalDataProvider implements DataProvider {
     const budgetsWithSpending: Budget[] = [];
 
     for (const budget of budgets) {
-      // Calculate spending
-      let spending = 0;
-
       // Define range
-      const startDate = new Date(budget.start_date);
       // let endDate = budget.end_date ? new Date(budget.end_date) : new Date();
 
       // If no explicit end date, determine based on frequency relative to 'now' logic?

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSession } from "@/hooks/useSession";
 
 interface AccountBalanceReconciliationDialogProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface AccountRowData {
 
 const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
+  const session = useSession();
   const { accounts, transactions, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
 
@@ -75,6 +77,11 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
 
   const handleReconcile = async () => {
     if (selectedIds.length === 0) return;
+    if (!session?.user?.id) {
+      showError("User not logged in.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Filter selected rows that have a difference to adjust
@@ -88,6 +95,7 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
 
       await Promise.all(adjustments.map(adj =>
         dataProvider.addTransaction({
+          user_id: session.user.id,
           date: new Date().toISOString(),
           account: adj.name,
           vendor: "Balance Adjustment",
