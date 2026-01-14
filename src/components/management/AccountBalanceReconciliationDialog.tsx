@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { showSuccess, showError } from "@/utils/toast";
@@ -15,135 +15,164 @@ interface AccountBalanceReconciliationDialogProps {
   onClose: () => void;
 }
 
+interface AccountRowData {
+  id: string;
+  name: string;
+  currency: string;
+  systemBalance: number;
+  actualBalance: string; // Input value
+  difference: number;
+}
+
 const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
   const { accounts, transactions, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
 
-  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
-  const [actualBalance, setActualBalance] = useState<string>("");
+  const [rows, setRows] = useState<AccountRowData[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+  // Initialize rows when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const calculatedRows = accounts.map(acc => {
+        const total = transactions
+          .filter(t => t.account === acc.name)
+          .reduce((sum, t) => sum + t.amount, 0);
+        const sysBal = (acc.starting_balance || 0) + total;
 
-  // Calculate System Balance
-  const systemBalance = React.useMemo(() => {
-      if (!selectedAccount) return 0;
-      // Filter transactions for this account
-      // Note: This logic duplicates balance calc in hooks/BalanceOverTimeChart usually?
-      // A simple sum of all transactions for this account.
-      // Assuming 'amount' is positive for income, negative for expense.
-      // Transfers: if account is source, amount is negative. If destination, amount is positive?
-      // The Dexie schema stores 'amount'.
-      // Usually, transactions for an account:
-      // - Standard: amount is negative (expense) or positive (income).
-      // - Transfer:
-      //   - Debit: account=Source, amount=-X
-      //   - Credit: account=Dest, vendor=Source, amount=+X
-      // So simple sum should work if we filter by `account` field.
+        return {
+          id: acc.id,
+          name: acc.name,
+          currency: acc.currency || 'USD',
+          systemBalance: sysBal,
+          actualBalance: '',
+          difference: 0
+        };
+      });
+      setRows(calculatedRows);
+      setSelectedIds([]);
+    }
+  }, [isOpen, accounts, transactions]);
 
-      const total = transactions
-        .filter(t => t.account === selectedAccount.name)
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      return (selectedAccount.starting_balance || 0) + total;
-  }, [selectedAccount, transactions]);
-
-  const difference = React.useMemo(() => {
-      if (!actualBalance || isNaN(parseFloat(actualBalance))) return 0;
-      return parseFloat(actualBalance) - systemBalance;
-  }, [actualBalance, systemBalance]);
-
-  const handleReconcile = async () => {
-      if (!selectedAccount || difference === 0) return;
-      setIsProcessing(true);
-      try {
-          // Create adjustment transaction
-          await dataProvider.addTransaction({
-              date: new Date().toISOString(),
-              account: selectedAccount.name,
-              vendor: "Balance Adjustment",
-              category: "Adjustment", // Ensure this category exists or is created? 'ensureCategoryExists' handles it.
-              amount: difference,
-              remarks: `Reconciliation Adjustment to match balance ${actualBalance}`,
-              currency: selectedAccount.currency || 'USD'
-          });
-
-          showSuccess("Balance reconciled successfully.");
-          await invalidateAllData();
-          onClose();
-      } catch (error: any) {
-          showError(`Reconciliation failed: ${error.message}`);
-      } finally {
-          setIsProcessing(false);
+  const handleActualBalanceChange = (id: string, value: string) => {
+    setRows(prev => prev.map(row => {
+      if (row.id === id) {
+        const actual = parseFloat(value);
+        const diff = isNaN(actual) ? 0 : actual - row.systemBalance;
+        return { ...row, actualBalance: value, difference: diff };
       }
+      return row;
+    }));
   };
 
-  useEffect(() => {
-      if (isOpen) {
-          setSelectedAccountId("");
-          setActualBalance("");
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) setSelectedIds(rows.map(r => r.id));
+    else setSelectedIds([]);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleReconcile = async () => {
+    if (selectedIds.length === 0) return;
+    setIsProcessing(true);
+    try {
+      // Filter selected rows that have a difference to adjust
+      const adjustments = rows.filter(r => selectedIds.includes(r.id) && r.difference !== 0);
+
+      if (adjustments.length === 0) {
+        showSuccess("No adjustments needed for selected accounts.");
+        onClose();
+        return;
       }
-  }, [isOpen]);
+
+      await Promise.all(adjustments.map(adj =>
+        dataProvider.addTransaction({
+          date: new Date().toISOString(),
+          account: adj.name,
+          vendor: "Balance Adjustment",
+          category: "Adjustment",
+          amount: adj.difference,
+          remarks: `Reconciliation Adjustment to match balance ${adj.actualBalance}`,
+          currency: adj.currency
+        })
+      ));
+
+      showSuccess(`Reconciled ${adjustments.length} accounts successfully.`);
+      await invalidateAllData();
+      onClose();
+    } catch (error: any) {
+      showError(`Reconciliation failed: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
-          <DialogTitle>Reconcile Account Balance</DialogTitle>
+          <DialogTitle>Reconcile Account Balances</DialogTitle>
           <DialogDescription>
-            Adjust the system balance to match your actual bank balance.
+            Select accounts and enter their actual bank balances to automatically create adjustment transactions.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-                <Label>Select Account</Label>
-                <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select account..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {accounts.map(acc => (
-                            <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {selectedAccount && (
-                <>
-                    <div className="flex justify-between items-center bg-muted p-3 rounded-md">
-                        <span className="text-sm font-medium">System Balance:</span>
-                        <span className="font-bold">{formatCurrency(systemBalance, selectedAccount.currency)}</span>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Actual Balance</Label>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            value={actualBalance}
-                            onChange={(e) => setActualBalance(e.target.value)}
-                            placeholder="Enter current bank balance"
-                        />
-                    </div>
-
-                    {actualBalance && (
-                        <div className={`text-sm text-right ${difference === 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                            Difference: {difference > 0 ? '+' : ''}{formatCurrency(difference, selectedAccount.currency)}
-                        </div>
-                    )}
-                </>
-            )}
+        <div className="max-h-[400px] overflow-y-auto py-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={rows.length > 0 && selectedIds.length === rows.length}
+                    onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                  />
+                </TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead className="text-right">System Balance</TableHead>
+                <TableHead className="text-right">Actual Balance</TableHead>
+                <TableHead className="text-right">Difference</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(row.id)}
+                      onCheckedChange={() => handleToggleSelect(row.id)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{row.name}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.systemBalance, row.currency)}</TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={row.actualBalance}
+                      onChange={(e) => handleActualBalanceChange(row.id, e.target.value)}
+                      className="h-8 w-[120px] ml-auto text-right"
+                      placeholder="0.00"
+                    />
+                  </TableCell>
+                  <TableCell className={`text-right ${row.difference === 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    {row.difference > 0 ? '+' : ''}{formatCurrency(row.difference, row.currency)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
 
         <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleReconcile} disabled={isProcessing || !selectedAccount || difference === 0}>
-                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Adjustment
-            </Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleReconcile} disabled={isProcessing || selectedIds.length === 0}>
+            {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Reconcile Selected ({selectedIds.length})
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
