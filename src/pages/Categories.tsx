@@ -7,10 +7,9 @@ import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
 import { useMutation } from '@tanstack/react-query';
 import { showError, showSuccess } from "@/utils/toast";
-import CategoryReconciliationDialog from "@/components/management/CategoryReconciliationDialog";
-import { Button } from "@/components/ui/button";
+import CategoryDeduplicationDialog from "@/components/management/CategoryDeduplicationDialog";
 import { useDataProvider } from '@/context/DataProviderContext';
-import { RefreshCw } from "lucide-react";
+import CleanupEntitiesDialog from "@/components/management/CleanupEntitiesDialog";
 
 import ManageSubCategoriesDialog from "@/components/categories/ManageSubCategoriesDialog";
 
@@ -20,7 +19,6 @@ const CategoriesPage = () => {
   const dataProvider = useDataProvider();
 
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null);
-  const [isReconcileOpen, setIsReconcileOpen] = React.useState(false);
   const [editedName, setEditedName] = React.useState<string>("");
   const [managingSubCategory, setManagingSubCategory] = React.useState<Category | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -178,16 +176,8 @@ const CategoriesPage = () => {
         {...managementProps}
         selectedEntity={managementProps.selectedEntity}
         refetch={managementProps.refetchCategories}
-        extraActions={
-          <Button onClick={() => setIsReconcileOpen(true)} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reconcile
-          </Button>
-        }
-      />
-      <CategoryReconciliationDialog
-        isOpen={isReconcileOpen}
-        onClose={() => setIsReconcileOpen(false)}
+        DeduplicationDialogComponent={CategoryDeduplicationDialog}
+        CleanupDialogComponent={(props: any) => <CleanupEntitiesDialog {...props} entityType="category" />}
       />
       <ManageSubCategoriesDialog
         isOpen={!!managingSubCategory}

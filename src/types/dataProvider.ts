@@ -59,12 +59,14 @@ export interface DataProvider {
   getAccountCurrency(accountName: string): Promise<string>;
   getAllVendors(): Promise<Vendor[]>;
   mergePayees(targetName: string, sourceNames: string[]): Promise<void>;
+  deletePayee(id: string): Promise<void>;
 
   // Categories
   ensureCategoryExists(name: string, userId: string): Promise<string | null>;
   ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null>;
   getUserCategories(userId: string): Promise<Category[]>;
   mergeCategories(targetName: string, sourceNames: string[]): Promise<void>;
+  deleteCategory(id: string): Promise<void>;
 
   // Budgets
   getBudgetsWithSpending(userId: string): Promise<Budget[]>;

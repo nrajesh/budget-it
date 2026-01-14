@@ -14,7 +14,7 @@ interface VendorReconciliationDialogProps {
   onClose: () => void;
 }
 
-const VendorReconciliationDialog: React.FC<VendorReconciliationDialogProps> = ({ isOpen, onClose }) => {
+const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
   const { refetchVendors, vendors: contextVendors, invalidateAllData } = useTransactions();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -69,7 +69,7 @@ const VendorReconciliationDialog: React.FC<VendorReconciliationDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Merge Duplicate Vendors</DialogTitle>
+          <DialogTitle>Deduplicate Vendors</DialogTitle>
           <DialogDescription>
             Select the primary vendor you want to keep, then select the duplicate vendors to merge into it.
             All transactions from duplicates will be moved to the primary vendor.
@@ -134,4 +134,4 @@ const VendorReconciliationDialog: React.FC<VendorReconciliationDialogProps> = ({
   );
 };
 
-export default VendorReconciliationDialog;
+export default VendorDeduplicationDialog;

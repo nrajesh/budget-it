@@ -9,24 +9,23 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2 } from "lucide-react";
 
-interface AccountReconciliationDialogProps {
+interface CategoryReconciliationDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = ({ isOpen, onClose }) => {
+const CategoryDeduplicationDialog: React.FC<CategoryReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
-  const { refetchAccounts, accounts: contextAccounts, invalidateAllData } = useTransactions();
+  const { refetchCategories, categories: contextCategories, invalidateAllData } = useTransactions();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [selectedMaster, setSelectedMaster] = useState<string>("");
   const [selectedDuplicates, setSelectedDuplicates] = useState<string[]>([]);
 
-  // Filter only accounts (is_account=true is handled by contextAccounts usually, but let's be safe)
-  const accounts = useMemo(() => {
-      // Typically contextAccounts are the ones displayed in Accounts page
-      return contextAccounts.sort((a, b) => a.name.localeCompare(b.name));
-  }, [contextAccounts]);
+  // Filter categories
+  const categories = useMemo(() => {
+      return contextCategories.sort((a, b) => a.name.localeCompare(b.name));
+  }, [contextCategories]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -41,8 +40,8 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
 
     setIsProcessing(true);
     try {
-        await dataProvider.mergePayees(selectedMaster, selectedDuplicates);
-        showSuccess(`Successfully merged ${selectedDuplicates.length} accounts into ${selectedMaster}.`);
+        await dataProvider.mergeCategories(selectedMaster, selectedDuplicates);
+        showSuccess(`Successfully merged ${selectedDuplicates.length} categories into ${selectedMaster}.`);
         await invalidateAllData();
         onClose();
     } catch (error: any) {
@@ -53,8 +52,8 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
   };
 
   const potentialDuplicates = useMemo(() => {
-      return accounts.filter(a => a.name !== selectedMaster);
-  }, [accounts, selectedMaster]);
+      return categories.filter(c => c.name !== selectedMaster);
+  }, [categories, selectedMaster]);
 
   const handleToggleDuplicate = (name: string) => {
       setSelectedDuplicates(prev =>
@@ -68,26 +67,26 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Merge Duplicate Accounts</DialogTitle>
+          <DialogTitle>Deduplicate Categories</DialogTitle>
           <DialogDescription>
-            Select the primary account you want to keep, then select the duplicate accounts to merge into it.
-            All transactions from duplicates will be moved to the primary account.
+            Select the primary category you want to keep, then select the duplicate categories to merge into it.
+            All transactions from duplicates will be moved to the primary category.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>Primary Account (Keep this one)</Label>
+            <Label>Primary Category (Keep this one)</Label>
             <Select value={selectedMaster} onValueChange={(val) => {
                 setSelectedMaster(val);
-                setSelectedDuplicates([]); // Reset duplicates if master changes
+                setSelectedDuplicates([]);
             }}>
               <SelectTrigger>
-                <SelectValue placeholder="Select account..." />
+                <SelectValue placeholder="Select category..." />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map(acc => (
-                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                {categories.map(c => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -95,20 +94,20 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
 
           {selectedMaster && (
               <div className="space-y-2">
-                <Label>Duplicate Accounts (Merge these)</Label>
+                <Label>Duplicate Categories (Merge these)</Label>
                 <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
                     {potentialDuplicates.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No other accounts found.</p>
+                        <p className="text-sm text-muted-foreground">No other categories found.</p>
                     ) : (
-                        potentialDuplicates.map(acc => (
-                            <div key={acc.id} className="flex items-center space-x-2">
+                        potentialDuplicates.map(c => (
+                            <div key={c.id} className="flex items-center space-x-2">
                                 <Checkbox
-                                    id={`dup-${acc.id}`}
-                                    checked={selectedDuplicates.includes(acc.name)}
-                                    onCheckedChange={() => handleToggleDuplicate(acc.name)}
+                                    id={`dup-${c.id}`}
+                                    checked={selectedDuplicates.includes(c.name)}
+                                    onCheckedChange={() => handleToggleDuplicate(c.name)}
                                 />
-                                <Label htmlFor={`dup-${acc.id}`} className="cursor-pointer font-normal">
-                                    {acc.name}
+                                <Label htmlFor={`dup-${c.id}`} className="cursor-pointer font-normal">
+                                    {c.name}
                                 </Label>
                             </div>
                         ))
@@ -125,7 +124,7 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
           <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
           <Button onClick={handleMerge} disabled={isProcessing || !selectedMaster || selectedDuplicates.length === 0}>
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Merge Accounts
+            Merge Categories
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -133,4 +132,4 @@ const AccountReconciliationDialog: React.FC<AccountReconciliationDialogProps> = 
   );
 };
 
-export default AccountReconciliationDialog;
+export default CategoryDeduplicationDialog;

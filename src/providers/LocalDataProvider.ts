@@ -142,6 +142,12 @@ export class LocalDataProvider implements DataProvider {
     });
   }
 
+  async deletePayee(id: string): Promise<void> {
+      await db.vendors.delete(id);
+      // We might want to delete linked account if is_account is true?
+      // For now, simple delete as per request.
+  }
+
   // Categories
   async ensureCategoryExists(name: string, userId: string): Promise<string | null> {
     if (!name) return null;
@@ -212,6 +218,10 @@ export class LocalDataProvider implements DataProvider {
           // 4. Delete source categories
           await db.categories.where('name').anyOf(sourceNames).delete();
       });
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+      await db.categories.delete(id);
   }
 
   // Budgets

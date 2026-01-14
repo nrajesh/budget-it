@@ -8,13 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useMutation } from '@tanstack/react-query';
 import { showError, showSuccess } from "@/utils/toast";
-import VendorReconciliationDialog from "@/components/management/VendorReconciliationDialog";
-import { RefreshCw } from "lucide-react";
+import VendorDeduplicationDialog from "@/components/management/VendorDeduplicationDialog";
+import CleanupEntitiesDialog from "@/components/management/CleanupEntitiesDialog";
 
 const VendorsPage = () => {
   const { vendors, isLoadingVendors, invalidateAllData } = useTransactions();
   const managementProps = usePayeeManagement(false);
-  const [isReconcileOpen, setIsReconcileOpen] = React.useState(false);
 
   const [editingVendorId, setEditingVendorId] = React.useState<string | null>(null);
   const [editedName, setEditedName] = React.useState<string>("");
@@ -104,16 +103,8 @@ const VendorsPage = () => {
         // Pass all management props explicitly
         {...managementProps}
         selectedEntity={managementProps.selectedPayee}
-        extraActions={
-          <Button onClick={() => setIsReconcileOpen(true)} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reconcile
-          </Button>
-        }
-      />
-      <VendorReconciliationDialog
-        isOpen={isReconcileOpen}
-        onClose={() => setIsReconcileOpen(false)}
+        DeduplicationDialogComponent={VendorDeduplicationDialog}
+        CleanupDialogComponent={(props: any) => <CleanupEntitiesDialog {...props} entityType="vendor" />}
       />
     </>
   );

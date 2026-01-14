@@ -52,6 +52,9 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   refetch?: () => void;
   extraActions?: React.ReactNode;
   customFilter?: (data: T[], searchTerm: string) => T[];
+  DeduplicationDialogComponent?: React.FC<any>;
+  CleanupDialogComponent?: React.FC<any>;
+  BalanceReconciliationDialogComponent?: React.FC<any>;
 }
 
 const EntityManagementPage = <T extends { id: string; name: string }>({
@@ -79,7 +82,13 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   refetch,
   extraActions,
   customFilter,
+  DeduplicationDialogComponent,
+  CleanupDialogComponent,
+  BalanceReconciliationDialogComponent,
 }: EntityManagementPageProps<T>) => {
+  const [isDeduplicateOpen, setIsDeduplicateOpen] = React.useState(false);
+  const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);
+  const [isBalanceReconcileOpen, setIsBalanceReconcileOpen] = React.useState(false);
 
   const filteredData = React.useMemo(() => {
     if (customFilter) {
@@ -107,6 +116,21 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>
               {isLoadingMutation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
+            </Button>
+          )}
+          {BalanceReconciliationDialogComponent && (
+            <Button variant="outline" onClick={() => setIsBalanceReconcileOpen(true)}>
+              Reconcile Balance
+            </Button>
+          )}
+          {CleanupDialogComponent && (
+            <Button variant="outline" onClick={() => setIsCleanupOpen(true)}>
+              Cleanup Unused
+            </Button>
+          )}
+          {DeduplicationDialogComponent && (
+            <Button variant="outline" onClick={() => setIsDeduplicateOpen(true)}>
+              De-duplicate
             </Button>
           )}
           {extraActions}
@@ -177,6 +201,24 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           payee={selectedEntity} // Use generic selectedEntity
+        />
+      )}
+      {DeduplicationDialogComponent && (
+        <DeduplicationDialogComponent
+          isOpen={isDeduplicateOpen}
+          onClose={() => setIsDeduplicateOpen(false)}
+        />
+      )}
+      {CleanupDialogComponent && (
+        <CleanupDialogComponent
+          isOpen={isCleanupOpen}
+          onClose={() => setIsCleanupOpen(false)}
+        />
+      )}
+      {BalanceReconciliationDialogComponent && (
+        <BalanceReconciliationDialogComponent
+          isOpen={isBalanceReconcileOpen}
+          onClose={() => setIsBalanceReconcileOpen(false)}
         />
       )}
       <ConfirmationDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={confirmDelete} title="Are you sure?" description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone." confirmText="Delete" />
