@@ -39,10 +39,19 @@ export interface Vendor {
   account_id?: string | null;
 }
 
+export interface Account {
+  id: string;
+  currency: string;
+  starting_balance: number;
+  remarks: string;
+  created_at: string;
+}
+
 export interface Category {
   id: string;
   user_id: string;
   name: string;
+  created_at: string;
 }
 
 export interface DataProvider {
@@ -60,6 +69,7 @@ export interface DataProvider {
   getAllVendors(): Promise<Vendor[]>;
   mergePayees(targetName: string, sourceNames: string[]): Promise<void>;
   deletePayee(id: string): Promise<void>;
+  getAllAccounts(): Promise<Account[]>;
 
   // Categories
   ensureCategoryExists(name: string, userId: string): Promise<string | null>;

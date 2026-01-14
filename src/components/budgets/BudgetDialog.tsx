@@ -141,7 +141,7 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
       user_id: userId,
       category_id: values.category_id,
       category_name: selectedCategory?.name || '',
-      sub_category_id: values.sub_category_id,
+      sub_category_id: values.sub_category_id || null,
       sub_category_name: subCatName,
       target_amount: values.target_amount,
       frequency: values.frequency as any,
@@ -152,9 +152,9 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
 
     try {
       if (isEditMode && budget) {
-          await dataProvider.updateBudget({ ...budget, ...budgetData });
+        await dataProvider.updateBudget({ ...budget, ...budgetData });
       } else {
-          await dataProvider.addBudget(budgetData);
+        await dataProvider.addBudget(budgetData);
       }
 
       toast({

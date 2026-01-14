@@ -68,8 +68,8 @@ const transformCategoryData = (data: any[]): Category[] => {
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
-  const { user, isLoadingUser } = useUser();
-  const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
+  const { user } = useUser();
+  const [demoDataProgress] = React.useState<DemoDataProgress | null>(null);
   const dataProvider = useDataProvider();
 
   const convertBetweenCurrenciesRef = React.useRef(_convert);
@@ -90,17 +90,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     enabled: !!user?.id, // && !isLoadingUser removed as user object is enough check
   });
 
-  // Helper to calculate counts locally
-  const calculateCounts = (items: any[], type: 'vendor' | 'account' | 'category') => {
-    // This requires transactions to be loaded.
-    // Ideally we fetch everything and join.
-    // For now, let's use the 'transactions' data we already have if available?
-    // But 'transactions' query depends on 'user'.
-    // Use a simpler approach: get all vendors/accounts, then map transactions to count.
 
-    // BUT we need to fetch them first.
-    return items;
-  };
 
   const { data: vendors = [], isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery({
     queryKey: ['vendors', user?.id, transactions.length], // Depend on transactions to recalc counts
@@ -117,13 +107,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Calculate counts
       // This is inefficient O(N*M) but fine for local.
       return payees.map(v => {
-          const count = transactions.filter(t => t.vendor === v.name).length;
-          return {
-              ...v,
-              total_transactions: count,
-              // Supabase RPC returned created_at, etc.
-              // Dexie returns what's stored.
-          };
+        const count = transactions.filter(t => t.vendor === v.name).length;
+        return {
+          ...v,
+          total_transactions: count,
+          // Supabase RPC returned created_at, etc.
+          // Dexie returns what's stored.
+        };
       });
     },
     enabled: !!user?.id,
@@ -131,36 +121,71 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const { data: accounts = [], isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery({
-    queryKey: ['accounts', user?.id, transactions.length],
+    queryKey: ['accounts', user?.id, transactions],
     queryFn: async () => {
       if (!user?.id) return [];
       const allVendors = await dataProvider.getAllVendors();
       const accountVendors = allVendors.filter(v => v.is_account);
 
+      // Fetch all accounts details to get starting balance
+      const allAccountsDetails = await dataProvider.getAllAccounts();
+      const accountMap = new Map(allAccountsDetails.map(a => [a.id, a]));
+
+      // Map Name -> Account via the vendor list we just fetched!
+      const nameToAccountMap = new Map<string, any>();
+      allVendors.forEach(v => {
+        if (v.is_account && v.account_id) {
+          const acc = accountMap.get(v.account_id);
+          if (acc) nameToAccountMap.set(v.name.trim().toLowerCase(), acc);
+        }
+      });
+      allVendors.forEach(v => {
+        if (v.is_account && v.account_id) {
+          const acc = accountMap.get(v.account_id);
+          if (acc) nameToAccountMap.set(v.name.trim().toLowerCase(), acc);
+        }
+      });
+
       return await Promise.all(accountVendors.map(async v => {
-          const count = transactions.filter(t => t.account === v.name || t.vendor === v.name).length; // Account can be source or dest (if transfer)
+        // Get starting balance
+        let accountDetails = v.account_id ? accountMap.get(v.account_id) : undefined;
 
-          // Need to fetch details like currency/balance from accounts table
-          // DataProvider doesn't expose 'getAccountDetails' directly in interface but we have 'getAccountCurrency'.
-          // We might need to extend DataProvider or just accept we miss some details for now?
-          // Dexie 'vendors' has 'account_id'.
-          // We can use that if we had access to db, but via provider we are limited.
-          // Let's assume for now we just return basic info, or we add 'getAllAccounts' to provider.
-          // For now, I will return what I have in vendor object.
-          // Realistically, to get balance, we need the account record.
-          // SupabaseDataProvider used RPC.
-          // I'll stick to basic vendor info + count for now to pass build.
-          // If balance is missing, UI might show 0.
+        // Fallback: try looking up by name
+        if (!accountDetails) {
+          accountDetails = nameToAccountMap.get(v.name.trim().toLowerCase());
+        }
 
-          // Re-fetch currency via provider
-          const currency = await dataProvider.getAccountCurrency(v.name);
+        const startingBalance = accountDetails?.starting_balance || 0;
+        const currency = accountDetails?.currency || await dataProvider.getAccountCurrency(v.name);
 
-          return {
-              ...v,
-              currency,
-              total_transactions: count,
-              starting_balance: 0 // Placeholder
-          };
+        // Calculate running balance: starting_balance + sum(transactions)
+        // Normalize names for comparison
+        const vNameNormalized = v.name.trim().toLowerCase();
+
+        // Get today's date in YYYY-MM-DD format (local time)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        const accountTransactions = transactions.filter(t =>
+          (t.account || '').trim().toLowerCase() === vNameNormalized &&
+          (t.date || '').substring(0, 10) <= todayStr
+        );
+        const totalTransactionAmount = accountTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+        const runningBalance = startingBalance + totalTransactionAmount;
+
+        const count = accountTransactions.length + transactions.filter(t => t.vendor === v.name && t.account !== v.name).length;
+
+        return {
+          ...v,
+          currency,
+          total_transactions: count,
+          starting_balance: startingBalance,
+          running_balance: runningBalance
+        };
       }));
     },
     enabled: !!user?.id,
@@ -176,15 +201,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       const cats = await dataProvider.getUserCategories(user.id);
       return cats.map(c => ({
-          ...c,
-          total_transactions: transactions.filter(t => t.category === c.name).length
+        ...c,
+        total_transactions: transactions.filter(t => t.category === c.name).length
       }));
     },
     enabled: !!user?.id,
     select: transformCategoryData,
   });
 
-  const { data: subCategories = [], isLoading: isLoadingSubCategories, refetch: refetchSubCategories } = useQuery({
+  const { data: subCategories = [], isLoading: isLoadingSubCategories, refetch: refetchSubCategories } = useQuery<SubCategory[], Error>({
     queryKey: ['sub_categories', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -223,36 +248,36 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
   const addTransaction = async (transaction: any) => {
-      await dataProvider.addTransaction(transaction);
-      await invalidateAllData();
+    await dataProvider.addTransaction(transaction);
+    await invalidateAllData();
   };
   const updateTransaction = async (transaction: any) => {
-      await dataProvider.updateTransaction(transaction);
-      await invalidateAllData();
+    await dataProvider.updateTransaction(transaction);
+    await invalidateAllData();
   };
   const deleteTransaction = async (id: string, transfer_id?: string) => {
-      if (transfer_id) {
-          await dataProvider.deleteTransactionByTransferId(transfer_id);
-      } else {
-          await dataProvider.deleteTransaction(id);
-      }
-      await invalidateAllData();
+    if (transfer_id) {
+      await dataProvider.deleteTransactionByTransferId(transfer_id);
+    } else {
+      await dataProvider.deleteTransaction(id);
+    }
+    await invalidateAllData();
   };
   const deleteMultipleTransactions = async (items: TransactionToDelete[]) => {
-      for (const item of items) {
-          if (item.transfer_id) await dataProvider.deleteTransactionByTransferId(item.transfer_id);
-          else await dataProvider.deleteTransaction(item.id);
-      }
-      await invalidateAllData();
+    for (const item of items) {
+      if (item.transfer_id) await dataProvider.deleteTransactionByTransferId(item.transfer_id);
+      else await dataProvider.deleteTransaction(item.id);
+    }
+    await invalidateAllData();
   };
   const clearAllTransactions = async () => {
-      await dataProvider.clearAllData();
-      await invalidateAllData();
+    await dataProvider.clearAllData();
+    await invalidateAllData();
   };
 
   // Stubs for services we removed/disabled
-  const generateDiverseDemoData = async () => {};
-  const processScheduledTransactions = async () => {};
+  const generateDiverseDemoData = async () => { };
+  const processScheduledTransactions = async () => { };
 
   // Auth state listener removed as we are local-first/no-auth
 
