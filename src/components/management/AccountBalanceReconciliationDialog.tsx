@@ -37,10 +37,7 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
   useEffect(() => {
     if (isOpen) {
       const calculatedRows = accounts.map(acc => {
-        const total = transactions
-          .filter(t => t.account === acc.name)
-          .reduce((sum, t) => sum + t.amount, 0);
-        const sysBal = (acc.starting_balance || 0) + total;
+        const sysBal = acc.running_balance || 0;
 
         return {
           id: acc.id,
