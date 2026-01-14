@@ -158,6 +158,7 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
     const budgetData = {
       user_id: userId,
       category_id: values.category_id,
+      sub_category_id: values.sub_category_id || null,
       target_amount: values.target_amount,
       frequency: values.frequency,
       start_date: values.start_date.toISOString(),
@@ -165,12 +166,6 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
       is_active: true,
       currency: defaultCurrency,
     };
-
-    // Map frequency to DB format
-    if (values.frequency === 'Monthly') budgetData.frequency = '1m';
-    else if (values.frequency === 'Quarterly') budgetData.frequency = '3m';
-    else if (values.frequency === 'Yearly') budgetData.frequency = '1y';
-    else if (values.frequency === 'One-time') budgetData.frequency = '1o'; // Assumption for one-time, or handle as needed
 
     const { error } = isEditMode
       ? await supabase.from("budgets").update(budgetData).eq("id", budget!.id)
