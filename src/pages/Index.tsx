@@ -1,13 +1,12 @@
-import { useMemo, useState, useCallback, ReactNode } from "react"; // Import useCallback
+import { useMemo, useState, useCallback } from "react"; // Import useCallback
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"; // Import Cell
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { SpendingByVendorChart } from "@/components/SpendingByVendorChart";
-import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Wallet, TrendingUp, TrendingDown, FilterX } from "lucide-react";
+import { TrendingUp, TrendingDown, FilterX } from "lucide-react";
 import { cn, slugify } from "@/lib/utils";
 import { BudgetHealthWidget } from "@/components/budgets/BudgetHealthWidget";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
@@ -141,8 +140,7 @@ const Index = () => {
   }, [currentTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
 
   const calculatePercentageChange = (
-    data: { [key: string]: number },
-    isBalance: boolean = false
+    data: { [key: string]: number }
   ) => {
     const sortedMonths = Object.keys(data).sort();
     if (sortedMonths.length < 2) {
@@ -208,7 +206,7 @@ const Index = () => {
 
   const expensesChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
   const incomeChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);
-  const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData, true), [monthlyBalanceData]);
+  const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData), [monthlyBalanceData]);
 
   const getChangeColorClass = (isPositive: boolean | null, type: 'income' | 'expenses' | 'balance') => {
     if (isPositive === null) return "text-muted-foreground";
@@ -219,7 +217,7 @@ const Index = () => {
   };
 
   // Handler for clicking a bar in the Income vs. Expenses chart
-  const handleBarClick = useCallback((data: any, monthIndex: number, clickedDataKey: 'income' | 'expenses') => {
+  const handleBarClick = useCallback((_data: any, monthIndex: number, clickedDataKey: 'income' | 'expenses') => {
     setActiveBar(prevActiveBar => {
       if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
         // Clicking the same bar again, reset
@@ -339,7 +337,7 @@ const Index = () => {
                     radius={4}
                     onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'income')}
                   >
-                    {monthlySummary.map((entry, monthIndex) => (
+                    {monthlySummary.map((_entry, monthIndex) => (
                       <Cell
                         key={`income-cell-${monthIndex}`}
                         fill={
@@ -357,7 +355,7 @@ const Index = () => {
                     radius={4}
                     onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'expenses')}
                   >
-                    {monthlySummary.map((entry, monthIndex) => (
+                    {monthlySummary.map((_entry, monthIndex) => (
                       <Cell
                         key={`expenses-cell-${monthIndex}`}
                         fill={
