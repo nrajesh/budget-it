@@ -12,6 +12,15 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useTransactions } from "@/contexts/TransactionsContext";
 
 // Define a minimal interface for scheduled transactions as they appear in Analytics
@@ -24,15 +33,17 @@ export interface ScheduledTransactionDisplayItem {
     category: string;
     amount: number;
     currency: string;
-    remarks?: string;
+    remarks?: string | null; // Allow null to match DB
     sub_category?: string;
 }
 
 interface ScheduledTransactionsTableProps {
     transactions: ScheduledTransactionDisplayItem[];
+    onEdit?: (transaction: any) => void;
+    onDelete?: (id: string) => void;
 }
 
-export function ScheduledTransactionsTable({ transactions }: ScheduledTransactionsTableProps) {
+export function ScheduledTransactionsTable({ transactions, onEdit, onDelete }: ScheduledTransactionsTableProps) {
     const { accountCurrencyMap } = useTransactions();
     const { formatCurrency } = useCurrency();
     const navigate = useNavigate();
@@ -82,6 +93,7 @@ export function ScheduledTransactionsTable({ transactions }: ScheduledTransactio
                                 <TableHead>Category</TableHead>
                                 <TableHead>Sub-category</TableHead>
                                 <TableHead className="text-right">Amount</TableHead>
+                                {(onEdit || onDelete) && <TableHead className="w-[50px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -113,6 +125,23 @@ export function ScheduledTransactionsTable({ transactions }: ScheduledTransactio
                                             <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {formatCurrency(transaction.amount, currentAccountCurrency)}
                                             </TableCell>
+                                            {(onEdit || onDelete) && (
+                                                <TableCell>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                                                <span className="sr-only">Open menu</span>
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                            {onEdit && <DropdownMenuItem onClick={() => onEdit(transaction)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>}
+                                                            {onDelete && <DropdownMenuItem onClick={() => onDelete(transaction.id)} className="text-destructive"><Trash className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     );
                                 })

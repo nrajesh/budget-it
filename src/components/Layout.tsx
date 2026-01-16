@@ -62,7 +62,6 @@ import {
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useUser } from "@/contexts/UserContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -127,28 +126,28 @@ const Layout = () => {
             <SidebarGroupLabel>Dashboards</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link to="/" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/"}>
+                  <Link to="/">
                     <LayoutGrid />
-                    Dashboard
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link to="/analytics" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/analytics"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/analytics"}>
+                  <Link to="/analytics">
                     <BarChart3 />
-                    Analytics
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Analytics</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link to="/transactions" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/transactions"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/transactions"}>
+                  <Link to="/transactions">
                     <Users />
-                    Transactions
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Transactions</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
@@ -156,28 +155,28 @@ const Layout = () => {
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link to="/accounts" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/accounts"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/accounts"}>
+                  <Link to="/accounts">
                     <Banknote />
-                    Accounts
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Accounts</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link to="/categories" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/categories"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/categories"}>
+                  <Link to="/categories">
                     <Tag />
-                    Categories
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Categories</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link to="/vendors" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/vendors"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/vendors"}>
+                  <Link to="/vendors">
                     <Phone />
-                    Vendors
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Vendors</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
@@ -185,12 +184,12 @@ const Layout = () => {
             <SidebarGroupLabel>Setup</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Link to="/scheduled" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/scheduled"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/scheduled"}>
+                  <Link to="/scheduled">
                     <Calendar />
-                    Scheduled
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Scheduled</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
               <Collapsible asChild>
                 <SidebarMenuItem>
@@ -204,30 +203,30 @@ const Layout = () => {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
-                        <Link to="/reports/essential" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/reports/essential"}>
+                        <SidebarMenuSubButton asChild isActive={location.pathname === "/reports/essential"}>
+                          <Link to="/reports/essential">
                             Essential
-                          </SidebarMenuSubButton>
-                        </Link>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
-                        <Link to="/reports/advanced" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/reports/advanced"}>
+                        <SidebarMenuSubButton asChild isActive={location.pathname === "/reports/advanced"}>
+                          <Link to="/reports/advanced">
                             Advanced
-                          </SidebarMenuSubButton>
-                        </Link>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
               <SidebarMenuItem>
-                <Link to="/budgets" className="w-full">
-                  <SidebarMenuButton isActive={location.pathname === "/budgets"}>
+                <SidebarMenuButton asChild isActive={location.pathname === "/budgets"}>
+                  <Link to="/budgets">
                     <FileText />
-                    Budgets
-                  </SidebarMenuButton>
-                </Link>
+                    <span>Budgets</span>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
@@ -246,18 +245,18 @@ const Layout = () => {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
-                        <Link to="/profile" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/profile"}>
+                        <SidebarMenuSubButton asChild isActive={location.pathname === "/profile"}>
+                          <Link to="/profile">
                             Profile
-                          </SidebarMenuSubButton>
-                        </Link>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
-                        <Link to="/settings" className="w-full">
-                          <SidebarMenuSubButton isActive={location.pathname === "/settings"}>
+                        <SidebarMenuSubButton asChild isActive={location.pathname === "/settings"}>
+                          <Link to="/settings">
                             Settings
-                          </SidebarMenuSubButton>
-                        </Link>
+                          </Link>
+                        </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   </CollapsibleContent>
@@ -302,8 +301,9 @@ const Layout = () => {
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
-                await supabase.auth.signOut();
+              <DropdownMenuItem onClick={() => {
+                // No-op for local mode or reset state
+                window.location.reload();
               }}>
                 Log out
               </DropdownMenuItem>
@@ -362,8 +362,8 @@ const Layout = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  await supabase.auth.signOut();
+                <DropdownMenuItem onClick={() => {
+                  window.location.reload();
                 }}>
                   Log out
                 </DropdownMenuItem>

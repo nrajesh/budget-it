@@ -48,18 +48,18 @@ export const chartConfig = {
 
 export type Transaction = {
   id: string;
-  transfer_id?: string;
+  transfer_id?: string | null;
   date: string;
   account: string;
   currency: string;
   vendor: string;
   amount: number;
-  remarks?: string;
+  remarks?: string | null;
   category: string;
   created_at: string;
   user_id: string; // Added user_id here
   is_scheduled_origin?: boolean; // Added optional property to reflect DB column
-  sub_category?: string;
+  sub_category?: string | null;
   recurrence_id?: string | null; // Added recurrence fields
   recurrence_frequency?: string | null;
   recurrence_end_date?: string | null; // Added recurrence_end_date
@@ -93,8 +93,8 @@ export type Budget = {
   start_date: string;
   frequency: string;
   end_date?: string | null;
-  is_active: boolean;
-  created_at: string;
+  is_active?: boolean;
+  created_at?: string;
 };
 
 // Base categories for seeding and initial demo data generation.

@@ -1,11 +1,7 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
 import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { useQuery } from '@tanstack/react-query';
-import { ScheduledTransaction, createScheduledTransactionsService, generateFutureTransactions } from '@/services/scheduledTransactionsService';
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { filterTransactions } from "@/utils/nlp-search";
 
 interface Option {
@@ -36,27 +32,36 @@ export const useTransactionData = ({
   availableVendorOptions,
   excludeTransfers = false,
 }: UseTransactionDataProps) => {
-  const { transactions, accountCurrencyMap, refetchTransactions: refetchMainTransactions } = useTransactions();
-  const { user, isLoadingUser } = useUser();
-  const { convertBetweenCurrencies } = useCurrency();
-
-  // Fetch scheduled transactions using react-query
-  const { fetchScheduledTransactions } = createScheduledTransactionsService({
-    refetchTransactions: refetchMainTransactions,
-    userId: user?.id,
-    convertBetweenCurrencies,
-  });
-
-  const { data: scheduledTransactions = [] } = useQuery<ScheduledTransaction[], Error>({
-    queryKey: ['scheduledTransactions', user?.id],
-    queryFn: fetchScheduledTransactions,
-    enabled: !!user?.id && !isLoadingUser,
-  });
+  const { transactions, scheduledTransactions } = useTransactions();
 
   const combinedTransactions = React.useMemo(() => {
-    const futureTransactions = generateFutureTransactions(scheduledTransactions, accountCurrencyMap);
-    return [...transactions, ...futureTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, scheduledTransactions, accountCurrencyMap]);
+    const projectedTransactions: any[] = [];
+    const projectionHorizon = new Date();
+    projectionHorizon.setFullYear(projectionHorizon.getFullYear() + 1); // 1 year projection
+
+    scheduledTransactions.forEach(sch => {
+      let nextDate = new Date(sch.date);
+      while (nextDate <= projectionHorizon) {
+        projectedTransactions.push({
+          ...sch,
+          id: `proj-${sch.id}-${nextDate.toISOString()}`, // Temporary ID
+          date: nextDate.toISOString(),
+          is_scheduled_origin: true,
+          original_id: sch.id
+        });
+
+        // Advance date based on frequency
+        const d = new Date(nextDate);
+        if (sch.frequency === 'Daily') d.setDate(d.getDate() + 1);
+        else if (sch.frequency === 'Weekly') d.setDate(d.getDate() + 7);
+        else if (sch.frequency === 'Monthly') d.setMonth(d.getMonth() + 1);
+        else if (sch.frequency === 'Yearly') d.setFullYear(d.getFullYear() + 1);
+        nextDate = d;
+      }
+    });
+
+    return [...transactions, ...projectedTransactions].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, scheduledTransactions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = combinedTransactions;
@@ -112,5 +117,6 @@ export const useTransactionData = ({
   return {
     filteredTransactions,
     combinedTransactions,
+    scheduledTransactions,
   };
 };

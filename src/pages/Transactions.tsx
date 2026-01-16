@@ -1,28 +1,26 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Upload } from "lucide-react";
+import { Download, Plus, Upload, FilterX } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import TransactionDialog from "@/components/transactions/TransactionDialog";
 import { useSession } from "@/hooks/useSession";
 import Papa from "papaparse";
 import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
-import { ensurePayeeExists, ensureCategoryExists } from "@/integrations/supabase/utils";
 import { useTransactions } from "@/contexts/TransactionsContext";
-// import { Transaction } from "@/data/finance-data"; // Removed unused import
+import { useDataProvider } from "@/context/DataProviderContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
-import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
-import { BatchScheduleDialog } from "@/components/scheduled-transactions/BatchScheduleDialog";
-import { useScheduledTransactionManagement } from "@/hooks/useScheduledTransactionManagement";
-
+import { useNavigate, useLocation } from "react-router-dom";
+import { showError } from "@/utils/toast";
 
 const Transactions = () => {
   const session = useSession();
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
-    transactions,
+    transactions: allTransactions,
     isLoadingTransactions,
     accounts,
     vendors,
@@ -32,74 +30,58 @@ const Transactions = () => {
     invalidateAllData,
     addTransaction
   } = useTransactions();
+  const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Scheduled Transaction State
-  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [transactionToSchedule, setTransactionToSchedule] = useState<any>(null);
-  const {
-    saveMutation: saveScheduledMutation,
-    allPayees: scheduledPayees,
-    categories: scheduledCategories,
-    allSubCategories: scheduledSubCategories,
-    isLoading: isLoadingScheduledData
-  } = useScheduledTransactionManagement();
+  // Filter State
+  const [activeFilters, setActiveFilters] = useState<{
+    account?: string;
+    vendor?: string;
+    category?: string;
+  }>({});
 
-  // Batch Schedule State
-  const [isBatchScheduleOpen, setIsBatchScheduleOpen] = useState(false);
-  const [batchTransactions, setBatchTransactions] = useState<any[]>([]);
-  const [clearSelectionCallback, setClearSelectionCallback] = useState<(() => void) | null>(null);
-
-  const handleScheduleTransactions = (selectedTransactions: any[], clearSelection: () => void) => {
-    if (selectedTransactions.length === 0) return;
-
-    if (selectedTransactions.length === 1) {
-      // Single Transaction
-      const t = selectedTransactions[0];
-      const adapted = {
-        ...t,
-        id: undefined,
-        frequency: t.recurrence_frequency || "1m",
-        date: new Date(Date.now() + 86400000).toISOString(),
-      };
-      setTransactionToSchedule(adapted);
-      setIsScheduleDialogOpen(true);
-      // For single selection, we can clear explicitly after success? 
-      // Or just clear now? Let's clear now as the dialog handles the state separately.
-      clearSelection();
-    } else {
-      // Batch mode -> Open Dialog
-      setBatchTransactions(selectedTransactions);
-      setClearSelectionCallback(() => clearSelection); // Store callback
-      setIsBatchScheduleOpen(true);
+  React.useEffect(() => {
+    if (location.state) {
+      const { filterAccount, filterVendor, filterCategory } = location.state;
+      if (filterAccount || filterVendor || filterCategory) {
+        setActiveFilters({
+          account: filterAccount,
+          vendor: filterVendor,
+          category: filterCategory
+        });
+      }
     }
+  }, [location.state]);
+
+  const clearFilters = () => {
+    setActiveFilters({});
+    // Clear location state without reloading or navigating away
+    navigate(location.pathname, { replace: true, state: {} });
   };
 
-  const handleBatchConfirm = (settings: { frequency_value: number, frequency_unit: string, date: string }) => {
-    batchTransactions.forEach(t => {
-      const payload = {
-        date: new Date(settings.date).toISOString(),
-        account: t.account,
-        vendor: t.vendor,
-        category: t.category,
-        sub_category: t.sub_category,
-        amount: t.amount,
-        remarks: t.remarks,
-        frequency_value: settings.frequency_value,
-        frequency_unit: settings.frequency_unit,
-        recurrence_end_date: null
-      };
-      saveScheduledMutation.mutate(payload);
+  const filteredTransactions = React.useMemo(() => {
+    return allTransactions.filter(t => {
+      if (activeFilters.account && t.account !== activeFilters.account) return false;
+      if (activeFilters.vendor && t.vendor !== activeFilters.vendor) return false;
+      if (activeFilters.category && t.category !== activeFilters.category) return false;
+      return true;
     });
+  }, [allTransactions, activeFilters]);
 
-    if (clearSelectionCallback) {
-      clearSelectionCallback();
-      setClearSelectionCallback(null);
-    }
-    setBatchTransactions([]);
+
+  // Scheduled Transaction State - Stubbed for local migration
+
+
+  const handleScheduleTransactions = (_selectedTransactions: any[], clearSelection: () => void) => {
+    // Disabled for migration
+    toast({
+      title: "Feature Unavailable",
+      description: "Scheduling transactions is currently unavailable in offline mode.",
+    });
+    clearSelection();
   };
 
   const REQUIRED_HEADERS = [
@@ -107,17 +89,18 @@ const Transactions = () => {
     "Account",
     "Payee", // Renamed from Vendor
     "Category",
+    "Subcategory", // Moved before Amount/Currency
+    "Currency",
     "Amount",
-    "Subcategory", // Added Subcategory
     "Notes", // Renamed from Remarks
-    "Currency", // Optional? Mapping dialog handles it, but let's keep it here for auto-validation success if present
     "Frequency",
     "End Date",
-    "Transfer ID"
+    "Transfer ID",
+    "Account Type"
   ];
 
   const handleExport = () => {
-    let dataToExport = transactions.map(t => ({
+    let dataToExport = filteredTransactions.map(t => ({
       "Date": t.date ? parseRobustDate(t.date)?.split('T')[0] : t.date,
       "Account": t.account,
       "Payee": t.vendor,
@@ -133,7 +116,7 @@ const Transactions = () => {
 
     let fileName = "transactions.csv";
 
-    if (transactions.length === 0) {
+    if (filteredTransactions.length === 0) {
       const today = new Date().toISOString().split("T")[0];
       const transferId1 = "TRF-SAME-" + Math.random().toString(36).substr(2, 4).toUpperCase();
       const transferId2 = "TRF-DIFF-" + Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -260,57 +243,100 @@ const Transactions = () => {
 
   const [mappingDialogState, setMappingDialogState] = useState<{
     isOpen: boolean;
-    csvHeaders: string[];
-    csvData: any[];
+    file: File | null;
   }>({
     isOpen: false,
-    csvHeaders: [],
-    csvData: [],
+    file: null,
   });
 
-  const processImport = async (data: any[]) => {
+  const processImport = async (data: any[], config?: any) => {
     try {
+      const userId = session?.user?.id;
+      if (!userId) {
+        showError("User not logged in");
+        return;
+      }
+
+      const isReplace = config?.importMode === 'replace';
+
+      if (isReplace) {
+        console.log("Import mode is REPLACE. Clearing existing transactions...");
+        await dataProvider.clearTransactions(userId);
+        await dataProvider.clearBudgets(userId);
+        await dataProvider.clearScheduledTransactions(userId);
+      }
+
+      console.log("Starting import with data:", data.length, "rows", config);
       // 1. Ensure Entities Exist
       const uniqueAccounts = [...new Set(data.map((r: any) => r.Account).filter(Boolean))];
       await Promise.all(uniqueAccounts.map(name => {
         // Find currency for this account from the first row that has this account
         const row = data.find((r: any) => r.Account === name);
         const currency = row?.Currency || 'USD'; // Default if missing
-        return ensurePayeeExists(name, true, { currency });
+        const type = row?.["Account Type"];
+        return dataProvider.ensurePayeeExists(name, true, { currency, type });
       }));
 
       const uniquePayees = [...new Set(data.map((r: any) => r.Payee || r.Vendor).filter(Boolean))];
-      await Promise.all(uniquePayees.map(name => ensurePayeeExists(name, false)));
+      await Promise.all(uniquePayees.map(name => dataProvider.ensurePayeeExists(name, false)));
 
       const uniqueCategories = [...new Set(data.map((r: any) => r.Category).filter(Boolean))];
-      await Promise.all(uniqueCategories.map(name => ensureCategoryExists(name, session?.user?.id || "")));
+      await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, userId)));
 
       // 2. Prepare Transactions
-      const transactionsToInsert = data.map((row: any) => ({
-        user_id: session?.user?.id,
-        date: parseRobustDate(row.Date) || new Date().toISOString(),
-        account: row.Account,
-        vendor: row.Payee || row.Vendor || "", // Support both new and old keys if mixed, but prefer Payee
-        category: row.Category,
-        sub_category: row.Subcategory || row.Sub_Category || "", // Map Subcategory
-        // Robust amount parsing
-        amount: parseRobustAmount(row.Amount),
-        remarks: row.Notes || row.Remarks || "", // Support both
-        currency: row.Currency,
-        recurrence_frequency: row.Frequency || null,
-        recurrence_end_date: parseRobustDate(row["End Date"]) || null,
-        transfer_id: row["Transfer ID"] || null,
-      }));
+      const transactionsToInsert: any[] = [];
+      let skippedCount = 0;
 
-      const { error } = await supabase
-        .from("transactions")
-        .insert(transactionsToInsert);
+      for (const row of data) {
+        // Validation
+        const amount = parseRobustAmount(row.Amount, config?.decimalSeparator);
+        const date = parseRobustDate(row.Date, config?.dateFormat);
 
-      if (error) throw error;
+        if (!date) {
+          skippedCount++;
+          continue;
+        }
+        // Note: Amount 0 is technically valid but often a parsing error. We'll allow it but warn in logs.
+
+        const t = {
+          user_id: userId,
+          date: date, // validated above
+          account: row.Account || "Uncategorized Account", // Fallback to avoid undefined
+          vendor: row.Payee || row.Vendor || "",
+          category: row.Category || "Uncategorized",
+          sub_category: row.Subcategory || row.Sub_Category || "",
+          amount: amount,
+          remarks: row.Notes || row.Remarks || "",
+          currency: row.Currency || "USD",
+          recurrence_frequency: row.Frequency || null,
+          recurrence_end_date: parseRobustDate(row["End Date"], config?.dateFormat) || null,
+          transfer_id: row["Transfer ID"] || null,
+        };
+        transactionsToInsert.push(t);
+      }
+
+      if (transactionsToInsert.length === 0) {
+        toast({
+          title: "Import Failed",
+          description: "No valid transactions found. Please checks your date and amount column mappings.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // 3. Insert
+      for (const t of transactionsToInsert) {
+        await dataProvider.addTransaction(t);
+      }
+
+      let desc = `Successfully imported ${transactionsToInsert.length} transactions.`;
+      if (skippedCount > 0) {
+        desc += ` (${skippedCount} rows skipped due to invalid data)`;
+      }
 
       toast({
         title: "Import Successful",
-        description: `Successfully imported ${transactionsToInsert.length} transactions.`,
+        description: desc,
       });
       invalidateAllData();
     } catch (error: any) {
@@ -322,16 +348,8 @@ const Transactions = () => {
     }
   };
 
-  const handleMappingConfirm = (mapping: Record<string, string>) => {
-    const mappedData = mappingDialogState.csvData.map((row: any) => {
-      const newRow: any = {};
-      Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
-        newRow[requiredHeader] = row[csvHeader];
-      });
-      return newRow;
-    });
-
-    processImport(mappedData);
+  const handleMappingConfirm = (data: any[], config: any) => {
+    processImport(data, config);
     setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }));
   };
 
@@ -339,38 +357,13 @@ const Transactions = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results: any) => {
-        const headers = results.meta.fields || [];
-        const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h));
-
-        if (missingHeaders.length > 0) {
-          // Instead of failing, open mapping dialog
-          setMappingDialogState({
-            isOpen: true,
-            csvHeaders: headers,
-            csvData: results.data,
-          });
-          return;
-        }
-
-        processImport(results.data);
-      },
-      error: (error: any) => {
-        toast({
-          title: "File reading error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+    setMappingDialogState({
+      isOpen: true,
+      file: file
     });
 
     event.target.value = '';
   };
-
-
 
   return (
     <div className="container mx-auto py-8">
@@ -380,6 +373,19 @@ const Transactions = () => {
           <p className="text-muted-foreground">Manage and track your financial activities.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* Filter Indicator / Reset Button */}
+          {(activeFilters.account || activeFilters.vendor || activeFilters.category) && (
+            <Button variant="secondary" onClick={clearFilters} className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400">
+              <FilterX className="mr-2 h-4 w-4" />
+              Reset Filters
+              {(activeFilters.account || activeFilters.vendor || activeFilters.category) &&
+                <span className="ml-2 text-xs opacity-70">
+                  ({activeFilters.account || activeFilters.vendor || activeFilters.category})
+                </span>
+              }
+            </Button>
+          )}
+
           <input
             type="file"
             ref={fileInputRef}
@@ -403,7 +409,7 @@ const Transactions = () => {
       </div>
 
       <TransactionTable
-        transactions={transactions}
+        transactions={filteredTransactions} // Use filtered transactions
         loading={isLoadingTransactions}
         onRefresh={invalidateAllData}
         accounts={accounts}
@@ -421,35 +427,10 @@ const Transactions = () => {
         onSuccess={invalidateAllData}
       />
 
-      <AddEditScheduledTransactionDialog
-        isOpen={isScheduleDialogOpen}
-        onOpenChange={setIsScheduleDialogOpen}
-        transaction={transactionToSchedule}
-        onSubmit={(values) => saveScheduledMutation.mutate(values)}
-        isSubmitting={saveScheduledMutation.isPending}
-        accounts={accounts} // Reuse accounts from useTransactions? Or use from useScheduledTransactionManagement? They are likely same source but mapped differently.
-        // AddEditScheduledTransactionDialog expects Payee[] for accounts, which is { name: string }[]
-        // accounts from useTransactions is likely any[].
-        // Let's use the data from useScheduledTransactionManagement to be safe and match types.
-        allPayees={scheduledPayees}
-        categories={scheduledCategories}
-        allSubCategories={scheduledSubCategories}
-        isLoading={isLoadingScheduledData}
-      />
-
-
-
-      <BatchScheduleDialog
-        isOpen={isBatchScheduleOpen}
-        onOpenChange={setIsBatchScheduleOpen}
-        count={batchTransactions.length}
-        onConfirm={handleBatchConfirm}
-      />
-
       <CSVMappingDialog
         isOpen={mappingDialogState.isOpen}
         onClose={() => setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }))}
-        csvHeaders={mappingDialogState.csvHeaders}
+        file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}
         onConfirm={handleMappingConfirm}
       />

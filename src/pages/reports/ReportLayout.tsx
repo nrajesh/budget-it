@@ -11,9 +11,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
-import { Budget } from '@/data/finance-data';
-import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils'; // Make sure to import cn
+import { Budget } from '@/types/dataProvider';
+import { cn, slugify } from '@/lib/utils'; // Make sure to import cn
+import { useDataProvider } from '@/context/DataProviderContext';
 
 interface ReportLayoutProps {
   title: string;
@@ -28,25 +28,62 @@ interface ReportLayoutProps {
 }
 
 const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
-  const { accounts } = useTransactions();
+  const { accounts, vendors, categories, subCategories } = useTransactions();
   const { user } = useUser();
+
+  const availableAccountOptions = React.useMemo(() =>
+    accounts.map((acc: any) => ({ value: slugify(acc.name), label: acc.name })),
+    [accounts]
+  );
+
+  const availableVendorOptions = React.useMemo(() =>
+    vendors.map((v: any) => ({ value: slugify(v.name), label: v.name })),
+    [vendors]
+  );
+
+  const availableCategoryOptions = React.useMemo(() =>
+    categories.map((c: any) => ({ value: slugify(c.name), label: c.name })),
+    [categories]
+  );
+
+  const categoryTreeData = React.useMemo(() =>
+    categories.map((c: any) => {
+      const subs = subCategories.filter((s: any) => s.category_id === c.id);
+      return {
+        id: c.id,
+        name: c.name,
+        slug: slugify(c.name),
+        subCategories: subs.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          slug: slugify(s.name)
+        }))
+      };
+    }),
+    [categories, subCategories]
+  );
+
   const filterProps = useTransactionFilters();
   const dataProps = useTransactionData({
     ...filterProps,
     excludeTransfers: filterProps.excludeTransfers,
+    availableAccountOptions,
+    availableCategoryOptions,
+    availableVendorOptions,
   });
   const { isFinancialPulse } = useTheme();
+  const dataProvider = useDataProvider();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
     queryKey: ['budgets', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('budgets')
-        .select('*, categories(name)')
-        .eq('user_id', user.id);
-      if (error) throw error;
-      return data.map(b => ({ ...b, category_name: b.categories.name })) as Budget[];
+      // Use data provider to fetch budgets. DataProvider returns budgets with category_name usually.
+      // But getBudgetsWithSpending might be overkill if we just want basic list?
+      // Actually, ReportLayout just wants the list to calculate things maybe.
+      // Let's use getBudgetsWithSpending as it is the main getter we implemented.
+      const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+      return budgets;
     },
     enabled: !!user,
   });
@@ -147,6 +184,9 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
           <ThemedCardTitle>Report Filters</ThemedCardTitle>
           <TransactionFilters
             {...filterProps}
+            availableAccountOptions={availableAccountOptions}
+            availableVendorOptions={availableVendorOptions}
+            categoryTreeData={categoryTreeData}
             onDateChange={filterProps.setDateRange}
             onExcludeTransfersChange={filterProps.setExcludeTransfers}
             onResetFilters={filterProps.handleResetFilters}

@@ -23,10 +23,11 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Combobox } from "@/components/ui/combobox";
-import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useDataProvider } from '@/context/DataProviderContext';
+import { db } from '@/lib/dexieDB';
 
 export type Payee = {
   id: string;
@@ -39,6 +40,8 @@ export type Payee = {
   remarks: string | null;
   running_balance: number | null;
   totalTransactions?: number;
+  type?: 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
+  credit_limit?: number;
 };
 
 const formSchema = z.object({
@@ -47,6 +50,8 @@ const formSchema = z.object({
   currency: z.string().optional(),
   starting_balance: z.coerce.number().optional(),
   remarks: z.string().optional(),
+  type: z.enum(['Checking', 'Savings', 'Credit Card', 'Investment', 'Other']).optional(),
+  credit_limit: z.coerce.number().optional(),
 });
 
 interface AddEditPayeeDialogProps {
@@ -66,6 +71,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
 }) => {
   const { availableCurrencies } = useCurrency();
   const { invalidateAllData } = useTransactions();
+  const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -74,10 +80,13 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
       currency: "EUR",
       starting_balance: 0,
       remarks: "",
+      type: "Checking",
+      credit_limit: undefined,
     },
   });
 
   const isAccount = form.watch("is_account");
+  const accountType = form.watch("type");
 
   React.useEffect(() => {
     if (payee) {
@@ -87,6 +96,8 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         currency: payee.currency || "EUR",
         starting_balance: payee.starting_balance || 0,
         remarks: payee.remarks || "",
+        type: payee.type || "Checking",
+        credit_limit: payee.credit_limit,
       });
     } else {
       form.reset({
@@ -95,6 +106,8 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         currency: "EUR",
         starting_balance: 0,
         remarks: "",
+        type: "Checking",
+        credit_limit: undefined,
       });
     }
   }, [payee, form, isOpen, isAccountOnly]);
@@ -102,49 +115,34 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       if (payee) {
+        // Pragmatic update for payee using db directly
         if (payee.name !== values.name) {
-          const { error: rpcError } = await supabase.rpc('update_vendor_name', {
-            p_vendor_id: payee.id,
-            p_new_name: values.name,
-          });
-          if (rpcError) throw rpcError;
+          await db.vendors.update(payee.id, { name: values.name });
+          // Also update transactions? Supabase RPC did it.
+          // Ideally we cascade update transactions vendor field
+          await db.transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
+          await db.transactions.where('account').equals(payee.name).modify({ account: values.name });
         }
-        if (payee.is_account && payee.account_id) {
-          const { error } = await supabase
-            .from("accounts")
-            .update({
-              currency: values.currency,
-              starting_balance: values.starting_balance,
-              remarks: values.remarks,
-            })
-            .eq("id", payee.account_id);
-          if (error) throw error;
-        }
-        showSuccess("Payee updated successfully!");
-      } else {
-        if (values.is_account) {
-          const { data: accountData, error: accountError } = await supabase
-            .from("accounts")
-            .insert({
-              currency: values.currency,
-              starting_balance: values.starting_balance,
-              remarks: values.remarks,
-            })
-            .select()
-            .single();
-          if (accountError) throw accountError;
 
-          const { error: vendorError } = await supabase.from("vendors").insert({
-            name: values.name,
-            is_account: true,
-            account_id: accountData.id,
+        if (payee.is_account && payee.account_id) {
+          await db.accounts.update(payee.account_id, {
+            currency: values.currency,
+            starting_balance: values.starting_balance || 0,
+            remarks: values.remarks || "",
+            type: values.type,
+            credit_limit: values.credit_limit,
           });
-          if (vendorError) throw vendorError;
-        } else {
-          const { error } = await supabase.from("vendors").insert({ name: values.name });
-          if (error) throw error;
         }
-        showSuccess("Payee added successfully!");
+        showSuccess(`${payee.is_account ? "Account" : "Payee"} updated successfully!`);
+      } else {
+        await dataProvider.ensurePayeeExists(values.name, values.is_account, {
+          currency: values.currency,
+          startingBalance: values.starting_balance,
+          remarks: values.remarks,
+          type: values.type,
+          creditLimit: values.credit_limit,
+        });
+        showSuccess(`${values.is_account ? "Account" : "Payee"} added successfully!`);
       }
       onSuccess();
       await invalidateAllData();
@@ -158,9 +156,11 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{payee ? "Edit" : "Add"} Payee</DialogTitle>
+          <DialogTitle>{payee ? "Edit" : "Add"} {isAccountOnly ? "Account" : "Payee"}</DialogTitle>
           <DialogDescription>
-            {payee ? "Update the details of the payee." : "Add a new vendor or account to your list."}
+            {payee
+              ? `Update the details of the ${isAccountOnly ? "account" : "payee"}.`
+              : `Add a new ${isAccountOnly ? "account" : "vendor or account"} to your list.`}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -218,6 +218,49 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Type</FormLabel>
+                      <div className="relative w-full">
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={field.value}
+                          onChange={field.onChange}
+                        // disabled={!!payee} // Allow changing account type
+                        >
+                          <option value="Checking">Checking</option>
+                          <option value="Savings">Savings</option>
+                          <option value="Credit Card">Credit Card</option>
+                          <option value="Investment">Investment</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {accountType === 'Credit Card' && (
+                  <FormField
+                    control={form.control}
+                    name="credit_limit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Credit Limit</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" placeholder="e.g. 5000" {...field} value={field.value ?? ''} />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">Sets an alert threshold for negative balance.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="starting_balance"

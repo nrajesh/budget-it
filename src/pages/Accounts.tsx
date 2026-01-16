@@ -5,17 +5,28 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
-import AccountReconciliationDialog from "@/components/management/AccountReconciliationDialog";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import AccountDeduplicationDialog from "@/components/management/AccountDeduplicationDialog";
+import AccountBalanceReconciliationDialog from "@/components/management/AccountBalanceReconciliationDialog";
 
 import { filterAccounts } from "@/utils/nlp-search";
+
+import { GroupedEntityTable } from "@/components/management/GroupedEntityTable";
 
 const AccountsPage = () => {
   const { accounts, isLoadingAccounts, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
   const managementProps = usePayeeManagement(true);
-  const [isReconcileOpen, setIsReconcileOpen] = React.useState(false);
+
+  // Sort accounts by type for grouping
+  const sortedAccounts = React.useMemo(() => {
+    return [...accounts].sort((a, b) => {
+      const typeA = a.type || 'Other';
+      const typeB = b.type || 'Other';
+      if (typeA < typeB) return -1;
+      if (typeA > typeB) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [accounts]);
 
   const columns: ColumnDefinition<Payee>[] = [
     {
@@ -27,6 +38,7 @@ const AccountsPage = () => {
         </div>
       ),
     },
+    { header: "Type", accessor: (item) => item.type || 'Checking' }, // Default for legacy data
     { header: "Currency", accessor: "currency" },
     {
       header: "Starting Balance",
@@ -54,7 +66,7 @@ const AccountsPage = () => {
         title="Accounts"
         entityName="Account"
         entityNamePlural="accounts"
-        data={accounts}
+        data={sortedAccounts}
         isLoading={isLoadingAccounts}
         columns={columns}
         AddEditDialogComponent={(props) => (
@@ -64,16 +76,11 @@ const AccountsPage = () => {
         {...managementProps}
         selectedEntity={managementProps.selectedPayee}
         customFilter={(data, term) => filterAccounts(data, term) as Payee[]}
-        extraActions={
-          <Button onClick={() => setIsReconcileOpen(true)} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reconcile
-          </Button>
-        }
-      />
-      <AccountReconciliationDialog
-        isOpen={isReconcileOpen}
-        onClose={() => setIsReconcileOpen(false)}
+        DeduplicationDialogComponent={AccountDeduplicationDialog}
+        BalanceReconciliationDialogComponent={AccountBalanceReconciliationDialog}
+        groupBy="type"
+        TableComponent={GroupedEntityTable}
+        disablePagination={true}
       />
     </>
   );

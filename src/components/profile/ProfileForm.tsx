@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2, Upload } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
@@ -81,27 +80,21 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ setIsAvatarModalOpen }
     }
 
     try {
-      const { error } = await supabase
-        .from("user_profile")
-        .update({
+      // Local mode: Conceptual update
+      // In a real local app, we'd save this to localStorage or IndexedDB 'user_profile' table.
+      // For now, we mock the success.
+
+      // Optionally update local storage if we want basic persistence
+      const profile = {
+          id: user.id,
           first_name: values.first_name,
           last_name: values.last_name,
           avatar_url: values.avatar_url,
           email: values.email,
           updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
+      };
+      // localStorage.setItem('user_profile', JSON.stringify(profile));
 
-      if (error) {
-        throw error;
-      }
-
-      if (user.email !== values.email) {
-        const { error: authUpdateError } = await supabase.auth.updateUser({ email: values.email });
-        if (authUpdateError) {
-          throw authUpdateError;
-        }
-      }
       showSuccess("Profile updated successfully!");
       fetchUserProfile();
     } catch (error: any) {

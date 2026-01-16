@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
-import { ScheduledTransaction as ScheduledTransactionType } from '@/services/scheduledTransactionsService';
+import { ScheduledTransaction as ScheduledTransactionType } from '@/types/dataProvider';
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import { Payee } from "@/components/AddEditPayeeDialog";
 import { Category } from "@/data/finance-data";
@@ -115,7 +115,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           frequency_value: frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1,
           frequency_unit: frequencyMatch ? frequencyMatch[2] : 'm',
           remarks: transaction.remarks || '',
-          recurrence_end_date: transaction.recurrence_end_date ? formatDateToYYYYMMDD(transaction.recurrence_end_date) : '',
+          recurrence_end_date: transaction.end_date ? formatDateToYYYYMMDD(transaction.end_date) : '',
         });
       } else {
         form.reset({

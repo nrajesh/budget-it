@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { Budget } from "../types/budgets";
 import { BudgetSummary } from "../components/budgets/BudgetSummary";
 import { BudgetDialog } from "../components/budgets/BudgetDialog";
 import { useToast } from "@/components/ui/use-toast";
+import { useDataProvider } from "@/context/DataProviderContext";
+import { useUser } from "@/contexts/UserContext";
 import { PlusCircle } from "lucide-react";
 import {
   AlertDialog,
@@ -24,39 +25,33 @@ export default function BudgetsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [budgetToDeleteId, setBudgetToDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const dataProvider = useDataProvider();
+  const { user } = useUser();
+  const userId = user?.id || null;
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        fetchBudgets(user.id);
-      } else {
+    if (userId) {
+        fetchBudgets(userId);
+    } else {
         setIsLoading(false);
-      }
-    };
-    getUser();
-  }, []);
+    }
+  }, [userId]);
 
   const fetchBudgets = async (currentUserId: string) => {
     setIsLoading(true);
-    const { data, error } = await supabase.rpc('get_budgets_with_spending', {
-      p_user_id: currentUserId,
-    });
-
-    if (error) {
-      toast({
-        title: "Error fetching budgets",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setBudgets(data || []);
+    try {
+        const data = await dataProvider.getBudgetsWithSpending(currentUserId);
+        setBudgets(data || []);
+    } catch (error: any) {
+        toast({
+            title: "Error fetching budgets",
+            description: error.message,
+            variant: "destructive",
+        });
     }
     setIsLoading(false);
   };
@@ -95,21 +90,21 @@ export default function BudgetsPage() {
   const confirmDelete = async () => {
     if (!budgetToDeleteId) return;
 
-    const { error } = await supabase.from("budgets").delete().eq("id", budgetToDeleteId);
-    
-    if (error) {
-      toast({
-        title: "Error deleting budget",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Budget deleted",
-        description: "The budget has been successfully deleted.",
-      });
-      handleSave();
+    try {
+        await dataProvider.deleteBudget(budgetToDeleteId);
+        toast({
+            title: "Budget deleted",
+            description: "The budget has been successfully deleted.",
+        });
+        handleSave();
+    } catch (error: any) {
+        toast({
+            title: "Error deleting budget",
+            description: error.message,
+            variant: "destructive",
+        });
     }
+
     setBudgetToDeleteId(null);
     setIsConfirmingDelete(false);
   };

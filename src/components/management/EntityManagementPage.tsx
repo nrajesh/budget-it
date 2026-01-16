@@ -52,6 +52,10 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   refetch?: () => void;
   extraActions?: React.ReactNode;
   customFilter?: (data: T[], searchTerm: string) => T[];
+  DeduplicationDialogComponent?: React.FC<any>;
+  CleanupDialogComponent?: React.FC<any>;
+  BalanceReconciliationDialogComponent?: React.FC<any>;
+  groupBy?: keyof T;
 }
 
 const EntityManagementPage = <T extends { id: string; name: string }>({
@@ -79,7 +83,19 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   refetch,
   extraActions,
   customFilter,
-}: EntityManagementPageProps<T>) => {
+  DeduplicationDialogComponent,
+  CleanupDialogComponent,
+  BalanceReconciliationDialogComponent,
+  groupBy,
+  disablePagination = false,
+  TableComponent = EntityTable,
+}: EntityManagementPageProps<T> & {
+  disablePagination?: boolean;
+  TableComponent?: React.ComponentType<any>;
+}) => {
+  const [isDeduplicateOpen, setIsDeduplicateOpen] = React.useState(false);
+  const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);
+  const [isBalanceReconcileOpen, setIsBalanceReconcileOpen] = React.useState(false);
 
   const filteredData = React.useMemo(() => {
     if (customFilter) {
@@ -91,9 +107,14 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   }, [data, searchTerm, customFilter]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  // If pagination is disabled, show all filtered data. Otherwise slice.
+  const currentData = disablePagination
+    ? filteredData
+    : filteredData.slice((currentPage - 1) * itemsPerPage, ((currentPage - 1) * itemsPerPage) + itemsPerPage);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
 
   const numSelected = selectedRows.length;
 
@@ -107,6 +128,21 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>
               {isLoadingMutation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete ({numSelected})
+            </Button>
+          )}
+          {BalanceReconciliationDialogComponent && (
+            <Button variant="outline" onClick={() => setIsBalanceReconcileOpen(true)}>
+              Reconcile Balance
+            </Button>
+          )}
+          {CleanupDialogComponent && (
+            <Button variant="outline" onClick={() => setIsCleanupOpen(true)}>
+              Cleanup Unused
+            </Button>
+          )}
+          {DeduplicationDialogComponent && (
+            <Button variant="outline" onClick={() => setIsDeduplicateOpen(true)}>
+              De-duplicate
             </Button>
           )}
           {extraActions}
@@ -141,12 +177,12 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           </div>
         </CardHeader>
         <CardContent>
-          <EntityTable
+          <TableComponent
             data={currentData}
             columns={columns}
             isLoading={isLoading}
             selectedRows={selectedRows}
-            handleRowSelect={(id, checked) => {
+            handleRowSelect={(id: string, checked: boolean) => {
               if (id.includes(',')) {
                 handleSelectAll(checked, currentData);
               } else {
@@ -158,25 +194,46 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             isDeletable={isDeletable}
             isEditing={isEditing}
             isUpdating={isUpdating}
+            groupBy={groupBy}
           />
         </CardContent>
-        <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {numSelected > 0 ? `${numSelected} of ${filteredData.length} row(s) selected.` : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} ${entityNamePlural}`}
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} /></PaginationItem>
-              <PaginationItem><PaginationNext onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardFooter>
+        {!disablePagination && (
+          <CardFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {numSelected > 0 ? `${numSelected} of ${filteredData.length} row(s) selected.` : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} ${entityNamePlural}`}
+            </div>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} /></PaginationItem>
+                <PaginationItem><PaginationNext onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </CardFooter>
+        )}
       </Card>
       {AddEditDialogComponent && (
         <AddEditDialogComponent
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           payee={selectedEntity} // Use generic selectedEntity
+        />
+      )}
+      {DeduplicationDialogComponent && (
+        <DeduplicationDialogComponent
+          isOpen={isDeduplicateOpen}
+          onClose={() => setIsDeduplicateOpen(false)}
+        />
+      )}
+      {CleanupDialogComponent && (
+        <CleanupDialogComponent
+          isOpen={isCleanupOpen}
+          onClose={() => setIsCleanupOpen(false)}
+        />
+      )}
+      {BalanceReconciliationDialogComponent && (
+        <BalanceReconciliationDialogComponent
+          isOpen={isBalanceReconcileOpen}
+          onClose={() => setIsBalanceReconcileOpen(false)}
         />
       )}
       <ConfirmationDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={confirmDelete} title="Are you sure?" description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone." confirmText="Delete" />

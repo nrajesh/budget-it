@@ -14,7 +14,7 @@ interface AlertsAndInsightsProps {
 }
 
 const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransactions, futureTransactions, accounts, budgets }) => {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const navigate = useNavigate();
 
   const handleAccountClick = (accountName: string) => {
@@ -34,7 +34,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
 
   // 1. Calculate Low Balance Alerts
   const lowBalanceAlerts = React.useMemo(() => {
-    const alerts: { accountName: string; daysUntilNegative: number; finalBalance: number }[] = [];
+    const alerts: {
+      accountName: string;
+      daysUntilNegative: number;
+      finalBalance: number;
+      isCreditLimitBreach?: boolean;
+      threshold?: number;
+    }[] = [];
+
     if (accounts.length === 0) return [];
 
     const currentBalances: Record<string, number> = {};
@@ -45,31 +52,47 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     });
 
     historicalTransactions.forEach(t => {
-      if (t.category !== 'Transfer') {
-        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-        currentBalances[t.account] = (currentBalances[t.account] || 0) + convertedAmount;
-      }
+      const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+      currentBalances[t.account] = (currentBalances[t.account] || 0) + convertedAmount;
     });
 
     const sortedFutureTx = [...futureTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const projectedBalances = { ...currentBalances };
     const negativeDateMap: Record<string, Date> = {};
 
+    // Check if currently negative (or exceeding limit)
+    Object.keys(currentBalances).forEach(accountName => {
+      const account = accounts.find(a => a.name === accountName);
+      const threshold = (account?.type === 'Credit Card' && account.credit_limit) ? -account.credit_limit : 0;
+
+      if (currentBalances[accountName] < threshold) {
+        negativeDateMap[accountName] = new Date(); // Already breached
+      }
+    });
+
     for (const tx of sortedFutureTx) {
       const convertedAmount = convertBetweenCurrencies(tx.amount, tx.currency, selectedCurrency);
       projectedBalances[tx.account] = (projectedBalances[tx.account] || 0) + convertedAmount;
 
-      if (projectedBalances[tx.account] < 0 && !negativeDateMap[tx.account]) {
+      const account = accounts.find(a => a.name === tx.account);
+      const threshold = (account?.type === 'Credit Card' && account.credit_limit) ? -account.credit_limit : 0;
+
+      if (projectedBalances[tx.account] < threshold && !negativeDateMap[tx.account]) {
         negativeDateMap[tx.account] = new Date(tx.date);
       }
     }
 
     Object.keys(negativeDateMap).forEach(accountName => {
       const daysUntilNegative = differenceInDays(negativeDateMap[accountName], new Date());
+      const account = accounts.find(a => a.name === accountName);
+      const isCreditCard = account?.type === 'Credit Card' && account.credit_limit;
+
       alerts.push({
         accountName,
         daysUntilNegative: daysUntilNegative >= 0 ? daysUntilNegative : 0,
         finalBalance: projectedBalances[accountName],
+        isCreditLimitBreach: !!isCreditCard,
+        threshold: isCreditCard ? -account!.credit_limit! : 0
       });
     });
 
@@ -78,6 +101,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
+    // ... (rest of the code unchanged)
     const alerts: { categoryName: string; percentage: number; }[] = [];
     const now = new Date();
     const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -86,7 +110,9 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     const activeMonthlyBudgets = budgets.filter(b => {
       const startDate = new Date(b.start_date);
       const endDate = b.end_date ? new Date(b.end_date) : null;
-      return b.is_active && b.frequency === '1m' && startDate <= now && (!endDate || endDate >= now);
+      // Handle 'Monthly' or '1m' for backward compatibility/different formats
+      const isMonthly = b.frequency === 'Monthly' || b.frequency === '1m';
+      return b.is_active && isMonthly && startDate <= now && (!endDate || endDate >= now);
     });
 
     activeMonthlyBudgets.forEach(budget => {
@@ -162,9 +188,10 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Low Balance Warnings:</h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
-                    {lowBalanceAlerts.map(alert => (
+                    {lowBalanceAlerts.map((alert: any) => (
                       <li key={alert.accountName}>
-                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span> is projected to have a negative balance in{' '}
+                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span> is projected to{' '}
+                        {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
                         <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
                       </li>
                     ))}

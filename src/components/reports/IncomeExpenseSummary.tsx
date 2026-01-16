@@ -39,7 +39,7 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
     });
 
     const expensesWithBudget = Object.entries(expensesByCategory).map(([category, amount]) => {
-      const budget = budgets.find(b => b.category_name === category && b.is_active && b.frequency === '1m');
+      const budget = budgets.find(b => b.category_name === category && (b.is_active ?? true) && (b.frequency === '1m' || b.frequency === 'Monthly'));
       const target = budget ? convertBetweenCurrencies(budget.target_amount, budget.currency, selectedCurrency) : null;
       const variance = target !== null ? target - amount : null;
       const percentSpent = target !== null && target > 0 ? (amount / target) * 100 : null;
