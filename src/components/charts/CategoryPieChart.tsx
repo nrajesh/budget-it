@@ -5,31 +5,19 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { ActivePieShape } from './ActivePieShape'; // Import the new component
-import { useCurrency } from '@/contexts/CurrencyContext'; // Assuming useCurrency is available for formatCurrency
+import { ActivePieShape } from './ActivePieShape';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTransactions } from '@/contexts/TransactionsContext';
-import { useUser } from '@/contexts/UserContext';
 
-interface CategoryData {
-  id: string;
-  name: string;
-  total_amount: number;
-}
 
-interface VendorTransactionData {
-  vendor_name: string;
-  total_amount: number;
-}
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#36A2EB', '#FFCE56', '#FF6384'];
 
 const CategoryPieChart = () => {
-  const { formatCurrency, convertBetweenCurrencies } = useCurrency(); // Get formatCurrency from context
+  const { formatCurrency } = useCurrency(); // Get formatCurrency from context
   const { transactions, categories, isLoadingTransactions } = useTransactions();
-  const { user } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<{ id: string; name: string } | null>(null);
-  const [activeIndex, setActiveIndex] = useState<number | null>(null); // Local activeIndex for current view
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined); // Local activeIndex for current view
 
   // Calculate category data from transactions in context
   const categoriesData = React.useMemo(() => {
@@ -73,7 +61,6 @@ const CategoryPieChart = () => {
 
   const chartData = selectedCategory ? drilledDownData : categoriesData;
   const isLoading = isLoadingTransactions;
-  const error = null;
 
   const onPieClick = useCallback((data: any, index: number) => {
     if (!selectedCategory) {
@@ -82,26 +69,29 @@ const CategoryPieChart = () => {
       setSelectedCategory({ id: data.id, name: data.name });
     } else {
       // If drilled down, just toggle active index for the vendor
-      setActiveIndex(prevIndex => (prevIndex === index ? null : index));
+      setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
     }
   }, [selectedCategory]);
 
   const handleBackClick = useCallback(() => {
     setSelectedCategory(null);
-    setActiveIndex(null); // Clear active index when going back
+    setActiveIndex(undefined); // Clear active index when going back
   }, []);
 
   const resetActiveIndex = useCallback(() => {
-    setActiveIndex(null);
+    setActiveIndex(undefined);
   }, []);
 
   if (isLoading) return <div className="flex justify-center items-center h-64">Loading chart data...</div>;
-  if (error) return <div className="text-red-500 text-center py-4">Error loading chart data: {error.message}</div>;
   if (!chartData || chartData.length === 0) return <div className="text-center py-4">No data to display.</div>;
 
   const renderLabel = ({ name, percent }: { name: string; percent: number }) => {
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
+
+  const renderActiveShape = useCallback((props: any) => {
+    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} />;
+  }, [formatCurrency, resetActiveIndex]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -130,10 +120,10 @@ const CategoryPieChart = () => {
               dataKey="total_amount"
               nameKey={selectedCategory ? "vendor_name" : "name"}
               activeIndex={activeIndex}
-              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} /> : null}
+              activeShape={renderActiveShape}
               onClick={onPieClick}
             >
-              {chartData.map((entry, index) => (
+              {chartData.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
