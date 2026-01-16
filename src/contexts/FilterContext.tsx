@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
 import { DateRange } from "react-day-picker";
-import { endOfMonth } from "date-fns";
+import { endOfMonth, startOfMonth } from "date-fns";
 
 interface FilterContextType {
     searchTerm: string;
@@ -28,7 +28,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
     const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: new Date(new Date().setMonth(new Date().getMonth() - 6)),
+        from: startOfMonth(new Date()),
         to: endOfMonth(new Date()),
     });
     const [excludeTransfers, setExcludeTransfers] = useState(false);

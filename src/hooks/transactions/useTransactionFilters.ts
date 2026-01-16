@@ -1,5 +1,5 @@
 import { useFilter } from '@/contexts/FilterContext';
-import { endOfMonth } from "date-fns";
+import { endOfMonth, startOfMonth } from "date-fns";
 
 export const useTransactionFilters = () => {
   const {
@@ -19,7 +19,7 @@ export const useTransactionFilters = () => {
     setSelectedSubCategories([]);
     setSelectedVendors([]);
     setDateRange({
-      from: new Date(new Date().setMonth(new Date().getMonth() - 6)),
+      from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
     });
     setExcludeTransfers(false);
