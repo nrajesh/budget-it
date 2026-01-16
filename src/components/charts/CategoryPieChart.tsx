@@ -33,51 +33,47 @@ const CategoryPieChart = () => {
 
   // Calculate category data from transactions in context
   const categoriesData = React.useMemo(() => {
-      if (!transactions || !categories) return [];
+    if (!transactions || !categories) return [];
 
-      const categoryMap = new Map<string, number>();
+    const categoryMap = new Map<string, number>();
 
-      transactions.forEach(t => {
-          // Expenses only usually for pie chart? Or net?
-          // Usually pie charts show Expenses.
-          if (t.amount < 0 && t.category) {
-              const current = categoryMap.get(t.category) || 0;
-              categoryMap.set(t.category, current + Math.abs(t.amount));
-          }
-      });
+    transactions.forEach(t => {
+      // Expenses only usually for pie chart? Or net?
+      // Usually pie charts show Expenses.
+      if (t.amount < 0 && t.category) {
+        const current = categoryMap.get(t.category) || 0;
+        categoryMap.set(t.category, current + Math.abs(t.amount));
+      }
+    });
 
-      return Array.from(categoryMap.entries()).map(([name, amount], index) => ({
-          id: categories.find(c => c.name === name)?.id || `cat-${index}`,
-          name: name,
-          total_amount: amount
-      })).filter(c => c.total_amount > 0).sort((a, b) => b.total_amount - a.total_amount);
+    return Array.from(categoryMap.entries()).map(([name, amount], index) => ({
+      id: categories.find(c => c.name === name)?.id || `cat-${index}`,
+      name: name,
+      total_amount: amount
+    })).filter(c => c.total_amount > 0).sort((a, b) => b.total_amount - a.total_amount);
   }, [transactions, categories]);
 
   // Calculate drilldown data
   const drilledDownData = React.useMemo(() => {
-      if (!selectedCategory || !transactions) return [];
+    if (!selectedCategory || !transactions) return [];
 
-      const vendorMap = new Map<string, number>();
+    const vendorMap = new Map<string, number>();
 
-      transactions.filter(t => t.category === selectedCategory.name && t.amount < 0).forEach(t => {
-          const vendor = t.vendor || "Unknown";
-          const current = vendorMap.get(vendor) || 0;
-          vendorMap.set(vendor, current + Math.abs(t.amount));
-      });
+    transactions.filter(t => t.category === selectedCategory.name && t.amount < 0).forEach(t => {
+      const vendor = t.vendor || "Unknown";
+      const current = vendorMap.get(vendor) || 0;
+      vendorMap.set(vendor, current + Math.abs(t.amount));
+    });
 
-      return Array.from(vendorMap.entries()).map(([name, amount]) => ({
-          vendor_name: name,
-          total_amount: amount
-      })).sort((a, b) => b.total_amount - a.total_amount);
+    return Array.from(vendorMap.entries()).map(([name, amount]) => ({
+      vendor_name: name,
+      total_amount: amount
+    })).sort((a, b) => b.total_amount - a.total_amount);
   }, [selectedCategory, transactions]);
 
   const chartData = selectedCategory ? drilledDownData : categoriesData;
   const isLoading = isLoadingTransactions;
   const error = null;
-
-  const chartData = selectedCategory ? drilledDownData : categoriesData;
-  const isLoading = selectedCategory ? isLoadingDrilledDown : isLoadingCategories;
-  const error = selectedCategory ? drilledDownError : categoriesError;
 
   const onPieClick = useCallback((data: any, index: number) => {
     if (!selectedCategory) {

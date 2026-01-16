@@ -10,10 +10,23 @@ import AccountBalanceReconciliationDialog from "@/components/management/AccountB
 
 import { filterAccounts } from "@/utils/nlp-search";
 
+import { GroupedEntityTable } from "@/components/management/GroupedEntityTable";
+
 const AccountsPage = () => {
   const { accounts, isLoadingAccounts, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
   const managementProps = usePayeeManagement(true);
+
+  // Sort accounts by type for grouping
+  const sortedAccounts = React.useMemo(() => {
+    return [...accounts].sort((a, b) => {
+      const typeA = a.type || 'Other';
+      const typeB = b.type || 'Other';
+      if (typeA < typeB) return -1;
+      if (typeA > typeB) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [accounts]);
 
   const columns: ColumnDefinition<Payee>[] = [
     {
@@ -25,6 +38,7 @@ const AccountsPage = () => {
         </div>
       ),
     },
+    { header: "Type", accessor: (item) => item.type || 'Checking' }, // Default for legacy data
     { header: "Currency", accessor: "currency" },
     {
       header: "Starting Balance",
@@ -52,7 +66,7 @@ const AccountsPage = () => {
         title="Accounts"
         entityName="Account"
         entityNamePlural="accounts"
-        data={accounts}
+        data={sortedAccounts}
         isLoading={isLoadingAccounts}
         columns={columns}
         AddEditDialogComponent={(props) => (
@@ -64,6 +78,9 @@ const AccountsPage = () => {
         customFilter={(data, term) => filterAccounts(data, term) as Payee[]}
         DeduplicationDialogComponent={AccountDeduplicationDialog}
         BalanceReconciliationDialogComponent={AccountBalanceReconciliationDialog}
+        groupBy="type"
+        TableComponent={GroupedEntityTable}
+        disablePagination={true}
       />
     </>
   );

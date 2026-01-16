@@ -36,6 +36,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const budgetSchema = z.object({
   category_id: z.string().min(1, "Category is required."),
@@ -94,15 +95,16 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
       setCategories(categoryData || []);
 
       // Fetch sub-categories
-      // DataProvider doesn't expose getSubCategories yet.
-      // We will skip sub-category filtering for now or assume empty if not provided by provider.
-      // Or we can query transactionsContext? But this component is standalone.
-      // For now, let's just initialize empty to avoid build fail on 'supabase'.
-      setSubCategories([]);
+      const subCategoryData = await dataProvider.getSubCategories(userId);
+      setSubCategories(subCategoryData || []);
 
       // Fetch user profile for currency
-      // Profile data is local now or passed.
-      // We can use a default or just 'USD'.
+      // We use the passed in defaultCurrency or 'USD' locally for now, 
+      // but ideally we should respect the global currency context if available.
+      // For now, let's stick to 'USD' as default if not provided, but the parent or context should drive this across the app.
+      // Actually, let's use the hook if we can or just default to USD. 
+      // Given the requirement, we should probably fetch it from settings if possible.
+      // Simplify: use 'USD' or better, let the form default handle it via props or state if passed.
       setDefaultCurrency('USD');
     }
     if (userId) {
@@ -110,8 +112,12 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
     }
   }, [userId, dataProvider]);
 
+  // Use the global currency context
+  const { selectedCurrency } = useCurrency(); // Make sure to import this!
+
   useEffect(() => {
     if (budget) {
+      // ... existing reset logic
       form.reset({
         category_id: budget.category_id,
         sub_category_id: budget.sub_category_id,
@@ -129,8 +135,10 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
         start_date: new Date(),
         end_date: undefined,
       });
+      // Set currency to global selected currency for new budgets
+      setDefaultCurrency(selectedCurrency);
     }
-  }, [budget, form]);
+  }, [budget, form, selectedCurrency]);
 
   const onSubmit = async (values: BudgetFormValues) => {
     const selectedCategory = categories.find(c => c.id === values.category_id);

@@ -5,6 +5,7 @@ import { Payee } from '@/components/AddEditPayeeDialog';
 import { useUser } from './UserContext';
 import { useQuery, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
 import { useDataProvider } from '@/context/DataProviderContext';
+import { ScheduledTransaction } from '@/types/dataProvider';
 
 interface TransactionToDelete {
   id: string;
@@ -45,6 +46,11 @@ interface TransactionsContextType {
   isLoadingSubCategories: boolean;
   subCategories: SubCategory[]; // DB sub-categories
   allSubCategories: string[]; // Union of DB and used sub-categories
+  scheduledTransactions: ScheduledTransaction[];
+  isLoadingScheduledTransactions: boolean;
+  addScheduledTransaction: (transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>) => Promise<void>;
+  updateScheduledTransaction: (transaction: ScheduledTransaction) => Promise<void>;
+  deleteScheduledTransaction: (id: string) => Promise<void>;
 }
 
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -55,6 +61,7 @@ const transformPayeeData = (data: any[]): Payee[] => {
     id: item.id, name: item.name, is_account: item.is_account, created_at: item.created_at,
     account_id: item.account_id, currency: item.currency, starting_balance: item.starting_balance,
     remarks: item.remarks, running_balance: item.running_balance, totalTransactions: item.total_transactions || 0,
+    type: item.type, credit_limit: item.credit_limit,
   })).sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -69,7 +76,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
   const { user } = useUser();
-  const [demoDataProgress] = React.useState<DemoDataProgress | null>(null);
+  const [demoDataProgress, setDemoDataProgress] = React.useState<DemoDataProgress | null>(null);
   const dataProvider = useDataProvider();
 
   const convertBetweenCurrenciesRef = React.useRef(_convert);
@@ -77,9 +84,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     convertBetweenCurrenciesRef.current = _convert;
   }, [_convert]);
 
-  const convertBetweenCurrencies = React.useCallback((amount: number, from: string, to: string) => {
-    return convertBetweenCurrenciesRef.current(amount, from, to);
-  }, []);
+
 
   const { data: transactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
     queryKey: ['transactions', user?.id],
@@ -157,6 +162,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         const startingBalance = accountDetails?.starting_balance || 0;
         const currency = accountDetails?.currency || await dataProvider.getAccountCurrency(v.name);
+        const type = accountDetails?.type;
+        const creditLimit = accountDetails?.credit_limit;
 
         // Calculate running balance: starting_balance + sum(transactions)
         // Normalize names for comparison
@@ -184,7 +191,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
           currency,
           total_transactions: count,
           starting_balance: startingBalance,
-          running_balance: runningBalance
+          running_balance: runningBalance,
+          type: type,
+          credit_limit: creditLimit,
         };
       }));
     },
@@ -213,14 +222,17 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     queryKey: ['sub_categories', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      // DataProvider doesn't have 'getSubCategories'.
-      // I need to add it or use a workaround.
-      // I'll add a workaround: assume we don't have subs for now or implement in provider?
-      // Implementing in provider is best.
-      // But I can't edit provider file in this merge diff easily if I didn't plan it.
-      // I'll return empty array for now to fix build, or check if I can add it.
-      // Actually, I can just return empty array and 'allSubCategories' will rely on transactions.
-      return [];
+      const subs = await dataProvider.getSubCategories(user.id);
+      return subs;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: scheduledTransactions = [], isLoading: isLoadingScheduledTransactions } = useQuery({
+    queryKey: ['scheduledTransactions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return await dataProvider.getScheduledTransactions(user.id);
     },
     enabled: !!user?.id,
   });
@@ -275,8 +287,39 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await invalidateAllData();
   };
 
-  // Stubs for services we removed/disabled
-  const generateDiverseDemoData = async () => { };
+  const addScheduledTransaction = async (transaction: any) => {
+    await dataProvider.addScheduledTransaction(transaction);
+    await invalidateAllData();
+  };
+
+  const updateScheduledTransaction = async (transaction: any) => {
+    await dataProvider.updateScheduledTransaction(transaction);
+    await invalidateAllData();
+  };
+
+  const deleteScheduledTransaction = async (id: string) => {
+    await dataProvider.deleteScheduledTransaction(id);
+    await invalidateAllData();
+  };
+
+  // Demo Data Generation
+  const generateDiverseDemoData = async () => {
+    try {
+      setDemoDataProgress({ stage: 'Starting...', progress: 0, totalStages: 4 });
+      const { generateDemoData } = await import('@/utils/demoDataGenerator');
+      await generateDemoData(dataProvider, setDemoDataProgress);
+      await invalidateAllData();
+      await refetchTransactions();
+      // Optional: Force a complete reload if context state isn't enough, but invalidate should work
+    } catch (error) {
+      console.error("Failed to generate demo data:", error);
+    } finally {
+      // Keep at 100 for a moment so dialog can close gracefully
+      setDemoDataProgress({ stage: 'Complete', progress: 100, totalStages: 4 });
+      setTimeout(() => setDemoDataProgress(null), 1000);
+    }
+  };
+
   const processScheduledTransactions = async () => { };
 
   // Auth state listener removed as we are local-first/no-auth
@@ -322,11 +365,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     refetchTransactions,
     demoDataProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
+    scheduledTransactions, isLoadingScheduledTransactions,
+    addScheduledTransaction, updateScheduledTransaction, deleteScheduledTransaction,
   }), [
     transactions, vendors, accounts, categories, subCategories, accountCurrencyMap, allSubCategories,
     refetchVendors, refetchAccounts, refetchCategories, refetchSubCategories, invalidateAllData, refetchTransactions,
     demoDataProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
+    scheduledTransactions, isLoadingScheduledTransactions,
   ]);
 
   return (

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
+import { FilterProvider } from "./contexts/FilterContext";
 
 const queryClient = new QueryClient();
 
@@ -30,33 +31,35 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <DataProviderProvider>
-      <ThemeProvider>
-        <UserProvider>
-          <TransactionsProvider>
-            <Router>
-              <Suspense fallback={<LoadingSpinner />}>
-                <Routes>
-                    <Route path="/" element={<Layout />}>
-                      <Route index element={<Index />} />
-                      <Route path="/transactions" element={<Transactions />} />
-                      <Route path="/vendors" element={<Vendors />} />
-                      <Route path="/accounts" element={<Accounts />} />
-                      <Route path="/categories" element={<Categories />} />
-                      <Route path="/scheduled" element={<ScheduledTransactions />} />
-                      <Route path="/budgets" element={<Budgets />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/reports/essential" element={<EssentialReports />} />
-                      <Route path="/reports/advanced" element={<AdvancedReports />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Route>
-                </Routes>
-              </Suspense>
-            </Router>
-          </TransactionsProvider>
-        </UserProvider>
-      </ThemeProvider>
+        <ThemeProvider>
+          <FilterProvider>
+            <UserProvider>
+              <TransactionsProvider>
+                <Router>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Routes>
+                      <Route path="/" element={<Layout />}>
+                        <Route index element={<Index />} />
+                        <Route path="/transactions" element={<Transactions />} />
+                        <Route path="/vendors" element={<Vendors />} />
+                        <Route path="/accounts" element={<Accounts />} />
+                        <Route path="/categories" element={<Categories />} />
+                        <Route path="/scheduled" element={<ScheduledTransactions />} />
+                        <Route path="/budgets" element={<Budgets />} />
+                        <Route path="/analytics" element={<Analytics />} />
+                        <Route path="/reports/essential" element={<EssentialReports />} />
+                        <Route path="/reports/advanced" element={<AdvancedReports />} />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </Router>
+              </TransactionsProvider>
+            </UserProvider>
+          </FilterProvider>
+        </ThemeProvider>
       </DataProviderProvider>
       <Toaster />
     </QueryClientProvider>

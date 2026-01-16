@@ -32,15 +32,36 @@ export const useTransactionData = ({
   availableVendorOptions,
   excludeTransfers = false,
 }: UseTransactionDataProps) => {
-  const { transactions } = useTransactions();
-
-  // Stubbed for local migration
-  const scheduledTransactions: any[] = [];
+  const { transactions, scheduledTransactions } = useTransactions();
 
   const combinedTransactions = React.useMemo(() => {
-    // No future transactions generation for now
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions]);
+    const projectedTransactions: any[] = [];
+    const projectionHorizon = new Date();
+    projectionHorizon.setFullYear(projectionHorizon.getFullYear() + 1); // 1 year projection
+
+    scheduledTransactions.forEach(sch => {
+      let nextDate = new Date(sch.date);
+      while (nextDate <= projectionHorizon) {
+        projectedTransactions.push({
+          ...sch,
+          id: `proj-${sch.id}-${nextDate.toISOString()}`, // Temporary ID
+          date: nextDate.toISOString(),
+          is_scheduled_origin: true,
+          original_id: sch.id
+        });
+
+        // Advance date based on frequency
+        const d = new Date(nextDate);
+        if (sch.frequency === 'Daily') d.setDate(d.getDate() + 1);
+        else if (sch.frequency === 'Weekly') d.setDate(d.getDate() + 7);
+        else if (sch.frequency === 'Monthly') d.setMonth(d.getMonth() + 1);
+        else if (sch.frequency === 'Yearly') d.setFullYear(d.getFullYear() + 1);
+        nextDate = d;
+      }
+    });
+
+    return [...transactions, ...projectedTransactions].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, scheduledTransactions]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = combinedTransactions;
@@ -96,5 +117,6 @@ export const useTransactionData = ({
   return {
     filteredTransactions,
     combinedTransactions,
+    scheduledTransactions,
   };
 };

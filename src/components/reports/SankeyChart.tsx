@@ -13,7 +13,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
 
   const { sankeyData, chartHeight } = React.useMemo(() => {
     const nodes: { name: string }[] = [];
-    const links: { source: number; target: number; value: number }[] = [];
+    const linkMap = new Map<string, { source: number; target: number; value: number }>();
     const nodeMap = new Map<string, number>();
 
     const addNode = (name: string) => {
@@ -48,55 +48,49 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     }
 
     // Define links
+
     transactions.forEach(t => {
       const convertedAmount = Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
+      let sourceNode = '';
+      let targetNode = '';
 
       if (t.category === 'Transfer') {
         if (t.amount < 0) { // Debit - money leaving an account
-          const sourceNode = `Account: ${t.account}`;
-          const targetNode = 'Transfer Out';
-          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
-            links.push({
-              source: nodeMap.get(sourceNode)!,
-              target: nodeMap.get(targetNode)!,
-              value: convertedAmount,
-            });
-          }
+          sourceNode = `Account: ${t.account}`;
+          targetNode = 'Transfer Out';
         } else { // Credit - money entering an account
-          const sourceNode = 'Transfer In';
-          const targetNode = `Account: ${t.account}`;
-          if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
-            links.push({
-              source: nodeMap.get(sourceNode)!,
-              target: nodeMap.get(targetNode)!,
-              value: convertedAmount,
-            });
-          }
+          sourceNode = 'Transfer In';
+          targetNode = `Account: ${t.account}`;
         }
       } else if (t.amount > 0) {
         // Income flow
-        const sourceNode = `Income: ${t.category}`;
-        const targetNode = `Account: ${t.account}`;
-        if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
-          links.push({
-            source: nodeMap.get(sourceNode)!,
-            target: nodeMap.get(targetNode)!,
-            value: convertedAmount,
-          });
-        }
+        sourceNode = `Income: ${t.category}`;
+        targetNode = `Account: ${t.account}`;
       } else {
         // Expense flow
-        const sourceNode = `Account: ${t.account}`;
-        const targetNode = `Expense: ${t.category}`;
-        if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
-          links.push({
-            source: nodeMap.get(sourceNode)!,
-            target: nodeMap.get(targetNode)!,
-            value: convertedAmount,
+        sourceNode = `Account: ${t.account}`;
+        targetNode = `Expense: ${t.category}`;
+      }
+
+      if (nodeMap.has(sourceNode) && nodeMap.has(targetNode)) {
+        const sourceIndex = nodeMap.get(sourceNode)!;
+        const targetIndex = nodeMap.get(targetNode)!;
+        const linkKey = `${sourceIndex}-${targetIndex}`;
+
+        if (linkMap.has(linkKey)) {
+          linkMap.get(linkKey)!.value += convertedAmount;
+        } else {
+          linkMap.set(linkKey, {
+            source: sourceIndex,
+            target: targetIndex,
+            value: convertedAmount
           });
         }
       }
     });
+
+    // Convert map to array
+    const links = Array.from(linkMap.values());
 
     // Filter out links with zero value
     const filteredLinks = links.filter(link => link.value > 0);

@@ -30,6 +30,7 @@ export interface ImportConfig {
     delimiter: string;
     dateFormat: string;
     decimalSeparator: '.' | ',';
+    importMode: 'append' | 'replace';
 }
 
 const CSVMappingDialog = ({
@@ -44,6 +45,7 @@ const CSVMappingDialog = ({
         delimiter: ',',
         dateFormat: 'auto',
         decimalSeparator: '.',
+        importMode: 'append',
     });
 
     // Parsed data state
@@ -60,6 +62,7 @@ const CSVMappingDialog = ({
                 delimiter: ',',
                 dateFormat: 'auto',
                 decimalSeparator: '.',
+                importMode: 'append',
             });
             setMapping({});
             setCsvHeaders([]);
@@ -177,6 +180,41 @@ const CSVMappingDialog = ({
                                         <SelectItem value=",">1.234,56 (Comma decimal)</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label>Import Mode</Label>
+                                <div className="flex gap-4">
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="radio"
+                                            id="append"
+                                            name="importMode"
+                                            value="append"
+                                            checked={config.importMode !== 'replace'}
+                                            onChange={() => setConfig(prev => ({ ...prev, importMode: 'append' }))}
+                                            className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <Label htmlFor="append" className="font-normal cursor-pointer">Append to existing</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="radio"
+                                            id="replace"
+                                            name="importMode"
+                                            value="replace"
+                                            checked={config.importMode === 'replace'}
+                                            onChange={() => setConfig(prev => ({ ...prev, importMode: 'replace' }))}
+                                            className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                                        />
+                                        <Label htmlFor="replace" className="font-normal cursor-pointer">Replace existing</Label>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {config.importMode === 'replace'
+                                        ? "Warning: This will delete ALL existing transactions before importing."
+                                        : "New transactions will be added to your existing data."}
+                                </p>
                             </div>
 
                             {/* Preview Area */}

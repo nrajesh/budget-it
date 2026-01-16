@@ -5,22 +5,24 @@ import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { slugify, cn } from "@/lib/utils";
-import { DateRange } from "react-day-picker";
-import { addDays } from "date-fns";
-import { useTransactionPairing } from "@/hooks/transactions/useTransactionPairing";
+import { useTransactionData } from "@/hooks/transactions/useTransactionData";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
 const Analytics = () => {
-  const { transactions, categories: allCategories, subCategories: allSubCategories, accountCurrencyMap } = useTransactions();
+  const { transactions, categories: allCategories, subCategories: allSubCategories } = useTransactions();
   const { isFinancialPulse } = useTheme();
 
-  // Stubbed scheduled transactions for now
-  const scheduledTransactions: any[] = [];
-
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  });
+  const {
+    searchTerm, setSearchTerm,
+    selectedAccounts, setSelectedAccounts,
+    selectedCategories, setSelectedCategories,
+    selectedSubCategories, setSelectedSubCategories,
+    selectedVendors, setSelectedVendors,
+    dateRange, setDateRange,
+    excludeTransfers, setExcludeTransfers,
+    handleResetFilters
+  } = useTransactionFilters();
 
   const currentTransactions = React.useMemo(() => {
     const today = new Date();
@@ -39,13 +41,7 @@ const Analytics = () => {
     });
   }, [transactions, dateRange]);
 
-  // Projected transactions stubbed
-  const projectedTransactions: any[] = [];
 
-  const [searchTerm, setSearchTerm] = React.useState<string>("");
-  const [excludeTransfers, setExcludeTransfers] = React.useState<boolean>(false);
-
-  const { pairedTransactionIds } = useTransactionPairing(currentTransactions);
 
   const availableAccounts = React.useMemo(() => {
     const uniqueAccounts = new Set<string>();
@@ -90,147 +86,44 @@ const Analytics = () => {
     })).sort((a, b) => a.name.localeCompare(b.name));
   }, [allCategories, allSubCategories]);
 
-  const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>(() => {
-    const accountCounts = new Map<string, number>();
-    currentTransactions.forEach(t => {
-      accountCounts.set(t.account, (accountCounts.get(t.account) || 0) + 1);
-    });
 
-    const sortedAccounts = availableAccounts.map(acc => ({
-      ...acc,
-      count: accountCounts.get(acc.label) || 0
-    })).sort((a, b) => b.count - a.count);
 
-    return sortedAccounts.slice(0, 4).map(acc => acc.value);
+
+  // Use the useTransactionData hook to handle filtering and projection
+  const { filteredTransactions: allFilteredData } = useTransactionData({
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    selectedVendors,
+    dateRange,
+    availableAccountOptions: availableAccounts,
+    availableCategoryOptions: availableCategories,
+    availableVendorOptions: availableVendors,
+    excludeTransfers
   });
 
+  // Split into historical and projected for the chart, but use combined for the table
+  const { historicalTransactions, projectedTransactions } = React.useMemo(() => {
+    const historical: any[] = [];
+    const projected: any[] = [];
 
-  const [selectedCategories, setSelectedCategories] = React.useState<string[]>(
-    availableCategories.map(cat => cat.value)
-  );
-
-  const [selectedSubCategories, setSelectedSubCategories] = React.useState<string[]>([]);
-
-  React.useEffect(() => {
-    setSelectedCategories(prev => {
-      const currentCategoryValues = availableCategories.map(cat => cat.value);
-      if (prev.length === 0 || prev.length === currentCategoryValues.length) {
-        return currentCategoryValues;
+    allFilteredData.forEach(t => {
+      // We can use the flag 'is_scheduled_origin' or date.
+      // Using flag is safer if we want to distinguish "planned" vs "actual"
+      if (t.is_scheduled_origin) {
+        projected.push(t);
+      } else {
+        historical.push(t);
       }
-      return prev.filter(val => currentCategoryValues.includes(val));
     });
 
-    setSelectedSubCategories(prev => {
-      const currentSubCategoryValues = allSubCategories.map(s => slugify(s.name));
-      if (prev.length === 0 && currentSubCategoryValues.length > 0) {
-        return currentSubCategoryValues;
-      }
-      return prev;
-    });
-  }, [availableCategories, allSubCategories]);
+    return { historicalTransactions: historical, projectedTransactions: projected };
+  }, [allFilteredData]);
 
-  // Vendor state
-  const [selectedVendors, setSelectedVendors] = React.useState<string[]>(
-    availableVendors.map(v => v.value)
-  );
-
-  React.useEffect(() => {
-    setSelectedAccounts(prev => {
-      const currentAccountValues = availableAccounts.map(acc => acc.value);
-
-      if (prev.length === 0 && currentAccountValues.length > 0) {
-        const accountCounts = new Map<string, number>();
-        currentTransactions.forEach(t => {
-          accountCounts.set(t.account, (accountCounts.get(t.account) || 0) + 1);
-        });
-
-        const sortedAccounts = availableAccounts.map(acc => ({
-          ...acc,
-          count: accountCounts.get(acc.label) || 0
-        })).sort((a, b) => b.count - a.count);
-
-        return sortedAccounts.slice(0, 4).map(acc => acc.value);
-      }
-      return prev.filter(val => currentAccountValues.includes(val));
-    });
-  }, [availableAccounts, currentTransactions]);
-
-  React.useEffect(() => {
-    setSelectedVendors(prev => {
-      const currentVendorValues = availableVendors.map(v => v.value);
-      if (prev.length === 0 || prev.length === currentVendorValues.length) {
-        return currentVendorValues;
-      }
-      return prev.filter(val => currentVendorValues.includes(val));
-    });
-  }, [availableVendors]);
+  const filteredTransactions = historicalTransactions;
+  const filteredScheduledTransactions = projectedTransactions;
 
 
-  const filterTransactionData = React.useCallback((data: any[]) => {
-    let filtered = data;
-
-    if (selectedAccounts.length > 0) {
-      filtered = filtered.filter(t => selectedAccounts.includes(slugify(t.account)));
-    }
-
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter(t => {
-        const catSlug = slugify(t.category);
-        const subSlug = t.sub_category ? slugify(t.sub_category) : null;
-
-        if (!selectedCategories.includes(catSlug)) return false;
-
-        if (subSlug) {
-          const isKnownSubCategory = allSubCategories.some(s => slugify(s.name) === subSlug);
-          if (isKnownSubCategory && !selectedSubCategories.includes(subSlug)) {
-            return false;
-          }
-        }
-        return true;
-      });
-    }
-
-    if (selectedVendors.length > 0) {
-      filtered = filtered.filter(t => t.vendor && selectedVendors.includes(slugify(t.vendor)));
-    }
-
-    if (searchTerm) {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.vendor?.toLowerCase().includes(lowerCaseSearchTerm) ||
-        t.category.toLowerCase().includes(lowerCaseSearchTerm) ||
-        (t.remarks && t.remarks.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        t.account.toLowerCase().includes(lowerCaseSearchTerm)
-      );
-    }
-
-    if (excludeTransfers) {
-      filtered = filtered.filter(t => !pairedTransactionIds.has(t.id) && t.category !== 'Transfer');
-    }
-
-    return filtered;
-  }, [selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors, searchTerm, excludeTransfers, pairedTransactionIds, allSubCategories]);
-
-  const filteredTransactions = React.useMemo(() => {
-    return filterTransactionData(currentTransactions);
-  }, [currentTransactions, filterTransactionData]);
-
-  const filteredScheduledTransactions = React.useMemo(() => {
-    return filterTransactionData(projectedTransactions);
-  }, [projectedTransactions, filterTransactionData]);
-
-  const handleResetFilters = () => {
-    setDateRange({
-      from: addDays(new Date(), -30),
-      to: new Date(),
-    });
-    setSelectedAccounts(availableAccounts.map(acc => acc.value));
-    setSelectedCategories(availableCategories.map(cat => cat.value));
-    setSelectedSubCategories(allSubCategories.map(s => slugify(s.name)));
-    setSelectedVendors(availableVendors.map(v => v.value));
-    setSearchTerm("");
-    setExcludeTransfers(false);
-  };
 
   return (
     <div className={cn(
@@ -277,12 +170,12 @@ const Analytics = () => {
           />
         </div>
         <div className="lg:col-span-1">
-          <SpendingCategoriesChart transactions={filteredTransactions} />
+          <SpendingCategoriesChart transactions={allFilteredData} />
         </div>
       </div>
 
-      {filteredTransactions.length > 0 && (
-        <RecentTransactions transactions={filteredTransactions} selectedCategories={selectedCategories.map(slugify)} />
+      {allFilteredData.length > 0 && (
+        <RecentTransactions transactions={allFilteredData} selectedCategories={selectedCategories.map(slugify)} />
       )}
     </div>
   );

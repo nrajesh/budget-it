@@ -1,25 +1,25 @@
-import { useState, useMemo } from 'react';
-import { DateRange } from "react-day-picker";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { useFilter } from '@/contexts/FilterContext';
+import { endOfMonth } from "date-fns";
 
 export const useTransactionFilters = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
-  const [excludeTransfers, setExcludeTransfers] = useState(false);
+  const {
+    searchTerm, setSearchTerm,
+    selectedAccounts, setSelectedAccounts,
+    selectedCategories, setSelectedCategories,
+    selectedSubCategories, setSelectedSubCategories,
+    selectedVendors, setSelectedVendors,
+    dateRange, setDateRange,
+    excludeTransfers, setExcludeTransfers
+  } = useFilter();
 
   const handleResetFilters = () => {
     setSearchTerm("");
     setSelectedAccounts([]);
     setSelectedCategories([]);
+    setSelectedSubCategories([]);
     setSelectedVendors([]);
     setDateRange({
-      from: startOfMonth(new Date()),
+      from: new Date(new Date().setMonth(new Date().getMonth() - 6)),
       to: endOfMonth(new Date()),
     });
     setExcludeTransfers(false);
@@ -32,6 +32,8 @@ export const useTransactionFilters = () => {
     setSelectedAccounts,
     selectedCategories,
     setSelectedCategories,
+    selectedSubCategories,
+    setSelectedSubCategories,
     selectedVendors,
     setSelectedVendors,
     dateRange,

@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { Transaction, Budget, Vendor, Category } from '@/types/dataProvider';
+import { Transaction, Budget, Vendor, Category, ScheduledTransaction } from '@/types/dataProvider';
 
 // Extend the interfaces to include Dexie-specific keys (optional, but good for TS)
 // We reuse the DataProvider interfaces which already have 'id'.
@@ -18,10 +18,13 @@ export interface Account {
   starting_balance: number;
   remarks: string;
   created_at: string;
+  type: 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
+  credit_limit?: number;
 }
 
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction>;
+  scheduled_transactions!: Table<ScheduledTransaction>;
   budgets!: Table<Budget>;
   vendors!: Table<Vendor>;
   accounts!: Table<Account>;
@@ -33,13 +36,14 @@ export class FinanceDatabase extends Dexie {
 
     // Schema definition
     // Note: ++id is not used because we use UUIDs (strings) for compatibility
-    this.version(1).stores({
+    this.version(4).stores({
       transactions: 'id, user_id, date, account, vendor, category, transfer_id, recurrence_id',
+      scheduled_transactions: 'id, user_id, next_date, account, vendor',
       budgets: 'id, user_id, category_name',
       vendors: 'id, name, is_account, account_id',
-      accounts: 'id',
+      accounts: 'id, type', // Added type for indexing if needed
       categories: 'id, user_id, name',
-      sub_categories: 'id, category_id, name'
+      sub_categories: 'id, user_id, category_id, name'
     });
   }
 }

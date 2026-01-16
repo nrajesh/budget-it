@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Upload, X, FilterX } from "lucide-react";
+import { Download, Plus, Upload, FilterX } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import TransactionDialog from "@/components/transactions/TransactionDialog";
@@ -73,14 +73,9 @@ const Transactions = () => {
 
 
   // Scheduled Transaction State - Stubbed for local migration
-  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [transactionToSchedule, setTransactionToSchedule] = useState<any>(null);
 
-  // Batch Schedule State
-  const [isBatchScheduleOpen, setIsBatchScheduleOpen] = useState(false);
-  const [batchTransactions, setBatchTransactions] = useState<any[]>([]);
 
-  const handleScheduleTransactions = (selectedTransactions: any[], clearSelection: () => void) => {
+  const handleScheduleTransactions = (_selectedTransactions: any[], clearSelection: () => void) => {
     // Disabled for migration
     toast({
       title: "Feature Unavailable",
@@ -100,7 +95,8 @@ const Transactions = () => {
     "Notes", // Renamed from Remarks
     "Frequency",
     "End Date",
-    "Transfer ID"
+    "Transfer ID",
+    "Account Type"
   ];
 
   const handleExport = () => {
@@ -261,13 +257,24 @@ const Transactions = () => {
         return;
       }
 
+      const isReplace = config?.importMode === 'replace';
+
+      if (isReplace) {
+        console.log("Import mode is REPLACE. Clearing existing transactions...");
+        await dataProvider.clearTransactions(userId);
+        await dataProvider.clearBudgets(userId);
+        await dataProvider.clearScheduledTransactions(userId);
+      }
+
+      console.log("Starting import with data:", data.length, "rows", config);
       // 1. Ensure Entities Exist
       const uniqueAccounts = [...new Set(data.map((r: any) => r.Account).filter(Boolean))];
       await Promise.all(uniqueAccounts.map(name => {
         // Find currency for this account from the first row that has this account
         const row = data.find((r: any) => r.Account === name);
         const currency = row?.Currency || 'USD'; // Default if missing
-        return dataProvider.ensurePayeeExists(name, true, { currency });
+        const type = row?.["Account Type"];
+        return dataProvider.ensurePayeeExists(name, true, { currency, type });
       }));
 
       const uniquePayees = [...new Set(data.map((r: any) => r.Payee || r.Vendor).filter(Boolean))];
@@ -277,34 +284,59 @@ const Transactions = () => {
       await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, userId)));
 
       // 2. Prepare Transactions
-      // Since addTransaction processes one by one in DataProvider interface (usually),
-      // but supabase allows bulk insert. DataProvider interface currently only has addTransaction (singular).
-      // For now, we will loop. Later we can optimize DataProvider to support bulkAddTransaction.
+      const transactionsToInsert: any[] = [];
+      let skippedCount = 0;
 
-      const transactionsToInsert = data.map((row: any) => ({
-        user_id: userId,
-        date: parseRobustDate(row.Date, config?.dateFormat) || new Date().toISOString(),
-        account: row.Account,
-        vendor: row.Payee || row.Vendor || "",
-        category: row.Category,
-        sub_category: row.Subcategory || row.Sub_Category || "",
-        amount: parseRobustAmount(row.Amount, config?.decimalSeparator),
-        remarks: row.Notes || row.Remarks || "",
-        currency: row.Currency,
-        recurrence_frequency: row.Frequency || null,
-        recurrence_end_date: parseRobustDate(row["End Date"], config?.dateFormat) || null,
-        transfer_id: row["Transfer ID"] || null,
-      }));
+      for (const row of data) {
+        // Validation
+        const amount = parseRobustAmount(row.Amount, config?.decimalSeparator);
+        const date = parseRobustDate(row.Date, config?.dateFormat);
 
-      // NOTE: This will be slower than bulk insert, but standardizes it.
-      // If performance is an issue, we should add bulkInsert to DataProvider.
+        if (!date) {
+          skippedCount++;
+          continue;
+        }
+        // Note: Amount 0 is technically valid but often a parsing error. We'll allow it but warn in logs.
+
+        const t = {
+          user_id: userId,
+          date: date, // validated above
+          account: row.Account || "Uncategorized Account", // Fallback to avoid undefined
+          vendor: row.Payee || row.Vendor || "",
+          category: row.Category || "Uncategorized",
+          sub_category: row.Subcategory || row.Sub_Category || "",
+          amount: amount,
+          remarks: row.Notes || row.Remarks || "",
+          currency: row.Currency || "USD",
+          recurrence_frequency: row.Frequency || null,
+          recurrence_end_date: parseRobustDate(row["End Date"], config?.dateFormat) || null,
+          transfer_id: row["Transfer ID"] || null,
+        };
+        transactionsToInsert.push(t);
+      }
+
+      if (transactionsToInsert.length === 0) {
+        toast({
+          title: "Import Failed",
+          description: "No valid transactions found. Please checks your date and amount column mappings.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // 3. Insert
       for (const t of transactionsToInsert) {
         await dataProvider.addTransaction(t);
       }
 
+      let desc = `Successfully imported ${transactionsToInsert.length} transactions.`;
+      if (skippedCount > 0) {
+        desc += ` (${skippedCount} rows skipped due to invalid data)`;
+      }
+
       toast({
         title: "Import Successful",
-        description: `Successfully imported ${transactionsToInsert.length} transactions.`,
+        description: desc,
       });
       invalidateAllData();
     } catch (error: any) {

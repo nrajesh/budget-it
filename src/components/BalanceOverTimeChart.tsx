@@ -38,7 +38,7 @@ type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 export function BalanceOverTimeChart({ transactions, projectedTransactions = [], dateRange }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { isFinancialPulse } = useTheme();
-  const { accounts } = useTransactions();
+  const { accounts, transactions: allTransactions } = useTransactions();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
   const [activeBar, setActiveBar] = React.useState<{ monthIndex: number; dataKey: string } | null>(null);
@@ -47,7 +47,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
   React.useEffect(() => {
     // Use accounts from context instead of Supabase
     if (accounts) {
-        setAllDefinedAccounts(accounts.map(a => a.name));
+      setAllDefinedAccounts(accounts.map(a => a.name));
     }
   }, [accounts]);
 
@@ -68,12 +68,6 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       initialBalances[account] = 0;
     });
 
-    // We don't have historical data prior to the filtered range, so we start at 0 or the first transaction's value.
-    // Ideally we would want the OPENING balance for the selected period, but that requires more data.
-    // For now, we will just track changes within the visible set.
-
-    // HOWEVER, to support proper date ranges, we must iterate through EVERY DAY in the range.
-
     let startDate: Date;
     let endDate: Date;
 
@@ -89,9 +83,20 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       return [];
     }
 
-    // Initialize daily balances map with zero for the start
-    // If we rely on 'initial', we need to be careful.
-    // Let's just build a map of date -> balances.
+    // Calculate opening balances for each account at the start of the date range
+    const openingBalances: { [account: string]: number } = {};
+    accounts.forEach(acc => {
+      const accountCurrency = acc.currency || 'USD';
+      const startingBalance = acc.starting_balance || 0;
+
+      // Sum all transactions BEFORE the start date
+      const priorTransactionsTotal = allTransactions
+        .filter(t => t.account === acc.name && new Date(t.date) < startDate)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const absoluteOpeningBalance = startingBalance + priorTransactionsTotal;
+      openingBalances[acc.name] = convertBetweenCurrencies(absoluteOpeningBalance, accountCurrency, selectedCurrency);
+    });
 
     const transactionMap: { [date: string]: Transaction[] } = {};
     sortedTransactions.forEach(t => {
@@ -101,14 +106,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     });
 
     const result = [];
-    let currentBalances = { ...initialBalances };
-
-    // Improve: If we have transactions BEFORE startDate in the sorted list (shouldn't happen if filtered correctly upstream),
-    // we should process them to get the "opening balance". 
-    // But currently 'transactions' passed in are already filtered by date in Analytics.tsx. 
-    // So visual balance starts at 0 + daily changes.
-    // NOTE: This means the chart shows "change in balance over period", not absolute balance, unless 
-    // we fetch opening balance. This is an existing limitation we are preserving, just fixing the X-axis range.
+    let currentBalances = { ...openingBalances };
 
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
@@ -121,12 +119,11 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       // Apply transactions for this day
       const daysTransactions = transactionMap[dateStr] || [];
       daysTransactions.forEach(t => {
+        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
         if (currentBalances[t.account] !== undefined) {
-          const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
           currentBalances[t.account] += convertedAmount;
         } else {
           // Initialize if not in initial list (e.g. account not in allDefinedAccounts yet)
-          const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
           currentBalances[t.account] = convertedAmount;
         }
       });
@@ -143,7 +140,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     }
 
     return result;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, dateRange]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, dateRange, accounts, allTransactions]);
 
   // Data for Projected Line Chart
   const projectedDailyRunningBalanceData = React.useMemo(() => {
@@ -210,10 +207,36 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const monthlyData: { [monthKey: string]: { [account: string]: number } } = {};
-    let currentRunningBalances: { [account: string]: number } = {};
 
-    allDefinedAccounts.forEach(account => {
-      currentRunningBalances[account] = 0;
+    const allMonths: string[] = [];
+    if (sortedTransactions.length > 0) {
+      const firstDate = new Date(sortedTransactions[0].date);
+      const lastDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
+
+      let currentDate = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+      while (currentDate <= lastDate) {
+        allMonths.push(`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`);
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+    }
+
+    if (allMonths.length === 0) return [];
+
+    // Calculate opening balances for the very first month displayed
+    const firstMonthStart = new Date(allMonths[0] + '-01');
+    firstMonthStart.setHours(0, 0, 0, 0);
+
+    let currentRunningBalances: { [account: string]: number } = {};
+    accounts.forEach(acc => {
+      const accountCurrency = acc.currency || 'USD';
+      const startingBalance = acc.starting_balance || 0;
+
+      const priorTransactionsTotal = allTransactions
+        .filter(t => t.account === acc.name && new Date(t.date) < firstMonthStart)
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const absoluteOpeningBalance = startingBalance + priorTransactionsTotal;
+      currentRunningBalances[acc.name] = convertBetweenCurrencies(absoluteOpeningBalance, accountCurrency, selectedCurrency);
     });
 
     sortedTransactions.forEach(transaction => {
@@ -230,21 +253,8 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       monthlyData[monthKey] = { ...currentRunningBalances };
     });
 
-    const allMonths: string[] = [];
-    if (sortedTransactions.length > 0) {
-      const firstDate = new Date(sortedTransactions[0].date);
-      const lastDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
-
-      let currentDate = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
-      while (currentDate <= lastDate) {
-        allMonths.push(`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`);
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
-    }
-
     const finalMonthlyData: { month: string;[key: string]: number | string }[] = [];
-    let lastMonthBalances: { [account: string]: number } = {};
-    allDefinedAccounts.forEach(account => lastMonthBalances[account] = 0);
+    let lastMonthBalances = { ...currentRunningBalances };
 
     allMonths.forEach(monthKey => {
       if (monthlyData[monthKey]) {
@@ -258,7 +268,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     });
 
     return finalMonthlyData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, accounts, allTransactions]);
 
   // Data for Waterfall Chart (daily net changes)
   const dailyNetChangeData = React.useMemo(() => {

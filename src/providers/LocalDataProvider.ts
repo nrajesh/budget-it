@@ -1,4 +1,4 @@
-import { DataProvider, Transaction, Budget, Vendor, Category, Account } from '../types/dataProvider';
+import { DataProvider, Transaction, Budget, Vendor, Category, Account, ScheduledTransaction, SubCategory } from '../types/dataProvider';
 import { db } from '@/lib/dexieDB';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -36,8 +36,58 @@ export class LocalDataProvider implements DataProvider {
     await db.transactions.bulkDelete(transactionsToDelete.map(t => t.id));
   }
 
+  async clearTransactions(userId: string): Promise<void> {
+    if (userId) {
+      await db.transactions.where('user_id').equals(userId).delete();
+    } else {
+      await db.transactions.clear();
+    }
+  }
+
+  async clearBudgets(userId: string): Promise<void> {
+    if (userId) {
+      await db.budgets.where('user_id').equals(userId).delete();
+    } else {
+      await db.budgets.clear();
+    }
+  }
+
+  async clearScheduledTransactions(userId: string): Promise<void> {
+    if (userId) {
+      await db.scheduled_transactions.where('user_id').equals(userId).delete();
+    } else {
+      await db.scheduled_transactions.clear();
+    }
+  }
+
+  // Scheduled Transactions
+  async getScheduledTransactions(userId: string): Promise<ScheduledTransaction[]> {
+    if (userId) {
+      return await db.scheduled_transactions.where('user_id').equals(userId).reverse().sortBy('date');
+    }
+    return await db.scheduled_transactions.orderBy('date').reverse().toArray();
+  }
+
+  async addScheduledTransaction(transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>): Promise<ScheduledTransaction> {
+    const newTransaction: ScheduledTransaction = {
+      ...transaction,
+      id: uuidv4(),
+      created_at: new Date().toISOString()
+    };
+    await db.scheduled_transactions.add(newTransaction);
+    return newTransaction;
+  }
+
+  async updateScheduledTransaction(transaction: ScheduledTransaction): Promise<void> {
+    await db.scheduled_transactions.put(transaction);
+  }
+
+  async deleteScheduledTransaction(id: string): Promise<void> {
+    await db.scheduled_transactions.delete(id);
+  }
+
   // Payees/Vendors/Accounts
-  async ensurePayeeExists(name: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string }): Promise<string | null> {
+  async ensurePayeeExists(name: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null> {
     if (!name) return null;
 
     let vendor = await db.vendors.where('name').equals(name).first();
@@ -55,7 +105,9 @@ export class LocalDataProvider implements DataProvider {
             currency: options?.currency || 'USD',
             starting_balance: options?.startingBalance || 0,
             remarks: options?.remarks || `Auto-created account for vendor: ${name}`,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            type: options?.type || 'Checking',
+            credit_limit: options?.creditLimit
           });
 
           // Update vendor
@@ -69,7 +121,9 @@ export class LocalDataProvider implements DataProvider {
               currency: options?.currency || 'USD',
               starting_balance: options?.startingBalance || 0,
               remarks: options?.remarks || `Auto-created account for vendor: ${name}`,
-              created_at: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              type: options?.type || 'Checking',
+              credit_limit: options?.creditLimit
             });
           }
         }
@@ -85,7 +139,9 @@ export class LocalDataProvider implements DataProvider {
           currency: options?.currency || 'USD',
           starting_balance: options?.startingBalance || 0,
           remarks: options?.remarks || `Auto-created account for vendor: ${name}`,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          type: options?.type || 'Checking',
+          credit_limit: options?.creditLimit
         });
       }
 
@@ -198,6 +254,13 @@ export class LocalDataProvider implements DataProvider {
     return await db.categories.orderBy('name').toArray();
   }
 
+  async getSubCategories(userId: string): Promise<SubCategory[]> {
+    if (userId) {
+      return await db.sub_categories.where('user_id').equals(userId).sortBy('name');
+    }
+    return await db.sub_categories.orderBy('name').toArray();
+  }
+
   async mergeCategories(targetName: string, sourceNames: string[]): Promise<void> {
     await db.transaction('rw', db.transactions, db.categories, db.sub_categories, db.budgets, async () => {
       // 1. Update Transactions
@@ -284,7 +347,9 @@ export class LocalDataProvider implements DataProvider {
     await db.budgets.add({
       ...budget,
       id: uuidv4(),
-      spent_amount: 0 // Initial
+      spent_amount: 0, // Initial
+      is_active: budget.is_active ?? true,
+      created_at: budget.created_at || new Date().toISOString()
     });
   }
 
@@ -305,8 +370,9 @@ export class LocalDataProvider implements DataProvider {
 
   // Maintenance
   async clearAllData(): Promise<void> {
-    await db.transaction('rw', [db.transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
+    await db.transaction('rw', [db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
       await db.transactions.clear();
+      await db.scheduled_transactions.clear();
       await db.budgets.clear();
       await db.vendors.clear();
       await db.accounts.clear();
@@ -319,6 +385,7 @@ export class LocalDataProvider implements DataProvider {
   async exportData(): Promise<any> {
     const data = {
       transactions: await db.transactions.toArray(),
+      scheduled_transactions: await db.scheduled_transactions.toArray(),
       budgets: await db.budgets.toArray(),
       vendors: await db.vendors.toArray(),
       accounts: await db.accounts.toArray(),
@@ -333,8 +400,9 @@ export class LocalDataProvider implements DataProvider {
   async importData(data: any): Promise<void> {
     if (!data || !data.transactions) throw new Error("Invalid data format");
 
-    await db.transaction('rw', [db.transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
+    await db.transaction('rw', [db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
       await db.transactions.clear();
+      await db.scheduled_transactions.clear();
       await db.budgets.clear();
       await db.vendors.clear();
       await db.accounts.clear();
@@ -342,6 +410,7 @@ export class LocalDataProvider implements DataProvider {
       await db.sub_categories.clear();
 
       if (data.transactions) await db.transactions.bulkAdd(data.transactions);
+      if (data.scheduled_transactions) await db.scheduled_transactions.bulkAdd(data.scheduled_transactions);
       if (data.budgets) await db.budgets.bulkAdd(data.budgets);
       if (data.vendors) await db.vendors.bulkAdd(data.vendors);
       if (data.accounts) await db.accounts.bulkAdd(data.accounts);

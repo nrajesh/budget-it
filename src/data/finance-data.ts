@@ -93,8 +93,8 @@ export type Budget = {
   start_date: string;
   frequency: string;
   end_date?: string | null;
-  is_active: boolean;
-  created_at: string;
+  is_active?: boolean;
+  created_at?: string;
 };
 
 // Base categories for seeding and initial demo data generation.
