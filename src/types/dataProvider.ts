@@ -91,7 +91,6 @@ export interface DataProvider {
   addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction>;
   updateTransaction(transaction: Transaction): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
-  deleteTransaction(id: string): Promise<void>;
   deleteTransactionByTransferId(transferId: string): Promise<void>;
   clearTransactions(userId: string): Promise<void>;
   clearBudgets(userId: string): Promise<void>;
@@ -127,6 +126,7 @@ export interface DataProvider {
   deleteBudget(id: string): Promise<void>;
 
   // Maintenance
+  linkTransactionsAsTransfer(id1: string, id2: string): Promise<void>;
   clearAllData(): Promise<void>;
   exportData(): Promise<any>;
   importData(data: any): Promise<void>;

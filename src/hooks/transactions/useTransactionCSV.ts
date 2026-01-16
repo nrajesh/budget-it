@@ -13,6 +13,7 @@ export const useTransactionCSV = () => {
     refetchVendors,
     refetchAccounts,
     accountCurrencyMap,
+    detectAndLinkTransfers,
   } = useTransactions();
   const { user } = useUser();
   const dataProvider = useDataProvider();
@@ -125,10 +126,17 @@ export const useTransactionCSV = () => {
           // Step 4: Insert transactions
           // Loop insertion
           for (const t of transactionsToInsert) {
-              await dataProvider.addTransaction(t);
+            await dataProvider.addTransaction(t);
           }
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
+
+          // Auto-detect transfers in the background
+          const linkedCount = await detectAndLinkTransfers();
+          if (linkedCount > 0) {
+            showSuccess(`Automatically identified and linked ${linkedCount} transfer pairs.`);
+          }
+
           refetchTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);

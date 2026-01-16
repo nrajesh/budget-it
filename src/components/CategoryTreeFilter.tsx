@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, ChevronRight, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,10 +52,19 @@ export function CategoryTreeFilter({
     selectedSubCategories = [],
     onCategoryChange,
     onSubCategoryChange,
-    className,
     triggerClassName,
 }: CategoryTreeFilterPropsStructured) {
     const [open, setOpen] = React.useState(false);
+    const [expandedCategories, setExpandedCategories] = React.useState<string[]>([]);
+
+    const toggleExpand = (categorySlug: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExpandedCategories(prev =>
+            prev.includes(categorySlug)
+                ? prev.filter(s => s !== categorySlug)
+                : [...prev, categorySlug]
+        );
+    };
 
     // Helper: toggle category
     const toggleCategory = (categorySlug: string) => {
@@ -125,7 +134,6 @@ export function CategoryTreeFilter({
         onCategoryChange(newCategories);
     };
 
-    const count = selectedCategories.length + selectedSubCategories.length;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -154,9 +162,18 @@ export function CategoryTreeFilter({
                                     <React.Fragment key={category.id}>
                                         <CommandItem
                                             onSelect={() => toggleCategory(category.slug)}
-                                            className="font-semibold flex items-center justify-between py-2"
+                                            className="font-semibold flex items-center gap-2 py-2"
                                         >
-                                            <div className="flex items-center">
+                                            <div
+                                                className="flex items-center justify-center h-6 w-6 rounded-md hover:bg-slate-200/50 cursor-pointer"
+                                                onClick={(e) => toggleExpand(category.slug, e)}
+                                            >
+                                                {expandedCategories.includes(category.slug) ?
+                                                    <ChevronDown className="h-4 w-4 text-slate-500" /> :
+                                                    <ChevronRight className="h-4 w-4 text-slate-500" />
+                                                }
+                                            </div>
+                                            <div className="flex items-center flex-1">
                                                 <div
                                                     className={cn(
                                                         "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
@@ -175,7 +192,7 @@ export function CategoryTreeFilter({
                                         </CommandItem>
 
                                         {/* Render Sub-categories */}
-                                        {isCatSelected && category.subCategories.length > 0 && (
+                                        {(isCatSelected || expandedCategories.includes(category.slug)) && category.subCategories.length > 0 && (
                                             <div className="ml-6 border-l-2 border-muted pl-2 space-y-1 mb-2">
                                                 {category.subCategories.map((sub) => {
                                                     const isSubSelected = selectedSubCategories.includes(sub.slug);

@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Cell } from "recharts";
+import React, { useState, useCallback } from "react";
+import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ActivePieShape } from "./charts/ActivePieShape";
-import { usePieChartInteraction } from "@/hooks/usePieChartInteraction";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { slugify } from "@/lib/utils";
+
+const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 interface SpendingByVendorChartProps {
   transactions: Transaction[];
@@ -15,91 +17,111 @@ interface SpendingByVendorChartProps {
 
 export function SpendingByVendorChart({ transactions }: SpendingByVendorChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-  const { activeIndex, handlePieClick } = usePieChartInteraction();
+  const { setSelectedVendors, handleResetFilters, selectedAccounts } = useTransactionFilters();
 
-  // Data for initial vendor spending chart
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  // Apply account filter (consistent with categories chart)
+  const accountFilteredTransactions = React.useMemo(() => {
+    if (selectedAccounts.length === 0) return transactions;
+    return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
+  }, [transactions, selectedAccounts]);
+
   const vendorSpendingData = React.useMemo(() => {
-    const spending = transactions.reduce((acc, transaction) => {
-      if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-        const vendor = transaction.vendor || 'Unknown Vendor';
-        const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
-        acc[vendor] = (acc[vendor] || 0) + convertedAmount;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    const spendingMap = new Map<string, number>();
 
-    return Object.entries(spending).map(([vendor, amount], index) => ({
-      vendor,
-      amount: amount,
-      fill: `hsl(var(--chart-${(index % 8) + 1}))`, // Assign colors dynamically
-    }));
-  }, [transactions, convertBetweenCurrencies, selectedCurrency]);
-
-  const currentChartData = vendorSpendingData;
-  const currentNameKey = "vendor";
-  const currentTotalSpending = currentChartData.reduce((sum, item) => sum + item.amount, 0);
-
-  const chartConfig = React.useMemo(() => {
-    const config: ChartConfig = {
-      amount: {
-        label: "Amount",
-      },
-    };
-
-    currentChartData.forEach((item, index) => {
-      const name = item.vendor;
-      const colorIndex = (index % 8) + 1;
-      if (name) {
-        config[name] = {
-          label: name,
-          color: `hsl(var(--chart-${colorIndex}))`,
-        };
+    accountFilteredTransactions.forEach(t => {
+      if (t.amount < 0 && t.category !== 'Transfer') {
+        const vendor = t.vendor || 'Unknown Vendor';
+        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+        const current = spendingMap.get(vendor) || 0;
+        spendingMap.set(vendor, current + convertedAmount);
       }
     });
 
-    return config;
-  }, [currentChartData]);
+    return Array.from(spendingMap.entries())
+      .map(([name, amount]) => ({
+        name,
+        amount
+      }))
+      .filter(v => v.amount > 0)
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 15); // Show top 15 vendors
+  }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
+
+  const onPieClick = useCallback((data: any, index: number) => {
+    setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
+
+    // Sync with global filters
+    const vendorSlug = slugify(data.name);
+    setSelectedVendors([vendorSlug]);
+  }, [setSelectedVendors]);
+
+  const resetAll = useCallback(() => {
+    setActiveIndex(undefined);
+    handleResetFilters();
+  }, [handleResetFilters]);
+
+  const renderActiveShape = useCallback((props: any) => {
+    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetAll} />;
+  }, [formatCurrency, resetAll]);
+
+  if (vendorSpendingData.length === 0) {
+    return (
+      <ThemedCard className="h-full">
+        <ThemedCardHeader>
+          <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+        </ThemedCardHeader>
+        <ThemedCardContent className="flex items-center justify-center h-64 text-slate-400">
+          No spending data for this period
+        </ThemedCardContent>
+      </ThemedCard>
+    );
+  }
+
+  const totalSpending = vendorSpendingData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="items-center pb-0">
-        <div className="flex items-center justify-between w-full">
-          <CardTitle className="w-full text-center">
-            Spending by Vendor
-          </CardTitle>
+    <ThemedCard className="flex flex-col h-full overflow-hidden shadow-lg border-slate-200">
+      <ThemedCardHeader className="pb-2 border-b border-slate-50 bg-slate-50/50">
+        <ThemedCardTitle className="flex flex-col items-center">
+          <span className="text-lg font-bold text-slate-800">Spending by Vendor</span>
+          <span className="text-xs font-medium text-slate-500 mt-1">
+            Total: {formatCurrency(totalSpending)}
+          </span>
+        </ThemedCardTitle>
+      </ThemedCardHeader>
+      <ThemedCardContent className="pt-6 flex-1">
+        <div className="w-full h-[380px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={vendorSpendingData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                innerRadius={65}
+                outerRadius={105}
+                paddingAngle={4}
+                dataKey="amount"
+                nameKey="name"
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onClick={onPieClick}
+                animationDuration={800}
+              >
+                {vendorSpendingData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-        <CardDescription>
-          Total spending: {formatCurrency(currentTotalSpending)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
-            />
-            <Pie
-              data={currentChartData}
-              dataKey="amount"
-              nameKey={currentNameKey}
-              innerRadius={60}
-              outerRadius={80}
-              strokeWidth={5}
-              activeIndex={activeIndex}
-              activeShape={(props) => activeIndex !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null}
-              onClick={(data, index) => handlePieClick(index)}
-            >
-              {currentChartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+      </ThemedCardContent>
+    </ThemedCard>
   );
 }

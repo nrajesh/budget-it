@@ -1,46 +1,17 @@
 "use client";
 
-import React from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Pie, PieChart, Cell } from "recharts";
+import React, { useState, useCallback } from "react";
+import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { usePieChartInteraction } from "@/hooks/usePieChartInteraction";
-import { ActivePieShape } from "./charts/ActivePieShape"; // Added this import
+import { ActivePieShape } from "./charts/ActivePieShape";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { slugify } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
-// Helper function to process transactions into chart data
-interface ChartDataItem {
-  name: string;
-  amount: number;
-  fill: string;
-}
-
-function processTransactionsForChart(
-  transactions: Transaction[],
-  selectedCurrency: string,
-  convertBetweenCurrencies: (amount: number, from: string, to: string) => number,
-  filterCategory?: string
-): ChartDataItem[] {
-  const spending = transactions.reduce((acc, transaction) => {
-    if (transaction.amount < 0 && transaction.category !== 'Transfer') {
-      if (filterCategory && transaction.category !== filterCategory) {
-        return acc;
-      }
-
-      const key = filterCategory ? (transaction.vendor || 'Unknown Vendor') : transaction.category;
-      const convertedAmount = convertBetweenCurrencies(Math.abs(transaction.amount), transaction.currency, selectedCurrency);
-      acc[key] = (acc[key] || 0) + convertedAmount;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  return Object.entries(spending).map(([name, amount], index) => ({
-    name,
-    amount: amount,
-    fill: `hsl(var(--chart-${(index % 8) + 1}))`, // Assign colors dynamically
-  }));
-}
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#36A2EB', '#FFCE56', '#FF6384'];
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
@@ -48,106 +19,156 @@ interface SpendingCategoriesChartProps {
 
 export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { setSelectedCategories, setSelectedSubCategories, handleResetFilters, selectedAccounts } = useTransactionFilters();
 
-  const [selectedCategoryForDrilldown, setSelectedCategoryForDrilldown] = React.useState<string | null>(null);
-  const { activeIndex: categoryActiveIndex, handlePieClick: handleCategoryPieClick, resetActiveIndex: resetCategoryActiveIndex } = usePieChartInteraction();
-  const { activeIndex: vendorActiveIndex, handlePieClick: handleVendorPieClick, resetActiveIndex: resetVendorActiveIndex } = usePieChartInteraction();
+  const [selectedCategory, setSelectedCategory] = useState<{ name: string } | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
-  const categorySpendingData = React.useMemo(() => {
-    return processTransactionsForChart(transactions, selectedCurrency, convertBetweenCurrencies);
-  }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+  // Apply account filter to the passed transactions (if not already applied in Analytics.tsx)
+  const accountFilteredTransactions = React.useMemo(() => {
+    if (selectedAccounts.length === 0) return transactions;
+    return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
+  }, [transactions, selectedAccounts]);
 
-  const vendorSpendingData = React.useMemo(() => {
-    if (!selectedCategoryForDrilldown) return [];
-    return processTransactionsForChart(transactions, selectedCurrency, convertBetweenCurrencies, selectedCategoryForDrilldown);
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, selectedCategoryForDrilldown]);
+  // Calculate category data
+  const categoriesData = React.useMemo(() => {
+    const categoryMap = new Map<string, number>();
 
-  const currentChartData = selectedCategoryForDrilldown ? vendorSpendingData : categorySpendingData;
-  const currentNameKey = selectedCategoryForDrilldown ? "name" : "name"; // Both use 'name' now
-  const currentTotalSpending = currentChartData.reduce((sum, item) => sum + item.amount, 0);
-
-  const chartConfig = React.useMemo(() => {
-    const config: ChartConfig = {
-      amount: {
-        label: "Amount",
-      },
-    };
-
-    currentChartData.forEach((item) => {
-      // Use item.name directly as the key for chartConfig
-      config[item.name] = {
-        label: item.name,
-        color: item.fill,
-      };
+    accountFilteredTransactions.forEach(t => {
+      if (t.amount < 0 && t.category && t.category !== 'Transfer') {
+        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+        const current = categoryMap.get(t.category) || 0;
+        categoryMap.set(t.category, current + convertedAmount);
+      }
     });
 
-    return config;
-  }, [currentChartData]);
+    return Array.from(categoryMap.entries())
+      .map(([name, amount]) => ({
+        name,
+        amount
+      }))
+      .filter(c => c.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
+  }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
 
-  const handlePieSliceClick = (data: ChartDataItem, index: number, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent event from bubbling up to ChartContainer
-    if (!selectedCategoryForDrilldown) {
-      // Currently in category view, drill down
-      const clickedCategory = data.name;
-      setSelectedCategoryForDrilldown(clickedCategory);
-      resetCategoryActiveIndex(); // Reset active index for category chart
-      resetVendorActiveIndex(); // Ensure vendor chart has no active index initially
+  // Calculate sub-category drilldown data
+  const subCategoryData = React.useMemo(() => {
+    if (!selectedCategory) return [];
+
+    const subCatMap = new Map<string, number>();
+
+    accountFilteredTransactions
+      .filter(t => t.category === selectedCategory.name && t.amount < 0)
+      .forEach(t => {
+        const subCat = t.sub_category || "Uncategorized";
+        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+        const current = subCatMap.get(subCat) || 0;
+        subCatMap.set(subCat, current + convertedAmount);
+      });
+
+    return Array.from(subCatMap.entries())
+      .map(([name, amount]) => ({
+        name,
+        amount
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [selectedCategory, accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
+
+  const currentData = selectedCategory ? subCategoryData : categoriesData;
+
+  const onPieClick = useCallback((data: any, index: number) => {
+    if (!selectedCategory) {
+      setActiveIndex(index);
+      setSelectedCategory({ name: data.name });
+
+      // Sync with global filters
+      setSelectedCategories([slugify(data.name)]);
+      setSelectedSubCategories([]); // Clear sub-categories when drilling into a new category
     } else {
-      // Currently in vendor view, just activate/deactivate vendor slice
-      handleVendorPieClick(index);
-    }
-  };
+      setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
 
-  const handleGoBackToCategories = () => {
-    if (selectedCategoryForDrilldown) {
-      setSelectedCategoryForDrilldown(null);
-      resetCategoryActiveIndex();
-      resetVendorActiveIndex();
+      // Sync with global filters
+      const subCatSlug = data.name === "Uncategorized" ? "uncategorized" : slugify(data.name);
+      setSelectedSubCategories([subCatSlug]);
     }
-  };
+  }, [selectedCategory, setSelectedCategories, setSelectedSubCategories]);
 
-  const activeIndexForPie = selectedCategoryForDrilldown ? vendorActiveIndex : categoryActiveIndex;
+  const handleBackToCategories = useCallback(() => {
+    setSelectedCategory(null);
+    setActiveIndex(undefined);
+    setSelectedSubCategories([]); // Clear sub-category filter when going back
+  }, [setSelectedSubCategories]);
+
+  const resetAll = useCallback(() => {
+    setSelectedCategory(null);
+    setActiveIndex(undefined);
+    handleResetFilters();
+  }, [handleResetFilters]);
+
+  const renderActiveShape = useCallback((props: any) => {
+    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetAll} />;
+  }, [formatCurrency, resetAll]);
+
+  if (categoriesData.length === 0) {
+    return (
+      <ThemedCard className="h-full">
+        <ThemedCardHeader>
+          <ThemedCardTitle>Spending by Category</ThemedCardTitle>
+        </ThemedCardHeader>
+        <ThemedCardContent className="flex items-center justify-center h-64 text-slate-400">
+          No spending data for this period
+        </ThemedCardContent>
+      </ThemedCard>
+    );
+  }
 
   return (
-    <ThemedCard className="flex flex-col h-full">
-      <ThemedCardHeader className="items-center pb-0">
-        <div className="flex items-center justify-between w-full">
-          <ThemedCardTitle className="w-full text-center">
-            {selectedCategoryForDrilldown ? `Spending in ${selectedCategoryForDrilldown}` : "Spending by Category"}
-          </ThemedCardTitle>
-        </div>
-        <ThemedCardDescription>
-          {selectedCategoryForDrilldown ? `Total for ${selectedCategoryForDrilldown}: ${formatCurrency(currentTotalSpending)}` : `Total spending: ${formatCurrency(currentTotalSpending)}`}
-        </ThemedCardDescription>
+    <ThemedCard className="flex flex-col h-full overflow-hidden shadow-lg border-slate-200">
+      <ThemedCardHeader className="pb-2 border-b border-slate-50 bg-slate-50/50">
+        <ThemedCardTitle className="flex items-center justify-between">
+          <span className="text-lg font-bold text-slate-800">
+            {selectedCategory ? (
+              <Button variant="ghost" onClick={handleBackToCategories} className="flex items-center gap-2 px-2 hover:bg-slate-200/50 -ml-2">
+                <ArrowLeft className="h-4 w-4" /> {selectedCategory.name}
+              </Button>
+            ) : (
+              "Spending by Category"
+            )}
+          </span>
+          {!selectedCategory && <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tap to drill down</span>}
+        </ThemedCardTitle>
       </ThemedCardHeader>
-      <ThemedCardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-          onClick={handleGoBackToCategories} // Click anywhere in container to go back
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel formatter={(value, name) => `${name}: ${formatCurrency(Number(value))}`} />}
-            />
-            <Pie
-              data={currentChartData}
-              dataKey="amount"
-              nameKey={currentNameKey}
-              innerRadius={60}
-              outerRadius={80}
-              strokeWidth={5}
-              activeIndex={activeIndexForPie}
-              activeShape={(props) => activeIndexForPie !== null ? <ActivePieShape {...props} formatCurrency={formatCurrency} /> : null}
-              onClick={(data, index, event) => handlePieSliceClick(data as ChartDataItem, index, event)}
-            >
-              {currentChartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ChartContainer>
+      <ThemedCardContent className="pt-6 flex-1">
+        <div className="w-full h-[380px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={currentData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                innerRadius={65}
+                outerRadius={105}
+                paddingAngle={4}
+                fill="#8884d8"
+                dataKey="amount"
+                nameKey="name"
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onClick={onPieClick}
+                animationDuration={800}
+              >
+                {currentData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </ThemedCardContent>
     </ThemedCard>
   );

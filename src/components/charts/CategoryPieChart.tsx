@@ -8,6 +8,8 @@ import { ArrowLeft } from 'lucide-react';
 import { ActivePieShape } from './ActivePieShape';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTransactions } from '@/contexts/TransactionsContext';
+import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
+import { slugify } from '@/lib/utils';
 
 
 
@@ -16,6 +18,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#36A2EB'
 const CategoryPieChart = () => {
   const { formatCurrency } = useCurrency(); // Get formatCurrency from context
   const { transactions, categories, isLoadingTransactions } = useTransactions();
+  const { setSelectedCategories, setSelectedVendors, handleResetFilters } = useTransactionFilters();
   const [selectedCategory, setSelectedCategory] = useState<{ id: string; name: string } | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined); // Local activeIndex for current view
 
@@ -67,20 +70,31 @@ const CategoryPieChart = () => {
       // If in top-level categories, set active index and drill down
       setActiveIndex(index);
       setSelectedCategory({ id: data.id, name: data.name });
+
+      // Auto-filter Recent transactions by category
+      const categorySlug = slugify(data.name);
+      setSelectedCategories([categorySlug]);
     } else {
       // If drilled down, just toggle active index for the vendor
       setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
+
+      // Auto-filter Recent transactions by vendor
+      const vendorSlug = slugify(data.vendor_name);
+      setSelectedVendors([vendorSlug]);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, setSelectedCategories, setSelectedVendors]);
 
   const handleBackClick = useCallback(() => {
     setSelectedCategory(null);
     setActiveIndex(undefined); // Clear active index when going back
-  }, []);
+    setSelectedVendors([]); // Clear vendor filter
+  }, [setSelectedVendors]);
 
   const resetActiveIndex = useCallback(() => {
     setActiveIndex(undefined);
-  }, []);
+    handleResetFilters();
+    setSelectedCategory(null);
+  }, [handleResetFilters]);
 
   if (isLoading) return <div className="flex justify-center items-center h-64">Loading chart data...</div>;
   if (!chartData || chartData.length === 0) return <div className="text-center py-4">No data to display.</div>;
@@ -94,42 +108,54 @@ const CategoryPieChart = () => {
   }, [formatCurrency, resetActiveIndex]);
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
+    <Card className="w-full h-full mx-auto overflow-hidden shadow-lg border-slate-200">
+      <CardHeader className="pb-2 border-b border-slate-50 bg-slate-50/50">
         <CardTitle className="flex items-center justify-between">
-          {selectedCategory ? (
-            <Button variant="ghost" onClick={handleBackClick} className="flex items-center gap-2 px-2">
-              <ArrowLeft className="h-4 w-4" /> Back to Categories
-            </Button>
-          ) : (
-            "Category Spending Overview"
-          )}
+          <span className="text-lg font-bold text-slate-800">
+            {selectedCategory ? (
+              <Button variant="ghost" onClick={handleBackClick} className="flex items-center gap-2 px-2 hover:bg-slate-200/50 -ml-2">
+                <ArrowLeft className="h-4 w-4" /> {selectedCategory.name}
+              </Button>
+            ) : (
+              "Spending by Category"
+            )}
+          </span>
+          {!selectedCategory && <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tap to drill down</span>}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={400}>
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={renderLabel}
-              outerRadius={150}
-              fill="#8884d8"
-              dataKey="total_amount"
-              nameKey={selectedCategory ? "vendor_name" : "name"}
-              activeIndex={activeIndex}
-              activeShape={renderActiveShape}
-              onClick={onPieClick}
-            >
-              {chartData.map((_entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
-          </PieChart>
-        </ResponsiveContainer>
+      <CardContent className="pt-6">
+        <div className="w-full" style={{ height: '500px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={renderLabel}
+                innerRadius={110}
+                outerRadius={180}
+                paddingAngle={5}
+                fill="#8884d8"
+                dataKey="total_amount"
+                nameKey={selectedCategory ? "vendor_name" : "name"}
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onClick={onPieClick}
+                animationBegin={0}
+                animationDuration={1000}
+              >
+                {chartData.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => formatCurrency(value)}
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

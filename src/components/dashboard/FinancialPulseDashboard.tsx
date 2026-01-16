@@ -1,14 +1,18 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Wealthometer } from "@/components/infographic/Wealthometer";
 import { MonthlyTrends } from "@/components/infographic/MonthlyTrends";
 import { TopCategoriesList } from "@/components/infographic/TopCategoriesList";
 import { startOfMonth, subDays, isAfter, format } from "date-fns";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export const FinancialPulseDashboard = () => {
     const { transactions, accounts } = useTransactions();
     const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+    const { excludeTransfers, setExcludeTransfers } = useTransactionFilters();
 
     // --- Data Aggregation ---
 
@@ -16,7 +20,7 @@ export const FinancialPulseDashboard = () => {
     const netWorth = useMemo(() => {
         return accounts.reduce((total, account) => {
             const balance = account.running_balance || 0;
-            return total + convertBetweenCurrencies(balance, account.currency, selectedCurrency);
+            return total + convertBetweenCurrencies(balance, account.currency || 'USD', selectedCurrency || 'USD');
         }, 0);
     }, [accounts, selectedCurrency, convertBetweenCurrencies]);
 
@@ -32,14 +36,16 @@ export const FinancialPulseDashboard = () => {
         transactions.forEach(t => {
             const tDate = new Date(t.date);
             if (isAfter(tDate, startOfCurrentMonth)) {
-                const amount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+                if (excludeTransfers && t.category === 'Transfer') return;
+
+                const amount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || 'USD', selectedCurrency || 'USD');
                 if (t.amount > 0) income += amount;
-                else if (t.amount < 0 && t.category !== 'Transfer') expenses += amount; // Exclude transfers
+                else if (t.amount < 0 && (t.category !== 'Transfer' || !excludeTransfers)) expenses += amount;
             }
         });
 
         return { income, expenses };
-    }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+    }, [transactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
 
 
     // 3. 30 Day Trend
@@ -56,11 +62,13 @@ export const FinancialPulseDashboard = () => {
 
         transactions.forEach(t => {
             const tDate = new Date(t.date);
-            if (isAfter(tDate, thirtyDaysAgo) && t.amount < 0 && t.category !== 'Transfer') {
+            if (isAfter(tDate, thirtyDaysAgo) && t.amount < 0) {
+                if (excludeTransfers && t.category === 'Transfer') return;
+
                 const dateKey = format(tDate, 'yyyy-MM-dd');
                 if (dailyMap.has(dateKey)) {
                     const current = dailyMap.get(dateKey) || 0;
-                    dailyMap.set(dateKey, current + convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency));
+                    dailyMap.set(dateKey, current + convertBetweenCurrencies(Math.abs(t.amount), t.currency || 'USD', selectedCurrency || 'USD'));
                 }
             }
         });
@@ -69,7 +77,7 @@ export const FinancialPulseDashboard = () => {
             date: format(new Date(date), 'MMM dd'),
             amount
         }));
-    }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+    }, [transactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
 
 
     // 4. Top Categories (Last 30 Days)
@@ -81,8 +89,10 @@ export const FinancialPulseDashboard = () => {
 
         transactions.forEach(t => {
             const tDate = new Date(t.date);
-            if (isAfter(tDate, thirtyDaysAgo) && t.amount < 0 && t.category !== 'Transfer') {
-                const amount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+            if (isAfter(tDate, thirtyDaysAgo) && t.amount < 0) {
+                if (excludeTransfers && t.category === 'Transfer') return;
+
+                const amount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || 'USD', selectedCurrency || 'USD');
                 const cat = t.category || "Uncategorized";
                 catMap.set(cat, (catMap.get(cat) || 0) + amount);
                 totalSpent += amount;
@@ -103,11 +113,11 @@ export const FinancialPulseDashboard = () => {
                 percentage: totalSpent > 0 ? (amount / totalSpent) * 100 : 0,
                 color: colors[idx % colors.length]
             }));
-    }, [transactions, selectedCurrency, convertBetweenCurrencies]);
+    }, [transactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
 
 
     return (
-        <div className="bg-gradient-to-br from-gray-900 via-slate-900 to-black p-4 md:p-8 text-white rounded-xl shadow-2xl min-h-[calc(100vh-100px)]">
+        <div className="bg-gradient-to-br from-gray-900 via-slate-900 to-black p-4 md:p-8 text-white rounded-xl shadow-2xl min-h-[calc(100vh-100px)] transition-all duration-500">
             <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
@@ -116,6 +126,17 @@ export const FinancialPulseDashboard = () => {
                             Financial Pulse
                         </h1>
                         <p className="text-slate-400 mt-2 text-lg">Your wealth at a glance.</p>
+
+                        {/* Pulse specific toggle */}
+                        <div className="flex items-center space-x-2 mt-4 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 w-fit">
+                            <Switch
+                                id="exclude-transfers-pulse"
+                                checked={excludeTransfers}
+                                onCheckedChange={setExcludeTransfers}
+                                className="data-[state=checked]:bg-indigo-500"
+                            />
+                            <Label htmlFor="exclude-transfers-pulse" className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Exclude Transfers</Label>
+                        </div>
                     </div>
                     <div className="text-right">
                         <div className="text-sm text-slate-500 uppercase tracking-widest font-semibold">Current Balance</div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Upload, FilterX } from "lucide-react";
+import { Download, Plus, Upload, FilterX, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import TransactionDialog from "@/components/transactions/TransactionDialog";
@@ -13,7 +13,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
 import { useNavigate, useLocation } from "react-router-dom";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
 
 const Transactions = () => {
   const session = useSession();
@@ -28,7 +28,8 @@ const Transactions = () => {
     updateTransaction,
     deleteMultipleTransactions,
     invalidateAllData,
-    addTransaction
+    addTransaction,
+    detectAndLinkTransfers
   } = useTransactions();
   const dataProvider = useDataProvider();
 
@@ -329,7 +330,13 @@ const Transactions = () => {
         await dataProvider.addTransaction(t);
       }
 
+      // Auto-detect transfers
+      const linkedCount = await detectAndLinkTransfers();
+
       let desc = `Successfully imported ${transactionsToInsert.length} transactions.`;
+      if (linkedCount > 0) {
+        desc += ` Automatically linked ${linkedCount} transfer pairs.`;
+      }
       if (skippedCount > 0) {
         desc += ` (${skippedCount} rows skipped due to invalid data)`;
       }
@@ -393,15 +400,26 @@ const Transactions = () => {
             accept=".csv"
             className="hidden"
           />
-          <Button variant="outline" onClick={handleImportClick}>
+          <Button variant="outline" onClick={handleImportClick} className="flex-1 sm:flex-none">
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={() => setIsDialogOpen(true)}>
+          <Button variant="outline" onClick={async () => {
+            const count = await detectAndLinkTransfers();
+            if (count > 0) {
+              showSuccess(`Successfully linked ${count} transfer pairs.`);
+            } else {
+              toast({ title: "No transfers detected", description: "Checked all uncategorized transactions for matching pairs." });
+            }
+          }} className="flex-1 sm:flex-none">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Detect Transfers
+          </Button>
+          <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none">
             <Plus className="mr-2 h-4 w-4" />
             Add Transaction
           </Button>

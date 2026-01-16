@@ -6,6 +6,7 @@ import { useUser } from './UserContext';
 import { useQuery, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
 import { useDataProvider } from '@/context/DataProviderContext';
 import { ScheduledTransaction } from '@/types/dataProvider';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TransactionToDelete {
   id: string;
@@ -51,6 +52,7 @@ interface TransactionsContextType {
   addScheduledTransaction: (transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>) => Promise<void>;
   updateScheduledTransaction: (transaction: ScheduledTransaction) => Promise<void>;
   deleteScheduledTransaction: (id: string) => Promise<void>;
+  detectAndLinkTransfers: (batch?: Transaction[]) => Promise<number>;
 }
 
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -260,7 +262,47 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
   const addTransaction = async (transaction: any) => {
-    await dataProvider.addTransaction(transaction);
+    // Check if it's a transfer
+    // In our app, a transfer is identified if the vendor name matches an account name
+    const isTransfer = accounts.some(acc => acc.name === transaction.vendor);
+
+    if (isTransfer) {
+      const transferId = uuidv4();
+      const userId = user?.id || 'local-user';
+
+      // Source transaction
+      const sourceTransaction = {
+        ...transaction,
+        transfer_id: transferId,
+        user_id: userId,
+        category: 'Transfer',
+        date: new Date(transaction.date).toISOString(),
+      };
+      // Destructure receivingAmount as we don't store it in the source side amount field directly usually
+      // but the dialog sends it.
+      const { receivingAmount, ...cleanSource } = sourceTransaction;
+
+      await dataProvider.addTransaction(cleanSource);
+
+      // Destination transaction
+      const destTransaction = {
+        ...transaction,
+        account: transaction.vendor, // Swap account and vendor
+        vendor: transaction.account,
+        amount: transaction.receivingAmount || -transaction.amount, // Use receiving amount (positive usually)
+        transfer_id: transferId,
+        user_id: userId,
+        category: 'Transfer',
+        date: new Date(transaction.date).toISOString(),
+      };
+      const { receivingAmount: _, ...cleanDest } = destTransaction;
+
+      await dataProvider.addTransaction(cleanDest);
+      await dataProvider.ensureCategoryExists('Transfer', userId);
+    } else {
+      await dataProvider.addTransaction(transaction);
+    }
+
     await invalidateAllData();
   };
   const updateTransaction = async (transaction: any) => {
@@ -301,6 +343,42 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await dataProvider.deleteScheduledTransaction(id);
     await invalidateAllData();
   };
+
+  const detectAndLinkTransfers = React.useCallback(async (batch?: Transaction[]) => {
+    const listToScan = batch || transactions;
+    if (listToScan.length < 2) return 0;
+
+    const pairsLinked = [];
+    const processedIds = new Set<string>();
+
+    const normalizeDate = (d: string) => d.substring(0, 10);
+
+    for (let i = 0; i < listToScan.length; i++) {
+      const t1 = listToScan[i];
+      if (t1.transfer_id || processedIds.has(t1.id)) continue;
+
+      for (let j = i + 1; j < listToScan.length; j++) {
+        const t2 = listToScan[j];
+        if (t2.transfer_id || processedIds.has(t2.id)) continue;
+
+        if (normalizeDate(t1.date) !== normalizeDate(t2.date)) continue;
+        if (t1.currency !== t2.currency) continue;
+        if (Math.abs(t1.amount + t2.amount) > 0.01) continue;
+        if (t1.account === t2.account) continue;
+
+        await dataProvider.linkTransactionsAsTransfer(t1.id, t2.id);
+        pairsLinked.push([t1.id, t2.id]);
+        processedIds.add(t1.id);
+        processedIds.add(t2.id);
+        break;
+      }
+    }
+
+    if (pairsLinked.length > 0) {
+      await invalidateAllData();
+    }
+    return pairsLinked.length;
+  }, [transactions, dataProvider, invalidateAllData]);
 
   // Demo Data Generation
   const generateDiverseDemoData = async () => {
@@ -356,6 +434,45 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return Array.from(subs).sort((a, b) => a.localeCompare(b));
   }, [transactions, subCategories]);
 
+  // Sync Categories/Sub-categories from transactions to DB tables if missing
+  // This helps recover data after a partial import or manual edit that bypassed entity creation.
+  React.useEffect(() => {
+    if (isLoadingTransactions || isLoadingCategories || isLoadingSubCategories || transactions.length === 0) return;
+
+    const syncEntities = async () => {
+      const userId = user?.id || 'local-user';
+
+      for (const t of transactions) {
+        if (t.category) {
+          const catId = await dataProvider.ensureCategoryExists(t.category, userId);
+          if (catId && t.sub_category) {
+            await dataProvider.ensureSubCategoryExists(t.sub_category, catId, userId);
+            // We don't strictly need to track if something was added here, 
+            // but if we wanted to avoid unnecessary refetches, we could.
+            // LocalDataProvider already checks for existence.
+          }
+        }
+      }
+
+      // Since it's hard to track if something was actually added without changing provider,
+      // we'll just refetch if we think it's necessary based on some heuristic or just once.
+      // For now, let's just refetch once after sync completes if we find it helpful.
+      // Refetching might cause loops if not careful, so we use a ref.
+    };
+
+    const syncDoneKey = 'last_entity_sync_count';
+    const lastCount = parseInt(localStorage.getItem(syncDoneKey) || '0', 10);
+    if (transactions.length !== lastCount) {
+      syncEntities().then(async () => {
+        localStorage.setItem(syncDoneKey, transactions.length.toString());
+        await detectAndLinkTransfers();
+        refetchTransactions();
+        refetchCategories();
+        refetchSubCategories();
+      });
+    }
+  }, [transactions, isLoadingTransactions, isLoadingCategories, isLoadingSubCategories, dataProvider, user?.id, refetchCategories, refetchSubCategories, detectAndLinkTransfers, refetchTransactions]);
+
   const value = React.useMemo(() => ({
     transactions, vendors, accounts, categories, accountCurrencyMap, allSubCategories, subCategories,
     addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions, clearAllTransactions,
@@ -367,12 +484,16 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
     scheduledTransactions, isLoadingScheduledTransactions,
     addScheduledTransaction, updateScheduledTransaction, deleteScheduledTransaction,
+    detectAndLinkTransfers,
   }), [
     transactions, vendors, accounts, categories, subCategories, accountCurrencyMap, allSubCategories,
     refetchVendors, refetchAccounts, refetchCategories, refetchSubCategories, invalidateAllData, refetchTransactions,
     demoDataProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
     scheduledTransactions, isLoadingScheduledTransactions,
+    addTransaction, updateTransaction, deleteTransaction, deleteMultipleTransactions, clearAllTransactions,
+    generateDiverseDemoData, addScheduledTransaction, updateScheduledTransaction, deleteScheduledTransaction,
+    detectAndLinkTransfers
   ]);
 
   return (

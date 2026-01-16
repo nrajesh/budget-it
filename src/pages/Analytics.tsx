@@ -94,6 +94,7 @@ const Analytics = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedSubCategories,
     selectedVendors,
     dateRange,
     availableAccountOptions: availableAccounts,
@@ -170,7 +171,7 @@ const Analytics = () => {
           />
         </div>
         <div className="lg:col-span-1">
-          <SpendingCategoriesChart transactions={allFilteredData} />
+          <SpendingCategoriesChart transactions={currentTransactions} />
         </div>
       </div>
 

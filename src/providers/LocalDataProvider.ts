@@ -14,6 +14,19 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction> {
+    const userId = transaction.user_id || 'local-user';
+
+    // Ensure category exists
+    let catId = null;
+    if (transaction.category) {
+      catId = await this.ensureCategoryExists(transaction.category, userId);
+
+      // Ensure sub-category exists if provided
+      if (transaction.sub_category && catId) {
+        await this.ensureSubCategoryExists(transaction.sub_category, catId, userId);
+      }
+    }
+
     const newTransaction: Transaction = {
       ...transaction,
       id: uuidv4(),
@@ -24,6 +37,17 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async updateTransaction(transaction: Transaction): Promise<void> {
+    const userId = transaction.user_id || 'local-user';
+
+    // Ensure category/sub-category exist
+    let catId = null;
+    if (transaction.category) {
+      catId = await this.ensureCategoryExists(transaction.category, userId);
+      if (transaction.sub_category && catId) {
+        await this.ensureSubCategoryExists(transaction.sub_category, catId, userId);
+      }
+    }
+
     await db.transactions.put(transaction);
   }
 
@@ -69,6 +93,17 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async addScheduledTransaction(transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>): Promise<ScheduledTransaction> {
+    const userId = transaction.user_id || 'local-user';
+
+    // Ensure category/sub-category exist
+    let catId = null;
+    if (transaction.category) {
+      catId = await this.ensureCategoryExists(transaction.category, userId);
+      if (transaction.sub_category && catId) {
+        await this.ensureSubCategoryExists(transaction.sub_category, catId, userId);
+      }
+    }
+
     const newTransaction: ScheduledTransaction = {
       ...transaction,
       id: uuidv4(),
@@ -79,6 +114,17 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async updateScheduledTransaction(transaction: ScheduledTransaction): Promise<void> {
+    const userId = transaction.user_id || 'local-user';
+
+    // Ensure category/sub-category exist
+    let catId = null;
+    if (transaction.category) {
+      catId = await this.ensureCategoryExists(transaction.category, userId);
+      if (transaction.sub_category && catId) {
+        await this.ensureSubCategoryExists(transaction.sub_category, catId, userId);
+      }
+    }
+
     await db.scheduled_transactions.put(transaction);
   }
 
@@ -369,6 +415,22 @@ export class LocalDataProvider implements DataProvider {
   }
 
   // Maintenance
+  async linkTransactionsAsTransfer(id1: string, id2: string): Promise<void> {
+    const transferId = uuidv4();
+    await db.transaction('rw', [db.transactions, db.categories], async () => {
+      const t1 = await db.transactions.get(id1);
+      const t2 = await db.transactions.get(id2);
+
+      if (!t1 || !t2) return;
+
+      const userId = t1.user_id || t2.user_id || 'local-user';
+      await this.ensureCategoryExists('Transfer', userId);
+
+      await db.transactions.update(id1, { transfer_id: transferId, category: 'Transfer' });
+      await db.transactions.update(id2, { transfer_id: transferId, category: 'Transfer' });
+    });
+  }
+
   async clearAllData(): Promise<void> {
     await db.transaction('rw', [db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
       await db.transactions.clear();

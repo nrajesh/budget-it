@@ -13,6 +13,7 @@ interface UseTransactionDataProps {
   searchTerm: string;
   selectedAccounts: string[];
   selectedCategories: string[];
+  selectedSubCategories: string[];
   selectedVendors: string[];
   dateRange: DateRange | undefined;
   availableAccountOptions: Option[];
@@ -25,6 +26,7 @@ export const useTransactionData = ({
   searchTerm,
   selectedAccounts,
   selectedCategories,
+  selectedSubCategories,
   selectedVendors,
   dateRange,
   availableAccountOptions,
@@ -78,6 +80,14 @@ export const useTransactionData = ({
       filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
     }
 
+    if (selectedSubCategories.length > 0) {
+      filtered = filtered.filter((t) => {
+        const subCat = t.sub_category || "uncategorized";
+        const subCatSlug = slugify(subCat);
+        return selectedSubCategories.includes(subCatSlug);
+      });
+    }
+
     if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
       filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
     }
@@ -106,6 +116,7 @@ export const useTransactionData = ({
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedSubCategories,
     selectedVendors,
     dateRange,
     availableAccountOptions.length,
