@@ -325,22 +325,16 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
 
 
   const totalBalance = React.useMemo(() => {
-    let dataToUse;
-    if (chartType === 'bar-stacked') {
-      dataToUse = monthlyStackedBarChartData;
-    } else if (chartType === 'waterfall') {
-      dataToUse = dailyNetChangeData;
-    } else {
-      dataToUse = dailyRunningBalanceData;
-    }
+    // Always use dailyRunningBalanceData (balances) for total balance, regardless of chart type
+    // Waterfall uses dailyNetChangeData (changes), but total balance is still the sum of current balances.
+    if (dailyRunningBalanceData.length === 0) return 0;
+    const lastDayBalances = dailyRunningBalanceData[dailyRunningBalanceData.length - 1];
 
-    if (dataToUse.length === 0) return 0;
-    const lastDayBalances = dataToUse[dataToUse.length - 1];
     return accountsToDisplay.reduce((sum, account) => {
       const balance = lastDayBalances[account];
       return sum + (typeof balance === 'number' ? balance : 0);
     }, 0);
-  }, [dailyRunningBalanceData, monthlyStackedBarChartData, accountsToDisplay, chartType]);
+  }, [dailyRunningBalanceData, accountsToDisplay]); // Removed chartType and other data dependencies
 
   const dynamicChartConfig = React.useMemo(() => {
     const newConfig = { ...chartConfig };
@@ -404,15 +398,24 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     const commonTooltip = (
       <ChartTooltip
         cursor={false}
-        content={
-          <ChartTooltipContent
+        content={(props: any) => {
+          const { payload } = props;
+          // Filter out items with 0 value
+          const filteredPayload = payload?.filter((item: any) => Math.abs(Number(item.value)) > 0);
+
+          if (!filteredPayload || filteredPayload.length === 0) return null;
+
+          // Pass filtered payload to Content
+          return <ChartTooltipContent
+            {...props}
+            payload={filteredPayload}
             indicator="dashed"
             formatter={(value, name) => {
               const formattedName = String(name).replace('_projected', ' (Projected)');
               return `${formattedName}: ${formatCurrency(Number(value))}`;
             }}
-          />
-        }
+          />;
+        }}
       />
     );
 

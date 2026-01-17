@@ -20,6 +20,10 @@ interface UseTransactionDataProps {
   availableCategoryOptions: Option[];
   availableVendorOptions: Option[];
   excludeTransfers?: boolean;
+  minAmount?: number;
+  maxAmount?: number;
+  limit?: number;
+  sortOrder?: 'largest' | 'smallest';
 }
 
 export const useTransactionData = ({
@@ -33,6 +37,10 @@ export const useTransactionData = ({
   availableCategoryOptions,
   availableVendorOptions,
   excludeTransfers = false,
+  minAmount,
+  maxAmount,
+  limit,
+  sortOrder,
 }: UseTransactionDataProps) => {
   const { transactions, scheduledTransactions } = useTransactions();
 
@@ -110,6 +118,27 @@ export const useTransactionData = ({
       });
     }
 
+    if (minAmount !== undefined) {
+      filtered = filtered.filter(t => Math.abs(t.amount) >= minAmount);
+    }
+    if (maxAmount !== undefined) {
+      filtered = filtered.filter(t => Math.abs(t.amount) <= maxAmount);
+    }
+
+    // Sorting
+    if (sortOrder === 'largest') {
+      filtered.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    } else if (sortOrder === 'smallest') {
+      filtered.sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
+    }
+    // Default sort is date desc (already applied in combinedTransactions), but if filtered, order is preserved.
+
+    // Limiting
+    // IMPORTANT: sorting must happen before limiting to get the correct "top N"
+    if (limit) {
+      filtered = filtered.slice(0, limit);
+    }
+
     return filtered;
   }, [
     combinedTransactions,
@@ -123,6 +152,10 @@ export const useTransactionData = ({
     availableCategoryOptions.length,
     availableVendorOptions.length,
     excludeTransfers,
+    minAmount,
+    maxAmount,
+    limit,
+    sortOrder
   ]);
 
   return {

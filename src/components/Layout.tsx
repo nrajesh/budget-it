@@ -62,6 +62,7 @@ import {
 import AddTransactionDialog from "./AddTransactionDialog";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useUser } from "@/contexts/UserContext";
+import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -69,6 +70,9 @@ const Layout = () => {
   const { user, userProfile, isLoadingUser } = useUser();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
+  // Initialize default account selection globally
+  useDefaultAccountSelection();
 
   const getPageTitle = (pathname: string) => {
     if (pathname.startsWith("/reports/essential")) return "Essential Reports";

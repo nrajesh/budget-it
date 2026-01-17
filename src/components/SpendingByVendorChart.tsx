@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle, ThemedCardDescription } from "@/components/ThemedCard";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -68,11 +68,13 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
 
   if (vendorSpendingData.length === 0) {
     return (
-      <ThemedCard className="h-full">
-        <ThemedCardHeader>
-          <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+      <ThemedCard className="flex flex-col h-full">
+        <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
+          <div className="flex flex-col space-y-1.5">
+            <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+          </div>
         </ThemedCardHeader>
-        <ThemedCardContent className="flex items-center justify-center h-64 text-slate-400">
+        <ThemedCardContent className="flex items-center justify-center h-64 text-muted-foreground">
           No spending data for this period
         </ThemedCardContent>
       </ThemedCard>
@@ -82,14 +84,14 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
   const totalSpending = vendorSpendingData.reduce((sum, item) => sum + item.amount, 0);
 
   return (
-    <ThemedCard className="flex flex-col h-full overflow-hidden shadow-lg border-slate-200">
-      <ThemedCardHeader className="pb-2 border-b border-slate-50 bg-slate-50/50">
-        <ThemedCardTitle className="flex flex-col items-center">
-          <span className="text-lg font-bold text-slate-800">Spending by Vendor</span>
-          <span className="text-xs font-medium text-slate-500 mt-1">
+    <ThemedCard className="flex flex-col h-full">
+      <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
+        <div className="flex flex-col space-y-1.5">
+          <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+          <ThemedCardDescription>
             Total: {formatCurrency(totalSpending)}
-          </span>
-        </ThemedCardTitle>
+          </ThemedCardDescription>
+        </div>
       </ThemedCardHeader>
       <ThemedCardContent className="pt-6 flex-1">
         <div className="w-full h-[380px]">

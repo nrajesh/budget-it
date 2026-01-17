@@ -1,15 +1,15 @@
 import * as React from "react";
-import { MultiSelectDropdown } from "@/components/MultiSelectDropdown";
-import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { DateRange } from "react-day-picker";
-import { SearchInput } from "@/components/SearchInput";
 import { X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
-import { CategoryTreeFilter, CategoryNode } from "@/components/CategoryTreeFilter";
+import { CategoryNode } from "@/components/CategoryTreeFilter";
+import { DateRange } from "react-day-picker"; // Add missing import if needed for types
+import { NLPSearchInput } from "@/components/ui/NLPSearchInput";
+import { parseSearchQuery } from "@/utils/searchParser";
+import { useDebounce } from "@uidotdev/usehooks"; // Or write a simple debounce effect
 
 interface Option {
   value: string;
@@ -28,7 +28,7 @@ interface TransactionFiltersProps {
   selectedCategories: string[];
   setSelectedCategories: (values: string[]) => void;
   selectedSubCategories: string[];
-  setSelectedSubCategories: (values: string[]) => void; // Expecting simple state setter or wrapper
+  setSelectedSubCategories: (values: string[]) => void;
 
   availableVendorOptions: Option[];
   selectedVendors: string[];
@@ -40,21 +40,28 @@ interface TransactionFiltersProps {
   onResetFilters: () => void;
 }
 
+// Helper to flatten category tree
+const flattenCategories = (nodes: CategoryNode[]): { name: string; slug: string }[] => {
+  let result: { name: string; slug: string }[] = [];
+  nodes.forEach(node => {
+    result.push({ name: node.name, slug: node.slug });
+    if (node.subCategories) {
+      result = result.concat(flattenCategories(node.subCategories));
+    }
+  });
+  return result;
+};
+
 export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   searchTerm,
   setSearchTerm,
   availableAccountOptions,
-  selectedAccounts,
   setSelectedAccounts,
   categoryTreeData,
-  selectedCategories,
   setSelectedCategories,
-  selectedSubCategories,
   setSelectedSubCategories,
   availableVendorOptions,
-  selectedVendors,
   setSelectedVendors,
-  dateRange,
   onDateChange,
   excludeTransfers,
   onExcludeTransfersChange,
@@ -62,92 +69,94 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
 }) => {
   const { isFinancialPulse } = useTheme();
 
-  const inputStyles = isFinancialPulse
-    ? "bg-black/20 border-indigo-500/30 text-white placeholder:text-slate-400 focus-visible:ring-indigo-500"
-    : "";
+  // Flatten context for parser
+  const parserContext = React.useMemo(() => ({
+    accounts: availableAccountOptions.map(o => ({ name: o.label, slug: o.value })),
+    categories: flattenCategories(categoryTreeData),
+    vendors: availableVendorOptions.map(o => ({ name: o.label, slug: o.value }))
+  }), [availableAccountOptions, categoryTreeData, availableVendorOptions]);
 
-  const containerStyles = isFinancialPulse ? "text-white" : "";
+  // Debounced parsing
+  // Since we don't have useDebounce installed locally in common deps usually, I'll use a useEffect with setTimeout.
+
+  React.useEffect(() => {
+    // Only parse if there is a search term. If empty, we might want to reset or do nothing?
+    // If empty, the parser returns "all" defaults or empty lists.
+    // The user requirement: "If no time is mentioned consider current calendar month" -> parser handles this.
+    // But we need to avoid overwriting manual selections if the user hasn't typed anything yet?
+    // Actually, "NLP search will imply no messy dropdowns" -> means the Search Bar IS the controller.
+    // So yes, the search bar dictates the state.
+
+    // We debounce to avoid rapid state updates.
+    const timer = setTimeout(() => {
+      if (!searchTerm) {
+        // If empty, maybe we don't overwrite? Or we set to default defaults?
+        // "If no time is mentioned..."
+        // If the user clears the box, onResetFilters is usually called via the 'X' button or manually.
+        // But if they backspace to empty...
+        // Let's assume we parse empty string -> Parser returns current month default.
+        // But we should be careful not to trigger this on *mount* if there's already state.
+        // Since searchTerm is controlled, this runs when searchTerm changes.
+        return;
+      }
+
+      const result = parseSearchQuery(searchTerm, parserContext);
+
+      // We only apply if there's a meaningful change? 
+      // Or just apply.
+
+      // NOTE: If the user explicitly selects "Food" via a click (if we had dropdowns), typing "Amazon" would overwrite it.
+      // Since we REMOVED dropdowns, typing is the ONLY way (besides Reset).
+      // So overwriting is correct.
+
+      console.log("Parsed NLP Result:", result);
+
+      // Apply Filters
+      if (result.selectedAccounts) setSelectedAccounts(result.selectedAccounts);
+      if (result.selectedCategories) setSelectedCategories(result.selectedCategories);
+      if (result.selectedVendors) setSelectedVendors(result.selectedVendors);
+      if (result.dateRange) onDateChange(result.dateRange);
+
+    }, 600); // 600ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, parserContext, setSelectedAccounts, setSelectedCategories, setSelectedVendors, onDateChange]);
+
+  const handleClear = () => {
+    setSearchTerm("");
+    onResetFilters();
+  };
 
   return (
-    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 w-full items-end", containerStyles)}>
-      {/* Search Input */}
-      <div className="lg:col-span-3">
-        <SearchInput
-          id="search-input"
-          placeholder="Search transactions..."
+    <div className="flex flex-col md:flex-row gap-4 w-full items-center bg-card p-4 rounded-xl shadow-sm border">
+      {/* NLP Search Input (Takes mostly all space) */}
+      <div className="flex-1 w-full">
+        <NLPSearchInput
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full"
-          inputClassName={inputStyles}
+          onChange={setSearchTerm}
+          onClear={handleClear}
         />
       </div>
 
-      {/* Date Range Picker */}
-      <div className="lg:col-span-3">
-        <DateRangePicker
-          id="date-range-filter"
-          date={dateRange}
-          onDateChange={onDateChange}
-          className="w-full"
-          triggerClassName={inputStyles}
-        />
-      </div>
+      {/* Controls */}
+      <div className="flex items-center space-x-4 shrink-0">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="exclude-transfers"
+            checked={excludeTransfers}
+            onCheckedChange={onExcludeTransfersChange}
+            className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500" : ""}
+          />
+          <Label htmlFor="exclude-transfers" className="text-sm font-medium">Exclude Transfers</Label>
+        </div>
 
-      {/* Account Filter */}
-      <div className="lg:col-span-1">
-        <MultiSelectDropdown
-          id="account-filter"
-          options={availableAccountOptions}
-          selectedValues={selectedAccounts}
-          onSelectChange={setSelectedAccounts}
-          placeholder="Account"
-          className="w-full"
-          triggerClassName={inputStyles}
-        />
-      </div>
-
-      {/* Category Filter - UPDATED to Tree */}
-      <div className="lg:col-span-2">
-        <CategoryTreeFilter
-          data={categoryTreeData}
-          selectedCategories={selectedCategories}
-          selectedSubCategories={selectedSubCategories}
-          onCategoryChange={setSelectedCategories}
-          onSubCategoryChange={setSelectedSubCategories}
-          triggerClassName={inputStyles}
-        />
-      </div>
-
-      {/* Vendor Filter */}
-      <div className="lg:col-span-1">
-        <MultiSelectDropdown
-          id="vendor-filter"
-          options={availableVendorOptions}
-          selectedValues={selectedVendors}
-          onSelectChange={setSelectedVendors}
-          placeholder="Vendor"
-          className="w-full"
-          triggerClassName={inputStyles}
-        />
-      </div>
-
-      <div className="lg:col-span-2 flex items-center space-x-2 h-10">
-        <Switch
-          id="exclude-transfers"
-          checked={excludeTransfers}
-          onCheckedChange={onExcludeTransfersChange}
-          className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500 data-[state=unchecked]:bg-slate-700" : ""}
-        />
-        <Label htmlFor="exclude-transfers" className={isFinancialPulse ? "text-slate-300" : ""}>Exclude xfers</Label>
-        {/* Reset Filters Button */}
         <Button
-          variant="ghost"
-          size="icon"
-          onClick={onResetFilters}
-          className={cn("h-8 w-8 ml-auto text-muted-foreground hover:text-foreground", isFinancialPulse ? "hover:text-white hover:bg-white/10" : "")}
-          title="Reset Filters"
+          variant="outline"
+          size="sm"
+          onClick={handleClear}
+          className="text-muted-foreground hover:text-foreground"
         >
-          <X className="h-4 w-4" />
+          Reset
         </Button>
       </div>
     </div>

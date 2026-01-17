@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle, ThemedCardDescription } from "@/components/ThemedCard";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -111,11 +111,13 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
 
   if (categoriesData.length === 0) {
     return (
-      <ThemedCard className="h-full">
-        <ThemedCardHeader>
-          <ThemedCardTitle>Spending by Category</ThemedCardTitle>
+      <ThemedCard className="flex flex-col h-full">
+        <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
+          <div className="flex flex-col space-y-1.5">
+            <ThemedCardTitle>Spending by Category</ThemedCardTitle>
+          </div>
         </ThemedCardHeader>
-        <ThemedCardContent className="flex items-center justify-center h-64 text-slate-400">
+        <ThemedCardContent className="flex items-center justify-center h-64 text-muted-foreground">
           No spending data for this period
         </ThemedCardContent>
       </ThemedCard>
@@ -123,20 +125,28 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
   }
 
   return (
-    <ThemedCard className="flex flex-col h-full overflow-hidden shadow-lg border-slate-200">
-      <ThemedCardHeader className="pb-2 border-b border-slate-50 bg-slate-50/50">
-        <ThemedCardTitle className="flex items-center justify-between">
-          <span className="text-lg font-bold text-slate-800">
+    <ThemedCard className="flex flex-col h-full">
+      <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
+        <div className="flex flex-col space-y-1.5">
+          <ThemedCardTitle className="flex items-center gap-2">
             {selectedCategory ? (
-              <Button variant="ghost" onClick={handleBackToCategories} className="flex items-center gap-2 px-2 hover:bg-slate-200/50 -ml-2">
+              <Button
+                variant="ghost"
+                onClick={handleBackToCategories}
+                className="flex items-center gap-2 px-2 -ml-2 h-auto font-semibold hover:bg-transparent hover:text-primary"
+              >
                 <ArrowLeft className="h-4 w-4" /> {selectedCategory.name}
               </Button>
             ) : (
               "Spending by Category"
             )}
-          </span>
-          {!selectedCategory && <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tap to drill down</span>}
-        </ThemedCardTitle>
+          </ThemedCardTitle>
+          {!selectedCategory && (
+            <ThemedCardDescription>
+              TAP TO DRILL DOWN
+            </ThemedCardDescription>
+          )}
+        </div>
       </ThemedCardHeader>
       <ThemedCardContent className="pt-6 flex-1">
         <div className="w-full h-[380px]">

@@ -1,5 +1,6 @@
 import { useFilter } from '@/contexts/FilterContext';
 import { endOfMonth, startOfMonth } from "date-fns";
+import { useDefaultAccountSelection } from '@/hooks/useDefaultAccountSelection';
 
 export const useTransactionFilters = () => {
   const {
@@ -9,12 +10,25 @@ export const useTransactionFilters = () => {
     selectedSubCategories, setSelectedSubCategories,
     selectedVendors, setSelectedVendors,
     dateRange, setDateRange,
-    excludeTransfers, setExcludeTransfers
+    excludeTransfers, setExcludeTransfers,
+    minAmount, setMinAmount,
+    maxAmount, setMaxAmount,
+    limit, setLimit,
+    sortOrder, setSortOrder,
+    rawSearchQuery, setRawSearchQuery
   } = useFilter();
+
+  const { selectDefaultAccounts } = useDefaultAccountSelection({ autoRun: false });
 
   const handleResetFilters = () => {
     setSearchTerm("");
+    setRawSearchQuery(""); // Clear persisted raw query
+    // We don't just clear accounts, we reset to "smart defaults"
     setSelectedAccounts([]);
+
+    // Explicitly call the default selection logic
+    selectDefaultAccounts();
+
     setSelectedCategories([]);
     setSelectedSubCategories([]);
     setSelectedVendors([]);
@@ -23,6 +37,10 @@ export const useTransactionFilters = () => {
       to: endOfMonth(new Date()),
     });
     setExcludeTransfers(false);
+    setMinAmount(undefined);
+    setMaxAmount(undefined);
+    setLimit(undefined);
+    setSortOrder(undefined);
   };
 
   return {
@@ -40,6 +58,16 @@ export const useTransactionFilters = () => {
     setDateRange,
     excludeTransfers,
     setExcludeTransfers,
+    minAmount,
+    setMinAmount,
+    maxAmount,
+    setMaxAmount,
+    limit,
+    setLimit,
+    sortOrder,
+    setSortOrder,
+    rawSearchQuery,
+    setRawSearchQuery,
     handleResetFilters,
   };
 };

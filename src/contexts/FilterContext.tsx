@@ -17,6 +17,16 @@ interface FilterContextType {
     setDateRange: (range: DateRange | undefined) => void;
     excludeTransfers: boolean;
     setExcludeTransfers: (exclude: boolean) => void;
+    minAmount: number | undefined;
+    setMinAmount: (amount: number | undefined) => void;
+    maxAmount: number | undefined;
+    setMaxAmount: (amount: number | undefined) => void;
+    limit: number | undefined;
+    setLimit: (limit: number | undefined) => void;
+    sortOrder: 'largest' | 'smallest' | undefined;
+    setSortOrder: (order: 'largest' | 'smallest' | undefined) => void;
+    rawSearchQuery: string;
+    setRawSearchQuery: (query: string) => void;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -33,6 +43,13 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
     const [excludeTransfers, setExcludeTransfers] = useState(false);
 
+    const [minAmount, setMinAmount] = useState<number | undefined>(undefined);
+    const [maxAmount, setMaxAmount] = useState<number | undefined>(undefined);
+
+    const [limit, setLimit] = useState<number | undefined>(undefined);
+    const [sortOrder, setSortOrder] = useState<'largest' | 'smallest' | undefined>(undefined);
+    const [rawSearchQuery, setRawSearchQuery] = useState("");
+
     return (
         <FilterContext.Provider value={{
             searchTerm, setSearchTerm,
@@ -41,7 +58,12 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             selectedSubCategories, setSelectedSubCategories,
             selectedVendors, setSelectedVendors,
             dateRange, setDateRange,
-            excludeTransfers, setExcludeTransfers
+            excludeTransfers, setExcludeTransfers,
+            minAmount, setMinAmount,
+            maxAmount, setMaxAmount,
+            limit, setLimit,
+            sortOrder, setSortOrder,
+            rawSearchQuery, setRawSearchQuery
         }}>
             {children}
         </FilterContext.Provider>

@@ -222,17 +222,31 @@ export const generateDemoData = async (
     const today = new Date();
 
     // Regular Income (Salary)
-    for (let m = 0; m < MONTHS_TO_GENERATE; m++) {
-        const salaryDate = new Date(today);
-        salaryDate.setMonth(today.getMonth() - m);
-        salaryDate.setDate(25); // 25th of each month
+    // Helper to generate N monthly occurrences starting from the latest valid date
+    const generateMonthlySequence = (
+        dayOfMonth: number,
+        count: number,
+        generator: (date: string) => void
+    ) => {
+        let latestDate = new Date(today);
+        latestDate.setDate(dayOfMonth);
+        // If the date for this month is in the future, start from last month
+        if (latestDate > today) {
+            latestDate.setMonth(latestDate.getMonth() - 1);
+        }
 
-        // Skip future dates if today is before 25th
-        if (salaryDate > today) salaryDate.setMonth(salaryDate.getMonth() - 1);
+        for (let i = 0; i < count; i++) {
+            const d = new Date(latestDate);
+            d.setMonth(latestDate.getMonth() - i);
+            generator(d.toISOString());
+        }
+    };
 
+    // 1. Salary (25th)
+    generateMonthlySequence(25, MONTHS_TO_GENERATE, (dateIso) => {
         transactions.push({
-            date: salaryDate.toISOString(),
-            amount: 5000 + Math.random() * 200, // Salary fluctuating slightly
+            date: dateIso,
+            amount: 5000 + Math.random() * 200,
             vendor: 'Tech Corp',
             category: 'Income',
             sub_category: 'Salary',
@@ -241,12 +255,12 @@ export const generateDemoData = async (
             currency: 'USD',
             user_id: userId,
         });
+    });
 
-        // Rent (Liability/Expense)
-        const rentDate = new Date(salaryDate);
-        rentDate.setDate(1); // 1st of month
+    // 2. Rent (1st)
+    generateMonthlySequence(1, MONTHS_TO_GENERATE, (dateIso) => {
         transactions.push({
-            date: rentDate.toISOString(),
+            date: dateIso,
             amount: -1200,
             vendor: 'Landlord',
             category: 'Housing',
@@ -256,13 +270,15 @@ export const generateDemoData = async (
             currency: 'USD',
             user_id: userId,
         });
+    });
 
-        // Credit Card payment (Transfer)
-        const ccPaymentDate = new Date(salaryDate);
-        ccPaymentDate.setDate(15);
+    // 3. Credit Card Payment (15th)
+    generateMonthlySequence(15, MONTHS_TO_GENERATE, (dateIso) => {
+        const amount = 1500 + Math.random() * 500;
+        // Out from Checking
         transactions.push({
-            date: ccPaymentDate.toISOString(),
-            amount: -1500 + Math.random() * 500, // Variable CC bill
+            date: dateIso,
+            amount: -amount,
             vendor: 'Credit Card',
             category: 'Transfer',
             sub_category: null,
@@ -271,12 +287,11 @@ export const generateDemoData = async (
             currency: 'USD',
             user_id: userId,
         });
-
-        // Counterpart (Money entering CC)
+        // In to CC
         transactions.push({
-            date: ccPaymentDate.toISOString(),
-            amount: 1500 + Math.random() * 500,
-            vendor: 'Checking Account', // From checking
+            date: dateIso,
+            amount: amount,
+            vendor: 'Checking Account',
             category: 'Transfer',
             sub_category: null,
             account: 'Credit Card',
@@ -284,13 +299,14 @@ export const generateDemoData = async (
             currency: 'USD',
             user_id: userId,
         });
+    });
 
-        // GBP Transfer (Cross-currency)
-        const gbpTransferDate = new Date(salaryDate);
-        gbpTransferDate.setDate(20);
+    // 4. GBP Transfer (20th)
+    generateMonthlySequence(20, MONTHS_TO_GENERATE, (dateIso) => {
+        // Out
         transactions.push({
-            date: gbpTransferDate.toISOString(),
-            amount: -200, // Sending 200 USD
+            date: dateIso,
+            amount: -200,
             vendor: 'London Stash',
             category: 'Transfer',
             sub_category: null,
@@ -299,9 +315,10 @@ export const generateDemoData = async (
             currency: 'USD',
             user_id: userId,
         });
+        // In
         transactions.push({
-            date: gbpTransferDate.toISOString(),
-            amount: 150, // Receiving ~150 GBP
+            date: dateIso,
+            amount: 150,
             vendor: 'Checking Account',
             category: 'Transfer',
             sub_category: null,
@@ -310,7 +327,7 @@ export const generateDemoData = async (
             currency: 'GBP',
             user_id: userId,
         });
-    }
+    });
 
     // Generate ~300 random transactions to fill the gaps
     for (let i = 0; i < 300; i++) {

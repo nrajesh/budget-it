@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, Upload, FilterX, RefreshCw } from "lucide-react";
+import { Download, Plus, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import TransactionDialog from "@/components/transactions/TransactionDialog";
@@ -12,13 +12,13 @@ import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
-import { useNavigate, useLocation } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
+import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { slugify } from "@/lib/utils";
 
 const Transactions = () => {
   const session = useSession();
-  const navigate = useNavigate();
-  const location = useLocation();
   const {
     transactions: allTransactions,
     isLoadingTransactions,
@@ -31,51 +31,95 @@ const Transactions = () => {
     addTransaction,
     detectAndLinkTransfers
   } = useTransactions();
+
+  const {
+    selectedAccounts,
+    selectedCategories,
+    selectedSubCategories,
+    selectedVendors,
+    dateRange,
+    excludeTransfers,
+    minAmount,
+    maxAmount,
+    searchTerm,
+    limit,
+    sortOrder
+  } = useTransactionFilters();
+
   const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Filter State
-  const [activeFilters, setActiveFilters] = useState<{
-    account?: string;
-    vendor?: string;
-    category?: string;
-  }>({});
-
-  React.useEffect(() => {
-    if (location.state) {
-      const { filterAccount, filterVendor, filterCategory } = location.state;
-      if (filterAccount || filterVendor || filterCategory) {
-        setActiveFilters({
-          account: filterAccount,
-          vendor: filterVendor,
-          category: filterCategory
-        });
-      }
-    }
-  }, [location.state]);
-
-  const clearFilters = () => {
-    setActiveFilters({});
-    // Clear location state without reloading or navigating away
-    navigate(location.pathname, { replace: true, state: {} });
-  };
-
   const filteredTransactions = React.useMemo(() => {
-    return allTransactions.filter(t => {
-      if (activeFilters.account && t.account !== activeFilters.account) return false;
-      if (activeFilters.vendor && t.vendor !== activeFilters.vendor) return false;
-      if (activeFilters.category && t.category !== activeFilters.category) return false;
+    let result = allTransactions.filter(t => {
+      // Date Range
+      if (dateRange?.from) {
+        const tDate = new Date(t.date);
+        if (tDate < dateRange.from) return false;
+        if (dateRange.to) {
+          // Set end of day for 'to' date to be inclusive
+          const endDate = new Date(dateRange.to);
+          endDate.setHours(23, 59, 59, 999);
+          if (tDate > endDate) return false;
+        }
+      }
+
+      // Accounts
+      if (selectedAccounts.length > 0 && !selectedAccounts.includes(slugify(t.account))) return false;
+
+      // Categories
+      if (selectedCategories.length > 0 && !selectedCategories.includes(slugify(t.category))) return false;
+
+      // Sub-categories
+      if (selectedSubCategories.length > 0 && !selectedSubCategories.includes(slugify(t.sub_category || ''))) return false;
+
+      // Vendors
+      if (selectedVendors.length > 0 && !selectedVendors.includes(slugify(t.vendor))) return false;
+
+      // Exclude Transfers
+      if (excludeTransfers && (t.category === 'Transfer' || !!t.transfer_id)) return false;
+
+      // Amount (Magnitude check for intuitive searching like "> 100")
+      if (minAmount !== undefined && Math.abs(t.amount) < minAmount) return false;
+      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount) return false;
+
+      // Search Term
+      if (searchTerm) {
+        const lower = searchTerm.toLowerCase();
+        return (
+          (t.remarks || "").toLowerCase().includes(lower) ||
+          (t.vendor || "").toLowerCase().includes(lower) ||
+          (t.category || "").toLowerCase().includes(lower) ||
+          (t.sub_category || "").toLowerCase().includes(lower) ||
+          t.amount.toString().includes(lower)
+        );
+      }
+
       return true;
     });
-  }, [allTransactions, activeFilters]);
+
+    // Sorting
+    if (sortOrder === 'largest') {
+      result.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    } else if (sortOrder === 'smallest') {
+      result.sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
+    } else {
+      // Default sort by date desc
+      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+
+    // Limiting
+    if (limit) {
+      result = result.slice(0, limit);
+    }
+
+    return result;
+  }, [allTransactions, selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors, dateRange, excludeTransfers, minAmount, maxAmount, searchTerm, limit, sortOrder]);
 
 
   // Scheduled Transaction State - Stubbed for local migration
-
-
   const handleScheduleTransactions = (_selectedTransactions: any[], clearSelection: () => void) => {
     // Disabled for migration
     toast({
@@ -374,56 +418,48 @@ const Transactions = () => {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Transactions</h1>
-          <p className="text-muted-foreground">Manage and track your financial activities.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {/* Filter Indicator / Reset Button */}
-          {(activeFilters.account || activeFilters.vendor || activeFilters.category) && (
-            <Button variant="secondary" onClick={clearFilters} className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400">
-              <FilterX className="mr-2 h-4 w-4" />
-              Reset Filters
-              {(activeFilters.account || activeFilters.vendor || activeFilters.category) &&
-                <span className="ml-2 text-xs opacity-70">
-                  ({activeFilters.account || activeFilters.vendor || activeFilters.category})
-                </span>
-              }
+      <div className="flex flex-col gap-6 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Transactions</h1>
+            <p className="text-muted-foreground">Manage and track your financial activities.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".csv"
+              className="hidden"
+            />
+            <Button variant="outline" onClick={handleImportClick} className="flex-1 sm:flex-none">
+              <Upload className="mr-2 h-4 w-4" />
+              Import CSV
             </Button>
-          )}
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".csv"
-            className="hidden"
-          />
-          <Button variant="outline" onClick={handleImportClick} className="flex-1 sm:flex-none">
-            <Upload className="mr-2 h-4 w-4" />
-            Import CSV
-          </Button>
-          <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button variant="outline" onClick={async () => {
-            const count = await detectAndLinkTransfers();
-            if (count > 0) {
-              showSuccess(`Successfully linked ${count} transfer pairs.`);
-            } else {
-              toast({ title: "No transfers detected", description: "Checked all uncategorized transactions for matching pairs." });
-            }
-          }} className="flex-1 sm:flex-none">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Detect Transfers
-          </Button>
-          <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Transaction
-          </Button>
+            <Button variant="outline" onClick={handleExport} className="flex-1 sm:flex-none">
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button variant="outline" onClick={async () => {
+              const count = await detectAndLinkTransfers();
+              if (count > 0) {
+                showSuccess(`Successfully linked ${count} transfer pairs.`);
+              } else {
+                toast({ title: "No transfers detected", description: "Checked all uncategorized transactions for matching pairs." });
+              }
+            }} className="flex-1 sm:flex-none">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Detect Transfers
+            </Button>
+            <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Transaction
+            </Button>
+          </div>
         </div>
+
+        {/* Smart Search */}
+        <SmartSearchInput />
       </div>
 
       <TransactionTable

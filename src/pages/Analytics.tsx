@@ -3,25 +3,28 @@ import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { TransactionFilters } from "@/components/transactions/TransactionFilters";
+import { SmartSearchInput } from "@/components/SmartSearchInput";
 import { slugify, cn } from "@/lib/utils";
 import { useTransactionData } from "@/hooks/transactions/useTransactionData";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
 const Analytics = () => {
-  const { transactions, categories: allCategories, subCategories: allSubCategories } = useTransactions();
+  const { transactions, categories: allCategories } = useTransactions();
   const { isFinancialPulse } = useTheme();
 
   const {
-    searchTerm, setSearchTerm,
-    selectedAccounts, setSelectedAccounts,
-    selectedCategories, setSelectedCategories,
-    selectedSubCategories, setSelectedSubCategories,
-    selectedVendors, setSelectedVendors,
-    dateRange, setDateRange,
-    excludeTransfers, setExcludeTransfers,
-    handleResetFilters
+    searchTerm,
+    selectedAccounts,
+    selectedCategories,
+    selectedSubCategories,
+    selectedVendors,
+    dateRange,
+    excludeTransfers,
+    minAmount,
+    maxAmount,
+    limit,
+    sortOrder
   } = useTransactionFilters();
 
   const currentTransactions = React.useMemo(() => {
@@ -37,9 +40,18 @@ const Analytics = () => {
         (!dateRange?.from || transactionDate >= dateRange.from) &&
         (!dateRange?.to || transactionDate <= dateRange.to);
 
-      return isNotFuture && isInDateRange;
+      // Also apply min/max amount filter to "currentTransactions" which feeds SpendingCategoriesChart?
+      // SpendingCategoriesChart usually shows spending breakdown. It should probably respect amount filters too.
+      // But `useTransactionData` is used for `allFilteredData`/`BalanceOverTimeChart`.
+      // `SpendingCategoriesChart` uses `currentTransactions`.
+      // Let's add amount filter here too for consistency if relevant.
+      const matchesAmount =
+        (minAmount === undefined || Math.abs(t.amount) >= minAmount) &&
+        (maxAmount === undefined || Math.abs(t.amount) <= maxAmount);
+
+      return isNotFuture && isInDateRange && matchesAmount;
     });
-  }, [transactions, dateRange]);
+  }, [transactions, dateRange, minAmount, maxAmount]);
 
 
 
@@ -70,21 +82,7 @@ const Analytics = () => {
     }));
   }, [allCategories]);
 
-  const categoryTreeData = React.useMemo(() => {
-    return allCategories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      slug: slugify(cat.name),
-      subCategories: allSubCategories
-        .filter(sub => sub.category_id === cat.id)
-        .map(sub => ({
-          id: sub.id,
-          name: sub.name,
-          slug: slugify(sub.name)
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name))
-    })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [allCategories, allSubCategories]);
+
 
 
 
@@ -100,7 +98,11 @@ const Analytics = () => {
     availableAccountOptions: availableAccounts,
     availableCategoryOptions: availableCategories,
     availableVendorOptions: availableVendors,
-    excludeTransfers
+    excludeTransfers,
+    minAmount,
+    maxAmount,
+    limit,
+    sortOrder
   });
 
   // Split into historical and projected for the chart, but use combined for the table
@@ -140,28 +142,7 @@ const Analytics = () => {
         </div>
       )}
 
-      <TransactionFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        availableAccountOptions={availableAccounts}
-        selectedAccounts={selectedAccounts}
-        setSelectedAccounts={setSelectedAccounts}
-
-        categoryTreeData={categoryTreeData}
-        selectedCategories={selectedCategories}
-        setSelectedCategories={setSelectedCategories}
-        selectedSubCategories={selectedSubCategories}
-        setSelectedSubCategories={setSelectedSubCategories}
-
-        availableVendorOptions={availableVendors}
-        selectedVendors={selectedVendors}
-        setSelectedVendors={setSelectedVendors}
-        dateRange={dateRange}
-        onDateChange={setDateRange}
-        excludeTransfers={excludeTransfers}
-        onExcludeTransfersChange={setExcludeTransfers}
-        onResetFilters={handleResetFilters}
-      />
+      <SmartSearchInput />
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <BalanceOverTimeChart
