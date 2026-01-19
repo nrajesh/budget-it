@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation } from '@tanstack/react-query';
 import { showError, showSuccess } from "@/utils/toast";
 import CategoryDeduplicationDialog from "@/components/management/CategoryDeduplicationDialog";
-import { useDataProvider } from '@/context/DataProviderContext';
+
 import CleanupEntitiesDialog from "@/components/management/CleanupEntitiesDialog";
 
 import ManageSubCategoriesDialog from "@/components/categories/ManageSubCategoriesDialog";
@@ -124,7 +124,7 @@ const CategoriesPage = () => {
             className="h-8"
           />
         ) : (
-          <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+          <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium">
             {item.name}
           </div>
         ),
@@ -136,7 +136,7 @@ const CategoriesPage = () => {
         const count = subCategoryCounts[item.name] || 0;
         return (
           <div
-            className="text-sm text-muted-foreground hover:text-primary cursor-pointer flex items-center gap-1"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary cursor-pointer flex items-center gap-1"
             onClick={(e) => {
               e.stopPropagation();
               setManagingSubCategory(item);
@@ -151,7 +151,7 @@ const CategoriesPage = () => {
       header: "Transactions",
       accessor: "totalTransactions",
       cellRenderer: (item) => (
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {item.totalTransactions || 0}
         </span>
       ),

@@ -1,6 +1,6 @@
-import React from "react";
+
 import { InsightCard } from "./InsightCard";
-import { PieChart, List } from "lucide-react";
+import { List } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CategoryData {
@@ -24,23 +24,23 @@ export const TopCategoriesList = ({ categories, currencyFormatter }: TopCategori
         >
             <div className="space-y-4 mt-4">
                 {categories.slice(0, 5).map((cat, idx) => (
-                    <div key={idx} className="group relative">
-                        <div className="flex justify-between items-end mb-1 relative z-10">
-                            <span className="text-white font-medium text-sm">{cat.name}</span>
-                            <span className="text-white/70 text-sm font-mono">{currencyFormatter(cat.amount)}</span>
+                    <div key={idx} className="relative group">
+                        <div className="relative z-10 flex items-end justify-between mb-1">
+                            <span className="text-sm font-medium text-slate-700 dark:text-white">{cat.name}</span>
+                            <span className="text-sm font-mono text-slate-500 dark:text-white/70">{currencyFormatter(cat.amount)}</span>
                         </div>
 
-                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden relative">
+                        <div className="relative w-full h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
                             <div
                                 className={cn("h-full rounded-full transition-all duration-1000 ease-out", cat.color)}
                                 style={{ width: `${cat.percentage}%` }}
                             />
                         </div>
-                        <div className="text-[10px] text-white/40 mt-1 text-right">{cat.percentage.toFixed(0)}% of total</div>
+                        <div className="text-[10px] mt-1 text-right text-slate-400 dark:text-white/40">{cat.percentage.toFixed(0)}% of total</div>
                     </div>
                 ))}
                 {categories.length === 0 && (
-                    <div className="text-white/30 text-center py-10">No category data yet</div>
+                    <div className="py-10 text-center text-slate-400 dark:text-white/30">No category data yet</div>
                 )}
             </div>
         </InsightCard>

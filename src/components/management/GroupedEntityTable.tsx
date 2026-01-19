@@ -111,19 +111,17 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                 checked={data.length > 0 && selectedRows.length === data.filter(item => isDeletable(item)).length}
                                 onCheckedChange={(checked) => {
                                     const selectableIds = data.filter(item => isDeletable(item)).map(item => item.id);
-                                    if (checked) {
-                                        handleRowSelect(selectableIds.join(','), true);
-                                    } else {
-                                        handleRowSelect('', false);
+                                    if (selectableIds.length > 0) {
+                                        handleRowSelect(selectableIds.join(','), !!checked);
                                     }
                                 }}
                                 aria-label="Select all"
                             />
                         </TableHead>
                         {columns.map((col) => (
-                            <TableHead key={String(col.header)} className={col.className}>{col.header}</TableHead>
+                            <TableHead key={String(col.header)} className={`text-slate-800 dark:text-slate-200 font-semibold ${col.className || ''}`}>{col.header}</TableHead>
                         ))}
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -147,7 +145,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                         className="bg-muted/50 hover:bg-muted/70 cursor-pointer transition-colors"
                                         onClick={() => toggleGroup(groupKey)}
                                     >
-                                        <TableCell colSpan={columns.length + 2} className="font-semibold py-2">
+                                        <TableCell colSpan={columns.length + 2} className="font-semibold py-2 text-slate-900 dark:text-slate-100">
                                             <div className="flex items-center space-x-2">
                                                 {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                                 <span>{groupKey}</span>
@@ -171,7 +169,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                                                 />
                                                             </TableCell>
                                                             {columns.map((col) => (
-                                                                <TableCell key={String(col.header)} className={col.className}>
+                                                                <TableCell key={String(col.header)} className={`text-slate-700 dark:text-slate-300 ${col.className || ''}`}>
                                                                     {col.cellRenderer
                                                                         ? col.cellRenderer(item)
                                                                         : typeof col.accessor === 'function'

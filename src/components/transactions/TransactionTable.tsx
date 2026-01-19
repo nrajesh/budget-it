@@ -151,12 +151,12 @@ const TransactionTable = ({
                 />
               </TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Sub-category</TableHead>
-              <TableHead>Payee</TableHead>
-              <TableHead>Account</TableHead>
-              <TableHead>Notes</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Category</TableHead>
+              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Sub-category</TableHead>
+              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Payee</TableHead>
+              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Account</TableHead>
+              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Notes</TableHead>
+              <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,15 +185,15 @@ const TransactionTable = ({
                           onCheckedChange={() => toggleSelect(transaction.id)}
                         />
                       </TableCell>
-                      <TableCell>{renderCell(transaction, 'date', transaction.date)}</TableCell>
-                      <TableCell>{renderCell(transaction, 'category', transaction.category)}</TableCell>
-                      <TableCell>{renderCell(transaction, 'sub_category', transaction.sub_category)}</TableCell>
-                      <TableCell>{renderCell(transaction, 'vendor', transaction.vendor)}</TableCell>
-                      <TableCell>{renderCell(transaction, 'account', transaction.account)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={transaction.remarks}>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'date', transaction.date)}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{renderCell(transaction, 'category', transaction.category)}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'sub_category', transaction.sub_category)}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'vendor', transaction.vendor)}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'account', transaction.account)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-slate-600 dark:text-slate-400" title={transaction.remarks}>
                         {renderCell(transaction, 'remarks', transaction.remarks)}
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                         {renderCell(transaction, 'amount', transaction.amount)}
                       </TableCell>
                     </TableRow>

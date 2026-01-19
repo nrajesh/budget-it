@@ -7,6 +7,7 @@ import { CartesianGrid, Line, XAxis, YAxis, BarChart, Bar, Cell, Area, ComposedC
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme as useNextTheme } from "next-themes";
 import { formatDateToDDMMYYYY, slugify } from "@/lib/utils";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import {
@@ -38,6 +39,16 @@ type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 export function BalanceOverTimeChart({ transactions, projectedTransactions = [], dateRange }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { isFinancialPulse } = useTheme();
+  const { resolvedTheme } = useNextTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const chartStroke = isFinancialPulse
+    ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)')
+    : '#e5e7eb';
+
+  const tickColor = isFinancialPulse
+    ? (isDark ? '#94a3b8' : '#64748b')
+    : '#666';
   const { accounts, transactions: allTransactions } = useTransactions();
   const [allDefinedAccounts, setAllDefinedAccounts] = React.useState<string[]>([]);
   const [activeLine, setActiveLine] = React.useState<string | null>(null);
@@ -410,6 +421,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
             {...props}
             payload={filteredPayload}
             indicator="dashed"
+            className="min-w-[12rem] bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
             formatter={(value, name) => {
               const formattedName = String(name).replace('_projected', ' (Projected)');
               return `${formattedName}: ${formatCurrency(Number(value))}`;
@@ -441,19 +453,19 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
                 );
               })}
             </defs>
-            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+            <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
@@ -504,19 +516,19 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       case 'bar-stacked':
         return (
           <BarChart {...commonChartProps}>
-            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+            <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value.slice(0, 7)}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
@@ -547,19 +559,19 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       case 'waterfall':
         return (
           <BarChart {...commonChartProps}>
-            <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+            <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-              stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+              tick={{ fill: tickColor, fontSize: 12 }}
+              stroke={chartStroke}
             />
             {commonTooltip}
             {accountsToDisplay.map(account => (
@@ -610,7 +622,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-white/80 dark:bg-transparent backdrop-blur-sm"
               >
                 {chartType === 'line' && 'Line Chart'}
                 {chartType === 'bar-stacked' && 'Stacked Bar Chart'}

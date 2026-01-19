@@ -88,18 +88,18 @@ export function ScheduledTransactionsTable({ transactions, onEdit, onDelete }: S
                     <Table className="w-full">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Vendor / Account</TableHead>
-                                <TableHead>Category</TableHead>
-                                <TableHead>Sub-category</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Date</TableHead>
+                                <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Vendor / Account</TableHead>
+                                <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Category</TableHead>
+                                <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Sub-category</TableHead>
+                                <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">Amount</TableHead>
                                 {(onEdit || onDelete) && <TableHead className="w-[50px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {currentTransactions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
                                         No upcoming transactions found for the selected period.
                                     </TableCell>
                                 </TableRow>
@@ -111,18 +111,18 @@ export function ScheduledTransactionsTable({ transactions, onEdit, onDelete }: S
 
                                     return (
                                         <TableRow key={key}>
-                                            <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell>
+                                            <TableCell className="text-slate-700 dark:text-slate-300">{formatDateToDDMMYYYY(transaction.date)}</TableCell>
                                             <TableCell>
-                                                <div onClick={() => handleVendorClick(transaction.vendor)} className="font-medium cursor-pointer hover:text-primary hover:underline">{transaction.vendor}</div>
-                                                <div onClick={() => handleAccountClick(transaction.account)} className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline">{transaction.account}</div>
+                                                <div onClick={() => handleVendorClick(transaction.vendor)} className="font-medium cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200">{transaction.vendor}</div>
+                                                <div onClick={() => handleAccountClick(transaction.account)} className="text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary hover:underline">{transaction.account}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" onClick={() => handleCategoryClick(transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:border-primary" : ""}>{transaction.category}</Badge>
+                                                <Badge variant="outline" onClick={() => handleCategoryClick(transaction.category)} className={`text-slate-700 dark:text-slate-300 ${transaction.category !== 'Transfer' ? "cursor-pointer hover:border-primary" : ""}`}>{transaction.category}</Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {transaction.sub_category && <Badge variant="secondary" className="text-xs">{transaction.sub_category}</Badge>}
+                                                {transaction.sub_category && <Badge variant="outline" className="text-xs text-slate-700 dark:text-slate-300 font-normal">{transaction.sub_category}</Badge>}
                                             </TableCell>
-                                            <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                                 {formatCurrency(transaction.amount, currentAccountCurrency)}
                                             </TableCell>
                                             {(onEdit || onDelete) && (
@@ -131,7 +131,7 @@ export function ScheduledTransactionsTable({ transactions, onEdit, onDelete }: S
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" className="h-8 w-8 p-0">
                                                                 <span className="sr-only">Open menu</span>
-                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                <MoreHorizontal className="h-4 w-4 text-slate-500" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">

@@ -525,12 +525,14 @@ const Transactions = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-6 mb-6">
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Transactions</h1>
-            <p className="text-muted-foreground">Manage & track your financial activities</p>
+            <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+              Transactions
+            </h1>
+            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage & track your financial activities</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
@@ -559,7 +561,7 @@ const Transactions = () => {
               <RefreshCw className="mr-2 h-4 w-4" />
               Detect Transfers
             </Button>
-            <Button onClick={() => { setEditingTransaction(null); setIsDialogOpen(true); }} className="flex-1 sm:flex-none">
+            <Button onClick={() => { setEditingTransaction(null); setIsDialogOpen(true); }} className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white">
               <Plus className="mr-2 h-4 w-4" />
               Add Transaction
             </Button>
@@ -571,22 +573,24 @@ const Transactions = () => {
 
       </div>
 
-      <TransactionTable
-        transactions={filteredTransactions} // Use filtered transactions
-        loading={isLoadingTransactions}
-        onRefresh={invalidateAllData}
-        accounts={accounts}
-        vendors={vendors}
-        categories={categories}
-        onUpdateTransaction={updateTransaction}
-        onDeleteTransactions={deleteMultipleTransactions}
-        onAddTransaction={addTransaction}
-        onScheduleTransactions={handleScheduleTransactions}
-        onRowDoubleClick={(transaction) => {
-          setEditingTransaction(transaction);
-          setIsDialogOpen(true);
-        }}
-      />
+      <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <TransactionTable
+          transactions={filteredTransactions} // Use filtered transactions
+          loading={isLoadingTransactions}
+          onRefresh={invalidateAllData}
+          accounts={accounts}
+          vendors={vendors}
+          categories={categories}
+          onUpdateTransaction={updateTransaction}
+          onDeleteTransactions={deleteMultipleTransactions}
+          onAddTransaction={addTransaction}
+          onScheduleTransactions={handleScheduleTransactions}
+          onRowDoubleClick={(transaction) => {
+            setEditingTransaction(transaction);
+            setIsDialogOpen(true);
+          }}
+        />
+      </div>
 
       <AddEditTransactionDialog
         isOpen={isDialogOpen}

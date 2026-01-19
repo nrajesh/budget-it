@@ -17,7 +17,6 @@ const Index = lazy(() => import("@/pages/Index"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Transactions = lazy(() => import("@/pages/Transactions"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
 const Vendors = lazy(() => import("@/pages/Vendors"));
@@ -50,7 +49,6 @@ function App() {
                         <Route path="/reports/essential" element={<EssentialReports />} />
                         <Route path="/reports/advanced" element={<AdvancedReports />} />
                         <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="/profile" element={<ProfilePage />} />
                         <Route path="*" element={<NotFound />} />
                       </Route>
                     </Routes>

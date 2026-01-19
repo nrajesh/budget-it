@@ -87,14 +87,16 @@ const ScheduledTransactionsPage = () => {
   }));
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Scheduled Transactions</h1>
-          <p className="text-muted-foreground">Manage your recurring income and expenses</p>
+          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            Scheduled Transactions
+          </h1>
+          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage your recurring income and expenses</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button onClick={handleAdd}>
+          <Button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <Plus className="mr-2 h-4 w-4" /> Add Scheduled
           </Button>
         </div>

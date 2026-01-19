@@ -149,7 +149,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
         </div>
       </ThemedCardHeader>
       <ThemedCardContent className="pt-6 flex-1">
-        <div className="w-full h-[380px]">
+        <div className="w-full h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -174,7 +174,14 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
               </Pie>
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                contentStyle={{
+                  borderRadius: '12px',
+                  border: 'none',
+                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                  backgroundColor: 'var(--tooltip-bg)',
+                  color: 'var(--tooltip-text)'
+                }}
+                itemStyle={{ color: 'var(--tooltip-text)' }}
               />
             </PieChart>
           </ResponsiveContainer>

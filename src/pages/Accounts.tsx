@@ -33,7 +33,7 @@ const AccountsPage = () => {
       header: "Account Name",
       accessor: "name",
       cellRenderer: (item) => (
-        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer font-medium hover:text-primary hover:underline">
+        <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer font-medium hover:text-primary hover:underline text-slate-700 dark:text-slate-200">
           {item.name}
         </div>
       ),
@@ -53,7 +53,7 @@ const AccountsPage = () => {
       header: "Transactions",
       accessor: "totalTransactions",
       cellRenderer: (item) => (
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {item.totalTransactions || 0}
         </span>
       ),

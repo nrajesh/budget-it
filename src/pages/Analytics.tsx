@@ -4,14 +4,12 @@ import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
-import { slugify, cn } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import { useTransactionData } from "@/hooks/transactions/useTransactionData";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
 const Analytics = () => {
   const { transactions, categories: allCategories } = useTransactions();
-  const { isFinancialPulse } = useTheme();
 
   const {
     searchTerm,
@@ -129,25 +127,13 @@ const Analytics = () => {
 
 
   return (
-    <div className={cn(
-      "space-y-4 transition-colors duration-500",
-      isFinancialPulse ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6 rounded-xl -m-6 min-h-[calc(100vh-100px)] text-white" : ""
-    )}>
-      {isFinancialPulse ? (
-        <div className="mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
-            Analytics Pulse
-          </h1>
-          <p className="text-slate-400 mt-2">Deep dive into your financial health.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Analytics</h1>
-            <p className="text-muted-foreground">Deep dive into your financial data</p>
-          </div>
-        </div>
-      )}
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+        <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          Analytics Pulse
+        </h1>
+        <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Deep dive into your financial health.</p>
+      </div>
 
       <SearchFilterBar />
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">

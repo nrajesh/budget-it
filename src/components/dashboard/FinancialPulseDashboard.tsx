@@ -6,13 +6,12 @@ import { MonthlyTrends } from "@/components/infographic/MonthlyTrends";
 import { TopCategoriesList } from "@/components/infographic/TopCategoriesList";
 import { startOfMonth, subDays, isAfter, format } from "date-fns";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 
 export const FinancialPulseDashboard = () => {
     const { transactions, accounts } = useTransactions();
     const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-    const { excludeTransfers, setExcludeTransfers } = useTransactionFilters();
+    const { excludeTransfers } = useTransactionFilters();
 
     // --- Data Aggregation ---
 
@@ -117,31 +116,27 @@ export const FinancialPulseDashboard = () => {
 
 
     return (
-        <div className="bg-gradient-to-br from-gray-900 via-slate-900 to-black p-4 md:p-8 text-white rounded-xl shadow-2xl min-h-[calc(100vh-100px)] transition-all duration-500">
+        <div className="p-4 md:p-8 rounded-xl shadow-2xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
             <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
+                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
                             Financial Pulse
                         </h1>
-                        <p className="text-slate-400 mt-2 text-lg">Your wealth at a glance.</p>
+                        <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Your wealth at a glance.</p>
 
-                        {/* Pulse specific toggle */}
-                        <div className="flex items-center space-x-2 mt-4 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50 w-fit">
-                            <Switch
-                                id="exclude-transfers-pulse"
-                                checked={excludeTransfers}
-                                onCheckedChange={setExcludeTransfers}
-                                className="data-[state=checked]:bg-indigo-500"
-                            />
-                            <Label htmlFor="exclude-transfers-pulse" className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Exclude Transfers</Label>
-                        </div>
+
                     </div>
                     <div className="text-right">
-                        <div className="text-sm text-slate-500 uppercase tracking-widest font-semibold">Current Balance</div>
-                        <div className="text-2xl font-bold font-mono text-white">{formatCurrency(netWorth)}</div>
+                        <div className="text-sm uppercase tracking-widest font-semibold text-slate-500">Current Balance</div>
+                        <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">{formatCurrency(netWorth)}</div>
                     </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-8">
+                    <SearchFilterBar />
                 </div>
 
                 <Wealthometer

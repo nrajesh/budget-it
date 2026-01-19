@@ -52,13 +52,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import AddEditTransactionDialog from "./AddEditTransactionDialog";
 import { useUser } from "@/contexts/UserContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
@@ -84,8 +78,6 @@ const Layout = () => {
         return "Analytics";
       case "/settings":
         return "Settings";
-      case "/profile":
-        return "Profile Settings";
       case "/vendors":
         return "Vendors";
       case "/accounts":
@@ -235,35 +227,14 @@ const Layout = () => {
           <SidebarGroup>
             <SidebarGroupLabel>User</SidebarGroupLabel>
             <SidebarMenu>
-              <Collapsible asChild>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={location.pathname.startsWith("/profile") || location.pathname.startsWith("/settings")}>
-                      <User />
-                      User Profile
-                      <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={location.pathname === "/profile"}>
-                          <Link to="/profile">
-                            Profile
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={location.pathname === "/settings"}>
-                          <Link to="/settings">
-                            Settings
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/settings"}>
+                  <Link to="/settings">
+                    <User />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton>
                   <Mail />
@@ -296,9 +267,7 @@ const Layout = () => {
             <DropdownMenuContent className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/profile">Profile</Link>
-              </DropdownMenuItem>
+
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
@@ -346,9 +315,7 @@ const Layout = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile">Profile</Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuItem>Billing</DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
@@ -365,7 +332,7 @@ const Layout = () => {
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
           <Outlet />
         </main>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg">
+        <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white">
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add Transaction</span>
         </Button>

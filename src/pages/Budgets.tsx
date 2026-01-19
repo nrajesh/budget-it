@@ -73,7 +73,7 @@ export default function BudgetsPage() {
       const spent = calculateBudgetSpent(
         budget,
         transactions,
-        accounts,
+        accounts as any,
         vendors,
         convertBetweenCurrencies,
         budget.currency // Calculate spent in the budget's currency
@@ -144,15 +144,23 @@ export default function BudgetsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Budgets</h1>
-          <p className="text-muted-foreground">Track your spending limits and goals</p>
+          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            Budgets
+          </h1>
+          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Track your spending limits and goals</p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsSmartBudgetOpen(true)}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Smart Create
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -161,12 +169,8 @@ export default function BudgetsPage() {
             placeholder="Search budgets by category name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-lg"
+            className="max-w-lg bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800"
           />
-          <Button variant="outline" onClick={() => setIsSmartBudgetOpen(true)}>
-            <Wand2 className="mr-2 h-4 w-4" />
-            Smart Create
-          </Button>
         </div>
 
         <BudgetSummary budgets={filteredBudgets} isLoading={isLoading} />

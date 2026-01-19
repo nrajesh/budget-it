@@ -116,7 +116,7 @@ export const SearchFilterBar = () => {
                         onCheckedChange={setExcludeTransfers}
                         className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500" : ""}
                     />
-                    <label htmlFor="exclude-transfers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    <label htmlFor="exclude-transfers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700 dark:text-slate-300">
                         Exclude Transfers
                     </label>
                 </div>

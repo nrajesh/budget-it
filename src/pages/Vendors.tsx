@@ -67,7 +67,7 @@ const VendorsPage = () => {
             className="h-8"
           />
         ) : (
-          <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline">
+          <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium">
             {item.name}
           </div>
         ),
@@ -76,7 +76,7 @@ const VendorsPage = () => {
       header: "Transactions",
       accessor: "totalTransactions",
       cellRenderer: (item) => (
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
           {item.totalTransactions || 0}
         </span>
       ),

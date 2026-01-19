@@ -33,7 +33,7 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
   }, [transactions, selectedCurrency, convertBetweenCurrencies]);
 
   return (
-    <Card>
+    <Card className="bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800">
       <CardHeader>
         <CardTitle>Income and Expense Summary</CardTitle>
         <CardDescription>A breakdown of your income and expenses by category.</CardDescription>

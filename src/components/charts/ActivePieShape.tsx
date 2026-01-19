@@ -16,10 +16,20 @@ interface ActivePieShapeProps {
   onCenterClick?: () => void;
 }
 
+import { useTheme } from "next-themes";
+
 export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, formatCurrency, onCenterClick } = props;
   const name = payload.name || payload.vendor_name || "Unknown";
   const amount = payload.total_amount || payload.amount || 0;
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  const textColorName = isDark ? "#94a3b8" : "#475569";
+  const textColorAmount = isDark ? "#f8fafc" : "#0f172a";
+  const gradientStart = isDark ? "#1e293b" : "#f8fafc";
+  const gradientEnd = isDark ? "#0f172a" : "#e2e8f0";
+  const strokeColor = isDark ? "#334155" : "#cbd5e1";
 
 
 
@@ -38,8 +48,8 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
           </feMerge>
         </filter>
         <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-          <stop offset="0%" stopColor="#f8fafc" />
-          <stop offset="100%" stopColor="#e2e8f0" />
+          <stop offset="0%" stopColor={gradientStart} />
+          <stop offset="100%" stopColor={gradientEnd} />
         </radialGradient>
       </defs>
 
@@ -69,7 +79,7 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
         x={cx}
         y={cy - 20}
         textAnchor="middle"
-        fill="#475569"
+        fill={textColorName}
         style={{ fontSize: '14px', fontWeight: 600 }}
       >
         {name}
@@ -78,7 +88,7 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
         x={cx}
         y={cy + 15}
         textAnchor="middle"
-        fill="#0f172a"
+        fill={textColorAmount}
         style={{ fontSize: '18px', fontWeight: 800 }}
       >
         {formatCurrency(amount)}
@@ -92,7 +102,7 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
             cy={cy}
             r={innerRadius - 5}
             fill="url(#centerGradient)"
-            stroke="#cbd5e1"
+            stroke={strokeColor}
             strokeWidth="1"
             filter="url(#shadow)"
           />

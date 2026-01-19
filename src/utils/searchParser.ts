@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, subWeeks, subMonths, startOfYear, endOfYear, subDays, addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import { startOfMonth, endOfMonth, subWeeks, subMonths, startOfYear, endOfYear, subDays, addDays, addWeeks, addMonths, addYears, startOfQuarter, endOfQuarter, addQuarters, subQuarters, startOfDecade, endOfDecade, setDay } from 'date-fns';
 import { DateRange } from "react-day-picker";
 
 export interface ParsedFilterState {
@@ -61,6 +61,138 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
     else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
     else if (lowerQuery.includes('last year')) { replaceMatch('last year'); result.dateRange = { from: startOfYear(subWeeks(today, 52)), to: endOfYear(subWeeks(today, 52)) }; }
+
+    // --- Quarter Parsing ---
+    else if (lowerQuery.includes('this quarter')) { replaceMatch('this quarter'); result.dateRange = { from: startOfQuarter(today), to: endOfQuarter(today) }; }
+    else if (lowerQuery.includes('last quarter')) { replaceMatch('last quarter'); result.dateRange = { from: startOfQuarter(subQuarters(today, 1)), to: endOfQuarter(subQuarters(today, 1)) }; }
+    else if (lowerQuery.includes('past quarter')) { replaceMatch('past quarter'); result.dateRange = { from: startOfQuarter(subQuarters(today, 1)), to: endOfQuarter(subQuarters(today, 1)) }; }
+    else if (lowerQuery.includes('next quarter')) { replaceMatch('next quarter'); result.dateRange = { from: startOfQuarter(addQuarters(today, 1)), to: endOfQuarter(addQuarters(today, 1)) }; }
+    else if (lowerQuery.includes('coming quarter')) { replaceMatch('coming quarter'); result.dateRange = { from: startOfQuarter(addQuarters(today, 1)), to: endOfQuarter(addQuarters(today, 1)) }; }
+
+    // Explicit Quarter (Q1 2025, Q1)
+    const quarterRegex = /\bQ([1-4])\s*(\d{4})?\b/i;
+    const quarterMatch = remainingQuery.match(quarterRegex);
+    if (quarterMatch) {
+        const qNum = parseInt(quarterMatch[1], 10);
+        const qYear = quarterMatch[2] ? parseInt(quarterMatch[2], 10) : today.getFullYear();
+        // Q1: Jan-Mar (0-2), Q2: Apr-Jun (3-5), Q3: Jul-Sep (6-8), Q4: Oct-Dec (9-11)
+        const startMonth = (qNum - 1) * 3;
+        const startDate = new Date(qYear, startMonth, 1);
+        const endDate = endOfQuarter(startDate);
+        result.dateRange = { from: startDate, to: endDate };
+        remainingQuery = remainingQuery.replace(quarterMatch[0], '').trim();
+    }
+
+    // --- Decade Parsing ---
+    else if (lowerQuery.includes('this decade')) { replaceMatch('this decade'); result.dateRange = { from: startOfDecade(today), to: endOfDecade(today) }; }
+    else if (lowerQuery.includes('last decade')) { replaceMatch('last decade'); result.dateRange = { from: startOfDecade(addYears(today, -10)), to: endOfDecade(addYears(today, -10)) }; }
+    else if (lowerQuery.includes('next decade')) { replaceMatch('next decade'); result.dateRange = { from: startOfDecade(addYears(today, 10)), to: endOfDecade(addYears(today, 10)) }; }
+
+    // Explicit Decade (1990s, 2020s)
+    const decadeRegex = /\b(\d{4})s\b/i;
+    const decadeMatch = remainingQuery.match(decadeRegex);
+    if (decadeMatch) {
+        const decadeStartYear = parseInt(decadeMatch[1], 10);
+        const startDate = new Date(decadeStartYear, 0, 1);
+        const endDate = endOfDecade(startDate);
+        result.dateRange = { from: startDate, to: endDate };
+        remainingQuery = remainingQuery.replace(decadeMatch[0], '').trim();
+    }
+
+    // --- Century Parsing ---
+    // date-fns doesn't have startOfCentury, so we do it manually.
+    // 21st century: 2001-2100 (or 2000-2099 common usage). implementing 2000-2099 for simplicity or check requirements.
+    // Strict century: 1-100. 1901-2000. 2001-3000.
+    // Let's assume common usage: 2000-2099 for "2000s" or "21st century".
+    // Actually "21st century" starts 2001. "20th" starts 1901.
+    // "this century" -> 2000-2099 (common) OR 2001-2100.
+    // Let's stick to simple: "this century" = startOfYear(year - year%100) to endOfYear(year - year%100 + 99)
+
+    if (lowerQuery.includes('this century')) {
+        replaceMatch('this century');
+        const startYear = today.getFullYear() - (today.getFullYear() % 100);
+        result.dateRange = { from: new Date(startYear, 0, 1), to: new Date(startYear + 99, 11, 31) };
+    }
+    else if (lowerQuery.includes('last century')) {
+        replaceMatch('last century');
+        const currentCenturyStart = today.getFullYear() - (today.getFullYear() % 100);
+        const startYear = currentCenturyStart - 100;
+        result.dateRange = { from: new Date(startYear, 0, 1), to: new Date(startYear + 99, 11, 31) };
+    }
+
+    // Explicit Century (21st century, 20th century)
+    const centuryRegex = /\b(\d+)(?:st|nd|rd|th)?\s+century\b/i;
+    const centuryMatch = remainingQuery.match(centuryRegex);
+    if (centuryMatch) {
+        const centuryNum = parseInt(centuryMatch[1], 10);
+        // 21st century -> 2000s (approx) or 2001. 
+        // Formula: (Century - 1) * 100 + 1  to  Century * 100
+        // or simpler: (Century - 1) * 100 to ... +99
+        const startYear = (centuryNum - 1) * 100;
+        result.dateRange = { from: new Date(startYear, 0, 1), to: new Date(startYear + 99, 11, 31) };
+        remainingQuery = remainingQuery.replace(centuryMatch[0], '').trim();
+    }
+
+    // --- Days of Week Parsing ---
+    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    // Match "last/this/next/on [Day]"
+    const dayOfWeekRegex = new RegExp(`\\b(last|this|next|on)\\s+(${daysOfWeek.join('|')})\\b`, 'i');
+    const dayOfWeekMatch = remainingQuery.match(dayOfWeekRegex);
+
+    if (dayOfWeekMatch) {
+        const prefix = dayOfWeekMatch[1].toLowerCase();
+        const dayName = dayOfWeekMatch[2].toLowerCase();
+        const targetDayIndex = daysOfWeek.indexOf(dayName); // 0=Sunday, 6=Saturday
+
+        let targetDate = new Date(today);
+        targetDate.setHours(12, 0, 0, 0);
+
+        // Helper to get day in current week (Sunday start?)
+        // date-fns startOfWeek defaults to Sunday (which is index 0 in our array too)
+
+        if (prefix === 'last') {
+            // Previous occurrence of this day.
+            // If today is Monday(1) and we want last Monday. Is it 7 days ago? or today?
+            // "last Monday" usually means the one in the previous week.
+            // If the found day is in the *same* week as today, we might want to go back another week?
+            // Actually previousDay searches backwards.
+            // If today is Tuesday, previousDay(Monday) -> Yesterday.
+            // If query is "last Monday", yesterday is consistent.
+            // But some users mean "Monday of last week". 
+            // Let's assume standard date-fns behavior: `previousDay` finds the most recent previous day.
+            // BUT "Last Monday" often means "Monday of the previous week".
+            // "Past Monday" might mean most recent.
+            // Let's explicitly look for the day in the *previous week*.
+            // "Last [Day]" = Day of (Current Week - 1).
+            // "This [Day]" = Day of Current Week.
+            // "Next [Day]" = Day of (Current Week + 1).
+
+            // Strategy: Find safe "This [Day]" then subtract/add weeks.
+            const currentWeekDay = setDay(today, targetDayIndex); // Day in current week
+
+            // If user says "Last Monday" and today is Tuesday, do they mean "Yesterday"(This week's monday) or "Monday of last week"?
+            // Common ambiguity. "Last week Monday" vs "Monday last week".
+            // Let's interpret "Last [Day]" as "The [Day] of the previous week".
+            targetDate = subWeeks(currentWeekDay, 1);
+
+        } else if (prefix === 'this') {
+            targetDate = setDay(today, targetDayIndex);
+        } else if (prefix === 'next') {
+            // Day of next week
+            const currentWeekDay = setDay(today, targetDayIndex);
+            targetDate = addWeeks(currentWeekDay, 1);
+        } else if (prefix === 'on') {
+            // "on [Day]" - assume most recent or upcoming depending on context?
+            // or just the one in current week?
+            // "on Monday" -> This Monday.
+            targetDate = setDay(today, targetDayIndex);
+        }
+
+        if (!isNaN(targetDate.getTime())) {
+            result.dateRange = { from: targetDate, to: targetDate };
+            remainingQuery = remainingQuery.replace(dayOfWeekMatch[0], '').trim();
+        }
+    }
 
     // Future / Upcoming
     else if (lowerQuery.includes('next week')) { replaceMatch('next week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }

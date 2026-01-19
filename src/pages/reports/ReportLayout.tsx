@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useTheme } from "@/contexts/ThemeContext";
+
 
 import { SearchFilterBar } from '@/components/SearchFilterBar';
 import ExportButtons from '@/components/reports/ExportButtons';
@@ -12,7 +12,7 @@ import autoTable from 'jspdf-autotable';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { Budget } from '@/types/dataProvider';
-import { cn, slugify } from '@/lib/utils';
+import { slugify } from '@/lib/utils';
 import { useDataProvider } from '@/context/DataProviderContext';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
@@ -58,7 +58,6 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     availableCategoryOptions,
     availableVendorOptions,
   });
-  const { isFinancialPulse } = useTheme();
   const dataProvider = useDataProvider();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
@@ -239,14 +238,13 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
 
   return (
-    <div className={cn(
-      "space-y-6 transition-colors duration-500",
-      isFinancialPulse ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6 rounded-xl -m-6 min-h-[calc(100vh-100px)] text-white" : ""
-    )}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h2 className={cn("text-3xl font-bold tracking-tight", isFinancialPulse ? "text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400" : "")}>{title}</h2>
-          <div className={cn("text-muted-foreground", isFinancialPulse ? "text-slate-400" : "")}>{description}</div>
+          <h2 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            {title}
+          </h2>
+          <div className="mt-2 text-lg text-slate-500 dark:text-slate-400">{description}</div>
         </div>
         <ExportButtons
           onPdfExport={handlePdfExport}

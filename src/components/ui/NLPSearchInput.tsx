@@ -55,9 +55,9 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
                 onBlur={() => setIsFocused(false)}
                 placeholder={PLACEHOLDERS[placeholderIndex]}
                 className={cn(
-                    "pl-10 pr-10 h-12 text-lg bg-background/50 backdrop-blur-sm border-muted-foreground/20",
+                    "pl-10 pr-10 h-12 text-lg bg-white/80 dark:bg-background/50 backdrop-blur-md border-slate-200 dark:border-muted-foreground/20",
                     "hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20",
-                    "transition-all duration-300 shadow-sm"
+                    "transition-all duration-300 shadow-sm text-slate-900 dark:text-slate-100"
                 )}
             />
 

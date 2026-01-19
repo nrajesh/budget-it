@@ -121,12 +121,14 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const numSelected = selectedRows.length;
 
   return (
-    <div className="flex-1 space-y-4">
+    <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <LoadingOverlay isLoading={isLoading || isImporting || isLoadingMutation} message={isImporting ? `Importing ${entityNamePlural}...` : `Loading ${entityNamePlural}...`} />
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col md:flex-row items-center justify-between space-y-2 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-          {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+          <h2 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            {title}
+          </h2>
+          {subtitle && <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">{subtitle}</p>}
         </div>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
@@ -159,7 +161,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={handleAddClick}>
+          <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
           </Button>
           <Button variant="outline" size="icon" onClick={async () => await refetch?.()} disabled={isLoading}>
@@ -169,9 +171,9 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         </div>
       </div>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
-      <Card>
+      <Card className="bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800">
         <CardHeader>
-          <CardTitle>Manage Your {title}</CardTitle>
+          <CardTitle className="text-slate-900 dark:text-slate-100">Manage Your {title}</CardTitle>
           <div className="mt-4">
             <Input
               placeholder={customFilter ? "Search by name, currency, e.g. 'negative', '> 1000'..." : "Search by name..."}
