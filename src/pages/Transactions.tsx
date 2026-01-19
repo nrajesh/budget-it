@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -24,10 +25,6 @@ const Transactions = () => {
   const {
     transactions: allTransactions,
     isLoadingTransactions,
-    accounts,
-    vendors,
-    categories,
-    updateTransaction,
     deleteMultipleTransactions,
     invalidateAllData,
     addTransaction,
@@ -45,8 +42,62 @@ const Transactions = () => {
     maxAmount,
     searchTerm,
     limit,
-    sortOrder
+    sortOrder,
+    setDateRange,
+    // Setters needed for navigation state handling
+    setSelectedAccounts,
+    setSelectedCategories,
+    setSelectedSubCategories,
+    setSelectedVendors,
+    handleResetFilters
   } = useTransactionFilters();
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Handle incoming navigation state (filters)
+  React.useEffect(() => {
+    if (location.state) {
+      const state = location.state as {
+        filterCategory?: string;
+        filterSubCategory?: string;
+        filterAccount?: string;
+        filterVendor?: string;
+        filterAccounts?: string[]; // Support multiple accounts
+        filterDateRange?: { from: string; to: string }; // Support date range (passed as strings usually via JSON)
+      };
+
+      if (state.filterCategory || state.filterSubCategory || state.filterAccount || state.filterVendor || state.filterAccounts || state.filterDateRange) {
+        // Reset existing filters first to ensure clean state
+        handleResetFilters();
+
+        if (state.filterCategory) {
+          setSelectedCategories([slugify(state.filterCategory)]);
+        }
+        if (state.filterSubCategory) {
+          setSelectedSubCategories([slugify(state.filterSubCategory)]);
+        }
+        if (state.filterAccount) {
+          setSelectedAccounts([slugify(state.filterAccount)]);
+        }
+        if (state.filterAccounts && Array.isArray(state.filterAccounts)) {
+          setSelectedAccounts(state.filterAccounts.map(a => slugify(a)));
+        }
+        if (state.filterVendor) {
+          setSelectedVendors([slugify(state.filterVendor)]);
+        }
+        if (state.filterDateRange && state.filterDateRange.from && state.filterDateRange.to) {
+          setDateRange({
+            from: new Date(state.filterDateRange.from),
+            to: new Date(state.filterDateRange.to)
+          });
+        }
+
+        // Clear state using navigate to ensure React Router is aware and prevents loops
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [location.state, navigate, location.pathname, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, handleResetFilters, setDateRange]);
 
   const dataProvider = useDataProvider();
 
@@ -578,10 +629,6 @@ const Transactions = () => {
           transactions={filteredTransactions} // Use filtered transactions
           loading={isLoadingTransactions}
           onRefresh={invalidateAllData}
-          accounts={accounts}
-          vendors={vendors}
-          categories={categories}
-          onUpdateTransaction={updateTransaction}
           onDeleteTransactions={deleteMultipleTransactions}
           onAddTransaction={addTransaction}
           onScheduleTransactions={handleScheduleTransactions}

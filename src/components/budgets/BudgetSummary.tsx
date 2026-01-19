@@ -68,33 +68,33 @@ export function BudgetSummary({ budgets, isLoading }: BudgetSummaryProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      <Card>
+      <Card className="bg-indigo-50/40 dark:bg-slate-900/40 border-indigo-100 dark:border-slate-800">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg. Monthly Budget</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Avg. Monthly Budget</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalTarget, currency)}</div>
-          <p className="text-xs text-muted-foreground">Normalized across all budgets</p>
+          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(totalTarget, currency)}</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Normalized across all budgets</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="bg-indigo-50/40 dark:bg-slate-900/40 border-indigo-100 dark:border-slate-800">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg. Monthly Spent</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Avg. Monthly Spent</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalSpent, currency)}</div>
-          <p className="text-xs text-muted-foreground">Based on spending to date</p>
+          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatCurrency(totalSpent, currency)}</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Based on spending to date</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="bg-indigo-50/40 dark:bg-slate-900/40 border-indigo-100 dark:border-slate-800">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg. Monthly Remaining</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-700 dark:text-slate-200">Avg. Monthly Remaining</CardTitle>
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${remainingColor}`}>
             {formatCurrency(remaining, currency)}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {remaining >= 0 ? "Under monthly average" : "Over monthly average"}
           </p>
         </CardContent>

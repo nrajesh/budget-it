@@ -151,7 +151,10 @@ const CategoriesPage = () => {
       header: "Transactions",
       accessor: "totalTransactions",
       cellRenderer: (item) => (
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+        <span
+          className="text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer hover:text-primary hover:underline"
+          onClick={() => managementProps.handleCategoryNameClick(item.name)}
+        >
           {item.totalTransactions || 0}
         </span>
       ),

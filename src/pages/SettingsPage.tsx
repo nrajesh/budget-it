@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -213,27 +213,29 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex-1 space-y-4">
-      <div className="flex flex-col gap-6 mb-6">
+    <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-          <p className="text-muted-foreground">Manage application preferences and data</p>
+          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            Settings
+          </h1>
+          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage application preferences and data</p>
         </div>
       </div>
 
       {/* Consolidated Data Management Section */}
-      <Card className="mt-6 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">Data Management</CardTitle>
-          <CardDescription>
-            Export your data to a local file. The file will be saved to your browser's default download location (e.g., <b>Downloads</b>), or you may be asked to choose a specific folder.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Important</AlertTitle>
-            <AlertDescription>
+      <ThemedCard className="mt-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
+        <ThemedCardHeader>
+          <ThemedCardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">Data Management</ThemedCardTitle>
+          <ThemedCardDescription>
+            Export your data to a local file. The file will be saved to your browser's default download location.
+          </ThemedCardDescription>
+        </ThemedCardHeader>
+        <ThemedCardContent className="space-y-4">
+          <Alert className="bg-blue-100/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300">Important</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
               Since this is a local-first app, if you clear your browser data, you will lose your records.
               Please export regular backups.
             </AlertDescription>
@@ -241,11 +243,11 @@ const SettingsPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex gap-2">
-              <Button onClick={handleExportPlain} variant="outline">
+              <Button onClick={handleExportPlain} variant="outline" className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40">
                 <FileJson className="mr-2 h-4 w-4" />
                 Export JSON
               </Button>
-              <Button onClick={() => setIsExportPasswordOpen(true)} variant="outline">
+              <Button onClick={() => setIsExportPasswordOpen(true)} variant="outline" className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40">
                 <FileLock className="mr-2 h-4 w-4" />
                 Export Encrypted
               </Button>
@@ -267,19 +269,19 @@ const SettingsPage = () => {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </ThemedCardContent>
+      </ThemedCard>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         {/* Currency Selection Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Default Currency</CardTitle>
-            <CardDescription>Select your preferred currency for display.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <ThemedCard>
+          <ThemedCardHeader>
+            <ThemedCardTitle>Default Currency</ThemedCardTitle>
+            <ThemedCardDescription>Select your preferred currency for display.</ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
             <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                 <SelectValue placeholder="Select currency" />
               </SelectTrigger>
               <SelectContent>
@@ -290,18 +292,18 @@ const SettingsPage = () => {
                 ))}
               </SelectContent>
             </Select>
-          </CardContent>
-        </Card>
+          </ThemedCardContent>
+        </ThemedCard>
 
         {/* Dashboard Style Selection Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dashboard Style</CardTitle>
-            <CardDescription>Choose your preferred dashboard layout.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <ThemedCard>
+          <ThemedCardHeader>
+            <ThemedCardTitle>Dashboard Style</ThemedCardTitle>
+            <ThemedCardDescription>Choose your preferred dashboard layout.</ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
             <Select value={dashboardStyle} onValueChange={handleDashboardStyleChange}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                 <SelectValue placeholder="Select style" />
               </SelectTrigger>
               <SelectContent>
@@ -309,18 +311,18 @@ const SettingsPage = () => {
                 <SelectItem value="financial-pulse">Financial Pulse</SelectItem>
               </SelectContent>
             </Select>
-          </CardContent>
-        </Card>
+          </ThemedCardContent>
+        </ThemedCard>
 
         {/* Future Transactions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Future Transactions</CardTitle>
-            <CardDescription>
+        <ThemedCard>
+          <ThemedCardHeader>
+            <ThemedCardTitle>Future Transactions</ThemedCardTitle>
+            <ThemedCardDescription>
               Define how many months of future scheduled transactions to show.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
             <div className="flex items-center space-x-2">
               <Input
                 type="number"
@@ -328,42 +330,42 @@ const SettingsPage = () => {
                 onChange={handleFutureMonthsChange}
                 onBlur={() => showSuccess(`Future transaction view set to ${futureMonths} months.`)}
                 min="0"
-                className="w-[100px]"
+                className="w-[100px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
               />
               <span className="text-sm text-muted-foreground">months</span>
             </div>
-          </CardContent>
-        </Card>
+          </ThemedCardContent>
+        </ThemedCard>
 
         {/* Reset Data Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Reset All Data</CardTitle>
-            <CardDescription>Permanently delete all transaction, vendor, and account records.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <ThemedCard className="border-red-200/50 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10">
+          <ThemedCardHeader>
+            <ThemedCardTitle className="text-red-600 dark:text-red-400">Reset All Data</ThemedCardTitle>
+            <ThemedCardDescription>Permanently delete all transaction, vendor, and account records.</ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
             <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
               <DatabaseZap className="mr-2 h-4 w-4" />
               Reset All Data
             </Button>
-          </CardContent>
-        </Card>
+          </ThemedCardContent>
+        </ThemedCard>
 
         {/* Generate Demo Data Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Generate Demo Data</CardTitle>
-            <CardDescription>
+        <ThemedCard>
+          <ThemedCardHeader>
+            <ThemedCardTitle>Generate Demo Data</ThemedCardTitle>
+            <ThemedCardDescription>
               Generate diverse demo transactions. This will clear existing data first.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setIsGenerateConfirmOpen(true)}>
+            </ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <Button onClick={() => setIsGenerateConfirmOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               <RotateCcw className="mr-2 h-4 w-4" />
               Generate Data
             </Button>
-          </CardContent>
-        </Card>
+          </ThemedCardContent>
+        </ThemedCard>
       </div>
 
       {/* Dialogs */}

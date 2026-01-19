@@ -1,3 +1,4 @@
+import React from 'react';
 import { useFilter } from '@/contexts/FilterContext';
 import { endOfMonth, startOfMonth } from "date-fns";
 import { useDefaultAccountSelection } from '@/hooks/useDefaultAccountSelection';
@@ -20,7 +21,7 @@ export const useTransactionFilters = () => {
 
   const { selectDefaultAccounts } = useDefaultAccountSelection({ autoRun: false });
 
-  const handleResetFilters = () => {
+  const handleResetFilters = React.useCallback(() => {
     setSearchTerm("");
     setRawSearchQuery(""); // Clear persisted raw query
     // We don't just clear accounts, we reset to "smart defaults"
@@ -41,7 +42,7 @@ export const useTransactionFilters = () => {
     setMaxAmount(undefined);
     setLimit(undefined);
     setSortOrder(undefined);
-  };
+  }, [setSearchTerm, setRawSearchQuery, setSelectedAccounts, selectDefaultAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange, setExcludeTransfers, setMinAmount, setMaxAmount, setLimit, setSortOrder]);
 
   return {
     searchTerm,

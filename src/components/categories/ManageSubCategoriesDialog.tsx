@@ -6,6 +6,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
@@ -35,6 +36,7 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
 }) => {
     const { transactions, subCategories: dbSubCategories } = useTransactions();
     const { addSubCategoryMutation, renameSubCategoryMutation, deleteSubCategoryMutation } = useCategoryManagement();
+    const navigate = useNavigate();
 
     const [editingSubCategory, setEditingSubCategory] = React.useState<string | null>(null);
     const [editedName, setEditedName] = React.useState<string>("");
@@ -192,11 +194,37 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
                                                         }}
                                                     />
                                                 ) : (
-                                                    <span>{sub}</span>
+                                                    <span
+                                                        className="cursor-pointer hover:text-primary hover:underline"
+                                                        onClick={() => {
+                                                            onOpenChange(false); // Close dialog
+                                                            navigate('/transactions', {
+                                                                state: {
+                                                                    filterCategory: category?.name,
+                                                                    filterSubCategory: sub
+                                                                }
+                                                            });
+                                                        }}
+                                                    >
+                                                        {sub}
+                                                    </span>
                                                 )}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <span className="text-sm font-medium text-muted-foreground">{subCategoryCounts[sub] || 0}</span>
+                                                <span
+                                                    className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-primary hover:underline"
+                                                    onClick={() => {
+                                                        onOpenChange(false); // Close dialog
+                                                        navigate('/transactions', {
+                                                            state: {
+                                                                filterCategory: category?.name,
+                                                                filterSubCategory: sub
+                                                            }
+                                                        });
+                                                    }}
+                                                >
+                                                    {subCategoryCounts[sub] || 0}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 {editingSubCategory === sub ? (
