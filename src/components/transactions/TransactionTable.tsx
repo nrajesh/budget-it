@@ -11,30 +11,21 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Trash, Copy, X, Check, CalendarClock } from "lucide-react";
+import { Trash, Copy, X, CalendarClock, Pencil } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
   ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import { useToast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ui/combobox";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface TransactionTableProps {
   transactions: any[];
   loading: boolean;
   onRefresh: () => void;
-  accounts: any[];
-  vendors: any[];
-  categories: any[];
-  onUpdateTransaction: (transaction: any) => void;
   onDeleteTransactions: (transactions: { id: string, transfer_id?: string }[]) => void;
   onAddTransaction: (transaction: any) => void;
   onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
@@ -44,10 +35,6 @@ interface TransactionTableProps {
 const TransactionTable = ({
   transactions,
   loading,
-  accounts = [],
-  vendors = [],
-  categories = [],
-  onUpdateTransaction,
   onDeleteTransactions,
   onAddTransaction,
   onScheduleTransactions,
@@ -57,17 +44,7 @@ const TransactionTable = ({
   const { toast } = useToast();
   const { selectedCurrency } = useCurrency();
 
-  // Prepare options for Combobox
-  const accountOptions = accounts.map(acc => ({ value: acc.name, label: acc.name })).sort((a, b) => a.label.localeCompare(b.label));
-  const vendorOptions = vendors.map(ven => ({ value: ven.name, label: ven.name })).sort((a, b) => a.label.localeCompare(b.label));
-  const categoryOptions = categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label));
-  const subCategoryOptions = React.useMemo(() => {
-    const subs = new Set<string>();
-    transactions.forEach(t => {
-      if (t.sub_category) subs.add(t.sub_category);
-    });
-    return Array.from(subs).sort().map(s => ({ value: s, label: s }));
-  }, [transactions]);
+
 
 
   // Selection Handlers
@@ -226,33 +203,9 @@ const TransactionTable = ({
                       {selectedIds.has(transaction.id) ? "Deselect" : "Select"}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuSeparator />
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger inset>Quick Edit</ContextMenuSubTrigger>
-                      <ContextMenuSubContent className="w-48">
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Date
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Category
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Sub-category
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Payee
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Account
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Amount
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => { startEditing(transaction); }}>
-                          Edit Notes
-                        </ContextMenuItem>
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
+                    <ContextMenuItem inset onClick={(e) => onRowDoubleClick && onRowDoubleClick(transaction, e)}>
+                      <Pencil className="h-4 w-4 mr-2" /> Edit
+                    </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem inset onClick={() => onScheduleTransactions && onScheduleTransactions([transaction], () => { })}>
                       <CalendarClock className="h-4 w-4 mr-2" /> Schedule

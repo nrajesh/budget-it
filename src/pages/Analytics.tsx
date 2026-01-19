@@ -3,8 +3,7 @@ import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
 import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { SmartSearchInput } from "@/components/SmartSearchInput";
-import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { slugify, cn } from "@/lib/utils";
 import { useTransactionData } from "@/hooks/transactions/useTransactionData";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -150,10 +149,7 @@ const Analytics = () => {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <SmartSearchInput />
-        <ActiveFiltersDisplay />
-      </div>
+      <SearchFilterBar />
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <BalanceOverTimeChart

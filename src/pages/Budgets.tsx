@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BudgetPaginationWrapper } from "../components/budgets/BudgetPaginationWrapper";
 import { SmartBudgetDialog } from "../components/budgets/SmartBudgetDialog";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { calculateBudgetSpent } from "@/utils/budgetUtils";
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -35,6 +38,10 @@ export default function BudgetsPage() {
   const { user } = useUser();
   const userId = user?.id || null;
 
+  // Contexts for real-time calculation
+  const { transactions, accounts, vendors } = useTransactions();
+  const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
+
   useEffect(() => {
     if (userId) {
       fetchBudgets(userId);
@@ -46,6 +53,8 @@ export default function BudgetsPage() {
   const fetchBudgets = async (currentUserId: string) => {
     setIsLoading(true);
     try {
+      // We still fetch budgets to get the configuration, but we might ignore the returned 'spent_amount'
+      // in favor of client-side calculation to match Alerts logic.
       const data = await dataProvider.getBudgetsWithSpending(currentUserId);
       setBudgets(data || []);
     } catch (error: any) {
@@ -58,15 +67,30 @@ export default function BudgetsPage() {
     setIsLoading(false);
   };
 
+  // Recalculate spent amounts using shared logic
+  const processedBudgets = useMemo(() => {
+    return budgets.map(budget => {
+      const spent = calculateBudgetSpent(
+        budget,
+        transactions,
+        accounts,
+        vendors,
+        convertBetweenCurrencies,
+        budget.currency // Calculate spent in the budget's currency
+      );
+      return { ...budget, spent_amount: spent };
+    });
+  }, [budgets, transactions, accounts, vendors, convertBetweenCurrencies]);
+
   const filteredBudgets = useMemo(() => {
     if (!searchTerm) {
-      return budgets;
+      return processedBudgets;
     }
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return budgets.filter(budget =>
+    return processedBudgets.filter(budget =>
       budget.category_name.toLowerCase().includes(lowerCaseSearchTerm)
     );
-  }, [budgets, searchTerm]);
+  }, [processedBudgets, searchTerm]);
 
   const activeBudgets = useMemo(() => {
     return filteredBudgets.filter(b => b.is_active !== false);

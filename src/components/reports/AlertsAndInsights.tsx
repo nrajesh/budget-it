@@ -6,6 +6,9 @@ import { differenceInDays } from 'date-fns';
 import { Budget } from '@/data/finance-data';
 import { useNavigate } from "react-router-dom";
 
+import { calculateBudgetSpent } from '@/utils/budgetUtils';
+import { useTransactions } from '@/contexts/TransactionsContext';
+
 interface AlertsAndInsightsProps {
   historicalTransactions: any[];
   futureTransactions: any[];
@@ -15,6 +18,7 @@ interface AlertsAndInsightsProps {
 
 const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransactions, futureTransactions, accounts, budgets }) => {
   const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { vendors } = useTransactions();
   const navigate = useNavigate();
 
   const handleAccountClick = (accountName: string) => {
@@ -101,32 +105,25 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
-    // ... (rest of the code unchanged)
     const alerts: { categoryName: string; percentage: number; }[] = [];
-    const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const activeMonthlyBudgets = budgets.filter(b => {
-      const startDate = new Date(b.start_date);
-      const endDate = b.end_date ? new Date(b.end_date) : null;
-      // Handle 'Monthly' or '1m' for backward compatibility/different formats
-      const isMonthly = b.frequency === 'Monthly' || b.frequency === '1m';
-      return b.is_active && isMonthly && startDate <= now && (!endDate || endDate >= now);
-    });
+    // Filter budgets to active ones
+    const activeBudgets = budgets.filter(b => b.is_active !== false);
 
-    activeMonthlyBudgets.forEach(budget => {
+    activeBudgets.forEach(budget => {
       const targetAmount = convertBetweenCurrencies(budget.target_amount, budget.currency, selectedCurrency);
-      const actualSpending = historicalTransactions
-        .filter(t =>
-          t.category === budget.category_name &&
-          new Date(t.date) >= periodStart &&
-          new Date(t.date) <= periodEnd &&
-          t.amount < 0
-        )
-        .reduce((sum, t) => sum + convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency), 0);
 
-      const percentage = targetAmount > 0 ? (actualSpending / targetAmount) * 100 : 0;
+      // Calculate spent in selected currency
+      const spentInSelectedCurrency = calculateBudgetSpent(
+        budget as any, // Cast to any to avoid type mismatch with DataProvider Budget vs finance-data Budget
+        historicalTransactions,
+        accounts,
+        vendors,
+        convertBetweenCurrencies,
+        selectedCurrency
+      );
+
+      const percentage = targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
 
       if (percentage >= 90) {
         alerts.push({
@@ -137,7 +134,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     });
 
     return alerts.sort((a, b) => b.percentage - a.percentage);
-  }, [historicalTransactions, budgets, selectedCurrency, convertBetweenCurrencies]);
+  }, [historicalTransactions, budgets, selectedCurrency, convertBetweenCurrencies, accounts, vendors]); // Added vendors
 
   // 3. Calculate Key Insights from historical data
   const keyInsights = React.useMemo(() => {
@@ -188,11 +185,19 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                 <div>
                   <h4 className="font-semibold text-sm mb-2">Low Balance Warnings:</h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
-                    {lowBalanceAlerts.map((alert: any) => (
-                      <li key={alert.accountName}>
-                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span> is projected to{' '}
-                        {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
-                        <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
+                    {lowBalanceAlerts.map((alert: any, index: number) => (
+                      <li key={`${alert.accountName}-${index}`}>
+                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span>{' '}
+                        {alert.daysUntilNegative === 0 ? (
+                          <>
+                            {alert.isCreditLimitBreach ? 'has exceeded its credit limit' : 'now has a negative balance'}.
+                          </>
+                        ) : (
+                          <>
+                            is projected to {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
+                            <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -202,8 +207,8 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                 <div className="mt-4">
                   <h4 className="font-semibold text-sm mb-2">Budget Overrun Warnings:</h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
-                    {budgetOverrunAlerts.map(alert => (
-                      <li key={alert.categoryName}>
+                    {budgetOverrunAlerts.map((alert, index) => (
+                      <li key={`${alert.categoryName}-${index}`}>
                         <span onClick={() => handleCategoryClick(alert.categoryName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.categoryName}</span> budget is at{' '}
                         <span className={`font-bold ${alert.percentage >= 100 ? 'text-destructive' : 'text-amber-500'}`}>{alert.percentage}%</span> of its monthly limit.
                       </li>

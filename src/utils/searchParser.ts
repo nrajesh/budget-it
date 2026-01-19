@@ -1,4 +1,4 @@
-import { startOfMonth, endOfMonth, subWeeks, subMonths, startOfYear, endOfYear, subDays } from 'date-fns';
+import { startOfMonth, endOfMonth, subWeeks, subMonths, startOfYear, endOfYear, subDays, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import { DateRange } from "react-day-picker";
 
 export interface ParsedFilterState {
@@ -61,6 +61,20 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
     else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
     else if (lowerQuery.includes('last year')) { replaceMatch('last year'); result.dateRange = { from: startOfYear(subWeeks(today, 52)), to: endOfYear(subWeeks(today, 52)) }; }
+
+    // Future / Upcoming
+    else if (lowerQuery.includes('next week')) { replaceMatch('next week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
+    else if (lowerQuery.includes('coming week')) { replaceMatch('coming week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
+    else if (lowerQuery.includes('upcoming week')) { replaceMatch('upcoming week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
+
+    else if (lowerQuery.includes('next month')) { replaceMatch('next month'); result.dateRange = { from: startOfMonth(addMonths(today, 1)), to: endOfMonth(addMonths(today, 1)) }; }
+    else if (lowerQuery.includes('coming month')) { replaceMatch('coming month'); result.dateRange = { from: startOfMonth(addMonths(today, 1)), to: endOfMonth(addMonths(today, 1)) }; }
+    else if (lowerQuery.includes('upcoming month')) { replaceMatch('upcoming month'); result.dateRange = { from: startOfMonth(addMonths(today, 1)), to: endOfMonth(addMonths(today, 1)) }; }
+
+    else if (lowerQuery.includes('future')) {
+        replaceMatch('future');
+        result.dateRange = { from: today, to: addYears(today, 100) };
+    }
 
     // --- 1.0 Explicit Date Parsing (Range: DD/MM/YYYY - DD/MM/YYYY) ---
     // Check for ranges first so single-date regex doesn't consume the start date
@@ -200,21 +214,33 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         return numberWords[str.toLowerCase()] || 0;
     };
 
-    // Regex for "last/past X days/weeks/etc" OR "X years data"
+    // Regex for "last/past/next/coming X days/weeks/etc" OR "X years data"
     // expanded to capture number words
-    const genericDateRegex = /(?:last|past)?\s*((?:\d+)|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve))\s+(days?|weeks?|months?|years?)(?:\s+data)?\b/i;
+    const genericDateRegex = /(?:last|past|next|coming|upcoming)?\s*((?:\d+)|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve))\s+(days?|weeks?|months?|years?)(?:\s+data)?\b/i;
     const dateMatch = remainingQuery.match(genericDateRegex);
     if (dateMatch) {
         const num = parseNum(dateMatch[1]);
         const unit = dateMatch[2].toLowerCase();
+        const prefix = dateMatch[0].trim().split(/\s+/)[0].toLowerCase(); // e.g. "last", "next"
 
         // If "last" or "past" is present OR "data" is present, we treat it as relative past range
+        // If "next", "coming", "upcoming" is present, we treat it as future range
         // If just "3 months" appears, it's ambiguous, but usually implies past 3 months in search context.
         if (num > 0) {
-            if (unit.startsWith('day')) result.dateRange = { from: subDays(today, num), to: today };
-            else if (unit.startsWith('week')) result.dateRange = { from: subWeeks(today, num), to: today };
-            else if (unit.startsWith('month')) result.dateRange = { from: subMonths(today, num), to: today };
-            else if (unit.startsWith('year')) result.dateRange = { from: subMonths(today, num * 12), to: today };
+            const isFuture = ['next', 'coming', 'upcoming'].includes(prefix);
+
+            if (isFuture) {
+                if (unit.startsWith('day')) result.dateRange = { from: today, to: addDays(today, num) };
+                else if (unit.startsWith('week')) result.dateRange = { from: today, to: addWeeks(today, num) };
+                else if (unit.startsWith('month')) result.dateRange = { from: today, to: addMonths(today, num) };
+                else if (unit.startsWith('year')) result.dateRange = { from: today, to: addYears(today, num) };
+            } else {
+                // Default to Past
+                if (unit.startsWith('day')) result.dateRange = { from: subDays(today, num), to: today };
+                else if (unit.startsWith('week')) result.dateRange = { from: subWeeks(today, num), to: today };
+                else if (unit.startsWith('month')) result.dateRange = { from: subMonths(today, num), to: today };
+                else if (unit.startsWith('year')) result.dateRange = { from: subMonths(today, num * 12), to: today };
+            }
 
             remainingQuery = remainingQuery.replace(dateMatch[0], '').trim();
         }
@@ -259,51 +285,8 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     // We split the query into words and also try to match multi-word phrases against our lists.
     // A simple approach: iterate through all known entities and check if their name exists in the query.
 
-    // 2.0 Account Groups (e.g. "checking", "savings")
-    const accountTypes = ['Checking', 'Savings', 'Credit Card', 'Investment'];
-    accountTypes.forEach(type => {
-        // e.g. "checking accounts", "my savings", "credit cards"
-        if (remainingQuery.toLowerCase().includes(type.toLowerCase())) {
-            // Find all accounts of this type
-            const accountsOfType = context.accounts.filter(acc => acc.type === type);
-            if (accountsOfType.length > 0) {
-                accountsOfType.forEach(acc => {
-                    // Avoid duplicates
-                    if (!result.selectedAccounts.includes(acc.slug)) {
-                        result.selectedAccounts.push(acc.slug);
-                    }
-                });
-            }
-            // Remove the type keyword from query?
-            // "checking" might be part of "Checking Account 1".
-            // If we remove "checking", we might break the exact name match below if the name relies on it.
-            // BUT, if we match the group, do we still want to match individual accounts by name?
-            // If I say "Chase Checking", "Checking" matches the group -> adds all checking accounts. 
-            // Then "Chase Checking" matches the specific account -> adds it again (or handled by Set).
-            // Usually if user says "Chase Checking", they mean the specific one.
-            // If they say "All Checking", they mean the group.
-            // Heuristic: If we match a specific account name exactly (or close enough), we prefer that.
-            // But here we are doing a simple contains.
-
-            // Let's rely on the specific list. If we add all 'Checking', adding 'Chase Checking' specifically is redundant but harmless (selected accounts is a list, UI usually handles it).
-            // However, we should probably only trigger group match if it looks like a group request?
-            // "Checking accounts", "all checking", "savings".
-            // If I search "Chase Checking", I probably don't want ALL checking accounts. 
-            // I only want that one.
-            // So, maybe strictly remove the type keyword?
-            // If I remove "checking", "Chase Checking" becomes "Chase ". "Chase" might match "Chase Checking" still.
-
-            // Refined approach: Match specific accounts FIRST.
-            // If "Chase Checking" is matched, we consume it.
-            // Then if "Checking" remains, we matched the group?
-            // Actually, code below matches specific accounts. Let's do that FIRST.
-        }
-    });
-
-    // Moved Account Group logic AFTER specific account matching to avoid over-matching if possible, 
-    // OR we consume specific names first.
-
-    // Accounts
+    // 2.0 Explicit Account Names
+    // Match specific accounts FIRST
     context.accounts.forEach(acc => {
         if (remainingQuery.toLowerCase().includes(acc.name.toLowerCase())) {
             result.selectedAccounts.push(acc.slug);
@@ -311,14 +294,16 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         }
     });
 
-    // NOW check for Account Groups in the remaining query
+    // 2.1 Account Groups (e.g. "checking", "savings", "credit cards")
+    // Use regex to match group names and optional "account(s)" suffix
+    const accountTypes = ['Checking', 'Savings', 'Credit Card', 'Investment'];
+
     accountTypes.forEach(type => {
-        // Simple plural handling: "credit cards" -> "credit card". "savings" is same. "investments" -> "investment"?
-        // Let's just match the base type name case-insensitive.
         const typeLower = type.toLowerCase();
-        // Check for "checking", "savings", "credit card", "investment"
-        // Also handle "investments"
-        const regex = new RegExp(`\\b${typeLower}(s)?\\b`, 'i');
+        // Match: "savings", "savingss", "savings account", "savings accounts"
+        // \b ensures word boundary. (s)? handles plural types like "savings" (which ends in s) or just plural usage.
+        // (?: ...)? handles optional " account" or " accounts"
+        const regex = new RegExp(`\\b${typeLower}(s)?\\s*(?:accounts?)?\\b`, 'i');
 
         if (regex.test(remainingQuery)) {
             const accountsOfType = context.accounts.filter(acc => acc.type === type);
@@ -329,7 +314,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
                     }
                 });
             }
-            // Remove distinct keyword occurrences
+            // Remove the matched phrase from the query
             remainingQuery = remainingQuery.replace(regex, '').trim();
         }
     });
@@ -378,7 +363,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     // Clean up remaining query (remove dangling & , and, and filler words)
     // Clean up remaining query (remove dangling & , and, and filler words)
     let cleanSearchTerm = remainingQuery
-        .replace(/\b(and|&|all|transactions?|items?|show|me|list|my)\b/gi, ' ')
+        .replace(/\b(and|&|all|transactions?|items?|show|me|list|my|in|account(?:s)?|with|for|of|from)\b/gi, ' ')
         .replace(/\s+/g, ' ') // Collapse spaces
         .trim();
 

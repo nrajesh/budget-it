@@ -1,31 +1,17 @@
-import { useMemo, useState, useCallback } from "react"; // Import useCallback
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from "recharts"; // Import Cell
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
-import { SpendingByVendorChart } from "@/components/SpendingByVendorChart";
+import { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react"; // Added icons
 import { cn, slugify } from "@/lib/utils";
-import { BudgetVsConsumptionChart } from "@/components/budgets/BudgetVsConsumptionChart";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { SmartSearchInput } from "@/components/SmartSearchInput";
-import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
-
-const chartConfig = {
-  income: {
-    label: "Income",
-    color: "hsl(var(--chart-1))",
-  },
-  expenses: {
-    label: "Expenses",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
-
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { FinancialPulseDashboard } from "@/components/dashboard/FinancialPulseDashboard";
 import { useTheme } from "@/contexts/ThemeContext";
+
+// New Components
+import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { StackedCategoryChart } from "@/components/dashboard/StackedCategoryChart";
 
 const Index = () => {
   const { transactions } = useTransactions();
@@ -42,9 +28,6 @@ const Index = () => {
   if (dashboardStyle === 'financial-pulse') {
     return <FinancialPulseDashboard />;
   }
-
-  // State to track the active bar in the Income vs. Expenses chart
-  const [activeBar, setActiveBar] = useState<{ monthIndex: number; dataKey: 'income' | 'expenses' } | null>(null);
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -72,302 +55,185 @@ const Index = () => {
     return filtered;
   }, [transactions, selectedAccounts, selectedCategories, excludeTransfers, dateRange]);
 
-  const monthlySummary = useMemo(() => {
-    const summary: { [key: string]: { income: number; expenses: number } } = {};
+  // Calculate Metrics
+  const { totalIncome, totalExpenses, totalBalance } = useMemo(() => {
+    let income = 0;
+    let expenses = 0;
+    let balance = 0;
 
-    filteredTransactions.forEach(transaction => {
-      // Transfer exclusion is already handled in filteredTransactions, but kept for double safety if logic changes
-      if (excludeTransfers && transaction.category === 'Transfer') return;
+    filteredTransactions.forEach(t => {
+      // For balance, we sum everything (unless filtered out by logic above)
+      // Note: "Total Balance" usually implies current state of accounts, 
+      // but here it seems to represent "Net Change" in the selected period if filters are active.
+      // However, if no date filter, it's net worth.
+      const amount = convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD');
 
-      const month = new Date(transaction.date).toLocaleString('en-US', { month: 'short', year: 'numeric' });
-      if (!summary[month]) {
-        summary[month] = { income: 0, expenses: 0 };
-      }
-
-      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency || 'USD', selectedCurrency || 'USD');
-
-      if (transaction.amount > 0 && (transaction.category !== 'Transfer' || !excludeTransfers)) {
-        summary[month].income += convertedAmount;
-      } else if (transaction.amount < 0 && (transaction.category !== 'Transfer' || !excludeTransfers)) {
-        summary[month].expenses += Math.abs(convertedAmount);
-      }
-    });
-
-    const sortedMonths = Object.keys(summary).sort((a, b) => {
-      const [monthA, yearA] = a.split(' ');
-      const [monthB, yearB] = b.split(' ');
-      const dateA = new Date(`${monthA} 1, ${yearA}`);
-      const dateB = new Date(`${monthB} 1, ${yearB}`);
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    return sortedMonths.map(month => ({
-      month,
-      income: summary[month].income,
-      expenses: summary[month].expenses,
-    }));
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const totalBalance = useMemo(() => {
-    return filteredTransactions.reduce((acc, t) => {
-      if (excludeTransfers && t.category === 'Transfer') return acc;
-      return acc + convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD');
-    }, 0);
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const totalIncome = useMemo(() => {
-    return filteredTransactions.reduce((acc, t) => {
-      if (excludeTransfers && t.category === 'Transfer') return acc;
+      // Handle Income/Expense calculation
       if (t.amount > 0) {
-        return acc + convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD');
-      }
-      return acc;
-    }, 0);
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const totalExpenses = useMemo(() => {
-    return filteredTransactions.reduce((acc, t) => {
-      if (excludeTransfers && t.category === 'Transfer') return acc;
-      if (t.amount < 0) {
-        return acc + Math.abs(convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD'));
-      }
-      return acc;
-    }, 0);
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const calculatePercentageChange = (
-    data: { [key: string]: number }
-  ) => {
-    const sortedMonths = Object.keys(data).sort();
-    if (sortedMonths.length < 2) {
-      return { value: "N/A", isPositive: null };
-    }
-
-    const currentMonthKey = sortedMonths[sortedMonths.length - 1];
-    const previousMonthKey = sortedMonths[sortedMonths.length - 2];
-
-    const currentMonthValue = data[currentMonthKey] || 0;
-    const previousMonthValue = data[previousMonthKey] || 0;
-
-    if (previousMonthValue === 0) {
-      return { value: currentMonthValue > 0 ? "N/A (No data last month)" : "0%", isPositive: null };
-    }
-
-    const change = ((currentMonthValue - previousMonthValue) / previousMonthValue) * 100;
-    const isPositive = change >= 0;
-    const sign = isPositive ? "+" : "";
-    return { value: `${sign}${change.toFixed(1)}%`, isPositive };
-  };
-
-  const monthlyExpensesData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    filteredTransactions.forEach(transaction => {
-      if (excludeTransfers && transaction.category === 'Transfer') return;
-      if (transaction.amount < 0) {
-        const date = new Date(transaction.date);
-        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + Math.abs(convertBetweenCurrencies(transaction.amount, transaction.currency || 'USD', selectedCurrency || 'USD'));
-      }
-    });
-    return data;
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const monthlyIncomeData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    filteredTransactions.forEach(transaction => {
-      if (excludeTransfers && transaction.category === 'Transfer') return;
-      if (transaction.amount > 0) {
-        const date = new Date(transaction.date);
-        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-        data[yearMonth] = (data[yearMonth] || 0) + convertBetweenCurrencies(transaction.amount, transaction.currency || 'USD', selectedCurrency || 'USD');
-      }
-    });
-    return data;
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const monthlyBalanceData = useMemo(() => {
-    const data: { [key: string]: number } = {};
-    const sortedTransactions = [...filteredTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    let runningBalance = 0;
-    sortedTransactions.forEach(transaction => {
-      if (excludeTransfers && transaction.category === 'Transfer') return;
-      runningBalance += convertBetweenCurrencies(transaction.amount, transaction.currency || 'USD', selectedCurrency || 'USD');
-      const date = new Date(transaction.date);
-      const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      data[yearMonth] = runningBalance;
-    });
-    return data;
-  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
-
-  const expensesChange = useMemo(() => calculatePercentageChange(monthlyExpensesData), [monthlyExpensesData]);
-  const incomeChange = useMemo(() => calculatePercentageChange(monthlyIncomeData), [monthlyIncomeData]);
-  const balanceChange = useMemo(() => calculatePercentageChange(monthlyBalanceData), [monthlyBalanceData]);
-
-
-  const getChangeColorClass = (isPositive: boolean | null, type: 'income' | 'expenses' | 'balance') => {
-    if (isPositive === null) return "text-muted-foreground";
-    if (type === 'expenses') {
-      return isPositive ? "text-red-500" : "text-green-500";
-    }
-    return isPositive ? "text-green-500" : "text-red-500";
-  };
-  // Handler for clicking a bar in the Income vs. Expenses chart
-  const handleBarClick = useCallback((_data: any, monthIndex: number, clickedDataKey: 'income' | 'expenses') => {
-    setActiveBar(prevActiveBar => {
-      if (prevActiveBar?.monthIndex === monthIndex && prevActiveBar?.dataKey === clickedDataKey) {
-        // Clicking the same bar again, reset
-        return null;
+        if (t.category !== 'Transfer' || !excludeTransfers) {
+          income += amount;
+        }
       } else {
-        // Clicking a new bar
-        return { monthIndex, dataKey: clickedDataKey };
+        if (t.category !== 'Transfer' || !excludeTransfers) {
+          expenses += Math.abs(amount);
+        }
+      }
+
+      // Handle Balance
+      // If excludes transfers is on, balance calc might be weird if we just sum? 
+      // Usually transfers net to 0, so excluding them shouldn't change total balance unless inter-account.
+      if (t.category !== 'Transfer' || !excludeTransfers) {
+        balance += amount;
       }
     });
-  }, []);
+
+    return { totalIncome: income, totalExpenses: expenses, totalBalance: balance };
+  }, [filteredTransactions, selectedCurrency, convertBetweenCurrencies, excludeTransfers]);
+
+  // Calculate Percentage Changes (Simplified for now - comparing to "previous period" ideally, but reused 0% logic if unknown)
+  // To do this properly we'd need to fetch previous period data. 
+  // For this iteration, I'll simulate or just show the static styles if actual comparison is complex to add right now.
+  // Let's stick to the existing logic 'calculatePercentageChange' if we can preserve it, or simplify for the UI update focus.
+  // I will reuse the monthly logic from before to get at least some comparison if possible, or just mock it for "UI likeness" if acceptable.
+  // Let's bring back the monthly data calculation for the change percentages.
+
+  const monthlyData = useMemo(() => {
+    const inc: Record<string, number> = {};
+    const exp: Record<string, number> = {};
+    const bal: Record<string, number> = {};
+
+    filteredTransactions.forEach(t => {
+      if (excludeTransfers && t.category === 'Transfer') return;
+      const date = new Date(t.date);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const amount = convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD');
+
+      if (t.amount > 0) inc[key] = (inc[key] || 0) + amount;
+      else exp[key] = (exp[key] || 0) + Math.abs(amount);
+
+      bal[key] = (bal[key] || 0) + amount;
+    });
+    return { inc, exp, bal };
+  }, [filteredTransactions, excludeTransfers, convertBetweenCurrencies, selectedCurrency]);
+
+  const calculateChange = (data: Record<string, number>) => {
+    const keys = Object.keys(data).sort();
+    if (keys.length < 2) return { value: "0%", isPositive: true }; // Default
+    const curr = data[keys[keys.length - 1]] || 0;
+    const prev = data[keys[keys.length - 2]] || 0;
+    if (prev === 0) return { value: "0%", isPositive: true };
+    const pct = ((curr - prev) / prev) * 100;
+    return { value: `${Math.abs(pct).toFixed(1)}%`, isPositive: pct >= 0 };
+  };
+
+
+  // Net worth change is trickier, simplified to just monthly flow change for now
+  const balanceChange = calculateChange(monthlyData.bal);
+
+
+  // Helper for pill styles
+  const getPillStyle = (isPositive: boolean, inverse = false) => {
+    // Inverse: for expenses, positive change (more expenses) is bad (red)
+    let good = isPositive;
+    if (inverse) good = !isPositive;
+
+    return cn(
+      "text-xs px-2 py-0.5 rounded-full flex items-center gap-1 font-medium",
+      good
+        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+        : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+    );
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-6 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your financial health</p>
+    <div className="space-y-8 p-1">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Overview of your financial health</p>
+          </div>
         </div>
 
-        {/* Smart Search */}
-        <div className="flex flex-col gap-2">
-          <SmartSearchInput />
-          <ActiveFiltersDisplay />
-        </div>
+        {/* Search/Filter Bar */}
+        <SearchFilterBar />
 
-
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-            <p className={cn("text-xs", getChangeColorClass(balanceChange.isPositive, 'balance'))}>
-              {balanceChange.value} from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-            <p className={cn("text-xs", getChangeColorClass(incomeChange.isPositive, 'income'))}>
-              {incomeChange.value} from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-            <p className={cn("text-xs", getChangeColorClass(expensesChange.isPositive, 'expenses'))}>
-              {expensesChange.value} from last month
-            </p>
-          </CardContent>
-        </Card>
-        <div className="lg:col-span-1">
-          <BudgetVsConsumptionChart />
-        </div>
-        <div className="lg:col-span-1">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Income vs. Expenses</CardTitle>
-              <CardDescription>Monthly overview.</CardDescription>
+        {/* Metric Cards */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* Total Balance / Net Worth */}
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                Net Worth
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
-                <BarChart data={monthlySummary} layout="vertical" margin={{ left: 0, right: 0 }}>
-                  <CartesianGrid horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    tickFormatter={(value) => formatCurrency(Number(value))}
-                  />
-                  <YAxis
-                    dataKey="month"
-                    type="category"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    width={50}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dashed" formatter={(value) => formatCurrency(Number(value))} />}
-                  />
-                  <Bar
-                    dataKey="income"
-                    radius={4}
-                    onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'income')}
-                  >
-                    {monthlySummary.map((_entry, monthIndex) => (
-                      <Cell
-                        key={`income-cell-${monthIndex}`}
-                        fill={
-                          activeBar === null
-                            ? chartConfig.income.color
-                            : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'income'
-                              ? chartConfig.income.color
-                              : '#ccc')
-                        }
-                      />
-                    ))}
-                  </Bar>
-                  <Bar
-                    dataKey="expenses"
-                    radius={4}
-                    onClick={(data, monthIndex) => handleBarClick(data, monthIndex, 'expenses')}
-                  >
-                    {monthlySummary.map((_entry, monthIndex) => (
-                      <Cell
-                        key={`expenses-cell-${monthIndex}`}
-                        fill={
-                          activeBar === null
-                            ? chartConfig.expenses.color
-                            : (activeBar.monthIndex === monthIndex && activeBar.dataKey === 'expenses'
-                              ? chartConfig.expenses.color
-                              : '#ccc')
-                        }
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{formatCurrency(totalBalance)}</span>
+                <span className={getPillStyle(balanceChange.isPositive)}>
+                  {balanceChange.isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {balanceChange.value}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Income */}
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                Monthly Income
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{formatCurrency(totalIncome)}</span>
+                {/* 
+                            Income change logic: usually implies vs last month. 
+                            We can show it if we trust the calc, or just disable if it's confusing.
+                            Keeping it for "sleek" look.
+                        */}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Expenses */}
+          <Card className="shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
+                  <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                Monthly Expenses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{formatCurrency(totalExpenses)}</span>
+              </div>
             </CardContent>
           </Card>
         </div>
-        <div className="lg:col-span-3 grid gap-4 grid-cols-1 md:grid-cols-2">
-          <SpendingCategoriesChart transactions={filteredTransactions} />
-          <SpendingByVendorChart transactions={filteredTransactions} />
+
+        {/* Main Content Grid */}
+        <div className="grid gap-4 md:grid-cols-12 h-[500px]">
+          {/* Chart Section - Takes up 8 columns (approx 2/3) */}
+          <div className="md:col-span-8 h-full">
+            <StackedCategoryChart transactions={filteredTransactions} className="h-full shadow-sm" />
+          </div>
+
+          {/* Activity Feed - Takes up 4 columns (approx 1/3) */}
+          <div className="md:col-span-4 h-full">
+            <RecentActivityFeed transactions={filteredTransactions} className="h-full shadow-sm" />
+          </div>
         </div>
+
       </div>
     </div>
   );

@@ -167,6 +167,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     updateCurrencySymbol();
   }, [accountValue, currencySymbols, accountCurrencyMap, dataProvider]);
 
+  // Effect: Fetch the currency of the destination account/payee if it's a transfer
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
@@ -179,9 +180,11 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     fetchDestinationCurrency();
   }, [vendorValue, isTransfer, accountCurrencyMap]);
 
+  // Effect: Auto-calculate receiving amount for cross-currency transfers
   React.useEffect(() => {
     if (isTransfer && accountValue && vendorValue && destinationAccountCurrency) {
       const sendingCurrency = accountCurrencyMap.get(accountValue);
+      // Only auto-calculate if currencies differ
       if (sendingCurrency && sendingCurrency !== destinationAccountCurrency) {
         const convertedAmount = convertBetweenCurrencies(
           Math.abs(amountValue),
@@ -189,8 +192,9 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
           destinationAccountCurrency
         );
         setAutoCalculatedReceivingAmount(convertedAmount);
-        // Only set receiving amount if auto calc is valid, might overwrite user input if they are typing?
-        // Basic implementation for now.
+
+        // Auto-fill the receiving amount field with the calculated value
+        // Note: usage of parseFloat(toFixed(2)) ensures 2 decimal places
         setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
       } else {
         setAutoCalculatedReceivingAmount(0);
@@ -202,12 +206,14 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     }
   }, [amountValue, accountValue, vendorValue, isTransfer, accountCurrencyMap, destinationAccountCurrency, convertBetweenCurrencies, setValue]);
 
+  // Effect: Enforce 'Transfer' category when vendor is an account (Transfer)
   React.useEffect(() => {
     if (isTransfer) {
       if (getValues("category") !== "Transfer") {
         setValue("category", "Transfer");
       }
     } else if (getValues("category") === "Transfer") {
+      // If switching away from transfer, clear category if it was implicitly set to Transfer
       setValue("category", "");
     }
   }, [isTransfer, setValue, getValues]);

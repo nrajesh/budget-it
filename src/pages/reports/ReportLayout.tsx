@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useTheme } from "@/contexts/ThemeContext";
 
-import { TransactionFilters } from '@/components/transactions/TransactionFilters';
+import { SearchFilterBar } from '@/components/SearchFilterBar';
 import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
 import { useTransactionData } from '@/hooks/transactions/useTransactionData';
@@ -30,8 +30,10 @@ interface ReportLayoutProps {
 }
 
 const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
-  const { accounts, vendors, categories, subCategories } = useTransactions();
+  const { accounts, vendors, categories } = useTransactions();
   const { user } = useUser();
+
+
 
   const availableAccountOptions = React.useMemo(() =>
     accounts.map((acc: any) => ({ value: slugify(acc.name), label: acc.name })),
@@ -46,23 +48,6 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const availableCategoryOptions = React.useMemo(() =>
     categories.map((c: any) => ({ value: slugify(c.name), label: c.name })),
     [categories]
-  );
-
-  const categoryTreeData = React.useMemo(() =>
-    categories.map((c: any) => {
-      const subs = subCategories.filter((s: any) => s.category_id === c.id);
-      return {
-        id: c.id,
-        name: c.name,
-        slug: slugify(c.name),
-        subCategories: subs.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          slug: slugify(s.name)
-        }))
-      };
-    }),
-    [categories, subCategories]
   );
 
   const filterProps = useTransactionFilters();
@@ -270,15 +255,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         />
       </div>
 
-      <TransactionFilters
-        {...filterProps}
-        availableAccountOptions={availableAccountOptions}
-        availableVendorOptions={availableVendorOptions}
-        categoryTreeData={categoryTreeData}
-        onDateChange={filterProps.setDateRange}
-        onExcludeTransfersChange={filterProps.setExcludeTransfers}
-        onResetFilters={filterProps.handleResetFilters}
-      />
+      <SearchFilterBar />
 
       <div className="space-y-4" id="report-content">
         {children({

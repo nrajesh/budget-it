@@ -14,45 +14,73 @@ const CATEGORIES_WITH_SUBS = [
     { name: 'Groceries', subs: ['Supermarket', 'Butcher', 'Bakery', 'Convenience Store'] },
     { name: 'Utilities', subs: ['Electricity', 'Water', 'Internet', 'Phone'] },
     { name: 'Transport', subs: ['Fuel', 'Public Transport', 'Taxi/Uber', 'Car Maintenance'] },
-    { name: 'Entertainment', subs: ['Movies', 'Streaming', 'Games', 'Concerts'] },
-    { name: 'Shopping', subs: ['Clothing', 'Electronics', 'Home', 'Gifts'] },
-    { name: 'Health', subs: ['Doctor', 'Pharmacy', 'Gym', 'Insurance'] },
+    { name: 'Entertainment', subs: ['Movies', 'Streaming', 'Games', 'Concerts', 'Events'] },
+    { name: 'Shopping', subs: ['Clothing', 'Electronics', 'Home', 'Gifts', 'Hobbies'] },
+    { name: 'Health', subs: ['Doctor', 'Pharmacy', 'Gym', 'Insurance', 'Dental'] },
     { name: 'Dining Out', subs: ['Restaurants', 'Coffee', 'Fast Food', 'Bars'] },
     { name: 'Income', subs: ['Salary', 'Freelance', 'Dividends', 'Refunds'] },
     { name: 'Transfer', subs: [] },
     { name: 'Education', subs: ['Courses', 'Books', 'Tuition'] },
     { name: 'Personal Care', subs: ['Hair', 'Spa', 'Cosmetics'] },
     { name: 'Pets', subs: ['Food', 'Vet', 'Toys'] },
-    { name: 'Home Services', subs: ['Cleaning', 'Repairs', 'Gardening'] }
+    { name: 'Home Services', subs: ['Cleaning', 'Repairs', 'Gardening'] },
+    { name: 'Travel', subs: ['Flights', 'Hotels', 'Car Rental', 'Activities'] },
+    { name: 'Subscriptions', subs: ['Software', 'News', 'Music', 'Video'] },
+    { name: 'Kids', subs: ['Activities', 'School', 'Clothing', 'Toys'] },
+    { name: 'Charity', subs: ['Donations'] },
+    { name: 'Automotive', subs: ['Insurance', 'Repairs', 'Parking'] }
 ];
 
 const VENDORS = [
     { name: 'Whole Foods Market', category: 'Groceries', sub: 'Supermarket' },
     { name: 'Trader Joe\'s', category: 'Groceries', sub: 'Supermarket' },
     { name: 'Local Butcher', category: 'Groceries', sub: 'Butcher' },
+    { name: 'Corner Store', category: 'Groceries', sub: 'Convenience Store' },
     { name: 'Shell', category: 'Transport', sub: 'Fuel' },
     { name: 'Uber', category: 'Transport', sub: 'Taxi/Uber' },
+    { name: 'MTA', category: 'Transport', sub: 'Public Transport' },
     { name: 'Netflix', category: 'Entertainment', sub: 'Streaming' },
     { name: 'Spotify', category: 'Entertainment', sub: 'Streaming' },
+    { name: 'AMC Theaters', category: 'Entertainment', sub: 'Movies' },
+    { name: 'Ticketmaster', category: 'Entertainment', sub: 'Concerts' },
     { name: 'Electric Company', category: 'Utilities', sub: 'Electricity' },
     { name: 'AT&T', category: 'Utilities', sub: 'Internet' },
+    { name: 'Verizon', category: 'Utilities', sub: 'Phone' },
     { name: 'Amazon', category: 'Shopping', sub: 'Home' },
     { name: 'Target', category: 'Shopping', sub: 'Clothing' },
     { name: 'Best Buy', category: 'Shopping', sub: 'Electronics' },
+    { name: 'Steam', category: 'Entertainment', sub: 'Games' },
     { name: 'CVS Pharmacy', category: 'Health', sub: 'Pharmacy' },
     { name: 'Planet Fitness', category: 'Health', sub: 'Gym' },
+    { name: 'Dr. Smith', category: 'Health', sub: 'Doctor' },
+    { name: 'Smile Dental', category: 'Health', sub: 'Dental' },
     { name: 'Pizza Hut', category: 'Dining Out', sub: 'Fast Food' },
     { name: 'Starbucks', category: 'Dining Out', sub: 'Coffee' },
+    { name: 'Local Pub', category: 'Dining Out', sub: 'Bars' },
+    { name: 'Sushi Palace', category: 'Dining Out', sub: 'Restaurants' },
     { name: 'Tech Corp', category: 'Income', sub: 'Salary' },
     { name: 'SNCF', category: 'Transport', sub: 'Public Transport' }, // EUR Vendor
     { name: 'Pret A Manger', category: 'Dining Out', sub: 'Coffee' }, // GBP Vendor
     { name: 'Udemy', category: 'Education', sub: 'Courses' },
+    { name: 'Barnes & Noble', category: 'Education', sub: 'Books' },
     { name: 'Sephora', category: 'Personal Care', sub: 'Cosmetics' },
+    { name: 'Supercuts', category: 'Personal Care', sub: 'Hair' },
     { name: 'PetSmart', category: 'Pets', sub: 'Food' },
+    { name: 'Vet Clinic', category: 'Pets', sub: 'Vet' },
     { name: 'Local Plumber', category: 'Home Services', sub: 'Repairs' },
     { name: 'University', category: 'Education', sub: 'Tuition' },
     { name: 'Chewy', category: 'Pets', sub: 'Toys' },
-    { name: 'Apple', category: 'Shopping', sub: 'Electronics' }
+    { name: 'Apple', category: 'Shopping', sub: 'Electronics' },
+    { name: 'Delta Airlines', category: 'Travel', sub: 'Flights' },
+    { name: 'Airbnb', category: 'Travel', sub: 'Hotels' },
+    { name: 'Hertz', category: 'Travel', sub: 'Car Rental' },
+    { name: 'Adobe', category: 'Subscriptions', sub: 'Software' },
+    { name: 'NY Times', category: 'Subscriptions', sub: 'News' },
+    { name: 'Kumon', category: 'Kids', sub: 'School' },
+    { name: 'Gap Kids', category: 'Kids', sub: 'Clothing' },
+    { name: 'Red Cross', category: 'Charity', sub: 'Donations' },
+    { name: 'Geico', category: 'Automotive', sub: 'Insurance' },
+    { name: 'City Parking', category: 'Automotive', sub: 'Parking' }
 ];
 
 const DEMO_BUDGETS = [
@@ -226,6 +254,8 @@ export const generateDemoData = async (
     // Stage 4: Create Budgets
     onProgress({ stage: 'Setting up budgets...', progress: 60, totalStages: TOTAL_STAGES });
 
+    const addedBudgets = new Set<string>();
+
     for (const budget of DEMO_BUDGETS) {
         const catId = categoryMap[budget.category];
         if (!catId) continue;
@@ -234,6 +264,14 @@ export const generateDemoData = async (
         if (budget.sub) {
             subId = subCategoryMap[budget.category]?.[budget.sub] || null;
         }
+
+        // Deduplicate
+        const uniqueKey = `${catId}-${subId || 'null'}`;
+        if (addedBudgets.has(uniqueKey)) {
+            console.warn(`Skipping duplicate budget for ${budget.category} - ${budget.sub || 'All'}`);
+            continue;
+        }
+        addedBudgets.add(uniqueKey);
 
         await dataProvider.addBudget({
             user_id: userId,
@@ -414,29 +452,53 @@ export const generateDemoData = async (
     });
 
 
-    // Generate ~600 random transactions to fill the gaps
-    for (let i = 0; i < 600; i++) {
+    // Generate ~1200 random transactions to fill the gaps, with density in recent months
+    for (let i = 0; i < 1200; i++) {
         const randomVendor = VENDORS[Math.floor(Math.random() * VENDORS.length)];
         // Skip Income or Transfer vendors for random noise, focus on spending
         if (randomVendor.category === 'Income' || randomVendor.category === 'Transfer') continue;
 
+        // Weighted Date Generation:
+        // 50% chance for last 30 days (Current Month Density)
+        // 30% chance for last 30-90 days
+        // 20% chance for 3-24 months ago
+        const rand = Math.random();
+        let daysAgo = 0;
 
-        const amount = -(10 + Math.random() * 150);
+        if (rand < 0.5) {
+            // Recent: 0-30 days
+            daysAgo = Math.floor(Math.random() * 30);
+        } else if (rand < 0.8) {
+            // Mid-term: 30-90 days
+            daysAgo = 30 + Math.floor(Math.random() * 60);
+        } else {
+            // Long-term: 90-730 days
+            daysAgo = 90 + Math.floor(Math.random() * 640);
+        }
 
-        // Random date within last 24 months
-        const randomDays = Math.floor(Math.random() * 730);
         const date = new Date(today);
-        date.setDate(date.getDate() - randomDays);
+        date.setDate(date.getDate() - daysAgo);
+
+        // Amount Variety logic
+        let baseAmount = 10;
+        if (['Groceries'].includes(randomVendor.category)) baseAmount = 50 + Math.random() * 100;
+        if (['Dining Out'].includes(randomVendor.category)) baseAmount = 15 + Math.random() * 60; // Coffee vs Dinner
+        if (['Transport'].includes(randomVendor.category)) baseAmount = 20 + Math.random() * 40;
+        if (['Travel'].includes(randomVendor.category)) baseAmount = 200 + Math.random() * 800;
+        if (['Shopping'].includes(randomVendor.category)) baseAmount = 30 + Math.random() * 200;
+        if (['Utilities'].includes(randomVendor.category)) baseAmount = 80 + Math.random() * 120;
+
+        // Add some noise
+        const amount = -(baseAmount + (Math.random() * 20 - 10));
 
         // Pick random account, prioritize Credit Card for liabilities
-        let accountName = Math.random() > 0.6 ? 'Credit Card' : 'Checking Account';
+        let accountName = Math.random() > 0.4 ? 'Credit Card' : 'Checking Account';
         let currency = 'USD';
 
         // Add some EUR transactions
-        if (Math.random() > 0.85) {
+        if (Math.random() > 0.92) {
             accountName = 'Euro Travel';
             currency = 'EUR';
-            // Ensure vendor is valid for EUR context (simplification: any vendor works but logic could be stricter)
         }
 
         transactions.push({
@@ -446,8 +508,9 @@ export const generateDemoData = async (
             category: randomVendor.category,
             sub_category: randomVendor.sub,
             account: accountName,
-            remarks: `Demo Transaction ${i + 1}`,
+            remarks: `Demo Transaction`,
             currency: currency,
+            user_id: userId,
         });
     }
 

@@ -70,23 +70,17 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     const frequency = `${data.frequency_value}${data.frequency_unit}`;
     const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
 
+    // Strict duplicate check: One budget per Category/Sub-category pair
     const isDuplicate = allBudgets.some(b =>
       b.id !== budget?.id &&
       b.category_id === data.category_id &&
-      b.sub_category_id === (data.sub_category_id || null) &&
-      b.frequency === frequency &&
-      new Date(b.start_date).toLocaleDateString('en-CA') === startDate &&
-      b.account_scope === data.account_scope &&
-      (
-        (b.account_scope === 'ALL') ||
-        (JSON.stringify(b.account_scope_values?.slice().sort()) === JSON.stringify(data.account_scope_values?.slice().sort()))
-      )
+      b.sub_category_id === (data.sub_category_id || null)
     );
 
     if (isDuplicate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "A budget with these parameters already exists.",
+        message: "A budget for this category/sub-category already exists.",
         path: ["category_id"],
       });
     }

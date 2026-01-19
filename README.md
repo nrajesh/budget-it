@@ -1,31 +1,80 @@
 # Personal Finance Tracker
 
-A powerful and intuitive application designed to help you take control of your finances. Track your spending, manage budgets, and gain clear insights into your financial habits.
+A privacy-focused, local-first personal finance application designed to help you track spending, manage budgets, and gain insights into your financial health without sending your data to the cloud.
 
-## Key Features
+![Dashboard Preview](docs/dashboard-preview.png)
 
-### 1. Comprehensive Budgeting
-Create and manage budgets with flexible frequencies to match your financial planning style.
-- **Monthly:** For regular, recurring expenses like utilities or subscriptions.
-- **Quarterly:** For expenses that occur every three months.
-- **Yearly:** For annual costs like insurance premiums or memberships.
-- **One-Time:** For specific, non-recurring goals like a vacation or a large purchase.
+## 🌟 Key Features
 
-### 2. Detailed Transaction Tracking
-Log all your transactions to see exactly where your money is going. Assign transactions to specific categories, vendors, and accounts for granular control.
+- **Local-First & Private**: All your data stored securely in your browser using IndexedDB. No external servers see your financial data.
+- **Comprehensive Budgeting**: Set monthly, quarterly, yearly, or one-time budgets.
+- **Transaction Management**: Easy tracking with categories, sub-categories, vendors, and account groups.
+- **Smart Analytics**: Visual breakdowns of income, expenses, and savings trends.
+- **Import/Export**: Flexible CSV importing and data management.
 
-### 3. Insightful Dashboard
-The main dashboard provides a clear, at-a-glance overview of your financial health:
-- **Avg. Monthly Budget:** See your total planned spending, normalized to a monthly figure for easy comparison. This calculation intelligently converts all budget frequencies (quarterly, yearly, etc.) into a single, understandable monthly average.
-- **Avg. Monthly Spent:** Track your actual average monthly spending.
-- **Avg. Monthly Remaining:** Instantly know how much you have left to spend or save. Budgets will show a negative balance if you overspend, giving you an honest and accurate picture of your habits.
+## 🏗️ System Architecture
 
-### 4. Category & Payee Management
-Organize your finances by creating custom spending categories and managing a list of payees (vendors and accounts). This helps you understand which areas of your life you spend the most on.
+This application is built as a Single Page Application (SPA) with a focus on client-side processing and storage.
 
-### 5. Account Management
-Track balances across different financial accounts, such as checking, savings, or credit cards.
+### Tech Stack
+- **Frontend Framework**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
+- **State Management**: [TanStack Query](https://tanstack.com/query/latest) (React Query)
+- **Local Database**: [Dexie.js](https://dexie.org/) (Wrapper for IndexedDB)
+- **Routing**: [React Router](https://reactrouter.com/)
 
-## Tech Stack
-- **Frontend:** React, TypeScript, Tailwind CSS
-- **Backend:** Supabase (Database, Auth, Edge Functions)
+### Data Flow
+1. **Local Storage**: The app uses `Dexie.js` to interface with the browser's IndexedDB. This acts as the primary data source.
+2. **State Sync**: `TanStack Query` manages asynchronous state, caching data from Dexie and ensuring the UI stays in sync with the local database.
+3. **Optimistic Updates**: UI updates immediately upon user action, providing a snappy experience while data persists in the background.
+
+## 🚀 Getting Started
+
+Follow these steps to get the application running on your local machine.
+
+### Prerequisites
+- **Node.js**: Version 18 or higher recommended.
+- **Package Manager**: pnpm (preferred), npm, or yarn.
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd budget-it
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+### Running Locally
+
+Start the development server:
+```bash
+pnpm dev
+```
+Open your browser and navigate to `http://localhost:5173` (or the URL shown in your terminal).
+
+### Building for Production
+
+To create a production-ready build:
+```bash
+pnpm build
+```
+The build artifacts will be stored in the `dist/` directory.
+
+## 📦 Deployment
+
+### Deploy to Vercel
+This project is optimized for Vercel.
+1. Install Vercel CLI: `npm i -g vercel`
+2. Run `vercel deploy` in the project root.
+3. Follow the prompts to ship your local-first finance tracker to the web.
+
+Since the app is client-side only (local-first), it can be hosted on any static site provider like Vercel, Netlify, or GitHub Pages.
+
+## 🛡️ Privacy Note
+This application runs entirely in your browser. Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.

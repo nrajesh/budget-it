@@ -7,10 +7,14 @@ import { parseSearchQuery } from "@/utils/searchParser";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { slugify } from "@/lib/utils";
 import { NLPSearchInput } from "@/components/ui/NLPSearchInput";
+import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
+import { useTheme } from "@/contexts/ThemeContext";
 
-
-
-export const SmartSearchInput = () => {
+/**
+ * Common component for Search and Filtering across the app.
+ * Persists state via useTransactionFilters hook.
+ */
+export const SearchFilterBar = () => {
     const {
         setSearchTerm,
         setDateRange,
@@ -30,9 +34,7 @@ export const SmartSearchInput = () => {
     } = useTransactionFilters();
 
     const { categories, allSubCategories, accounts, vendors } = useTransactions();
-    // Directly use rawSearchQuery from context to ensure persistence
-    // Rotate placeholders - functionality moved to NLPSearchInput, removing from here
-
+    const { isFinancialPulse } = useTheme();
 
     const handleSearch = (value: string) => {
         setRawSearchQuery(value);
@@ -60,15 +62,9 @@ export const SmartSearchInput = () => {
         }
         if (update.selectedSubCategories) setSelectedSubCategories(update.selectedSubCategories);
 
-        // Account logic: If searching, and no specific account found, reset to ALL (clearing default "Top 4")
-        // If query is empty, allow existing logic (which might be manual selection or default) to persist, 
-        // but handleReset usually handles clearing.
         if (value.trim().length > 0) {
             setSelectedAccounts(update.selectedAccounts || []);
         } else {
-            // If search is cleared, do we restore defaults? 
-            // For now, let's just leave it or let the user reset. 
-            // But line 75 was: if (update.selectedAccounts) ... 
             if (update.selectedAccounts) setSelectedAccounts(update.selectedAccounts);
         }
 
@@ -88,7 +84,6 @@ export const SmartSearchInput = () => {
         else setSortOrder(undefined);
 
         // Use the remaining text as the generic search term
-        // We always set it, even if empty, to clear previous search term
         if (update.searchTerm !== undefined) setSearchTerm(update.searchTerm);
     };
 
@@ -99,6 +94,7 @@ export const SmartSearchInput = () => {
 
     return (
         <div className="w-full space-y-4">
+            {/* Main Search Input */}
             <NLPSearchInput
                 value={rawSearchQuery}
                 onChange={(val) => {
@@ -108,12 +104,17 @@ export const SmartSearchInput = () => {
                 onClear={() => handleSearch("")}
             />
 
+            {/* Active Filters Summary (Chips) */}
+            <ActiveFiltersDisplay />
+
+            {/* Additional Controls */}
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                     <Switch
                         id="exclude-transfers"
                         checked={excludeTransfers}
                         onCheckedChange={setExcludeTransfers}
+                        className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500" : ""}
                     />
                     <label htmlFor="exclude-transfers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         Exclude Transfers

@@ -13,8 +13,9 @@ interface BudgetCardProps {
 }
 
 export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
-  const percentage = budget.target_amount > 0 ? Math.min(100, (budget.spent_amount / budget.target_amount) * 100) : 0;
-  const isOverBudget = percentage > 100;
+  const rawPercentage = budget.target_amount > 0 ? (budget.spent_amount / budget.target_amount) * 100 : 0;
+  const isOverBudget = rawPercentage > 100;
+  const percentage = Math.min(100, rawPercentage);
   const remaining = budget.target_amount - budget.spent_amount;
 
   const startDate = format(new Date(budget.start_date), "MMM dd, yyyy");
@@ -23,7 +24,14 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
   return (
     <Card className={isOverBudget ? "border-red-500 shadow-lg" : ""}>
       <CardHeader>
-        <CardTitle>{budget.category_name}</CardTitle>
+        <CardTitle className="flex items-baseline gap-2">
+          {budget.category_name}
+          {budget.sub_category_name && (
+            <span className="text-xl font-medium text-muted-foreground">
+              {'>'} {budget.sub_category_name}
+            </span>
+          )}
+        </CardTitle>
         <CardDescription>
           {budget.frequency}
           <br />

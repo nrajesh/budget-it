@@ -14,9 +14,9 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
 import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
-import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
-import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+
 import { slugify } from "@/lib/utils";
 
 const Transactions = () => {
@@ -567,10 +567,7 @@ const Transactions = () => {
         </div>
 
         {/* Smart Search */}
-        <div className="flex flex-col gap-2">
-          <SmartSearchInput />
-          <ActiveFiltersDisplay />
-        </div>
+        <SearchFilterBar />
 
       </div>
 
