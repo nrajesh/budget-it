@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,8 @@ interface Option {
 interface TransactionFiltersProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  rawSearchQuery: string;
+  setRawSearchQuery: (term: string) => void;
   availableAccountOptions: Option[];
   selectedAccounts: string[];
   setSelectedAccounts: React.Dispatch<React.SetStateAction<string[]>>;
@@ -61,8 +64,9 @@ const getAllSubCategories = (nodes: CategoryNode[]): { name: string; slug: strin
 }
 
 export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
-  searchTerm,
   setSearchTerm,
+  rawSearchQuery,
+  setRawSearchQuery,
   availableAccountOptions,
   setSelectedAccounts,
   categoryTreeData,
@@ -85,7 +89,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
     vendors: availableVendorOptions.map(o => ({ name: o.label, slug: o.value }))
   }), [availableAccountOptions, categoryTreeData, availableVendorOptions]);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 600);
+  const debouncedSearchTerm = useDebounce(rawSearchQuery, 600);
 
   React.useEffect(() => {
     if (!debouncedSearchTerm) {
@@ -112,19 +116,21 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   }, [debouncedSearchTerm, parserContext, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, onDateChange]);
 
   const handleClear = () => {
+    setRawSearchQuery("");
     setSearchTerm("");
     onResetFilters();
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 w-full items-center bg-card p-4 rounded-xl shadow-sm border">
+    <div className="flex flex-col md:flex-row gap-4 w-full items-center">
       {/* NLP Search Input (Takes mostly all space) */}
-      <div className="flex-1 w-full">
+      <div className="flex-1 w-full flex flex-col gap-2">
         <NLPSearchInput
-          value={searchTerm}
-          onChange={setSearchTerm}
+          value={rawSearchQuery}
+          onChange={setRawSearchQuery}
           onClear={handleClear}
         />
+        <ActiveFiltersDisplay />
       </div>
 
       {/* Controls */}

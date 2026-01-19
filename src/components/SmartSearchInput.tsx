@@ -1,20 +1,14 @@
 import * as React from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Search, X, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { parseSearchQuery } from "@/utils/searchParser";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { slugify } from "@/lib/utils";
+import { NLPSearchInput } from "@/components/ui/NLPSearchInput";
 
-const PLACEHOLDERS = [
-    "All transactions in past 2 weeks",
-    "All Grocery transactions",
-    "Spending > 100",
-    "Transactions from Checking",
-    "Starbucks last month"
-];
+
 
 export const SmartSearchInput = () => {
     const {
@@ -37,15 +31,8 @@ export const SmartSearchInput = () => {
 
     const { categories, allSubCategories, accounts, vendors } = useTransactions();
     // Directly use rawSearchQuery from context to ensure persistence
-    const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
+    // Rotate placeholders - functionality moved to NLPSearchInput, removing from here
 
-    // Rotate placeholders
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, []);
 
     const handleSearch = (value: string) => {
         setRawSearchQuery(value);
@@ -56,7 +43,7 @@ export const SmartSearchInput = () => {
             {
                 categories: categories.map(c => ({ name: c.name, slug: slugify(c.name) })),
                 subCategories: allSubCategories.map(s => ({ name: s, slug: slugify(s) })),
-                accounts: accounts.map(a => ({ name: a.name, slug: slugify(a.name) })),
+                accounts: accounts.map(a => ({ name: a.name, slug: slugify(a.name), type: a.type })),
                 vendors: vendors.map(v => ({ name: v.name, slug: slugify(v.name) }))
             }
         );
@@ -72,7 +59,19 @@ export const SmartSearchInput = () => {
             }
         }
         if (update.selectedSubCategories) setSelectedSubCategories(update.selectedSubCategories);
-        if (update.selectedAccounts) setSelectedAccounts(update.selectedAccounts);
+
+        // Account logic: If searching, and no specific account found, reset to ALL (clearing default "Top 4")
+        // If query is empty, allow existing logic (which might be manual selection or default) to persist, 
+        // but handleReset usually handles clearing.
+        if (value.trim().length > 0) {
+            setSelectedAccounts(update.selectedAccounts || []);
+        } else {
+            // If search is cleared, do we restore defaults? 
+            // For now, let's just leave it or let the user reset. 
+            // But line 75 was: if (update.selectedAccounts) ... 
+            if (update.selectedAccounts) setSelectedAccounts(update.selectedAccounts);
+        }
+
         if (update.selectedVendors) setSelectedVendors(update.selectedVendors);
 
         // Amount
@@ -100,25 +99,14 @@ export const SmartSearchInput = () => {
 
     return (
         <div className="w-full space-y-4">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    value={rawSearchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-9 pr-12 h-12 text-lg shadow-sm"
-                    placeholder={PLACEHOLDERS[placeholderIndex]}
-                />
-                {rawSearchQuery && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                        onClick={() => handleSearch("")}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </div>
+            <NLPSearchInput
+                value={rawSearchQuery}
+                onChange={(val) => {
+                    setRawSearchQuery(val);
+                    handleSearch(val);
+                }}
+                onClear={() => handleSearch("")}
+            />
 
             <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">

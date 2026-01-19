@@ -57,7 +57,17 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             selectedCategories, setSelectedCategories,
             selectedSubCategories, setSelectedSubCategories,
             selectedVendors, setSelectedVendors,
-            dateRange, setDateRange,
+            dateRange,
+            setDateRange: (range: DateRange | undefined) => {
+                if (!range) {
+                    setDateRange({
+                        from: startOfMonth(new Date()),
+                        to: endOfMonth(new Date()),
+                    });
+                } else {
+                    setDateRange(range);
+                }
+            },
             excludeTransfers, setExcludeTransfers,
             minAmount, setMinAmount,
             maxAmount, setMaxAmount,

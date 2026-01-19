@@ -14,6 +14,7 @@ import { EntityTable, ColumnDefinition } from "./EntityTable";
 
 interface EntityManagementPageProps<T extends { id: string; name: string }> {
   title: string;
+  subtitle?: string;
   entityName: string;
   entityNamePlural: string;
   data: T[];
@@ -60,6 +61,7 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
 
 const EntityManagementPage = <T extends { id: string; name: string }>({
   title,
+  subtitle,
   entityName,
   entityNamePlural,
   data,
@@ -121,8 +123,11 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   return (
     <div className="flex-1 space-y-4">
       <LoadingOverlay isLoading={isLoading || isImporting || isLoadingMutation} message={isImporting ? `Importing ${entityNamePlural}...` : `Loading ${entityNamePlural}...`} />
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
+          {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+        </div>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
             <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>

@@ -59,14 +59,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import AddTransactionDialog from "./AddTransactionDialog";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import AddEditTransactionDialog from "./AddEditTransactionDialog";
 import { useUser } from "@/contexts/UserContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
-  const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { user, userProfile, isLoadingUser } = useUser();
   const location = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -322,18 +320,7 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Select value={selectedCurrency} onValueChange={setCurrency}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableCurrencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
 
             <Button
               variant="ghost"
@@ -382,7 +369,7 @@ const Layout = () => {
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add Transaction</span>
         </Button>
-        <AddTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+        <AddEditTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
       </SidebarInset>
     </SidebarProvider>
   );

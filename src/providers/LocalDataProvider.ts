@@ -346,6 +346,19 @@ export class LocalDataProvider implements DataProvider {
 
     const budgetsWithSpending: Budget[] = [];
 
+    // Fetch accounts to map Name -> Type
+    const allAccounts = await db.accounts.toArray();
+    const allVendors = await db.vendors.toArray();
+
+    // Create Map: AccountName -> Type
+    const accountTypeMap = new Map<string, string>();
+    allVendors.filter(v => v.is_account).forEach(v => {
+      const acc = allAccounts.find(a => a.id === v.account_id);
+      if (acc && v.name) {
+        accountTypeMap.set(v.name.trim().toLowerCase(), acc.type || 'Checking');
+      }
+    });
+
     for (const budget of budgets) {
       // Define range
       // let endDate = budget.end_date ? new Date(budget.end_date) : new Date();
@@ -366,6 +379,19 @@ export class LocalDataProvider implements DataProvider {
           if (t.category !== budget.category_name) return false;
           if (budget.sub_category_name && t.sub_category !== budget.sub_category_name) return false;
           if (t.user_id !== userId && userId) return false; // Safety check
+
+          // Account Scope Logic
+          if (budget.account_scope === 'GROUP' && budget.account_scope_values && budget.account_scope_values.length > 0) {
+            const accountName = (t.account || '').trim().toLowerCase();
+            const accountType = accountTypeMap.get(accountName);
+            // If account not found or type not in allowed list, skip
+            // If transaction has no account info (unlikely for bank imports), we should probably skip it or include it? 
+            // Usually transactions have account.
+            if (!accountType || !budget.account_scope_values.includes(accountType)) {
+              return false;
+            }
+          }
+
           return true;
         })
         .toArray();

@@ -95,6 +95,8 @@ export type Budget = {
   end_date?: string | null;
   is_active?: boolean;
   created_at?: string;
+  account_scope?: 'ALL' | 'GROUP';
+  account_scope_values?: string[] | null;
 };
 
 // Base categories for seeding and initial demo data generation.

@@ -16,7 +16,6 @@ import ManageSubCategoriesDialog from "@/components/categories/ManageSubCategori
 const CategoriesPage = () => {
   const { invalidateAllData, transactions } = useTransactions();
   const managementProps = useCategoryManagement();
-  const dataProvider = useDataProvider();
 
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null);
   const [editedName, setEditedName] = React.useState<string>("");
@@ -25,34 +24,34 @@ const CategoriesPage = () => {
 
   const updateCategoryNameMutation = useMutation({
     mutationFn: async ({ categoryId, newName }: { categoryId: string; newName: string }) => {
-        // Since DataProvider doesn't have updateCategory yet, we should add it or use dexie directly if allowed?
-        // Ideally we assume DataProvider interface will be updated.
-        // For now, let's look at `db` usage if we want to bypass strictly for this migration step, OR add it to interface.
-        // Adding to interface is cleaner.
-        // But for this quick fix, I'll access the local DB via a cast or extended interface usage?
-        // No, I should stick to plans.
-        // I will implement a workaround: accessing db directly here is cheating the provider pattern but effective for this migration.
-        // Actually, let's verify if I can just import `db` here as a temporary fix or if I should update provider.
-        // Updating provider interface requires touching multiple files.
-        // I'll try to find if `updateCategory` exists in provider. It does NOT.
+      // Since DataProvider doesn't have updateCategory yet, we should add it or use dexie directly if allowed?
+      // Ideally we assume DataProvider interface will be updated.
+      // For now, let's look at `db` usage if we want to bypass strictly for this migration step, OR add it to interface.
+      // Adding to interface is cleaner.
+      // But for this quick fix, I'll access the local DB via a cast or extended interface usage?
+      // No, I should stick to plans.
+      // I will implement a workaround: accessing db directly here is cheating the provider pattern but effective for this migration.
+      // Actually, let's verify if I can just import `db` here as a temporary fix or if I should update provider.
+      // Updating provider interface requires touching multiple files.
+      // I'll try to find if `updateCategory` exists in provider. It does NOT.
 
-        // I will assume for this step I can cast dataProvider to LocalDataProvider (which I can import if needed)
-        // OR better, I should just assume I can't update category name easily without adding it to the interface.
-        // However, I MUST remove `supabase`.
-        // I will implement a direct DB call here using `db` from dexieDB, essentially treating this component as "knowing" it's local for this specific operation,
-        // UNTIL we update the provider interface properly in a future refactor.
-        // WAIT, I can't import `db` if I want to be provider agnostic.
-        // BUT the user just wants the app to work local first.
+      // I will assume for this step I can cast dataProvider to LocalDataProvider (which I can import if needed)
+      // OR better, I should just assume I can't update category name easily without adding it to the interface.
+      // However, I MUST remove `supabase`.
+      // I will implement a direct DB call here using `db` from dexieDB, essentially treating this component as "knowing" it's local for this specific operation,
+      // UNTIL we update the provider interface properly in a future refactor.
+      // WAIT, I can't import `db` if I want to be provider agnostic.
+      // BUT the user just wants the app to work local first.
 
-        // I will update the DataProvider interface to include `updateCategory`.
-        // Wait, I can't update interface easily in the diff block of a page.
-        // So I will comment out the implementation with a TODO and show error "Not implemented yet" to avoid build error.
-        // OR better, I will assume `updateCategory` exists and cast it to `any` for now to bypass TS check, knowing I will add it to provider in a moment?
-        // No, that's unsafe.
+      // I will update the DataProvider interface to include `updateCategory`.
+      // Wait, I can't update interface easily in the diff block of a page.
+      // So I will comment out the implementation with a TODO and show error "Not implemented yet" to avoid build error.
+      // OR better, I will assume `updateCategory` exists and cast it to `any` for now to bypass TS check, knowing I will add it to provider in a moment?
+      // No, that's unsafe.
 
-        // Let's import `db` from `@/lib/dexieDB` here. It's a pragmatic solution for "Steroids".
-        const { db } = await import('@/lib/dexieDB');
-        await db.categories.update(categoryId, { name: newName.trim() });
+      // Let's import `db` from `@/lib/dexieDB` here. It's a pragmatic solution for "Steroids".
+      const { db } = await import('@/lib/dexieDB');
+      await db.categories.update(categoryId, { name: newName.trim() });
     },
     onSuccess: async () => {
       showSuccess("Category name updated successfully!");
@@ -163,6 +162,7 @@ const CategoriesPage = () => {
     <>
       <EntityManagementPage
         title="Categories"
+        subtitle="Organize transactions with categories and sub-categories"
         entityName="Category"
         entityNamePlural="categories"
         data={managementProps.categories}

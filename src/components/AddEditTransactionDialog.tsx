@@ -26,7 +26,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import { useDataProvider } from '@/context/DataProviderContext';
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import { Loader2 } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface AddTransactionFormValues {
+interface AddEditTransactionFormValues {
   date: string;
   account: string;
   vendor: string;
@@ -72,16 +72,20 @@ const formSchema = z.object({
   path: ["recurrenceEndDate"],
 });
 
-interface AddTransactionDialogProps {
+interface AddEditTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onSuccess?: () => void;
+  transactionToEdit?: any;
 }
 
-const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
+const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   isOpen,
   onOpenChange,
+  onSuccess,
+  transactionToEdit,
 }) => {
-  const { addTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
+  const { addTransaction, updateTransaction, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
   const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
   const dataProvider = useDataProvider();
 
@@ -92,7 +96,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
 
-  const form = useForm<AddTransactionFormValues>({
+  const form = useForm<AddEditTransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: formatDateToYYYYMMDD(new Date()),
@@ -111,29 +115,45 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      reset({
-        date: formatDateToYYYYMMDD(new Date()),
-        account: "",
-        vendor: "",
-        category: "",
-        sub_category: "",
-        amount: 0,
-        remarks: "",
-        receivingAmount: 0,
-        recurrenceFrequency: "None",
-        recurrenceEndDate: "",
-      });
+      if (transactionToEdit) {
+        reset({
+          date: transactionToEdit.date ? formatDateToYYYYMMDD(new Date(transactionToEdit.date)) : formatDateToYYYYMMDD(new Date()),
+          account: transactionToEdit.account || "",
+          vendor: transactionToEdit.vendor || "",
+          category: transactionToEdit.category || "",
+          sub_category: transactionToEdit.sub_category || "",
+          amount: transactionToEdit.amount || 0,
+          remarks: transactionToEdit.remarks || "",
+          receivingAmount: transactionToEdit.receivingAmount || 0,
+          recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
+          recurrenceEndDate: transactionToEdit.recurrence_end_date ? formatDateToYYYYMMDD(new Date(transactionToEdit.recurrence_end_date)) : "",
+        });
+      } else {
+        reset({
+          date: formatDateToYYYYMMDD(new Date()),
+          account: "",
+          vendor: "",
+          category: "",
+          sub_category: "",
+          amount: 0,
+          remarks: "",
+          receivingAmount: 0,
+          recurrenceFrequency: "None",
+          recurrenceEndDate: "",
+        });
+      }
       setAccountCurrencySymbol('$');
       setDestinationAccountCurrency(null);
       setAutoCalculatedReceivingAmount(0);
     }
-  }, [isOpen, reset]);
+  }, [isOpen, reset, transactionToEdit]);
 
   const accountValue = form.watch("account");
   const vendorValue = form.watch("vendor");
   const amountValue = form.watch("amount");
   const recurrenceFrequency = form.watch("recurrenceFrequency");
-  const isTransfer = allAccounts.includes(vendorValue);
+
+  const isTransfer = React.useMemo(() => allAccounts.includes(vendorValue), [allAccounts, vendorValue]);
 
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
@@ -169,6 +189,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
           destinationAccountCurrency
         );
         setAutoCalculatedReceivingAmount(convertedAmount);
+        // Only set receiving amount if auto calc is valid, might overwrite user input if they are typing?
+        // Basic implementation for now.
         setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
       } else {
         setAutoCalculatedReceivingAmount(0);
@@ -182,14 +204,17 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   React.useEffect(() => {
     if (isTransfer) {
-      setValue("category", "Transfer");
+      if (getValues("category") !== "Transfer") {
+        setValue("category", "Transfer");
+      }
     } else if (getValues("category") === "Transfer") {
       setValue("category", "");
     }
   }, [isTransfer, setValue, getValues]);
 
-  const onSubmit = (values: AddTransactionFormValues) => {
+  const onSubmit = async (values: AddEditTransactionFormValues) => {
     const transactionData = {
+      ...transactionToEdit,
       date: values.date,
       account: values.account,
       vendor: values.vendor,
@@ -198,10 +223,19 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
       amount: values.amount,
       remarks: values.remarks,
       receivingAmount: values.receivingAmount,
-      recurrenceFrequency: values.recurrenceFrequency,
-      recurrenceEndDate: values.recurrenceEndDate,
+      recurrence_frequency: values.recurrenceFrequency,
+      recurrence_end_date: values.recurrenceEndDate,
     };
-    addTransaction(transactionData);
+
+    if (transactionToEdit) {
+      await updateTransaction(transactionData);
+    } else {
+      await addTransaction(transactionData);
+    }
+
+    if (onSuccess) {
+      onSuccess();
+    }
     onOpenChange(false);
   };
 
@@ -227,13 +261,15 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
 
   const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
 
+  const isEditMode = !!transactionToEdit;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Transaction</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Transaction" : "Add New Transaction"}</DialogTitle>
           <DialogDescription>
-            Quickly add a new transaction to your records.
+            {isEditMode ? "Modify the details of this transaction." : "Quickly add a new transaction to your records."}
           </DialogDescription>
         </DialogHeader>
         {isFormLoading ? (
@@ -242,7 +278,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="date"
@@ -389,7 +425,7 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 control={form.control}
                 name="remarks"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="col-span-2">
                     <FormLabel>Remarks</FormLabel>
                     <FormControl>
                       <Input {...field} />
@@ -448,8 +484,8 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
                 />
               )}
 
-              <DialogFooter>
-                <Button type="submit">Add Transaction</Button>
+              <DialogFooter className="col-span-2">
+                <Button type="submit">{isEditMode ? "Save Changes" : "Add Transaction"}</Button>
               </DialogFooter>
             </form>
           </Form>
@@ -459,4 +495,4 @@ const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({
   );
 };
 
-export default AddTransactionDialog;
+export default AddEditTransactionDialog;

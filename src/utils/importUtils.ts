@@ -2,40 +2,81 @@ import { parse } from "date-fns";
 
 export function parseRobustDate(dateString: string, dateFormatPre?: string): string | null {
     if (!dateString) return null;
+    dateString = dateString.trim();
+
+    // Helper to try parsing a list of formats
+    const tryFormats = (formats: string[]) => {
+        for (const fmt of formats) {
+            const parsed = parse(dateString, fmt, new Date());
+            if (!isNaN(parsed.getTime())) {
+                // Sanity check: year should be reasonable (e.g., within +/- 100 years) or > 1900
+                if (parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+                    // Set to noon to avoid timezone shifts when converting to UTC
+                    parsed.setHours(12, 0, 0, 0);
+                    return parsed.toISOString();
+                }
+            }
+        }
+        return null;
+    };
 
     // If explicit format provided
     if (dateFormatPre && dateFormatPre !== 'auto') {
-        const parsed = parse(dateString, dateFormatPre, new Date());
-        if (!isNaN(parsed.getTime())) {
-            return parsed.toISOString();
-        }
-        console.warn(`Failed to parse date '${dateString}' with format '${dateFormatPre}'`);
+        // 1. Try strict match first
+        const strictMatch = tryFormats([dateFormatPre]);
+        if (strictMatch) return strictMatch;
+
+        // 2. Identify intent and try fallbacks
+        // Check structural intent (DMY vs MDY vs YMD)
+        const isDMY = dateFormatPre.startsWith('d') || dateFormatPre.startsWith('D');
+        const isMDY = dateFormatPre.startsWith('M') || dateFormatPre.startsWith('m');
+        const isYMD = dateFormatPre.startsWith('y') || dateFormatPre.startsWith('Y');
+
+        // Common components
+        const dmyFormats = [
+            'd/M/yyyy', 'dd/MM/yyyy', 'd-M-yyyy', 'dd-MM-yyyy', 'd.M.yyyy', 'dd.MM.yyyy',
+            'dd/M/yyyy', 'd/MM/yyyy', // Mixed padding
+        ];
+        const mdyFormats = [
+            'M/d/yyyy', 'MM/dd/yyyy', 'M-d-yyyy', 'MM-dd-yyyy', 'M.d.yyyy', 'MM.dd.yyyy',
+            'MM/d/yyyy', 'M/dd/yyyy', // Mixed padding
+        ];
+        const ymdFormats = [
+            'yyyy-M-d', 'yyyy-MM-dd', 'yyyy/M/d', 'yyyy/MM/dd', 'yyyy.M.d', 'yyyy.MM.dd'
+        ];
+
+        let fallbacks: string[] = [];
+        if (isDMY) fallbacks = dmyFormats;
+        else if (isMDY) fallbacks = mdyFormats;
+        else if (isYMD) fallbacks = ymdFormats;
+
+        const fallbackMatch = tryFormats(fallbacks);
+        if (fallbackMatch) return fallbackMatch;
+
+        console.warn(`Failed to parse date '${dateString}' with format '${dateFormatPre}' and fallbacks.`);
+        // Fallthrough to heuristic? Or strict fail?
+        // If user explicitly said "DMY", we probably shouldn't try "MDY" heuristic as it's dangerous (1/2 vs 2/1).
+        // But we might want to try "YYYY-MM-DD" as it's unambiguous usually?
+        // Let's return null to indicate failure for the chosen strict preference.
         return null;
     }
 
     // Heuristics (Auto)
-    const simpleDate = new Date(dateString);
-    if (!isNaN(simpleDate.getTime())) {
-        return simpleDate.toISOString();
+    // Try ISO first
+    const isoTry = new Date(dateString);
+    if (!isNaN(isoTry.getTime())) {
+        // Set to noon to avoid timezone shifts
+        isoTry.setHours(12, 0, 0, 0);
+        return isoTry.toISOString();
     }
 
-    const formats = [
-        'd/M/yyyy',
-        'M/d/yyyy',
-        'd-M-yyyy',
-        'yyyy/M/d',
-        'yyyy-M-d',
-        'd.M.yyyy'
-    ];
-
-    for (const fmt of formats) {
-        const parsed = parse(dateString, fmt, new Date());
-        if (!isNaN(parsed.getTime())) {
-            return parsed.toISOString();
-        }
-    }
-
-    return null;
+    // Try common ones
+    return tryFormats([
+        'yyyy-MM-dd', 'yyyy/MM/dd',
+        'd/M/yyyy', 'M/d/yyyy', // Ambiguous ones are risk, usually prefer local or consistent.
+        // If auto, we really rely on date-fns/js parsing or list.
+        'd-M-yyyy', 'd.M.yyyy'
+    ]);
 }
 
 export function parseRobustAmount(amountString: string, decimalSeparator?: '.' | ','): number {

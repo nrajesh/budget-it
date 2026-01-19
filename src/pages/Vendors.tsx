@@ -5,7 +5,6 @@ import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useMutation } from '@tanstack/react-query';
 import { showError, showSuccess } from "@/utils/toast";
 import VendorDeduplicationDialog from "@/components/management/VendorDeduplicationDialog";
@@ -21,9 +20,9 @@ const VendorsPage = () => {
 
   const updateVendorNameMutation = useMutation({
     mutationFn: async ({ vendorId, newName }: { vendorId: string; newName: string }) => {
-        // Similar pragmatic fix as Categories.tsx
-        const { db } = await import('@/lib/dexieDB');
-        await db.vendors.update(vendorId, { name: newName.trim() });
+      // Similar pragmatic fix as Categories.tsx
+      const { db } = await import('@/lib/dexieDB');
+      await db.vendors.update(vendorId, { name: newName.trim() });
     },
     onSuccess: async () => {
       showSuccess("Vendor name updated successfully!");
@@ -88,6 +87,7 @@ const VendorsPage = () => {
     <>
       <EntityManagementPage
         title="Vendors"
+        subtitle="Manage payees and merchants"
         entityName="Vendor"
         entityNamePlural="vendors"
         data={vendors}

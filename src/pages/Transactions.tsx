@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Download, Plus, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
-import TransactionDialog from "@/components/transactions/TransactionDialog";
+// import TransactionDialog from "@/components/transactions/TransactionDialog";
+import AddEditTransactionDialog from "@/components/AddEditTransactionDialog";
 import { useSession } from "@/hooks/useSession";
 import Papa from "papaparse";
 import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
@@ -13,6 +14,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
 import { showError, showSuccess } from "@/utils/toast"; // Import showSuccess
+import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
 import { SmartSearchInput } from "@/components/SmartSearchInput";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
@@ -49,6 +51,7 @@ const Transactions = () => {
   const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -309,26 +312,111 @@ const Transactions = () => {
         await dataProvider.clearTransactions(userId);
         await dataProvider.clearBudgets(userId);
         await dataProvider.clearScheduledTransactions(userId);
+        // We technically don't clear definitions (categories/accounts) on replace unless we want to start fresh-fresh.
+        // Usually "Replace Data" in apps means "Replace Transactions".
+        // If user wants to clean definitions, they might need a "Reset Account" feature.
+        // But for "Added" counts, we should check what exists *now*.
       }
 
       console.log("Starting import with data:", data.length, "rows", config);
-      // 1. Ensure Entities Exist
-      const uniqueAccounts = [...new Set(data.map((r: any) => r.Account).filter(Boolean))];
-      await Promise.all(uniqueAccounts.map(name => {
-        // Find currency for this account from the first row that has this account
-        const row = data.find((r: any) => r.Account === name);
-        const currency = row?.Currency || 'USD'; // Default if missing
+
+      // Track known IDs to calculate "Added"
+      const knownAccountIds = new Set<string>();
+      const knownVendorIds = new Set<string>();
+      const knownCategoryIds = new Set<string>();
+      const knownSubCategoryIds = new Set<string>();
+
+      // Populate known IDs from current state if NOT replacing everything (or even if we are, definitions might persist)
+      // Actually, standard "replace" usually keeps categories/accounts to preserve structure for other years?
+      // Assuming definitions persist.
+      const existingVendors = await dataProvider.getAllVendors();
+      existingVendors.forEach(v => {
+        if (v.is_account) knownAccountIds.add(v.id);
+        else knownVendorIds.add(v.id);
+      });
+      const existingCategories = await dataProvider.getUserCategories(userId);
+      existingCategories.forEach(c => knownCategoryIds.add(c.id));
+      const existingSubCategories = await dataProvider.getSubCategories(userId);
+      existingSubCategories.forEach(s => knownSubCategoryIds.add(s.id));
+
+
+      // 1. Process Accounts
+      let newAccountsCount = 0;
+      const uniqueAccounts = [...new Set(data.map((r: any) => (r.Account || "").trim()).filter(Boolean))];
+
+      for (const name of uniqueAccounts) {
+        // Find currency/type from first occurrence, lenient lookup
+        const row = data.find((r: any) => (r.Account || "").trim() === name);
+        const currency = row?.Currency || 'USD';
         const type = row?.["Account Type"];
-        return dataProvider.ensurePayeeExists(name, true, { currency, type });
-      }));
 
-      const uniquePayees = [...new Set(data.map((r: any) => r.Payee || r.Vendor).filter(Boolean))];
-      await Promise.all(uniquePayees.map(name => dataProvider.ensurePayeeExists(name, false)));
+        const id = await dataProvider.ensurePayeeExists(name, true, { currency, type });
+        if (id && !knownAccountIds.has(id)) {
+          newAccountsCount++;
+          knownAccountIds.add(id);
+        } else if (id && !knownVendorIds.has(id) && !knownAccountIds.has(id)) {
+          // ...
+        }
+      }
 
-      const uniqueCategories = [...new Set(data.map((r: any) => r.Category).filter(Boolean))];
-      await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, userId)));
+      // 2. Process Payees
+      let newVendorsCount = 0;
+      const uniquePayees = [...new Set(data.map((r: any) => (r.Payee || r.Vendor || "").trim()).filter(Boolean))];
+      for (const name of uniquePayees) {
+        const id = await dataProvider.ensurePayeeExists(name, false);
+        // ...
+        if (id && !knownVendorIds.has(id) && !knownAccountIds.has(id)) {
+          newVendorsCount++;
+          knownVendorIds.add(id);
+        }
+      }
 
-      // 2. Prepare Transactions
+      // 3. Process Categories & Sub-categories
+      let newCategoriesCount = 0;
+      let newSubCategoriesCount = 0;
+
+      // Map Category Name -> ID (needed for subcats)
+      const categoryNameIdMap = new Map<string, string>();
+      // Pre-fill map with existing
+      existingCategories.forEach(c => categoryNameIdMap.set(c.name, c.id));
+
+      const uniqueCategories = [...new Set(data.map((r: any) => (r.Category || "").trim()).filter(Boolean))];
+      for (const name of uniqueCategories) {
+        const id = await dataProvider.ensureCategoryExists(name, userId);
+        if (id) {
+          if (!knownCategoryIds.has(id)) {
+            newCategoriesCount++;
+            knownCategoryIds.add(id);
+          }
+          categoryNameIdMap.set(name, id);
+        }
+      }
+
+      // Process Sub-categories
+      // We need distinct pairs of (Category, SubCategory)
+      const uniqueSubCats = new Set<string>(); // "Cat:Sub"
+      data.forEach((r: any) => {
+        const cat = (r.Category || "").trim();
+        const sub = (r.Subcategory || r.Sub_Category || "").trim();
+        if (cat && sub) {
+          uniqueSubCats.add(`${cat}:${sub}`);
+        }
+      });
+
+      for (const item of Array.from(uniqueSubCats)) {
+        const [catName, subName] = item.split(':');
+        const catId = categoryNameIdMap.get(catName);
+        if (catId && subName) {
+          const id = await dataProvider.ensureSubCategoryExists(subName, catId, userId);
+          if (id && !knownSubCategoryIds.has(id)) {
+            newSubCategoriesCount++;
+            knownSubCategoryIds.add(id);
+          }
+        }
+      }
+
+
+      // 4. Prepare Transactions
       const transactionsToInsert: any[] = [];
       let skippedCount = 0;
 
@@ -341,21 +429,20 @@ const Transactions = () => {
           skippedCount++;
           continue;
         }
-        // Note: Amount 0 is technically valid but often a parsing error. We'll allow it but warn in logs.
 
         const t = {
           user_id: userId,
           date: date, // validated above
-          account: row.Account || "Uncategorized Account", // Fallback to avoid undefined
-          vendor: row.Payee || row.Vendor || "",
-          category: row.Category || "Uncategorized",
-          sub_category: row.Subcategory || row.Sub_Category || "",
+          account: (row.Account || row.account || "Uncategorized Account").trim(),
+          vendor: (row.Payee || row.Vendor || row.Counterparty || row.Transfer || row.payee || row.vendor || row.counterparty || row.transfer || "").trim(),
+          category: (row.Category || row.category || "Uncategorized").trim(),
+          sub_category: (row.Subcategory || row.Sub_Category || row.subcategory || row["sub-category"] || "").trim(),
           amount: amount,
-          remarks: row.Notes || row.Remarks || "",
-          currency: row.Currency || "USD",
-          recurrence_frequency: row.Frequency || null,
-          recurrence_end_date: parseRobustDate(row["End Date"], config?.dateFormat) || null,
-          transfer_id: row["Transfer ID"] || null,
+          remarks: (row.Notes || row.Remarks || row.notes || row.remarks || "").trim(),
+          currency: (row.Currency || row.currency || "USD").trim(),
+          recurrence_frequency: row.Frequency || row.frequency || null,
+          recurrence_end_date: parseRobustDate(row["End Date"] || row["end date"], config?.dateFormat) || null,
+          transfer_id: (row["Transfer ID"] || row["transfer id"] || "").trim() || null,
         };
         transactionsToInsert.push(t);
       }
@@ -369,26 +456,47 @@ const Transactions = () => {
         return;
       }
 
-      // 3. Insert
-      for (const t of transactionsToInsert) {
-        await dataProvider.addTransaction(t);
+      // 5. Insert
+      try {
+        for (const t of transactionsToInsert) {
+          await dataProvider.addTransaction(t);
+        }
+      } catch (e: any) {
+        console.error("Insert failed at some point", e);
+        // insertError was unused
       }
 
-      // Auto-detect transfers
-      const linkedCount = await detectAndLinkTransfers();
+      let desc = `Imported ${transactionsToInsert.length} transactions.`;
+      const details = [];
+      if (newAccountsCount > 0) details.push(`${newAccountsCount} accounts`);
+      if (newVendorsCount > 0) details.push(`${newVendorsCount} vendors`);
+      if (newCategoriesCount > 0) details.push(`${newCategoriesCount} categories`);
+      if (newSubCategoriesCount > 0) details.push(`${newSubCategoriesCount} sub-categories`);
 
-      let desc = `Successfully imported ${transactionsToInsert.length} transactions.`;
-      if (linkedCount > 0) {
-        desc += ` Automatically linked ${linkedCount} transfer pairs.`;
+      if (details.length > 0) {
+        desc += ` Added ${details.join(', ')}.`;
       }
+
       if (skippedCount > 0) {
-        desc += ` (${skippedCount} rows skipped due to invalid data)`;
+        desc += ` Skipped ${skippedCount} invalid rows.`;
+      }
+
+      // Auto-detect transfers (and combine message)
+      try {
+        const linkedCount = await detectAndLinkTransfers();
+        if (linkedCount > 0) {
+          desc += ` Automatically linked ${linkedCount} transfer pairs.`;
+        }
+      } catch (e) {
+        console.error("Transfer detection failed", e);
       }
 
       toast({
         title: "Import Successful",
         description: desc,
+        duration: 5000,
       });
+
       invalidateAllData();
     } catch (error: any) {
       toast({
@@ -417,12 +525,12 @@ const Transactions = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="space-y-4">
       <div className="flex flex-col gap-6 mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Transactions</h1>
-            <p className="text-muted-foreground">Manage and track your financial activities.</p>
+            <p className="text-muted-foreground">Manage & track your financial activities</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
@@ -451,7 +559,7 @@ const Transactions = () => {
               <RefreshCw className="mr-2 h-4 w-4" />
               Detect Transfers
             </Button>
-            <Button onClick={() => setIsDialogOpen(true)} className="flex-1 sm:flex-none">
+            <Button onClick={() => { setEditingTransaction(null); setIsDialogOpen(true); }} className="flex-1 sm:flex-none">
               <Plus className="mr-2 h-4 w-4" />
               Add Transaction
             </Button>
@@ -459,7 +567,11 @@ const Transactions = () => {
         </div>
 
         {/* Smart Search */}
-        <SmartSearchInput />
+        <div className="flex flex-col gap-2">
+          <SmartSearchInput />
+          <ActiveFiltersDisplay />
+        </div>
+
       </div>
 
       <TransactionTable
@@ -473,12 +585,17 @@ const Transactions = () => {
         onDeleteTransactions={deleteMultipleTransactions}
         onAddTransaction={addTransaction}
         onScheduleTransactions={handleScheduleTransactions}
+        onRowDoubleClick={(transaction) => {
+          setEditingTransaction(transaction);
+          setIsDialogOpen(true);
+        }}
       />
 
-      <TransactionDialog
-        open={isDialogOpen}
+      <AddEditTransactionDialog
+        isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSuccess={invalidateAllData}
+        transactionToEdit={editingTransaction}
       />
 
       <CSVMappingDialog

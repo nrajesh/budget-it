@@ -61,10 +61,11 @@ interface BudgetDialogProps {
 }
 
 export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: BudgetDialogProps) {
+  const { selectedCurrency } = useCurrency();
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [defaultCurrency, setDefaultCurrency] = useState<string>('USD');
+  const [defaultCurrency, setDefaultCurrency] = useState<string>(selectedCurrency);
   const isEditMode = !!budget;
   const dataProvider = useDataProvider();
 
@@ -97,23 +98,11 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
       // Fetch sub-categories
       const subCategoryData = await dataProvider.getSubCategories(userId);
       setSubCategories(subCategoryData || []);
-
-      // Fetch user profile for currency
-      // We use the passed in defaultCurrency or 'USD' locally for now, 
-      // but ideally we should respect the global currency context if available.
-      // For now, let's stick to 'USD' as default if not provided, but the parent or context should drive this across the app.
-      // Actually, let's use the hook if we can or just default to USD. 
-      // Given the requirement, we should probably fetch it from settings if possible.
-      // Simplify: use 'USD' or better, let the form default handle it via props or state if passed.
-      setDefaultCurrency('USD');
     }
     if (userId) {
       fetchUserData();
     }
   }, [userId, dataProvider]);
-
-  // Use the global currency context
-  const { selectedCurrency } = useCurrency(); // Make sure to import this!
 
   useEffect(() => {
     if (budget) {
@@ -126,6 +115,10 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
         start_date: new Date(budget.start_date),
         end_date: budget.end_date ? new Date(budget.end_date) : undefined,
       });
+      // If editing, respect the budget's currency if available, else fallback
+      if (budget.currency) {
+        setDefaultCurrency(budget.currency);
+      }
     } else {
       form.reset({
         category_id: "",

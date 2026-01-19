@@ -32,6 +32,8 @@ export interface Budget {
   frequency: 'Monthly' | 'Quarterly' | 'Yearly' | 'One-time';
   is_active?: boolean;
   created_at?: string;
+  account_scope?: 'ALL' | 'GROUP';
+  account_scope_values?: string[] | null;
 }
 
 export interface Vendor {

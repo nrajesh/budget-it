@@ -4,6 +4,7 @@ import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { SmartSearchInput } from "@/components/SmartSearchInput";
+import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
 import { slugify, cn } from "@/lib/utils";
 import { useTransactionData } from "@/hooks/transactions/useTransactionData";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -133,16 +134,26 @@ const Analytics = () => {
       "space-y-4 transition-colors duration-500",
       isFinancialPulse ? "bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6 rounded-xl -m-6 min-h-[calc(100vh-100px)] text-white" : ""
     )}>
-      {isFinancialPulse && (
+      {isFinancialPulse ? (
         <div className="mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
           <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">
             Analytics Pulse
           </h1>
           <p className="text-slate-400 mt-2">Deep dive into your financial health.</p>
         </div>
+      ) : (
+        <div className="flex flex-col gap-6 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Analytics</h1>
+            <p className="text-muted-foreground">Deep dive into your financial data</p>
+          </div>
+        </div>
       )}
 
-      <SmartSearchInput />
+      <div className="flex flex-col gap-2">
+        <SmartSearchInput />
+        <ActiveFiltersDisplay />
+      </div>
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <BalanceOverTimeChart

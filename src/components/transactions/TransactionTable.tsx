@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface TransactionTableProps {
   transactions: any[];
@@ -50,12 +51,11 @@ const TransactionTable = ({
   onDeleteTransactions,
   onAddTransaction,
   onScheduleTransactions,
+  onRowDoubleClick,
 }: TransactionTableProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [editingRowId, setEditingRowId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<any>(null);
-  const editValuesRef = React.useRef<any>(null); // Ref to hold latest edit values for event handlers
   const { toast } = useToast();
+  const { selectedCurrency } = useCurrency();
 
   // Prepare options for Combobox
   const accountOptions = accounts.map(acc => ({ value: acc.name, label: acc.name })).sort((a, b) => a.label.localeCompare(b.label));
@@ -91,66 +91,7 @@ const TransactionTable = ({
 
 
 
-  // Inline Row Editing Handlers
-  const startEditing = (transaction: any) => {
-    setEditingRowId(transaction.id);
-    setEditValues({ ...transaction });
-    editValuesRef.current = { ...transaction };
-  };
 
-  const cancelEdit = () => {
-    setEditingRowId(null);
-    setEditValues(null);
-    editValuesRef.current = null;
-  };
-
-  const saveEdit = async () => {
-    const currentEditValues = editValuesRef.current;
-    console.log("Saving edit...", { editingRowId, currentEditValues });
-
-    if (!editingRowId || !currentEditValues) {
-      console.warn("Save aborted: missing editingRowId or currentEditValues");
-      return;
-    }
-
-    // Safety check: Ensure we are updating the correct row
-    if (currentEditValues.id !== editingRowId) {
-      console.error("Mismatch between editingRowId and editValues.id", { editingRowId, editValuesId: currentEditValues.id });
-      toast({ title: "Error", description: "Something went wrong. Please try editing again.", variant: "destructive" });
-      cancelEdit();
-      return;
-    }
-
-    // Basic validation
-    if (!currentEditValues.date || !currentEditValues.amount || !currentEditValues.account || !currentEditValues.category) {
-      toast({ title: "Error", description: "Please fill in all required fields.", variant: "destructive" });
-      return;
-    }
-
-    try {
-      await onUpdateTransaction(currentEditValues);
-      toast({ title: "Updated", description: "Transaction updated successfully." });
-      setEditingRowId(null);
-      setEditValues(null);
-      editValuesRef.current = null;
-    } catch (error: any) {
-      console.error("Failed to save transaction:", error);
-      toast({
-        title: "Update Failed",
-        description: error.message || "Could not update transaction. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEditChange = (field: string, value: any) => {
-    console.log("Edit change:", field, value);
-    setEditValues((prev: any) => {
-      const updated = { ...prev, [field]: value };
-      editValuesRef.current = updated;
-      return updated;
-    });
-  };
 
   // Bulk Actions
   const handleBulkDelete = () => {
@@ -186,82 +127,10 @@ const TransactionTable = ({
   };
 
   const renderCell = (transaction: any, field: string, value: any) => {
-    const isEditing = editingRowId === transaction.id;
-
-    if (isEditing) {
-      const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-          e.preventDefault(); // Prevent default if needed
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          cancelEdit();
-        }
-      };
-
-      if (field === 'date') {
-        const dateValue = editValues.date ? new Date(editValues.date).toISOString().split('T')[0] : '';
-        return (
-          <Input
-            type="date"
-            value={dateValue}
-            onChange={e => handleEditChange('date', new Date(e.target.value).toISOString())}
-            onKeyDown={handleKeyDown}
-            className="h-8 w-32"
-          />
-        );
-      }
-      if (['account', 'vendor', 'category', 'sub_category'].includes(field)) {
-        const options =
-          field === 'account' ? accountOptions :
-            field === 'vendor' ? vendorOptions :
-              field === 'category' ? categoryOptions :
-                subCategoryOptions;
-
-        return (
-          <div onKeyDown={handleKeyDown}>
-            <Combobox
-              options={options}
-              value={editValues[field]}
-              onChange={(val) => handleEditChange(field, val)}
-              onCreate={['category', 'vendor', 'sub_category'].includes(field) ? (val) => handleEditChange(field, val) : undefined}
-              placeholder={`Select ${field}`}
-              searchPlaceholder={`Search details...`}
-              emptyPlaceholder="No results."
-              onKeyDown={handleKeyDown}
-              consumeEscapeEvent={false}
-            />
-          </div>
-        );
-      }
-      if (field === 'amount') {
-        return (
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              value={editValues.amount}
-              onChange={e => handleEditChange('amount', parseFloat(e.target.value))}
-              onKeyDown={handleKeyDown}
-              className="h-8 w-24 text-right"
-              step="0.01"
-            />
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100" onClick={(e) => { e.stopPropagation(); saveEdit(); }}>
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100" onClick={(e) => { e.stopPropagation(); cancelEdit(); }}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        );
-      }
-      if (field === 'remarks') {
-        return <Input value={editValues.remarks || ''} onChange={e => handleEditChange('remarks', e.target.value)} onKeyDown={handleKeyDown} className="h-8" />;
-      }
-    }
-
     return (
       <span className="cursor-pointer">
         {field === 'amount'
-          ? value.toLocaleString(undefined, { style: 'currency', currency: transaction.currency || 'USD' })
+          ? value.toLocaleString(undefined, { style: 'currency', currency: transaction.currency || selectedCurrency })
           : field === 'date'
             ? new Date(value).toLocaleDateString()
             : (value || "-")
@@ -327,7 +196,11 @@ const TransactionTable = ({
                     <TableRow
                       data-state={selectedIds.has(transaction.id) ? "selected" : undefined}
                       className={`group ${selectedIds.has(transaction.id) ? "bg-muted" : ""} cursor-pointer hover:bg-muted/50`}
-                      onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); startEditing(transaction); }}
+                      onDoubleClick={(e) => {
+                        if (onRowDoubleClick) {
+                          onRowDoubleClick(transaction, e);
+                        }
+                      }}
                     >
                       <TableCell className="w-[40px]" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                         <Checkbox

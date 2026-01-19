@@ -22,21 +22,28 @@ import { useDataProvider } from '@/context/DataProviderContext';
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AddEditBudgetDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   budget: Budget | null;
   allBudgets: Budget[];
+  onSuccess?: () => void;
 }
 
-export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets }) => {
+export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets, onSuccess }) => {
   const { user } = useUser();
-  const { categories, subCategories } = useTransactions();
+  const { categories, subCategories, accounts } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const dataProvider = useDataProvider();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const accountTypes = React.useMemo(() => {
+    const types = new Set(accounts.map(a => a.type || 'Other'));
+    return Array.from(types).sort();
+  }, [accounts]);
 
   const formSchema = React.useMemo(() => z.object({
     category_id: z.string().min(1, "Category is required"),
@@ -48,23 +55,38 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     frequency_unit: z.string().min(1, "Frequency unit is required"),
     end_date: z.string().optional(),
     is_active: z.boolean(),
+    account_scope: z.enum(['ALL', 'GROUP']),
+    account_scope_values: z.array(z.string()).optional(),
   }).superRefine((data, ctx) => {
+    if (data.account_scope === 'GROUP' && (!data.account_scope_values || data.account_scope_values.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please select at least one account group.",
+        path: ["account_scope_values"],
+      });
+    }
+
     if (!allBudgets) return;
     const frequency = `${data.frequency_value}${data.frequency_unit}`;
-    const startDate = new Date(data.start_date).toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
 
     const isDuplicate = allBudgets.some(b =>
       b.id !== budget?.id &&
       b.category_id === data.category_id &&
-      b.sub_category_id === (data.sub_category_id || null) && // Check for exact match (including null)
+      b.sub_category_id === (data.sub_category_id || null) &&
       b.frequency === frequency &&
-      new Date(b.start_date).toLocaleDateString('en-CA') === startDate
+      new Date(b.start_date).toLocaleDateString('en-CA') === startDate &&
+      b.account_scope === data.account_scope &&
+      (
+        (b.account_scope === 'ALL') ||
+        (JSON.stringify(b.account_scope_values?.slice().sort()) === JSON.stringify(data.account_scope_values?.slice().sort()))
+      )
     );
 
     if (isDuplicate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "A budget with this category, frequency, and start date already exists.",
+        message: "A budget with these parameters already exists.",
         path: ["category_id"],
       });
     }
@@ -80,6 +102,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       frequency_value: 1,
       frequency_unit: 'm',
       sub_category_id: null,
+      account_scope: 'ALL',
+      account_scope_values: [],
     },
   });
 
@@ -95,17 +119,34 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
   React.useEffect(() => {
     if (isOpen) {
       if (budget) {
-        const frequencyMatch = budget.frequency.match(/^(\d+)([dwmy])$/);
+        let frequencyVal = 1;
+        let frequencyUnit = 'm';
+
+        // Handle legacy frequencies
+        if (budget.frequency === 'Monthly') { frequencyVal = 1; frequencyUnit = 'm'; }
+        else if (budget.frequency === 'Quarterly') { frequencyVal = 3; frequencyUnit = 'm'; }
+        else if (budget.frequency === 'Yearly') { frequencyVal = 1; frequencyUnit = 'y'; }
+        else if (budget.frequency === 'One-time') { frequencyVal = 1; frequencyUnit = 'm'; } // Defaulting one-time to 1m for now or need better handling? One-time budgets usually don't recur. AddEditDialog assumes recurrence.
+        else {
+          const frequencyMatch = budget.frequency.match(/^(\d+)([dwmy])$/);
+          if (frequencyMatch) {
+            frequencyVal = parseInt(frequencyMatch[1], 10);
+            frequencyUnit = frequencyMatch[2];
+          }
+        }
+
         form.reset({
           category_id: budget.category_id,
           sub_category_id: budget.sub_category_id,
           target_amount: budget.target_amount,
           currency: budget.currency,
           start_date: formatDateToYYYYMMDD(budget.start_date),
-          frequency_value: frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1,
-          frequency_unit: frequencyMatch ? frequencyMatch[2] : 'm',
+          frequency_value: frequencyVal,
+          frequency_unit: frequencyUnit,
           end_date: budget.end_date ? formatDateToYYYYMMDD(budget.end_date) : "",
           is_active: budget.is_active,
+          account_scope: budget.account_scope || 'ALL',
+          account_scope_values: budget.account_scope_values || [],
         });
       } else {
         form.reset({
@@ -118,6 +159,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
           frequency_unit: 'm',
           end_date: "",
           is_active: true,
+          account_scope: 'ALL',
+          account_scope_values: [],
         });
       }
     }
@@ -129,8 +172,6 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
 
     const frequency = `${values.frequency_value}${values.frequency_unit}`;
     const selectedCategory = categories.find(c => c.id === values.category_id);
-    // Note: subCategories in context might be empty if we didn't implement fetching them yet,
-    // but the UI relies on them. If they are empty, this name lookup fails gracefully.
     const subCatName = values.sub_category_id ? subCategories.find(s => s.id === values.sub_category_id)?.name : null;
 
     const dbPayload: any = {
@@ -145,6 +186,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       frequency: frequency as any,
       end_date: values.end_date ? new Date(values.end_date).toISOString() : null,
       is_active: values.is_active,
+      account_scope: values.account_scope,
+      account_scope_values: values.account_scope === 'GROUP' ? values.account_scope_values : null,
     };
 
     try {
@@ -156,6 +199,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
         showSuccess("Budget created successfully!");
       }
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      if (onSuccess) onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       showError(`Failed to save budget: ${error.message}`);
@@ -166,7 +210,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{budget ? "Edit" : "Create"} Budget</DialogTitle>
           <DialogDescription>Set a spending target for a category or sub-category.</DialogDescription>
@@ -215,6 +259,96 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 </FormItem>
               )}
             />
+
+            {/* Scope Selection */}
+            <FormField
+              control={form.control}
+              name="account_scope"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Budget Scope</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="ALL" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          All Accounts
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="GROUP" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Specific Account Groups
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch("account_scope") === 'GROUP' && (
+              <FormField
+                control={form.control}
+                name="account_scope_values"
+                render={() => (
+                  <FormItem>
+                    <div className="mb-4">
+                      <FormLabel className="text-base">Select Account Groups</FormLabel>
+                      <FormDescription>
+                        Select the account groups this budget applies to.
+                      </FormDescription>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {accountTypes.map((type) => (
+                        <FormField
+                          key={type}
+                          control={form.control}
+                          name="account_scope_values"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={type}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(type)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), type])
+                                        : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== type
+                                          )
+                                        )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {type}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

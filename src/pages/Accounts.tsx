@@ -64,6 +64,7 @@ const AccountsPage = () => {
     <>
       <EntityManagementPage
         title="Accounts"
+        subtitle="Manage your bank accounts and credit cards"
         entityName="Account"
         entityNamePlural="accounts"
         data={sortedAccounts}

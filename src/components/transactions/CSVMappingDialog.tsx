@@ -74,24 +74,55 @@ const CSVMappingDialog = ({
         if (!file) return;
         setIsLoading(true);
 
-        Papa.parse(file, {
+        Papa.parse(file as any, {
             header: true,
             skipEmptyLines: true,
+
             delimiter: config.delimiter === 'auto' ? "" : config.delimiter, // Empty string = auto-detect
             complete: (results: any) => {
-                const headers = results.meta.fields || [];
+                const headers: string[] = results.meta.fields || [];
                 setCsvHeaders(headers);
                 setCsvData(results.data);
 
                 // Pre-fill mapping if matches found
+                const ALIASES: Record<string, string[]> = {
+                    "Payee": ["Vendor", "Counterparty", "Merchant", "Description", "Party"],
+                    "Subcategory": ["Sub-Category", "Sub Category", "Sub_Category"],
+                    "Notes": ["Remarks", "Description", "Memo", "Details", "Comment"],
+                    "Account": ["Account Name", "Wallet"],
+                    "Amount": ["Value", "Cost", "Total"],
+                    "Date": ["Txn Date", "Transaction Date", "Day"],
+                    "Currency": ["Curr", "Cur", "Code"]
+                };
+
                 const newMapping: Record<string, string> = {};
+
                 requiredHeaders.forEach((required) => {
-                    const match = headers.find(
-                        (csv: string) => csv.toLowerCase() === required.toLowerCase()
-                    );
+                    const lowerRequired = required.toLowerCase();
+                    const aliases = ALIASES[required] || [];
+                    const searchTerms = [lowerRequired, ...aliases.map(a => a.toLowerCase())];
+
+                    // Find first match in headers that matches any search term
+                    const match = headers.find((header) => {
+                        const h = header.trim().toLowerCase();
+                        return searchTerms.includes(h);
+                    });
+
                     if (match) newMapping[required] = match;
                 });
                 setMapping(newMapping);
+
+                // Auto-detect decimal separator based on "Amount" column data
+                const amountHeader = newMapping['Amount'];
+                if (amountHeader) {
+                    const sampleValues = results.data.slice(0, 5).map((row: any) => row[amountHeader]).filter(Boolean);
+                    const hasComma = sampleValues.some((val: string) => val.includes(',') && !val.includes('.'));
+                    const hasCommaDecimal = sampleValues.some((val: string) => /^\d+\,\d{2}$/.test(val.replace(/[^\d,]/g, '')) || /-\d+\,\d{2}$/.test(val.replace(/[^\d,-]/g, '')));
+
+                    if (hasComma || hasCommaDecimal) {
+                        setConfig(prev => ({ ...prev, decimalSeparator: ',' }));
+                    }
+                }
 
                 setStep('mapping');
                 setIsLoading(false);
@@ -114,12 +145,15 @@ const CSVMappingDialog = ({
     const handleConfirm = () => {
         // Apply mapping to data
         const mappedData = csvData.map((row: any) => {
-            const newRow: any = {};
+            // Keep original data, then overwrite with standardized keys
+            const newRow: any = { ...row };
             Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
                 newRow[requiredHeader] = row[csvHeader];
             });
             return newRow;
         });
+
+
 
         onConfirm(mappedData, config);
         onClose();

@@ -28,6 +28,10 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           {budget.frequency}
           <br />
           {startDate} - {endDate}
+          <br />
+          <span className="text-xs text-muted-foreground">
+            Scope: {budget.account_scope === 'GROUP' ? (budget.account_scope_values?.join(", ") || "Specific Accounts") : "All Accounts"}
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

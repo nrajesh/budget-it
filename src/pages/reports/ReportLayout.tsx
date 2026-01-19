@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTheme } from "@/contexts/ThemeContext";
-import { ThemedCard, ThemedCardHeader, ThemedCardTitle } from '@/components/ThemedCard';
+
 import { TransactionFilters } from '@/components/transactions/TransactionFilters';
 import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
@@ -12,8 +12,10 @@ import autoTable from 'jspdf-autotable';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@/contexts/UserContext';
 import { Budget } from '@/types/dataProvider';
-import { cn, slugify } from '@/lib/utils'; // Make sure to import cn
+import { cn, slugify } from '@/lib/utils';
 import { useDataProvider } from '@/context/DataProviderContext';
+import html2canvas from 'html2canvas';
+import { format } from 'date-fns';
 
 interface ReportLayoutProps {
   title: string;
@@ -96,63 +98,152 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
   }, [dataProps.filteredTransactions]);
 
-  const handlePdfExport = () => {
+  const handlePdfExport = async () => {
     try {
       const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
       let yPos = 20;
 
+      // --- Helper: Check Page Break ---
+      const checkPageBreak = (heightNeeded: number) => {
+        if (yPos + heightNeeded > pageHeight - 10) {
+          doc.addPage();
+          yPos = 20;
+          return true;
+        }
+        return false;
+      };
+
+      // --- 1. Header & Title ---
       doc.setFontSize(18);
       doc.text(title, 14, yPos);
-      yPos += 15;
+      yPos += 10;
 
+      // --- 2. Filter Summary ---
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+
+      const dateText = filterProps.dateRange?.from && filterProps.dateRange?.to
+        ? `${format(filterProps.dateRange.from, 'MMM d, yyyy')} - ${format(filterProps.dateRange.to, 'MMM d, yyyy')}`
+        : "All Dates";
+
+      const accountText = filterProps.selectedAccounts.length > 0
+        ? `Accounts: ${filterProps.selectedAccounts.map(slug => accounts.find((a: any) => slugify(a.name) === slug)?.name || slug).join(', ')}`
+        : "All Accounts";
+
+      // Wrap text for accounts if too long
+      const splitAccountText = doc.splitTextToSize(accountText, pageWidth - 28);
+
+      doc.text(`Date Range: ${dateText}`, 14, yPos);
+      yPos += 5;
+      doc.text(splitAccountText, 14, yPos);
+      yPos += (splitAccountText.length * 5) + 5;
+
+      doc.setDrawColor(200);
+      doc.line(14, yPos, pageWidth - 14, yPos);
+      yPos += 10;
+      doc.setTextColor(0);
+
+      // --- 3. Content Processing ---
       const reportContent = document.getElementById('report-content');
       if (!reportContent) {
         showError("Could not find report content to export.");
         return;
       }
 
-      const tables = Array.from(reportContent.querySelectorAll('table'));
+      // We treat direct children of report-content as "Report Sections" (e.g., Cards)
+      const sections = Array.from(reportContent.children) as HTMLElement[];
 
-      if (tables.length === 0) {
-        showError("No tabular data found in the report to export.");
+      if (sections.length === 0) {
+        showError("No content found to export.");
         return;
       }
 
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text("Note: This PDF export includes tabular data only. Charts and other visual elements are not included.", 14, yPos);
-      yPos += 15;
-      doc.setTextColor(0);
+      showSuccess("Generating PDF... This may take a moment.");
 
-      tables.forEach((table) => {
-        if (yPos > 260) {
-          doc.addPage();
-          yPos = 20;
+      for (const section of sections) {
+        // Determine strategy: Table (Data) vs Visual (Canvas/Charts/Summary)
+        // Heuristic: If it has charts (recharts) OR no tables, capture as image.
+        // If it has tables and no charts, use autoTable.
+
+        const hasCharts = section.querySelector('.recharts-wrapper') || section.querySelector('canvas');
+        const tables = Array.from(section.querySelectorAll('table'));
+        const hasTables = tables.length > 0;
+
+        // If it's a visual section (charts) or a summary card without tables
+        if (hasCharts || !hasTables) {
+          // Capture as Image
+          // Temporarily hide scrollbars or overflow if needed, usually html2canvas handles visible parts.
+          // We might need to ensure background color is white.
+
+          try {
+            const canvas = await html2canvas(section, {
+              scale: 2, // Retrolution
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff' // Ensure white background for dark mode compatibility if needed, or transparent
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = pageWidth - 28; // 14mm margin each side
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            checkPageBreak(imgHeight);
+
+            doc.addImage(imgData, 'PNG', 14, yPos, imgWidth, imgHeight);
+            yPos += imgHeight + 10;
+          } catch (e) {
+            console.error("Image capture failed for section", e);
+            doc.setFontSize(10);
+            doc.setTextColor(255, 0, 0);
+            doc.text("[Visual Content Not Captured]", 14, yPos);
+            yPos += 10;
+            doc.setTextColor(0);
+          }
+
+        } else if (hasTables) {
+          // Render Title if found (e.g. Card Title)
+          const titleEl = section.querySelector('h3') || section.querySelector('.card-title') || section.querySelector('div[class*="font-semibold"]'); // approximate selector
+          if (titleEl) {
+            const titleText = titleEl.textContent?.trim() || "";
+            if (titleText) {
+              checkPageBreak(15);
+              doc.setFontSize(12);
+              doc.setFont("helvetica", "bold");
+              doc.text(titleText, 14, yPos);
+              yPos += 8;
+              doc.setFont("helvetica", "normal");
+            }
+          }
+
+          // Use AutoTable for each table in this section
+          for (const table of tables) {
+            // Check if table has a specific predecessor title (like "Income" vs "Expenses")
+            // heuristic: find closest previous sibling header inside the section? 
+            // For now, simple autoTable is huge improvement over nothing.
+
+            autoTable(doc, {
+              html: table,
+              startY: yPos,
+              theme: 'grid',
+              headStyles: { fillColor: '#16a34a' },
+              margin: { left: 14, right: 14 },
+              styles: { fontSize: 9 },
+              didDrawPage: (data) => {
+                // Resets yPos after new page
+                if (data.cursor) {
+                  yPos = data.cursor.y;
+                }
+              }
+            });
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+          }
         }
-
-        const card = table.closest('div[class*="rounded-lg border"]');
-        let finalTitle = "Data Table";
-        if (card) {
-          const cardTitleEl = card.querySelector('h3');
-          const sectionTitleEl = table.closest('div')?.querySelector('h3.text-lg');
-          finalTitle = sectionTitleEl?.textContent?.trim() || cardTitleEl?.textContent?.trim() || "Data Table";
-        }
-
-        doc.setFontSize(14);
-        doc.text(finalTitle, 14, yPos);
-        yPos += 10;
-
-        autoTable(doc, {
-          html: table,
-          startY: yPos,
-          theme: 'grid',
-          headStyles: { fillColor: '#16a34a' }, // green-600
-        });
-        yPos = (doc as any).lastAutoTable.finalY + 15;
-      });
+      }
 
       doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
-      showSuccess("PDF export started. Your download will begin shortly.");
+      showSuccess("PDF export completed successfully.");
     } catch (error: any) {
       console.error("PDF Export failed:", error);
       showError(`PDF Export failed: ${error.message}`);
@@ -179,20 +270,15 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         />
       </div>
 
-      <ThemedCard>
-        <ThemedCardHeader>
-          <ThemedCardTitle>Report Filters</ThemedCardTitle>
-          <TransactionFilters
-            {...filterProps}
-            availableAccountOptions={availableAccountOptions}
-            availableVendorOptions={availableVendorOptions}
-            categoryTreeData={categoryTreeData}
-            onDateChange={filterProps.setDateRange}
-            onExcludeTransfersChange={filterProps.setExcludeTransfers}
-            onResetFilters={filterProps.handleResetFilters}
-          />
-        </ThemedCardHeader>
-      </ThemedCard>
+      <TransactionFilters
+        {...filterProps}
+        availableAccountOptions={availableAccountOptions}
+        availableVendorOptions={availableVendorOptions}
+        categoryTreeData={categoryTreeData}
+        onDateChange={filterProps.setDateRange}
+        onExcludeTransfersChange={filterProps.setExcludeTransfers}
+        onResetFilters={filterProps.handleResetFilters}
+      />
 
       <div className="space-y-4" id="report-content">
         {children({

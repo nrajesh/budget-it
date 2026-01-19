@@ -15,11 +15,15 @@ const CATEGORIES_WITH_SUBS = [
     { name: 'Utilities', subs: ['Electricity', 'Water', 'Internet', 'Phone'] },
     { name: 'Transport', subs: ['Fuel', 'Public Transport', 'Taxi/Uber', 'Car Maintenance'] },
     { name: 'Entertainment', subs: ['Movies', 'Streaming', 'Games', 'Concerts'] },
-    { name: 'Shopping', subs: ['Clothing', 'electronics', 'Home', 'Gifts'] },
+    { name: 'Shopping', subs: ['Clothing', 'Electronics', 'Home', 'Gifts'] },
     { name: 'Health', subs: ['Doctor', 'Pharmacy', 'Gym', 'Insurance'] },
     { name: 'Dining Out', subs: ['Restaurants', 'Coffee', 'Fast Food', 'Bars'] },
     { name: 'Income', subs: ['Salary', 'Freelance', 'Dividends', 'Refunds'] },
-    { name: 'Transfer', subs: [] }
+    { name: 'Transfer', subs: [] },
+    { name: 'Education', subs: ['Courses', 'Books', 'Tuition'] },
+    { name: 'Personal Care', subs: ['Hair', 'Spa', 'Cosmetics'] },
+    { name: 'Pets', subs: ['Food', 'Vet', 'Toys'] },
+    { name: 'Home Services', subs: ['Cleaning', 'Repairs', 'Gardening'] }
 ];
 
 const VENDORS = [
@@ -34,6 +38,7 @@ const VENDORS = [
     { name: 'AT&T', category: 'Utilities', sub: 'Internet' },
     { name: 'Amazon', category: 'Shopping', sub: 'Home' },
     { name: 'Target', category: 'Shopping', sub: 'Clothing' },
+    { name: 'Best Buy', category: 'Shopping', sub: 'Electronics' },
     { name: 'CVS Pharmacy', category: 'Health', sub: 'Pharmacy' },
     { name: 'Planet Fitness', category: 'Health', sub: 'Gym' },
     { name: 'Pizza Hut', category: 'Dining Out', sub: 'Fast Food' },
@@ -41,21 +46,38 @@ const VENDORS = [
     { name: 'Tech Corp', category: 'Income', sub: 'Salary' },
     { name: 'SNCF', category: 'Transport', sub: 'Public Transport' }, // EUR Vendor
     { name: 'Pret A Manger', category: 'Dining Out', sub: 'Coffee' }, // GBP Vendor
+    { name: 'Udemy', category: 'Education', sub: 'Courses' },
+    { name: 'Sephora', category: 'Personal Care', sub: 'Cosmetics' },
+    { name: 'PetSmart', category: 'Pets', sub: 'Food' },
+    { name: 'Local Plumber', category: 'Home Services', sub: 'Repairs' },
+    { name: 'University', category: 'Education', sub: 'Tuition' },
+    { name: 'Chewy', category: 'Pets', sub: 'Toys' },
+    { name: 'Apple', category: 'Shopping', sub: 'Electronics' }
 ];
 
 const DEMO_BUDGETS = [
-    { category: 'Groceries', amount: 600, frequency: 'Monthly' }, // Category level
-    { category: 'Dining Out', sub: 'Coffee', amount: 100, frequency: 'Monthly' }, // Sub-category level
-    { category: 'Entertainment', amount: 150, frequency: 'Monthly' },
-    { category: 'Transport', sub: 'Fuel', amount: 200, frequency: 'Monthly' },
-    { category: 'Shopping', amount: 150, frequency: 'Monthly' }, // Low budget to trigger breach
+    { category: 'Groceries', amount: 800, frequency: 'Monthly' },
+    { category: 'Dining Out', sub: 'Coffee', amount: 120, frequency: 'Monthly' },
+    { category: 'Entertainment', amount: 200, frequency: 'Monthly' },
+    { category: 'Transport', sub: 'Fuel', amount: 250, frequency: 'Monthly' },
+    { category: 'Shopping', amount: 300, frequency: 'Monthly' },
+    { category: 'Pets', amount: 100, frequency: 'Monthly' },
+    { category: 'Personal Care', amount: 150, frequency: 'Monthly' },
+    { category: 'Education', amount: 500, frequency: 'Yearly' },
+    { category: 'Utilities', amount: 400, frequency: 'Monthly' },
+    { category: 'Health', amount: 300, frequency: 'Monthly' },
+    { category: 'Dining Out', sub: 'Restaurants', amount: 400, frequency: 'Monthly' },
+    { category: 'Home Services', amount: 200, frequency: 'Monthly' },
+    { category: 'Transport', sub: 'Public Transport', amount: 100, frequency: 'Monthly' },
+    { category: 'Shopping', sub: 'Electronics', amount: 1000, frequency: 'Yearly' },
+    { category: 'Shopping', sub: 'Clothing', amount: 200, frequency: 'Monthly' }
 ];
 
 const DEMO_SCHEDULED = [
     {
         account: 'Checking Account',
         vendor: 'Landlord',
-        category: 'Housing', // Need to ensure this exists or use another one
+        category: 'Housing',
         amount: -1200,
         frequency: 'Monthly',
         remarks: 'Rent Payment'
@@ -71,7 +93,7 @@ const DEMO_SCHEDULED = [
     },
     {
         account: 'Checking Account',
-        vendor: 'Savings Vault', // Transfer destination
+        vendor: 'Savings Vault',
         category: 'Transfer',
         amount: -500,
         frequency: 'Monthly',
@@ -81,12 +103,48 @@ const DEMO_SCHEDULED = [
     {
         account: 'Checking Account',
         vendor: 'IRS',
-        category: 'Health', // Using Health temporarily or can ensure Taxes category
-        sub_category: 'Insurance', // Approximation
+        category: 'Health',
+        sub_category: 'Insurance',
         amount: -15000,
         frequency: 'Yearly',
         remarks: 'Tax Payment',
-        next_date_offset: 2 // 2 days from now
+        next_date_offset: 2
+    },
+    {
+        account: 'Checking Account',
+        vendor: 'Spotify',
+        category: 'Entertainment',
+        sub_category: 'Streaming',
+        amount: -9.99,
+        frequency: 'Monthly',
+        remarks: 'Spotify Subscription'
+    },
+    {
+        account: 'Credit Card',
+        vendor: 'Gym',
+        category: 'Health',
+        sub_category: 'Gym',
+        amount: -29.99,
+        frequency: 'Monthly',
+        remarks: 'Gym Membership'
+    },
+    {
+        account: 'Checking Account',
+        vendor: 'Electric Company',
+        category: 'Utilities',
+        sub_category: 'Electricity',
+        amount: -150,
+        frequency: 'Monthly',
+        remarks: 'Electricity Bill'
+    },
+    {
+        account: 'Checking Account',
+        vendor: 'PetSmart',
+        category: 'Pets',
+        sub_category: 'Food',
+        amount: -80,
+        frequency: 'Monthly',
+        remarks: 'Pet Food'
     }
 ];
 
@@ -216,9 +274,9 @@ export const generateDemoData = async (
     onProgress({ stage: 'Generating transactions...', progress: 70, totalStages: TOTAL_STAGES });
 
     const transactions = [];
-    // Generate ~300 random transactions + regular monthly items
+    // Generate ~600 random transactions + regular monthly items
     // First, generate regular monthly items for "Salary" and "Rent" to ensure stable income/expense
-    const MONTHS_TO_GENERATE = 6;
+    const MONTHS_TO_GENERATE = 24; // 2 Years
     const today = new Date();
 
     // Regular Income (Salary)
@@ -329,8 +387,35 @@ export const generateDemoData = async (
         });
     });
 
-    // Generate ~300 random transactions to fill the gaps
-    for (let i = 0; i < 300; i++) {
+    // 5. Weekly Savings Transfer (Every Friday logic approximation - just 4 times a month)
+    generateMonthlySequence(5, MONTHS_TO_GENERATE * 4, (dateIso) => {
+        transactions.push({
+            date: dateIso,
+            amount: -50,
+            vendor: 'Savings Vault',
+            category: 'Transfer',
+            sub_category: null,
+            account: 'Checking Account',
+            remarks: 'Weekly Savings',
+            currency: 'USD',
+            user_id: userId,
+        });
+        transactions.push({
+            date: dateIso,
+            amount: 50,
+            vendor: 'Checking Account',
+            category: 'Transfer',
+            sub_category: null,
+            account: 'Savings Vault',
+            remarks: 'Weekly Savings Deposit',
+            currency: 'USD',
+            user_id: userId,
+        });
+    });
+
+
+    // Generate ~600 random transactions to fill the gaps
+    for (let i = 0; i < 600; i++) {
         const randomVendor = VENDORS[Math.floor(Math.random() * VENDORS.length)];
         // Skip Income or Transfer vendors for random noise, focus on spending
         if (randomVendor.category === 'Income' || randomVendor.category === 'Transfer') continue;
@@ -338,8 +423,8 @@ export const generateDemoData = async (
 
         const amount = -(10 + Math.random() * 150);
 
-        // Random date within last 6 months
-        const randomDays = Math.floor(Math.random() * 180);
+        // Random date within last 24 months
+        const randomDays = Math.floor(Math.random() * 730);
         const date = new Date(today);
         date.setDate(date.getDate() - randomDays);
 

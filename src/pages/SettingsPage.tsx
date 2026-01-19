@@ -214,7 +214,12 @@ const SettingsPage = () => {
 
   return (
     <div className="flex-1 space-y-4">
-      <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+      <div className="flex flex-col gap-6 mb-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+          <p className="text-muted-foreground">Manage application preferences and data</p>
+        </div>
+      </div>
 
       {/* Consolidated Data Management Section */}
       <Card className="mt-6 border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">

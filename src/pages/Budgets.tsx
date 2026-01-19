@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Budget } from "../types/budgets";
 import { BudgetSummary } from "../components/budgets/BudgetSummary";
-import { BudgetDialog } from "../components/budgets/BudgetDialog";
+import { AddEditBudgetDialog } from "../components/budgets/AddEditBudgetDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useUser } from "@/contexts/UserContext";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Wand2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +19,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BudgetPaginationWrapper } from "../components/budgets/BudgetPaginationWrapper";
+import { SmartBudgetDialog } from "../components/budgets/SmartBudgetDialog";
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSmartBudgetOpen, setIsSmartBudgetOpen] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [budgetToDeleteId, setBudgetToDeleteId] = useState<string | null>(null);
@@ -35,23 +37,23 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     if (userId) {
-        fetchBudgets(userId);
+      fetchBudgets(userId);
     } else {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, [userId]);
 
   const fetchBudgets = async (currentUserId: string) => {
     setIsLoading(true);
     try {
-        const data = await dataProvider.getBudgetsWithSpending(currentUserId);
-        setBudgets(data || []);
+      const data = await dataProvider.getBudgetsWithSpending(currentUserId);
+      setBudgets(data || []);
     } catch (error: any) {
-        toast({
-            title: "Error fetching budgets",
-            description: error.message,
-            variant: "destructive",
-        });
+      toast({
+        title: "Error fetching budgets",
+        description: error.message,
+        variant: "destructive",
+      });
     }
     setIsLoading(false);
   };
@@ -61,10 +63,18 @@ export default function BudgetsPage() {
       return budgets;
     }
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return budgets.filter(budget => 
+    return budgets.filter(budget =>
       budget.category_name.toLowerCase().includes(lowerCaseSearchTerm)
     );
   }, [budgets, searchTerm]);
+
+  const activeBudgets = useMemo(() => {
+    return filteredBudgets.filter(b => b.is_active !== false);
+  }, [filteredBudgets]);
+
+  const inactiveBudgets = useMemo(() => {
+    return filteredBudgets.filter(b => b.is_active === false);
+  }, [filteredBudgets]);
 
   const handleOpenDialog = (budget: Budget | null = null) => {
     setSelectedBudget(budget);
@@ -91,18 +101,18 @@ export default function BudgetsPage() {
     if (!budgetToDeleteId) return;
 
     try {
-        await dataProvider.deleteBudget(budgetToDeleteId);
-        toast({
-            title: "Budget deleted",
-            description: "The budget has been successfully deleted.",
-        });
-        handleSave();
+      await dataProvider.deleteBudget(budgetToDeleteId);
+      toast({
+        title: "Budget deleted",
+        description: "The budget has been successfully deleted.",
+      });
+      handleSave();
     } catch (error: any) {
-        toast({
-            title: "Error deleting budget",
-            description: error.message,
-            variant: "destructive",
-        });
+      toast({
+        title: "Error deleting budget",
+        description: error.message,
+        variant: "destructive",
+      });
     }
 
     setBudgetToDeleteId(null);
@@ -110,47 +120,75 @@ export default function BudgetsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+    <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Budgets</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Budgets</h1>
+          <p className="text-muted-foreground">Track your spending limits and goals</p>
+        </div>
         <Button onClick={() => handleOpenDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
         </Button>
       </div>
 
       <div className="space-y-6">
-        <div className="mb-6">
+        <div className="mb-6 flex gap-4">
           <Input
             placeholder="Search budgets by category name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-lg"
           />
+          <Button variant="outline" onClick={() => setIsSmartBudgetOpen(true)}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Smart Create
+          </Button>
         </div>
 
         <BudgetSummary budgets={filteredBudgets} isLoading={isLoading} />
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
-          
+
           <BudgetPaginationWrapper
-            budgets={filteredBudgets}
+            budgets={activeBudgets}
             isLoading={isLoading}
             onEdit={handleOpenDialog}
             onDelete={handleDeleteClick}
           />
+
+          {inactiveBudgets.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4 text-muted-foreground">Inactive Budgets</h2>
+              <BudgetPaginationWrapper
+                budgets={inactiveBudgets}
+                isLoading={isLoading}
+                onEdit={handleOpenDialog}
+                onDelete={handleDeleteClick}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {userId && (
-        <BudgetDialog
+        <AddEditBudgetDialog
           isOpen={isDialogOpen}
-          onClose={handleCloseDialog}
-          onSave={handleSave}
+          onOpenChange={(open) => {
+            if (!open) handleCloseDialog();
+            else setIsDialogOpen(true);
+          }}
+          onSuccess={handleSave}
           budget={selectedBudget}
-          userId={userId}
+          allBudgets={budgets} // passing current budgets for duplicate check
         />
       )}
+
+      <SmartBudgetDialog
+        isOpen={isSmartBudgetOpen}
+        onClose={() => setIsSmartBudgetOpen(false)}
+        onSave={handleSave}
+      />
 
       <AlertDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
         <AlertDialogContent>

@@ -26,4 +26,7 @@ export interface Budget {
   start_date: string;
   end_date: string | null;
   frequency: 'Monthly' | 'Quarterly' | 'Yearly' | 'One-time';
+  account_scope?: 'ALL' | 'GROUP';
+  account_scope_values?: string[] | null;
+  is_active?: boolean;
 }

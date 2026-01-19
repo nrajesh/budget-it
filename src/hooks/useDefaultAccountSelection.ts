@@ -1,6 +1,7 @@
 import React from 'react';
 import { useFilter } from '@/contexts/FilterContext';
 import { useTransactions } from '@/contexts/TransactionsContext';
+import { slugify } from '@/lib/utils';
 
 export const useDefaultAccountSelection = (options: { autoRun?: boolean } = {}) => {
     const { autoRun = true } = options;
@@ -33,7 +34,7 @@ export const useDefaultAccountSelection = (options: { autoRun?: boolean } = {}) 
             // 3. Sort by count desc
             const sortedAccounts = Object.entries(accountCounts)
                 .sort(([, a], [, b]) => b - a)
-                .map(([account]) => account);
+                .map(([account]) => slugify(account));
 
             // 4. Take top 4
             const top4 = sortedAccounts.slice(0, 4);
