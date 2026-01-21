@@ -5,7 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react"; // Added icons
 import { cn, slugify } from "@/lib/utils";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import { FinancialPulseDashboard } from "@/components/dashboard/FinancialPulseDashboard";
 import { useTheme } from "@/contexts/ThemeContext";
 

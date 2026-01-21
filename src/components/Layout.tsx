@@ -53,9 +53,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-import AddEditTransactionDialog from "./AddEditTransactionDialog";
+import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDialog";
 import { useUser } from "@/contexts/UserContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
+import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -337,6 +338,7 @@ const Layout = () => {
           <span className="sr-only">Add Transaction</span>
         </Button>
         <AddEditTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+        <GlobalProgressDialog />
       </SidebarInset>
     </SidebarProvider>
   );

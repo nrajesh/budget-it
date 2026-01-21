@@ -10,6 +10,11 @@ interface IncomeExpenseSummaryProps {
   budgets: Budget[];
 }
 
+
+import { Calendar } from "lucide-react";
+
+// ... imports
+
 const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transactions, budgets }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const navigate = useNavigate();
@@ -22,6 +27,9 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
   const summary = React.useMemo(() => {
     const incomeByCategory: Record<string, number> = {};
     const expensesByCategory: Record<string, number> = {};
+    const incomeHasScheduled: Record<string, boolean> = {}; // Track if category has scheduled tx
+    const expenseHasScheduled: Record<string, boolean> = {}; // Track if category has scheduled tx
+
     let totalIncome = 0;
     let totalExpenses = 0;
 
@@ -31,9 +39,11 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
         if (convertedAmount > 0) {
           totalIncome += convertedAmount;
           incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + convertedAmount;
+          if (t.is_scheduled_origin) incomeHasScheduled[t.category] = true;
         } else {
           totalExpenses += Math.abs(convertedAmount);
           expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + Math.abs(convertedAmount);
+          if (t.is_scheduled_origin) expenseHasScheduled[t.category] = true;
         }
       }
     });
@@ -43,10 +53,11 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
       const target = budget ? convertBetweenCurrencies(budget.target_amount, budget.currency, selectedCurrency) : null;
       const variance = target !== null ? target - amount : null;
       const percentSpent = target !== null && target > 0 ? (amount / target) * 100 : null;
-      return { category, amount, target, variance, percentSpent };
+      const hasScheduled = expenseHasScheduled[category];
+      return { category, amount, target, variance, percentSpent, hasScheduled };
     });
 
-    return { incomeByCategory, expensesByCategory, totalIncome, totalExpenses, expensesWithBudget };
+    return { incomeByCategory, expensesByCategory, totalIncome, totalExpenses, expensesWithBudget, incomeHasScheduled };
   }, [transactions, budgets, selectedCurrency, convertBetweenCurrencies]);
 
   return (
@@ -66,16 +77,20 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(summary.incomeByCategory).map(([category, amount]) => (
-                <TableRow key={category}>
-                  <TableCell>
-                    <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline">
-                      {category}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
-                </TableRow>
-              ))}
+              {Object.entries(summary.incomeByCategory).map(([category, amount]) => {
+                const hasScheduled = summary.incomeHasScheduled[category];
+                return (
+                  <TableRow key={category}>
+                    <TableCell>
+                      <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline flex items-center gap-2">
+                        {category}
+                        {hasScheduled && <Calendar className="h-3 w-3 text-muted-foreground" aria-label="Includes scheduled transactions" />}
+                      </span>
+                    </TableCell>
+                    <TableCell className={`text-right ${hasScheduled ? 'text-muted-foreground' : ''}`}>{formatCurrency(amount)}</TableCell>
+                  </TableRow>
+                )
+              })}
               <TableRow className="font-bold">
                 <TableCell>Total Income</TableCell>
                 <TableCell className="text-right">{formatCurrency(summary.totalIncome)}</TableCell>
@@ -96,14 +111,15 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({ transaction
               </TableRow>
             </TableHeader>
             <TableBody>
-              {summary.expensesWithBudget.map(({ category, amount, target, variance, percentSpent }) => (
+              {summary.expensesWithBudget.map(({ category, amount, target, variance, percentSpent, hasScheduled }) => (
                 <TableRow key={category}>
                   <TableCell>
-                    <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline">
+                    <span onClick={() => handleCategoryClick(category)} className="cursor-pointer hover:text-primary hover:underline flex items-center gap-2">
                       {category}
+                      {hasScheduled && <Calendar className="h-3 w-3 text-muted-foreground" aria-label="Includes scheduled transactions" />}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">{formatCurrency(amount)}</TableCell>
+                  <TableCell className={`text-right ${hasScheduled ? 'text-muted-foreground' : ''}`}>{formatCurrency(amount)}</TableCell>
                   <TableCell className="text-right">{target !== null ? formatCurrency(target) : '-'}</TableCell>
                   <TableCell className={`text-right ${variance !== null && variance < 0 ? 'text-red-500' : ''}`}>
                     {variance !== null ? formatCurrency(variance) : '-'}

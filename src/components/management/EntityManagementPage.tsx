@@ -8,8 +8,8 @@ import {
   Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious
 } from "@/components/ui/pagination";
 import { PlusCircle, Loader2, RotateCcw, Upload, Download } from "lucide-react";
-import LoadingOverlay from "@/components/LoadingOverlay";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
+import LoadingOverlay from "@/components/feedback/LoadingOverlay";
+import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { EntityTable, ColumnDefinition } from "./EntityTable";
 
 interface EntityManagementPageProps<T extends { id: string; name: string }> {

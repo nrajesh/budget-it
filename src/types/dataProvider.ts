@@ -80,11 +80,14 @@ export interface ScheduledTransaction {
   amount: number;
   currency: string;
   date: string;     // Next scheduled date
-  frequency: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+  frequency: string; // 'Daily' | 'Weekly' ... OR '1d', '2w', '3m', '1y'
   end_date?: string | null;
+
   remarks?: string | null;
   created_at: string;
   last_processed?: string | null;
+  ignored_dates?: string[]; // Array of ISO date strings to skip
+  transfer_id?: string | null;
 }
 
 export interface DataProvider {
@@ -93,6 +96,7 @@ export interface DataProvider {
   addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction>;
   updateTransaction(transaction: Transaction): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
+  deleteMultipleTransactions(ids: string[]): Promise<void>;
   deleteTransactionByTransferId(transferId: string): Promise<void>;
   clearTransactions(userId: string): Promise<void>;
   clearBudgets(userId: string): Promise<void>;
@@ -103,6 +107,7 @@ export interface DataProvider {
   addScheduledTransaction(transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>): Promise<ScheduledTransaction>;
   updateScheduledTransaction(transaction: ScheduledTransaction): Promise<void>;
   deleteScheduledTransaction(id: string): Promise<void>;
+  deleteMultipleScheduledTransactions(ids: string[]): Promise<void>;
 
   // Payees/Vendors/Accounts
   ensurePayeeExists(name: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null>;
@@ -129,6 +134,7 @@ export interface DataProvider {
 
   // Maintenance
   linkTransactionsAsTransfer(id1: string, id2: string): Promise<void>;
+  unlinkTransactions(transferId: string): Promise<void>;
   clearAllData(): Promise<void>;
   exportData(): Promise<any>;
   importData(data: any): Promise<void>;

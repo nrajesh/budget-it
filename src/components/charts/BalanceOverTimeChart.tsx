@@ -21,9 +21,15 @@ import { ChevronDown } from "lucide-react";
 
 import { DateRange } from "react-day-picker";
 
+/**
+ * Props for the BalanceOverTimeChart component
+ */
 interface BalanceOverTimeChartProps {
+  /** Historical transactions to plot */
   transactions: Transaction[];
+  /** Projected/Scheduled transactions to extend the chart into the future */
   projectedTransactions?: Transaction[];
+  /** Date range to filter the chart view */
   dateRange?: DateRange;
 }
 
@@ -36,6 +42,16 @@ const chartConfig = {
 
 type ChartType = 'line' | 'bar-stacked' | 'waterfall';
 
+/**
+ * A comprehensive chart component that visualizes account balances over time.
+ * detailed metrics including:
+ * - Line chart for total net worth over time
+ * - Stacked bar chart for asset vs liability breakdown
+ * - Waterfall-style visualization for changes
+ * 
+ * It automatically handles currency conversion to the user's selected preference
+ * and projects future balances based on scheduled transactions.
+ */
 export function BalanceOverTimeChart({ transactions, projectedTransactions = [], dateRange }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { isFinancialPulse } = useTheme();

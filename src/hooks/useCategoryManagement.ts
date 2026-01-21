@@ -12,7 +12,7 @@ import { db } from '@/lib/dexieDB';
 
 export const useCategoryManagement = () => {
   const { user } = useUser();
-  const { categories, isLoadingCategories, refetchCategories, invalidateAllData } = useTransactions();
+  const { categories, isLoadingCategories, refetchCategories, invalidateAllData, deleteEntity } = useTransactions();
   const navigate = useNavigate();
   const dataProvider = useDataProvider();
 
@@ -23,6 +23,7 @@ export const useCategoryManagement = () => {
     deleteRpcFn: 'delete_categories_batch', // Ignored in local version as generic hook likely needs update too
     isDeletable: (item) => item.name !== 'Others',
     onSuccess: invalidateAllData,
+    customDeleteHandler: (ids) => deleteEntity('category', ids),
   });
 
   // Specific mutations for categories that don't fit the generic RPC model
@@ -89,11 +90,11 @@ export const useCategoryManagement = () => {
       if (!user?.id) throw new Error("User not logged in.");
 
       // Pragmatic fix: use db directly
-       await db.sub_categories
+      await db.sub_categories
         .where({ category_id: categoryId, name: subCategoryName })
         .delete();
 
-       await db.transactions
+      await db.transactions
         .where({ category: categoryName, sub_category: subCategoryName })
         .modify({ sub_category: null });
     },

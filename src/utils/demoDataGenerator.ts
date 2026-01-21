@@ -129,6 +129,15 @@ const DEMO_SCHEDULED = [
         isTransfer: true
     },
     {
+        account: 'Savings Vault',
+        vendor: 'Checking Account',
+        category: 'Transfer',
+        amount: 500,
+        frequency: 'Monthly',
+        remarks: 'Monthly Savings Deposit',
+        isTransfer: true
+    },
+    {
         account: 'Checking Account',
         vendor: 'IRS',
         category: 'Health',
@@ -459,20 +468,24 @@ export const generateDemoData = async (
         if (randomVendor.category === 'Income' || randomVendor.category === 'Transfer') continue;
 
         // Weighted Date Generation:
-        // 50% chance for last 30 days (Current Month Density)
-        // 30% chance for last 30-90 days
-        // 20% chance for 3-24 months ago
+        // 5% chance for Future (1-90 days ahead)
+        // 45% chance for Recent (0-30 days ago)
+        // 25% chance for Mid-term (30-90 days ago)
+        // 25% chance for Long-term (90-730 days ago)
         const rand = Math.random();
         let daysAgo = 0;
 
-        if (rand < 0.5) {
-            // Recent: 0-30 days
+        if (rand < 0.05) {
+            // Future: 1-90 days ahead (negative daysAgo)
+            daysAgo = -Math.floor(Math.random() * 90) - 1;
+        } else if (rand < 0.50) {
+            // Recent: 0-30 days ago
             daysAgo = Math.floor(Math.random() * 30);
-        } else if (rand < 0.8) {
-            // Mid-term: 30-90 days
+        } else if (rand < 0.75) {
+            // Mid-term: 30-90 days ago
             daysAgo = 30 + Math.floor(Math.random() * 60);
         } else {
-            // Long-term: 90-730 days
+            // Long-term: 90-730 days ago
             daysAgo = 90 + Math.floor(Math.random() * 640);
         }
 

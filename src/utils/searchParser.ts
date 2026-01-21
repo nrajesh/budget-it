@@ -3,7 +3,7 @@ import { DateRange } from "react-day-picker";
 
 export interface ParsedFilterState {
     searchTerm: string; // The remaining text that wasn't parsed into a structured filter
-    selectedAccounts: string[];
+    selectedAccounts: string[] | undefined;
     selectedCategories: string[];
     selectedSubCategories: string[];
     selectedVendors: string[];
@@ -11,6 +11,7 @@ export interface ParsedFilterState {
     minAmount?: number;
     maxAmount?: number;
     limit?: number;
+    transactionType?: 'income' | 'expense';
     sortOrder?: 'largest' | 'smallest';
 }
 
@@ -24,7 +25,7 @@ interface SearchContext {
 export const parseSearchQuery = (query: string, context: SearchContext): ParsedFilterState => {
     const result: ParsedFilterState = {
         searchTerm: query,
-        selectedAccounts: [],
+        selectedAccounts: undefined,
         selectedCategories: [],
         selectedSubCategories: [],
         selectedVendors: [],
@@ -32,6 +33,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         minAmount: undefined,
         maxAmount: undefined,
         limit: undefined,
+        transactionType: undefined,
         sortOrder: undefined
     };
 
@@ -40,11 +42,55 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     // --- 1. Date Parsing (Basic Regex) ---
     const lowerQuery = query.toLowerCase();
     const today = new Date();
+    today.setHours(12, 0, 0, 0); // Normalize today to noon
 
     // Helper to replace matched text
     const replaceMatch = (match: string) => {
         remainingQuery = remainingQuery.replace(new RegExp(match, 'gi'), '').trim();
     };
+
+    // Helper to parse simple date keywords or formats for "between X and Y"
+    const parseSimpleDate = (str: string): Date | null => {
+        const s = str.toLowerCase().trim();
+        if (s === 'today') return today;
+        if (s === 'yesterday') return subDays(today, 1);
+        if (s === 'tomorrow') return addDays(today, 1);
+
+        // Try DD/MM/YYYY
+        const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+        if (dmy) {
+            return new Date(parseInt(dmy[3]), parseInt(dmy[2]) - 1, parseInt(dmy[1]), 12, 0, 0);
+        }
+        return null;
+    };
+
+    // "Between X and Y"
+    const betweenRegex = /\bbetween\s+(.+?)\s+and\s+(.+?)\b/i;
+    const betweenMatch = remainingQuery.match(betweenRegex);
+    if (betweenMatch) {
+        const d1 = parseSimpleDate(betweenMatch[1]);
+        const d2 = parseSimpleDate(betweenMatch[2]);
+        if (d1 && d2) {
+            result.dateRange = { from: d1 < d2 ? d1 : d2, to: d1 < d2 ? d2 : d1 };
+            remainingQuery = remainingQuery.replace(betweenMatch[0], '').trim();
+        }
+    }
+
+    // Explicit Keywords: Today, Yesterday, Tomorrow (if not consumed by between)
+    if (/\btoday\b/i.test(remainingQuery)) {
+        result.dateRange = { from: today, to: today };
+        remainingQuery = remainingQuery.replace(/\btoday\b/gi, '').trim();
+    }
+    if (/\byesterday\b/i.test(remainingQuery)) {
+        const d = subDays(today, 1);
+        result.dateRange = { from: d, to: d };
+        remainingQuery = remainingQuery.replace(/\byesterday\b/gi, '').trim();
+    }
+    if (/\btomorrow\b/i.test(remainingQuery)) {
+        const d = addDays(today, 1);
+        result.dateRange = { from: d, to: d };
+        remainingQuery = remainingQuery.replace(/\btomorrow\b/gi, '').trim();
+    }
 
     if (lowerQuery.includes('past week')) { replaceMatch('past week'); result.dateRange = { from: subDays(today, 7), to: today }; }
     else if (lowerQuery.includes('last week')) { replaceMatch('last week'); result.dateRange = { from: subDays(today, 7), to: today }; }
@@ -87,6 +133,107 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     else if (lowerQuery.includes('this decade')) { replaceMatch('this decade'); result.dateRange = { from: startOfDecade(today), to: endOfDecade(today) }; }
     else if (lowerQuery.includes('last decade')) { replaceMatch('last decade'); result.dateRange = { from: startOfDecade(addYears(today, -10)), to: endOfDecade(addYears(today, -10)) }; }
     else if (lowerQuery.includes('next decade')) { replaceMatch('next decade'); result.dateRange = { from: startOfDecade(addYears(today, 10)), to: endOfDecade(addYears(today, 10)) }; }
+
+    // --- Improved Week/Day Parsing ---
+
+    // "Last/Next [Day of Week]" (e.g. "last sunday", "next tuesday")
+    const dayOfWeekRegex = /\b(last|next|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+    const dayMatch = remainingQuery.match(dayOfWeekRegex);
+
+    if (dayMatch) {
+        const modifier = dayMatch[1].toLowerCase();
+        const dayName = dayMatch[2].toLowerCase();
+        const targetDayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(dayName);
+
+        if (targetDayIndex !== -1) {
+            let targetDate = new Date(today);
+
+
+            if (modifier === 'this') {
+                // "this monday" - usually means the one in the current week? Or the immediate coming one? 
+                // Context dependent. Let's assume standard "date-fns setDay" which sets it within current week (Sunday start? ISO Monday start?)
+                // Let's use simple logic: "this X" means the X of the current week.
+                targetDate = setDay(today, targetDayIndex);
+            } else if (modifier === 'last') {
+                // "last sunday" -> find the sunday before today.
+                // setDay(today, target, { weekStartsOn: ... }) logic is complex.
+                // Brute force: subtract days until match.
+                // Or use subWeeks(setDay(...))?
+                // Let's iterate backwards.
+                let daysBack = 1;
+                while (true) {
+                    const d = subDays(today, daysBack);
+                    if (d.getDay() === targetDayIndex) {
+                        targetDate = d;
+                        break;
+                    }
+                    daysBack++;
+                }
+            } else if (modifier === 'next') {
+                // "next tuesday" -> find the tuesday after today.
+                let daysForward = 1;
+                while (true) {
+                    const d = addDays(today, daysForward);
+                    if (d.getDay() === targetDayIndex) {
+                        targetDate = d;
+                        break;
+                    }
+                    daysForward++;
+                }
+            }
+
+            result.dateRange = { from: targetDate, to: targetDate };
+            remainingQuery = remainingQuery.replace(dayMatch[0], '').trim();
+        }
+    }
+
+    // "This Week" - often user means current ISO week or last 7 days.
+    // "Last Week" - handled above as 'past 7 days' logic in original code line 96, but let's be explicit for "last week" = previous ISO week?
+    // Original code: `lowerQuery.includes('last week')` -> `result.dateRange = { from: subDays(today, 7), to: today };`
+    // This effectively means "Trailing 7 days".
+    // If user wants distinct "Calendar Week", we usually say "last calendar week".
+    // For personal finance, "Last Week" usually means "Previous Monday-Sunday".
+    // The user feedback "Searching for ... last sunday ... seem to simply add them as text" implies the regex didn't catch it.
+    // My previous code had `replaceMatch('last week')` but maybe it wasn't aggressive enough or correct.
+
+    // Let's keep the existing "Trailing" logic for "past week/past 7 days" but override "last week" to be "Calendar Previous Week" if preferred?
+    // Or just ensure "last sunday" works (which I added above).
+
+    // Explicit "This Week" (Calendar)
+    if (/\bthis week\b/i.test(remainingQuery)) {
+        // Start of current week (assume Monday start)
+
+        // If today is Sunday (0), setDay(today, 1) goes to NEXT Monday in some locales without options.
+        // Safer: use date-fns `startOfWeek`
+        // I need to import `startOfWeek`, `endOfWeek`. assuming they are available or using `setDay`.
+        // I see `setDay` imported.
+        // Let's use generic logic for now or stick to the "past 7 days" if "this week" isn't explicitly requested as calendar.
+
+        // Actually, user said: "Searching for this week or last sunday etc. seem to simply add them as text."
+        // So "this week" failed.
+        // In the original file, I don't see "this week" handled! I see "past week".
+        // Let's add "this week".
+
+        // "This Week": Monday to Sunday of current week?
+        // Let's approximate: Monday of this week to Today? Or End of week?
+        // Let's say "Start of this week" to "End of this week".
+        // I'll assume imported `addDays` etc. I might need `startOfWeek` import but I can't add imports easily without seeing top of file.
+        // I see `startOfDecade`, `setDay` etc imported in line 1.
+        // I will use `setDay` to find Monday.
+    }
+
+    // Re-doing the explicit replace blocks to include "this week"
+    if (/\bthis week\b/i.test(remainingQuery)) {
+        // Monday of current week. 
+        // Iterate back to Monday
+        let d = new Date(today);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+        const monday = new Date(d.setDate(diff));
+        const sunday = addDays(monday, 6);
+        result.dateRange = { from: monday, to: sunday };
+        remainingQuery = remainingQuery.replace(/\bthis week\b/gi, '').trim();
+    }
 
     // Explicit Decade (1990s, 2020s)
     const decadeRegex = /\b(\d{4})s\b/i;
@@ -133,69 +280,8 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         remainingQuery = remainingQuery.replace(centuryMatch[0], '').trim();
     }
 
-    // --- Days of Week Parsing ---
-    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    // Match "last/this/next/on [Day]"
-    const dayOfWeekRegex = new RegExp(`\\b(last|this|next|on)\\s+(${daysOfWeek.join('|')})\\b`, 'i');
-    const dayOfWeekMatch = remainingQuery.match(dayOfWeekRegex);
-
-    if (dayOfWeekMatch) {
-        const prefix = dayOfWeekMatch[1].toLowerCase();
-        const dayName = dayOfWeekMatch[2].toLowerCase();
-        const targetDayIndex = daysOfWeek.indexOf(dayName); // 0=Sunday, 6=Saturday
-
-        let targetDate = new Date(today);
-        targetDate.setHours(12, 0, 0, 0);
-
-        // Helper to get day in current week (Sunday start?)
-        // date-fns startOfWeek defaults to Sunday (which is index 0 in our array too)
-
-        if (prefix === 'last') {
-            // Previous occurrence of this day.
-            // If today is Monday(1) and we want last Monday. Is it 7 days ago? or today?
-            // "last Monday" usually means the one in the previous week.
-            // If the found day is in the *same* week as today, we might want to go back another week?
-            // Actually previousDay searches backwards.
-            // If today is Tuesday, previousDay(Monday) -> Yesterday.
-            // If query is "last Monday", yesterday is consistent.
-            // But some users mean "Monday of last week". 
-            // Let's assume standard date-fns behavior: `previousDay` finds the most recent previous day.
-            // BUT "Last Monday" often means "Monday of the previous week".
-            // "Past Monday" might mean most recent.
-            // Let's explicitly look for the day in the *previous week*.
-            // "Last [Day]" = Day of (Current Week - 1).
-            // "This [Day]" = Day of Current Week.
-            // "Next [Day]" = Day of (Current Week + 1).
-
-            // Strategy: Find safe "This [Day]" then subtract/add weeks.
-            const currentWeekDay = setDay(today, targetDayIndex); // Day in current week
-
-            // If user says "Last Monday" and today is Tuesday, do they mean "Yesterday"(This week's monday) or "Monday of last week"?
-            // Common ambiguity. "Last week Monday" vs "Monday last week".
-            // Let's interpret "Last [Day]" as "The [Day] of the previous week".
-            targetDate = subWeeks(currentWeekDay, 1);
-
-        } else if (prefix === 'this') {
-            targetDate = setDay(today, targetDayIndex);
-        } else if (prefix === 'next') {
-            // Day of next week
-            const currentWeekDay = setDay(today, targetDayIndex);
-            targetDate = addWeeks(currentWeekDay, 1);
-        } else if (prefix === 'on') {
-            // "on [Day]" - assume most recent or upcoming depending on context?
-            // or just the one in current week?
-            // "on Monday" -> This Monday.
-            targetDate = setDay(today, targetDayIndex);
-        }
-
-        if (!isNaN(targetDate.getTime())) {
-            result.dateRange = { from: targetDate, to: targetDate };
-            remainingQuery = remainingQuery.replace(dayOfWeekMatch[0], '').trim();
-        }
-    }
-
     // Future / Upcoming
-    else if (lowerQuery.includes('next week')) { replaceMatch('next week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
+    if (lowerQuery.includes('next week')) { replaceMatch('next week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
     else if (lowerQuery.includes('coming week')) { replaceMatch('coming week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
     else if (lowerQuery.includes('upcoming week')) { replaceMatch('upcoming week'); result.dateRange = { from: today, to: addWeeks(today, 1) }; }
 
@@ -418,13 +504,142 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     // A simple approach: iterate through all known entities and check if their name exists in the query.
 
     // 2.0 Explicit Account Names
-    // Match specific accounts FIRST
+    // 2.0 Explicit Account Names (Full & Partial)
     context.accounts.forEach(acc => {
-        if (remainingQuery.toLowerCase().includes(acc.name.toLowerCase())) {
-            result.selectedAccounts.push(acc.slug);
-            remainingQuery = remainingQuery.replace(new RegExp(acc.name, 'gi'), '').trim();
+        let matched = false;
+
+        // 1. Exact Full Name Match
+        const escapedName = acc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const exactRegex = new RegExp(`\\b${escapedName}\\b`, 'i');
+        if (exactRegex.test(remainingQuery)) {
+            if (!result.selectedAccounts) result.selectedAccounts = [];
+            if (!result.selectedAccounts.includes(acc.slug)) result.selectedAccounts.push(acc.slug);
+            remainingQuery = remainingQuery.replace(exactRegex, '').trim();
+            matched = true;
+        }
+
+        // 2. Partial Token Match (if not fully matched)
+        // e.g. "Primary" for "Primary Checking"
+        if (!matched) {
+            const tokens = acc.name.split(/\s+/).filter(t => t.length > 2); // Ignore short words
+            const stopWords = [
+                'account', 'card', 'bank', 'the', 'and', 'with', 'for',
+                // Date-related stops to prevent "as-you-type" ghost matches
+                'yes', 'tom', 'tod', // yesterday, tomorrow, today
+                'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+                'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun',
+                'between'
+            ];
+
+            for (const token of tokens) {
+                if (stopWords.includes(token.toLowerCase())) continue;
+
+                const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const tokenRegex = new RegExp(`\\b${escapedToken}\\b`, 'i');
+
+                if (tokenRegex.test(remainingQuery)) {
+                    if (!result.selectedAccounts) result.selectedAccounts = [];
+                    if (!result.selectedAccounts.includes(acc.slug)) result.selectedAccounts.push(acc.slug);
+
+                    // We remove the token. 
+                    // Note: If multiple accounts share "Savings", and query is just "Savings",
+                    // The "Account Types" logic (checking/savings group) below handles broad categories better.
+                    // But if "Savings" is part of the name, this might catch it first.
+                    // If we have "Primary Savings" and "Secondary Savings". User types "Savings".
+                    // This loop hits Primary. Matches "Savings". Removes "Savings".
+                    // The Secondary loop hits. "Savings" is gone. Secondary NOT matched.
+                    // Result: Only Primary selected. This is inconsistent.
+                    // Ideally for common words like "Savings", we want the Group Logic to handle it.
+                    // So we should maybe extended the stopWords to include 'checking', 'savings'?
+
+                    if (['checking', 'savings', 'checkings'].includes(token.toLowerCase())) continue;
+
+                    remainingQuery = remainingQuery.replace(tokenRegex, '').trim();
+                    matched = true;
+                    // Keep matching other tokens? Or break?
+                    // If "Primary Checking", and we matched "Primary", we are good.
+                    break;
+                }
+            }
         }
     });
+
+    // 2.05 Dynamic Account Groups (e.g. "Neobank accounts", "Primary Bank accounts")
+    // Logic: Look for "X accounts" or "X Y accounts". 
+    // Interpret as: Accounts where Name contains X AND Y.
+    // Regex: Capture words preceding "accounts".
+    // We want to avoid capturing "all accounts" (handled separately) or "checking accounts" (handled by specific type logic below, usually).
+    // HOWEVER, if the user says "Neobank Checking accounts", we WANT to capture "Neobank Checking".
+    // Strategy: Capture the phrase. Analyze tokens.
+
+    // Regex: Matches one or more words followed by "accounts". 
+    // \b matches boundary. We lazily capture words until "accounts".
+    // We expect at least one word.
+    const dynamicGroupRegex = /\b((?:[a-zA-Z0-9]+\s+)+)accounts\b/i;
+    const dynamicGroupMatch = remainingQuery.match(dynamicGroupRegex);
+
+    if (dynamicGroupMatch) {
+        const phrase = dynamicGroupMatch[1].trim();
+        // Split into tokens
+        const localTokens = phrase.split(/\s+/).map(t => t.toLowerCase());
+
+        // Filter out ignored words
+        // Filter out ignored words
+        const ignoredGroupWords = [
+            'all', 'show', 'me', 'list', 'my', 'the', 'transactions', 'items',
+            'last', 'past', 'next', 'coming', 'upcoming', 'this',
+            'week', 'weeks', 'month', 'months', 'year', 'years', 'day', 'days',
+            'today', 'yesterday', 'tomorrow'
+        ];
+        const filteredTokens = localTokens.filter(t => !ignoredGroupWords.includes(t));
+
+        if (filteredTokens.length > 0) {
+            // Check if we should defer to standard type logic?
+            // Only if it is a SINGLE token AND it is a known generic type.
+            const knownTypes = ['checking', 'savings', 'credit', 'investment', 'checkings'];
+            const isGenericType = filteredTokens.length === 1 && knownTypes.includes(filteredTokens[0]);
+
+            if (!isGenericType) {
+                // Execute Intersection Search
+                // Find accounts that match ALL tokens in Name OR Type
+                const matchedAccounts: string[] = [];
+
+                context.accounts.forEach(acc => {
+                    const nameLower = acc.name.toLowerCase();
+                    const typeLower = (acc.type || '').toLowerCase();
+
+                    // Check if ALL tokens are present
+                    const allTokensMatch = filteredTokens.every(token => {
+                        // strict substring check
+                        return nameLower.includes(token) || typeLower.includes(token);
+                    });
+
+                    if (allTokensMatch) {
+                        matchedAccounts.push(acc.slug);
+                    }
+                });
+
+                if (matchedAccounts.length > 0) {
+                    if (!result.selectedAccounts) result.selectedAccounts = [];
+
+                    matchedAccounts.forEach(slug => {
+                        if (!result.selectedAccounts!.includes(slug)) {
+                            result.selectedAccounts!.push(slug);
+                        }
+                    });
+                } else {
+                    // Mch found the pattern "X Y accounts" but found NO accounts matching all tokens.
+                    // We must consume this to avoid fallback to loose "Partial Match" (Union) logic.
+                    // e.g. "Primary Bank accounts" -> If no account has BOTH, return nothing (strict).
+                    if (!result.selectedAccounts) result.selectedAccounts = [];
+                    result.selectedAccounts.push('__no_match__');
+                }
+
+                // Remove the whole match
+                remainingQuery = remainingQuery.replace(dynamicGroupMatch[0], '').trim();
+            }
+        }
+    }
 
     // 2.1 Account Groups (e.g. "checking", "savings", "credit cards")
     // Use regex to match group names and optional "account(s)" suffix
@@ -438,14 +653,57 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         const regex = new RegExp(`\\b${typeLower}(s)?\\s*(?:accounts?)?\\b`, 'i');
 
         if (regex.test(remainingQuery)) {
-            const accountsOfType = context.accounts.filter(acc => acc.type === type);
+            // Initialize array if undefined, signifying (at least) an intent to filter accounts
+            if (!result.selectedAccounts) result.selectedAccounts = [];
+
+            // Filter accounts based on Type OR Name Heuristics
+            const accountsOfType = context.accounts.filter(acc => {
+                const dbType = (acc.type || 'checking').toLowerCase(); // Default to checking if missing
+                const nameLower = acc.name.toLowerCase();
+
+                // Heuristic Overrides
+                if (typeLower === 'savings') {
+                    // Match if DB says Savings OR Name contains "savings"
+                    return dbType === 'savings' || nameLower.includes('savings');
+                }
+
+                if (typeLower === 'credit card') {
+                    // Match if DB says Credit Card OR Name contains "credit card" or "cc"
+                    const isCreditCardName = nameLower.includes('credit card') || /\bcc\b/i.test(nameLower);
+                    return dbType === 'credit card' || isCreditCardName;
+                }
+
+                if (typeLower === 'investment') {
+                    return dbType === 'investment' || nameLower.includes('investment');
+                }
+
+                if (typeLower === 'checking') {
+                    // Checking is the default. We want to EXCLUDE things that look like Savings or CC.
+                    // If DB says Checking, we trust it UNLESS name strongly implies otherwise.
+                    const looksLikeSavings = nameLower.includes('savings');
+                    const looksLikeCC = nameLower.includes('credit card') || /\bcc\b/i.test(nameLower);
+                    const looksLikeInvestment = nameLower.includes('investment');
+
+                    if (looksLikeSavings || looksLikeCC || looksLikeInvestment) return false;
+
+                    return dbType === 'checking' || dbType === '';
+                }
+
+                return dbType === typeLower;
+            });
+
             if (accountsOfType.length > 0) {
                 accountsOfType.forEach(acc => {
-                    if (!result.selectedAccounts.includes(acc.slug)) {
-                        result.selectedAccounts.push(acc.slug);
+                    if (!result.selectedAccounts!.includes(acc.slug)) {
+                        result.selectedAccounts!.push(acc.slug);
                     }
                 });
+            } else {
+                // Explicitly searched for a type but found none. 
+                // Force a mismatch to avoid fallback to ALL accounts.
+                result.selectedAccounts.push('__no_match__');
             }
+
             // Remove the matched phrase from the query
             remainingQuery = remainingQuery.replace(regex, '').trim();
         }
@@ -453,39 +711,69 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
 
     // Categories
     context.categories.forEach(cat => {
-        if (remainingQuery.toLowerCase().includes(cat.name.toLowerCase())) {
+        const escapedName = cat.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedName}\\b`, 'i');
+        if (regex.test(remainingQuery)) {
             result.selectedCategories.push(cat.slug);
-            remainingQuery = remainingQuery.replace(new RegExp(cat.name, 'gi'), '').trim();
+            remainingQuery = remainingQuery.replace(regex, '').trim();
         }
     });
 
     // Sub-Categories
     context.subCategories.forEach(sub => {
-        if (remainingQuery.toLowerCase().includes(sub.name.toLowerCase())) {
+        const escapedName = sub.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedName}\\b`, 'i');
+        if (regex.test(remainingQuery)) {
             result.selectedSubCategories.push(sub.slug);
-            remainingQuery = remainingQuery.replace(new RegExp(sub.name, 'gi'), '').trim();
+            remainingQuery = remainingQuery.replace(regex, '').trim();
         }
     });
 
     // Vendors
     context.vendors.forEach(vendor => {
-        if (remainingQuery.toLowerCase().includes(vendor.name.toLowerCase())) {
+        const escapedName = vendor.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedName}\\b`, 'i');
+        if (regex.test(remainingQuery)) {
             result.selectedVendors.push(vendor.slug);
-            remainingQuery = remainingQuery.replace(new RegExp(vendor.name, 'gi'), '').trim();
+            remainingQuery = remainingQuery.replace(regex, '').trim();
         }
     });
 
-    // If no date range found, default is often current month in the app, but here we return undefined to let the global default take over 
-    // OR we interpret "no date" as "all time" if the user explicitly typed a search?
-    // The prompt says: "If no time is mentioned consider current calendar month"
-    if (!result.dateRange) {
-        result.dateRange = { from: startOfMonth(today), to: endOfMonth(today) };
+    // --- 4. Special Keywords ("All Transactions", "All Expenses", "Income") ---
+
+    if (lowerQuery.includes('all transactions')) {
+        replaceMatch('all transactions');
+        // "All transactions" -> Clear specific filters but PRESERVE context (Date, Accounts)
+        // We do this by NOT setting dateRange or selectedAccounts (leaving them undefined)
+        // But we explicitly ensure other lists are empty (which they are initialized as).
+        // And we might want to clear transactionType if it was set by other logic? 
+        // Or if user typed "all expense transactions", capturing "expense" first?
+        // Let's assume "all transactions" resets type unless explicitly "expense transactions".
+        if (!result.transactionType) {
+            result.transactionType = undefined;
+        }
+    } else if (lowerQuery.includes('all accounts')) {
+        replaceMatch('all accounts');
+        // Explicitly clear account selection
+        result.selectedAccounts = [];
     }
 
+    // Transaction Type Parsing
+    if (/\b(expenses|expense)\b/i.test(remainingQuery)) {
+        result.transactionType = 'expense';
+        remainingQuery = remainingQuery.replace(/\b(expenses|expense)\b/gi, '').trim();
+    } else if (/\b(incomes|income)\b/i.test(remainingQuery)) {
+        result.transactionType = 'income';
+        remainingQuery = remainingQuery.replace(/\b(incomes|income)\b/gi, '').trim();
+    }
+
+    // Default Date Range: Removed to preserve existing context.
+    // The UI handles default if everything is undefined, or keeps existing if undefined returned.
+
     // The simplified query is basically the original query, 
-    // but if the user wants "Amazon transactions", we parse "Amazon" as a vendor -> filter by vendor.
-    // Do we keep "Amazon" in the text search?
-    // If we filter by vendor ID, we don't necessarily need to text search "Amazon" anymore, filtering is stricter.
+    // but if the user wants "Online Store transactions", we parse "Online Store" as a vendor -> filter by vendor.
+    // Do we keep "Online Store" in the text search?
+    // If we filter by vendor ID, we don't necessarily need to text search "Online Store" anymore, filtering is stricter.
     // However, for safety, keeping the text search is fine unless it yields no results due to over-filtering.
     // Let's refine: The searchTerm usually filters *description* or *payee*.
     // If we detected a Vendor Entity, we set `selectedVendors`. The `searchTerm` is less relevant for that specific entity, 

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import ReportLayout from './ReportLayout';
 import NetWorthStatement from '@/components/reports/NetWorthStatement';
 import IncomeExpenseSummary from '@/components/reports/IncomeExpenseSummary';
@@ -10,11 +10,11 @@ const EssentialReports = () => {
       title="Essential Reports"
       description="Your core financial summaries and trends based on historical data."
     >
-      {({ historicalFilteredTransactions, accounts, budgets }) => (
+      {({ combinedFilteredTransactions, accounts, budgets, allTransactions }) => (
         <>
-          <NetWorthStatement transactions={historicalFilteredTransactions} accounts={accounts} />
-          <IncomeExpenseSummary transactions={historicalFilteredTransactions} budgets={budgets} />
-          <TrendsAndAnalytics transactions={historicalFilteredTransactions} budgets={budgets} />
+          <NetWorthStatement transactions={combinedFilteredTransactions} allTransactions={allTransactions} accounts={accounts} />
+          <IncomeExpenseSummary transactions={combinedFilteredTransactions} budgets={budgets} />
+          <TrendsAndAnalytics transactions={combinedFilteredTransactions} budgets={budgets} />
         </>
       )}
     </ReportLayout>

@@ -9,6 +9,7 @@ interface NLPSearchInputProps {
     onChange: (value: string) => void;
     onClear: () => void;
     isLoading?: boolean;
+    placeholder?: string;
 }
 
 const PLACEHOLDERS = [
@@ -23,7 +24,8 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
     value,
     onChange,
     onClear,
-    isLoading
+    isLoading,
+    placeholder
 }) => {
     const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
     const [isFocused, setIsFocused] = React.useState(false);
@@ -53,7 +55,7 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
                 onChange={(e) => onChange(e.target.value)}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                placeholder={PLACEHOLDERS[placeholderIndex]}
+                placeholder={placeholder || PLACEHOLDERS[placeholderIndex]}
                 className={cn(
                     "pl-10 pr-10 h-12 text-lg bg-white/80 dark:bg-background/50 backdrop-blur-md border-slate-200 dark:border-muted-foreground/20",
                     "hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20",

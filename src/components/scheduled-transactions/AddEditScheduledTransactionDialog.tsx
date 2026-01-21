@@ -33,7 +33,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
 import { ScheduledTransaction as ScheduledTransactionType } from '@/types/dataProvider';
 import { formatDateToYYYYMMDD } from "@/lib/utils";
-import { Payee } from "@/components/AddEditPayeeDialog";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import { Category } from "@/data/finance-data";
 
 interface AddEditScheduledTransactionDialogProps {
@@ -163,7 +163,11 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit((values) => {
+              // Construct frequency string
+              const frequency = `${values.frequency_value}${values.frequency_unit}`;
+              onSubmit({ ...values, frequency });
+            })} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -282,7 +286,19 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Amount</FormLabel>
-                      <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} /></FormControl>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={e => {
+                            // Let the string value pass through. Zod schema handles coercion.
+                            // This allows typing "-" without it becoming NaN immediately.
+                            field.onChange(e.target.value);
+                          }}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

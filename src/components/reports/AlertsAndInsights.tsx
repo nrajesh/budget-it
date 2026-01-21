@@ -1,6 +1,6 @@
 import React from 'react';
 import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
-import { AlertTriangle, BarChart2, ShoppingCart, Banknote } from 'lucide-react';
+import { AlertTriangle, BarChart2, ShoppingCart, Banknote, Calendar } from 'lucide-react';
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { differenceInDays } from 'date-fns';
 import { Budget } from '@/data/finance-data';
@@ -194,7 +194,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                           </>
                         ) : (
                           <>
-                            is projected to {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
+                            is projected <Calendar className="h-3 w-3 inline text-muted-foreground mr-1" aria-label="Based on scheduled transactions" /> to {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
                             <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
                           </>
                         )}

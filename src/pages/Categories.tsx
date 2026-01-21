@@ -84,29 +84,32 @@ const CategoriesPage = () => {
   // though for decent list sizes useMemo in cellRenderer or here is fine.
   // Actually, let's just do it in the cellRenderer for simplicity as long as N is small.
   // Better: create a map.
-  const subCategoryCounts = React.useMemo(() => {
+  const { counts, subCategoriesMap } = React.useMemo(() => {
     const counts: Record<string, number> = {};
-    transactions.forEach(t => {
-      if (t.sub_category) {
-        if (!counts[t.category]) counts[t.category] = 0;
-        // This is a rough count of total transactions with sub-categories, 
-        // but we want count of UNIQUE sub-categories. 
-      }
-    });
-    // Let's do unique set per category
-    const uniqueSubs: Record<string, Set<string>> = {};
+    const subCategoriesMap: Record<string, Set<string>> = {};
+
     transactions.forEach(t => {
       if (t.sub_category && t.category) {
-        if (!uniqueSubs[t.category]) uniqueSubs[t.category] = new Set();
-        uniqueSubs[t.category].add(t.sub_category);
+        if (!subCategoriesMap[t.category]) subCategoriesMap[t.category] = new Set();
+        subCategoriesMap[t.category].add(t.sub_category);
       }
     });
-    const finalCounts: Record<string, number> = {};
-    Object.keys(uniqueSubs).forEach(cat => {
-      finalCounts[cat] = uniqueSubs[cat].size;
+
+    Object.keys(subCategoriesMap).forEach(cat => {
+      counts[cat] = subCategoriesMap[cat].size;
     });
-    return finalCounts;
+    return { counts, subCategoriesMap };
   }, [transactions]);
+
+  const customFilter = (data: Category[], searchTerm: string) => {
+    if (!searchTerm) return data;
+    const lowerTerm = searchTerm.toLowerCase();
+    return data.filter(category => {
+      const nameMatch = category.name.toLowerCase().includes(lowerTerm);
+      const subMatch = subCategoriesMap[category.name] && Array.from(subCategoriesMap[category.name]).some(sub => sub.toLowerCase().includes(lowerTerm));
+      return nameMatch || subMatch;
+    });
+  };
 
   const columns: ColumnDefinition<Category>[] = [
     {
@@ -131,18 +134,30 @@ const CategoriesPage = () => {
     },
     {
       header: "Sub-categories",
-      accessor: (item) => subCategoryCounts[item.name] || 0,
+      accessor: (item) => counts[item.name] || 0,
       cellRenderer: (item) => {
-        const count = subCategoryCounts[item.name] || 0;
+        const count = counts[item.name] || 0;
+        const searchTerm = managementProps.searchTerm;
+        let matchedSubs: string[] = [];
+
+        if (searchTerm && subCategoriesMap[item.name]) {
+          matchedSubs = Array.from(subCategoriesMap[item.name]).filter(sub => sub.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+
         return (
           <div
-            className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary cursor-pointer flex items-center gap-1"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary cursor-pointer flex flex-col gap-1"
             onClick={(e) => {
               e.stopPropagation();
               setManagingSubCategory(item);
             }}
           >
-            {count} {count === 1 ? 'sub-category' : 'sub-categories'}
+            <div>{count} {count === 1 ? 'sub-category' : 'sub-categories'}</div>
+            {matchedSubs.length > 0 && (
+              <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                Matches: {matchedSubs.slice(0, 3).join(", ")}{matchedSubs.length > 3 ? ` +${matchedSubs.length - 3} more` : ''}
+              </div>
+            )}
           </div>
         );
       }
@@ -175,12 +190,12 @@ const CategoriesPage = () => {
         customEditHandler={startEditing}
         isEditing={id => editingCategoryId === id}
         isUpdating={updateCategoryNameMutation.isPending}
-        // Pass all management props explicitly
         {...managementProps}
         selectedEntity={managementProps.selectedEntity}
         refetch={managementProps.refetchCategories}
         DeduplicationDialogComponent={CategoryDeduplicationDialog}
         CleanupDialogComponent={(props: any) => <CleanupEntitiesDialog {...props} entityType="category" />}
+        customFilter={customFilter}
       />
       <ManageSubCategoriesDialog
         isOpen={!!managingSubCategory}

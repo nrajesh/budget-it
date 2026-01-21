@@ -5,14 +5,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { useTheme } from "@/contexts/ThemeContext";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
+import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
 import { RotateCcw, DatabaseZap, Upload, FileLock, FileJson, AlertCircle } from "lucide-react";
-import { DemoDataProgressDialog } from "@/components/DemoDataProgressDialog";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { encryptData, decryptData } from "@/utils/crypto";
-import PasswordDialog from "@/components/PasswordDialog";
+import PasswordDialog from "@/components/dialogs/PasswordDialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -21,10 +21,10 @@ const SettingsPage = () => {
   const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const dataProvider = useDataProvider();
+  const { handleClearAllFilters } = useTransactionFilters();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
-  const [isDemoDataProgressDialogOpen, setIsDemoDataProgressDialogOpen] = React.useState(false);
   const [futureMonths, setFutureMonths] = React.useState<number>(2);
 
   // Data Management State
@@ -62,6 +62,7 @@ const SettingsPage = () => {
     try {
       await dataProvider.clearAllData();
       clearAllTransactions();
+      handleClearAllFilters();
       showSuccess("All application data has been reset.");
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
@@ -71,7 +72,7 @@ const SettingsPage = () => {
   };
 
   const handleGenerateDemoData = async () => {
-    setIsDemoDataProgressDialogOpen(true);
+    // setIsDemoDataProgressDialogOpen(true); // Handled globally by context now
     try {
       await generateDiverseDemoData();
     } catch (error: any) {
@@ -405,10 +406,7 @@ const SettingsPage = () => {
         confirmText="Generate"
       />
 
-      <DemoDataProgressDialog
-        isOpen={isDemoDataProgressDialogOpen}
-        onOpenChange={setIsDemoDataProgressDialogOpen}
-      />
+
     </div>
   );
 };

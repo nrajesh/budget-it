@@ -16,7 +16,8 @@ export const useTransactionFilters = () => {
     maxAmount, setMaxAmount,
     limit, setLimit,
     sortOrder, setSortOrder,
-    rawSearchQuery, setRawSearchQuery
+    rawSearchQuery, setRawSearchQuery,
+    transactionType, setTransactionType
   } = useFilter();
 
   const { selectDefaultAccounts } = useDefaultAccountSelection({ autoRun: false });
@@ -42,7 +43,30 @@ export const useTransactionFilters = () => {
     setMaxAmount(undefined);
     setLimit(undefined);
     setSortOrder(undefined);
-  }, [setSearchTerm, setRawSearchQuery, setSelectedAccounts, selectDefaultAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange, setExcludeTransfers, setMinAmount, setMaxAmount, setLimit, setSortOrder]);
+    setTransactionType(undefined);
+  }, [setSearchTerm, setRawSearchQuery, setSelectedAccounts, selectDefaultAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange, setExcludeTransfers, setMinAmount, setMaxAmount, setLimit, setSortOrder, setTransactionType]);
+
+  const handleClearAllFilters = React.useCallback(() => {
+    setSearchTerm("");
+    setRawSearchQuery("");
+    // Strict clear: no smart defaults
+    setSelectedAccounts([]);
+    // Do NOT call selectDefaultAccounts()
+
+    setSelectedCategories([]);
+    setSelectedSubCategories([]);
+    setSelectedVendors([]);
+    setDateRange({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    });
+    setExcludeTransfers(false);
+    setMinAmount(undefined);
+    setMaxAmount(undefined);
+    setLimit(undefined);
+    setSortOrder(undefined);
+    setTransactionType(undefined);
+  }, [setSearchTerm, setRawSearchQuery, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange, setExcludeTransfers, setMinAmount, setMaxAmount, setLimit, setSortOrder, setTransactionType]);
 
   return {
     searchTerm,
@@ -70,5 +94,8 @@ export const useTransactionFilters = () => {
     rawSearchQuery,
     setRawSearchQuery,
     handleResetFilters,
+    handleClearAllFilters,
+    transactionType,
+    setTransactionType,
   };
 };

@@ -2,9 +2,10 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
+import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
 import { UserProvider } from "./contexts/UserContext";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import LoadingSpinner from "@/components/feedback/LoadingSpinner";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
@@ -34,7 +35,7 @@ function App() {
           <FilterProvider>
             <UserProvider>
               <TransactionsProvider>
-                <Router>
+                <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <Suspense fallback={<LoadingSpinner />}>
                     <Routes>
                       <Route path="/" element={<Layout />}>
@@ -60,6 +61,7 @@ function App() {
         </ThemeProvider>
       </DataProviderProvider>
       <Toaster />
+      <ShadcnToaster />
     </QueryClientProvider>
   );
 }

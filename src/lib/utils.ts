@@ -7,6 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
+  // Normalize -0 or effectively zero values to 0 to prevent -€0.00
+  if (Math.abs(amount) < 0.005) {
+    amount = 0;
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,

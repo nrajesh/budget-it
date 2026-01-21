@@ -6,7 +6,7 @@ import { MonthlyTrends } from "@/components/infographic/MonthlyTrends";
 import { TopCategoriesList } from "@/components/infographic/TopCategoriesList";
 import { startOfMonth, subDays, isAfter, format } from "date-fns";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 
 export const FinancialPulseDashboard = () => {
     const { transactions, accounts } = useTransactions();

@@ -1,9 +1,9 @@
 import * as React from "react";
-import { BalanceOverTimeChart } from "@/components/BalanceOverTimeChart";
-import { SpendingCategoriesChart } from "@/components/SpendingCategoriesChart";
+import { BalanceOverTimeChart } from "@/components/charts/BalanceOverTimeChart";
+import { SpendingCategoriesChart } from "@/components/charts/SpendingCategoriesChart";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import { slugify } from "@/lib/utils";
 import { useTransactionData } from "@/hooks/transactions/useTransactionData";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";

@@ -1,13 +1,13 @@
 import * as React from "react";
 import { useEntityManagement } from "./useEntityManagement";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { Payee } from "@/components/AddEditPayeeDialog";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import Papa from "papaparse";
 import { showError } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 
 export const usePayeeManagement = (isAccount: boolean) => {
-  const { invalidateAllData } = useTransactions();
+  const { invalidateAllData, deleteEntity } = useTransactions();
   const navigate = useNavigate();
 
   const entityName = isAccount ? "Account" : "Vendor";
@@ -22,6 +22,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
     batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
     isDeletable: (item) => item.name !== 'Others',
     onSuccess: invalidateAllData,
+    customDeleteHandler: (ids) => deleteEntity(isAccount ? 'account' : 'vendor', ids),
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {

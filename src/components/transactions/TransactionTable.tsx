@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Trash, Copy, X, CalendarClock, Pencil } from "lucide-react";
+import { Trash, Copy, X, CalendarClock, Pencil, Link } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -30,6 +31,8 @@ interface TransactionTableProps {
   onAddTransaction: (transaction: any) => void;
   onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
   onScheduleTransactions?: (transactions: any[], clearSelection: () => void) => void;
+  onUnlinkTransaction?: (transferId: string) => void;
+  onLinkTransactions?: (id1: string, id2: string) => void;
 }
 
 const TransactionTable = ({
@@ -39,10 +42,13 @@ const TransactionTable = ({
   onAddTransaction,
   onScheduleTransactions,
   onRowDoubleClick,
+  onUnlinkTransaction,
+  onLinkTransactions,
 }: TransactionTableProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { selectedCurrency } = useCurrency();
+  const navigate = useNavigate();
 
 
 
@@ -58,11 +64,30 @@ const TransactionTable = ({
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
+
+    const txn = transactions.find(t => t.id === id);
+    const idsToToggle = [id];
+
+    // If part of a transfer, define all linked IDs in the current view
+    if (txn?.transfer_id) {
+      transactions.forEach(t => {
+        if (t.transfer_id === txn.transfer_id && t.id !== id) {
+          idsToToggle.push(t.id);
+        }
+      });
     }
+
+    // Determine action based on the primary clicked item
+    const isSelected = selectedIds.has(id);
+
+    idsToToggle.forEach(targetId => {
+      if (isSelected) {
+        newSelected.delete(targetId);
+      } else {
+        newSelected.add(targetId);
+      }
+    });
+
     setSelectedIds(newSelected);
   };
 
@@ -78,7 +103,6 @@ const TransactionTable = ({
 
     onDeleteTransactions(toDelete);
     setSelectedIds(new Set());
-    toast({ title: "Deleted", description: `${toDelete.length} transactions deleted.` });
   };
 
   const handleBulkDuplicate = () => {
@@ -88,8 +112,13 @@ const TransactionTable = ({
         ...t,
         id: undefined,
         created_at: undefined,
-        date: new Date().toISOString(), // Duplicate to today? Or keep date? Let's use today to be safe
-        remarks: `${t.remarks} (Copy)`
+        date: new Date().toISOString(),
+        remarks: `${t.remarks} (Copy)`,
+        recurrence_id: undefined,
+        is_scheduled_origin: undefined,
+        is_projected: undefined,
+        frequency: undefined,
+        recurrence_end_date: undefined
       });
     });
     setSelectedIds(new Set());
@@ -137,6 +166,22 @@ const TransactionTable = ({
           <Button size="sm" variant="destructive" onClick={handleBulkDelete}><Trash className="h-4 w-4 mr-1" /> Delete</Button>
           <Button size="sm" variant="secondary" onClick={handleBulkDuplicate}><Copy className="h-4 w-4 mr-1" /> Duplicate</Button>
           <Button size="sm" variant="secondary" onClick={handleBulkSchedule}><CalendarClock className="h-4 w-4 mr-1" /> Schedule</Button>
+          {selectedIds.size === 2 && onLinkTransactions && (
+            <Button
+              size="sm"
+              variant="default" // Use default variant to highlight this action
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                const ids = Array.from(selectedIds);
+                if (ids.length === 2 && onLinkTransactions) {
+                  onLinkTransactions(ids[0], ids[1]);
+                  setSelectedIds(new Set()); // Clear selection after linking
+                }
+              }}
+            >
+              <Link className="h-4 w-4 mr-1" /> Link Pair
+            </Button>
+          )}
         </div>
       )}
 
@@ -172,20 +217,61 @@ const TransactionTable = ({
                   <ContextMenuTrigger asChild>
                     <TableRow
                       data-state={selectedIds.has(transaction.id) ? "selected" : undefined}
-                      className={`group ${selectedIds.has(transaction.id) ? "bg-muted" : ""} cursor-pointer hover:bg-muted/50`}
+                      className={`group ${selectedIds.has(transaction.id) ? "bg-muted" : ""} cursor-pointer hover:bg-muted/50 ${(() => {
+                        const txnDate = new Date(transaction.date);
+                        const today = new Date();
+                        txnDate.setHours(0, 0, 0, 0);
+                        today.setHours(0, 0, 0, 0);
+                        return txnDate > today;
+                      })() ? "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50" : ""
+                        }`}
                       onDoubleClick={(e) => {
-                        if (onRowDoubleClick) {
+                        if (onRowDoubleClick && !transaction.is_projected) {
                           onRowDoubleClick(transaction, e);
                         }
                       }}
                     >
-                      <TableCell className="w-[40px]" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedIds.has(transaction.id)}
-                          onCheckedChange={() => toggleSelect(transaction.id)}
-                        />
+                      <TableCell className="w-[40px] px-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <Checkbox
+                            checked={selectedIds.has(transaction.id)}
+                            onCheckedChange={() => toggleSelect(transaction.id)}
+                          />
+                          {transaction.transfer_id && (
+                            <button
+                              className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors"
+                              title="Unlink Transfer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onUnlinkTransaction) onUnlinkTransaction(transaction.transfer_id);
+                              }}
+                            >
+                              <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400 group-hover/link:text-red-500" />
+                            </button>
+                          )}
+                        </div>
                       </TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'date', transaction.date)}</TableCell>
+                      <TableCell className="text-slate-700 dark:text-slate-300">
+                        <div className="flex items-center gap-2">
+                          {renderCell(transaction, 'date', transaction.date)}
+                          {transaction.is_scheduled_origin && (
+                            <span
+                              title="Go to Scheduled Transaction"
+                              className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full p-1 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (transaction.recurrence_id) {
+                                  navigate(`/scheduled?id=${transaction.recurrence_id}`);
+                                } else {
+                                  toast({ title: "Reference Missing", description: "Could not find the original scheduled transaction.", variant: "destructive" });
+                                }
+                              }}
+                            >
+                              <CalendarClock className="h-4 w-4 text-blue-500" />
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{renderCell(transaction, 'category', transaction.category)}</TableCell>
                       <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'sub_category', transaction.sub_category)}</TableCell>
                       <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'vendor', transaction.vendor)}</TableCell>
@@ -203,14 +289,28 @@ const TransactionTable = ({
                       {selectedIds.has(transaction.id) ? "Deselect" : "Select"}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
-                    <ContextMenuItem inset onClick={(e) => onRowDoubleClick && onRowDoubleClick(transaction, e)}>
-                      <Pencil className="h-4 w-4 mr-2" /> Edit
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
+                    {!transaction.is_projected && (
+                      <>
+                        <ContextMenuItem inset onClick={(e) => onRowDoubleClick && onRowDoubleClick(transaction, e)}>
+                          <Pencil className="h-4 w-4 mr-2" /> Edit
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                      </>
+                    )}
                     <ContextMenuItem inset onClick={() => onScheduleTransactions && onScheduleTransactions([transaction], () => { })}>
-                      <CalendarClock className="h-4 w-4 mr-2" /> Schedule
+                      <CalendarClock className="h-4 w-4 mr-2" /> {transaction.recurrence_id ? "Edit Schedule" : "Schedule"}
                     </ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => onAddTransaction({ ...transaction, id: undefined, created_at: undefined, remarks: transaction.remarks + " (Copy)" })}>
+                    <ContextMenuItem inset onClick={() => onAddTransaction({
+                      ...transaction,
+                      id: undefined,
+                      created_at: undefined,
+                      remarks: transaction.remarks + " (Copy)",
+                      recurrence_id: undefined,
+                      is_scheduled_origin: undefined,
+                      is_projected: undefined,
+                      frequency: undefined,
+                      recurrence_end_date: undefined
+                    })}>
                       <Copy className="h-4 w-4 mr-2" /> Duplicate
                     </ContextMenuItem>
                     <ContextMenuItem inset className="text-red-600" onClick={() => onDeleteTransactions([{ id: transaction.id }])}>

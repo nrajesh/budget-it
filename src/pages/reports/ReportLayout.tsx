@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 
-import { SearchFilterBar } from '@/components/SearchFilterBar';
+import { SearchFilterBar } from '@/components/filters/SearchFilterBar';
 import ExportButtons from '@/components/reports/ExportButtons';
 import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
 import { useTransactionData } from '@/hooks/transactions/useTransactionData';
@@ -17,6 +17,7 @@ import { useDataProvider } from '@/context/DataProviderContext';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 
+
 interface ReportLayoutProps {
   title: string;
   description: React.ReactNode;
@@ -24,13 +25,14 @@ interface ReportLayoutProps {
     historicalFilteredTransactions: any[];
     combinedFilteredTransactions: any[];
     futureFilteredTransactions: any[];
+    allTransactions: any[];
     accounts: any[];
     budgets: Budget[];
   }) => React.ReactNode;
 }
 
 const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
-  const { accounts, vendors, categories } = useTransactions();
+  const { accounts, vendors, categories, transactions: allTransactions } = useTransactions();
   const { user } = useUser();
 
 
@@ -51,6 +53,12 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   );
 
   const filterProps = useTransactionFilters();
+
+  const effectiveAccounts = React.useMemo(() => {
+    if (filterProps.selectedAccounts.length === 0) return accounts;
+    return accounts.filter((a: any) => filterProps.selectedAccounts.includes(slugify(a.name)));
+  }, [accounts, filterProps.selectedAccounts]);
+
   const dataProps = useTransactionData({
     ...filterProps,
     excludeTransfers: filterProps.excludeTransfers,
@@ -74,12 +82,32 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     enabled: !!user,
   });
 
-  const { historicalFilteredTransactions, futureFilteredTransactions } = React.useMemo(() => {
+
+
+
+
+  const { historicalFilteredTransactions, futureFilteredTransactions, combinedFilteredTransactions } = React.useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
+
+    // dataProps.filteredTransactions ALREADY contains projected transactions from useTransactionData hook
+    // So we just need to split them by date.
+
+    // 1. Historical (<= Today)
     const historical = dataProps.filteredTransactions.filter(t => new Date(t.date) <= today);
-    const future = dataProps.filteredTransactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
-    return { historicalFilteredTransactions: historical, futureFilteredTransactions: future };
+
+    // 2. Future (Actual + Projected > Today)
+    const future = dataProps.filteredTransactions.filter(t => new Date(t.date) > today);
+
+    // 3. Combined (All)
+    // We can just use dataProps.filteredTransactions directly for combined, but ensuring sort
+    const combinedAll = [...dataProps.filteredTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return {
+      historicalFilteredTransactions: historical,
+      futureFilteredTransactions: future,
+      combinedFilteredTransactions: combinedAll
+    };
   }, [dataProps.filteredTransactions]);
 
   const handlePdfExport = async () => {
@@ -258,9 +286,10 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       <div className="space-y-4" id="report-content">
         {children({
           historicalFilteredTransactions,
-          combinedFilteredTransactions: dataProps.filteredTransactions,
+          combinedFilteredTransactions,
           futureFilteredTransactions,
-          accounts,
+          allTransactions,
+          accounts: effectiveAccounts,
           budgets,
         })}
       </div>

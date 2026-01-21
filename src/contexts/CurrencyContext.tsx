@@ -86,6 +86,10 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const formatCurrency = useCallback((amount: number, currencyCode?: string): string => {
+    // Normalize -0 or effectively zero values to 0 to prevent -€0.00
+    if (Math.abs(amount) < 0.005) {
+      amount = 0;
+    }
     const displayCurrency = currencyCode || selectedCurrency;
     const symbol = currencySymbols[displayCurrency] || displayCurrency;
     return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

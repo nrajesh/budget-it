@@ -201,6 +201,11 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
         }
     };
 
+    const toggleSelectAll = (checked: boolean) => {
+        const newSuggestions = suggestions.map(s => ({ ...s, isSelected: checked }));
+        setSuggestions(newSuggestions);
+    };
+
     const toggleSelection = (index: number) => {
         const newSuggestions = [...suggestions];
         newSuggestions[index].isSelected = !newSuggestions[index].isSelected;
@@ -238,8 +243,13 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                 ) : (
                     <div className="py-4 space-y-4">
                         <div className="rounded-md border">
-                            <div className="grid grid-cols-12 gap-4 p-4 font-medium text-sm bg-muted/50 border-b">
-                                <div className="col-span-1"></div>
+                            <div className="grid grid-cols-12 gap-4 p-4 font-medium text-sm bg-muted/50 border-b items-center">
+                                <div className="col-span-1 flex justify-center">
+                                    <Checkbox
+                                        checked={suggestions.length > 0 && suggestions.every(s => s.isSelected)}
+                                        onCheckedChange={(checked) => toggleSelectAll(checked as boolean)}
+                                    />
+                                </div>
                                 <div className="col-span-6">Category</div>
                                 <div className="col-span-2 text-right">Avg. Spend</div>
                                 <div className="col-span-3 text-right">Budget</div>

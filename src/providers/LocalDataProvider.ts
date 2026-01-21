@@ -27,6 +27,16 @@ export class LocalDataProvider implements DataProvider {
       }
     }
 
+    // Ensure Vendor/Payee exists
+    if (transaction.vendor) {
+      await this.ensurePayeeExists(transaction.vendor, false, { currency: transaction.currency });
+    }
+
+    // Ensure Account exists
+    if (transaction.account) {
+      await this.ensurePayeeExists(transaction.account, true, { currency: transaction.currency });
+    }
+
     const newTransaction: Transaction = {
       ...transaction,
       id: uuidv4(),
@@ -53,6 +63,10 @@ export class LocalDataProvider implements DataProvider {
 
   async deleteTransaction(id: string): Promise<void> {
     await db.transactions.delete(id);
+  }
+
+  async deleteMultipleTransactions(ids: string[]): Promise<void> {
+    await db.transactions.bulkDelete(ids);
   }
 
   async deleteTransactionByTransferId(transferId: string): Promise<void> {
@@ -132,9 +146,14 @@ export class LocalDataProvider implements DataProvider {
     await db.scheduled_transactions.delete(id);
   }
 
+  async deleteMultipleScheduledTransactions(ids: string[]): Promise<void> {
+    await db.scheduled_transactions.bulkDelete(ids);
+  }
+
   // Payees/Vendors/Accounts
-  async ensurePayeeExists(name: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null> {
-    if (!name) return null;
+  async ensurePayeeExists(rawName: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null> {
+    if (!rawName) return null;
+    const name = rawName.trim();
 
     let vendor = await db.vendors.where('name').equals(name).first();
 
@@ -255,8 +274,9 @@ export class LocalDataProvider implements DataProvider {
   }
 
   // Categories
-  async ensureCategoryExists(name: string, userId: string): Promise<string | null> {
-    if (!name) return null;
+  async ensureCategoryExists(rawName: string, userId: string): Promise<string | null> {
+    if (!rawName) return null;
+    const name = rawName.trim();
     const category = await db.categories.where('name').equals(name).first(); // We ignore userId check for local simplicity or add .and(c => c.user_id === userId)
 
     if (category) return category.id;
@@ -271,8 +291,9 @@ export class LocalDataProvider implements DataProvider {
     return newId;
   }
 
-  async ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null> {
-    if (!name || !categoryId) return null;
+  async ensureSubCategoryExists(rawName: string, categoryId: string, userId: string): Promise<string | null> {
+    if (!rawName || !categoryId) return null;
+    const name = rawName.trim();
 
     const sub = await db.sub_categories
       .where('category_id').equals(categoryId)
@@ -454,6 +475,15 @@ export class LocalDataProvider implements DataProvider {
 
       await db.transactions.update(id1, { transfer_id: transferId, category: 'Transfer' });
       await db.transactions.update(id2, { transfer_id: transferId, category: 'Transfer' });
+    });
+  }
+
+  async unlinkTransactions(transferId: string): Promise<void> {
+    await db.transaction('rw', db.transactions, async () => {
+      const transactions = await db.transactions.where('transfer_id').equals(transferId).toArray();
+      for (const t of transactions) {
+        await db.transactions.update(t.id, { transfer_id: null }); // Keep category as is (User can change manually)
+      }
     });
   }
 

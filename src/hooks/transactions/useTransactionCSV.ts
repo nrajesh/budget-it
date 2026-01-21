@@ -14,6 +14,7 @@ export const useTransactionCSV = () => {
     refetchAccounts,
     accountCurrencyMap,
     detectAndLinkTransfers,
+    setOperationProgress
   } = useTransactions();
   const { user } = useUser();
   const dataProvider = useDataProvider();
@@ -58,6 +59,15 @@ export const useTransactionCSV = () => {
         }
 
         try {
+          const totalSteps = 4;
+          setOperationProgress({
+            title: "Importing CSV",
+            description: "Preparing to import transactions...",
+            stage: "Analyzing Accounts & Payees...",
+            progress: 10,
+            totalStages: totalSteps
+          });
+
           // Step 1: Ensure all payees exist
           const uniqueAccountsData = parsedData.map(row => ({
             name: row.Account,
@@ -74,6 +84,14 @@ export const useTransactionCSV = () => {
             const isTransfer = row?.Category === 'Transfer';
             return dataProvider.ensurePayeeExists(name, isTransfer);
           }));
+
+          setOperationProgress({
+            title: "Importing CSV",
+            description: "Checking categories...",
+            stage: "Verifying Categories...",
+            progress: 25,
+            totalStages: totalSteps
+          });
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
@@ -120,14 +138,43 @@ export const useTransactionCSV = () => {
           if (transactionsToInsert.length === 0) {
             showError("No valid transactions could be prepared from the CSV. Check account names, amounts, and currency column.");
             setIsImporting(false);
+            setOperationProgress(null);
             return;
           }
 
+          setOperationProgress({
+            title: "Importing CSV",
+            description: `Importing ${transactionsToInsert.length} transactions...`,
+            stage: "Saving Transactions...",
+            progress: 50,
+            totalStages: totalSteps
+          });
+
           // Step 4: Insert transactions
           // Loop insertion
+          let insertedCount = 0;
           for (const t of transactionsToInsert) {
             await dataProvider.addTransaction(t);
+            insertedCount++;
+            // Update progress occasionally
+            if (insertedCount % 10 === 0) {
+              setOperationProgress({
+                title: "Importing CSV",
+                description: `Importing... (${insertedCount}/${transactionsToInsert.length})`,
+                stage: "Saving Transactions...",
+                progress: 50 + Math.floor((insertedCount / transactionsToInsert.length) * 30), // Map to 50-80%
+                totalStages: totalSteps
+              });
+            }
           }
+
+          setOperationProgress({
+            title: "Importing CSV",
+            description: "Linking transfers...",
+            stage: "Detecting Transfers...",
+            progress: 90,
+            totalStages: totalSteps
+          });
 
           showSuccess(`${transactionsToInsert.length} transactions imported successfully!`);
 
@@ -137,14 +184,24 @@ export const useTransactionCSV = () => {
             showSuccess(`Automatically identified and linked ${linkedCount} transfer pairs.`);
           }
 
+          setOperationProgress({
+            title: "Importing CSV",
+            description: "All done!",
+            stage: "Complete",
+            progress: 100,
+            totalStages: totalSteps
+          });
+
           refetchTransactions();
         } catch (error: any) {
           showError(`Import failed: ${error.message}`);
+          setOperationProgress(null);
         } finally {
           setIsImporting(false);
           if (fileInputRef.current) {
             fileInputRef.current.value = "";
           }
+          // Dialog closes automatically on 100% or we can ensure it's closed in case of error
         }
       },
       error: (error: any) => {

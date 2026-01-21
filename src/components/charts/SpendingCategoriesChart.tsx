@@ -5,7 +5,7 @@ import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle, Theme
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ActivePieShape } from "./charts/ActivePieShape";
+import { ActivePieShape } from "./ActivePieShape";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

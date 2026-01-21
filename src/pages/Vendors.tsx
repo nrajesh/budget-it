@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { usePayeeManagement } from "@/hooks/usePayeeManagement";
-import AddEditPayeeDialog, { Payee } from "@/components/AddEditPayeeDialog";
+import AddEditPayeeDialog, { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";

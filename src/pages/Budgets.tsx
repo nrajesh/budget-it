@@ -39,7 +39,7 @@ export default function BudgetsPage() {
   const userId = user?.id || null;
 
   // Contexts for real-time calculation
-  const { transactions, accounts, vendors } = useTransactions();
+  const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();
   const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
 
   useEffect(() => {
@@ -69,6 +69,8 @@ export default function BudgetsPage() {
 
   // Recalculate spent amounts using shared logic
   const processedBudgets = useMemo(() => {
+    // effectiveBudgets defined above, need to move it up or reference here?
+    // Let's rely on 'budgets' state for this memo, but then filter 'processedBudgets'.
     return budgets.map(budget => {
       const spent = calculateBudgetSpent(
         budget,
@@ -83,14 +85,20 @@ export default function BudgetsPage() {
   }, [budgets, transactions, accounts, vendors, convertBetweenCurrencies]);
 
   const filteredBudgets = useMemo(() => {
+    let base = processedBudgets;
+    // Apply hidden filter
+    if (hiddenBudgetIds.size > 0) {
+      base = base.filter(b => !hiddenBudgetIds.has(b.id));
+    }
+
     if (!searchTerm) {
-      return processedBudgets;
+      return base;
     }
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return processedBudgets.filter(budget =>
+    return base.filter(budget =>
       budget.category_name.toLowerCase().includes(lowerCaseSearchTerm)
     );
-  }, [processedBudgets, searchTerm]);
+  }, [processedBudgets, searchTerm, hiddenBudgetIds]);
 
   const activeBudgets = useMemo(() => {
     return filteredBudgets.filter(b => b.is_active !== false);
@@ -121,16 +129,19 @@ export default function BudgetsPage() {
     setIsConfirmingDelete(true);
   };
 
+
+
   const confirmDelete = async () => {
     if (!budgetToDeleteId) return;
 
     try {
-      await dataProvider.deleteBudget(budgetToDeleteId);
-      toast({
-        title: "Budget deleted",
-        description: "The budget has been successfully deleted.",
-      });
-      handleSave();
+      deleteBudget(budgetToDeleteId);
+      // Toast is handled by context now
+      // handleSave(); // Not strictly needed if local state is just for initial load, but effectiveBudgets handles UI.
+      // However, fetchBudgets creates 'budgets' state.
+      // If we don't update 'budgets' state, effectiveBudgets filters it. 
+      // But if we reload, it's gone.
+      // So simple delete is fine.
     } catch (error: any) {
       toast({
         title: "Error deleting budget",
@@ -223,7 +234,7 @@ export default function BudgetsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected budget.
+              This will delete the selected budget.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -12,6 +12,7 @@ interface UseEntityManagementProps<T> {
   batchUpsertPayloadKey?: string; // Ignored for local
   isDeletable?: (item: T) => boolean;
   onSuccess?: () => void;
+  customDeleteHandler?: (ids: string[]) => void;
 }
 
 export const useEntityManagement = <T extends { id: string; name: string }>({
@@ -20,6 +21,7 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   queryKey,
   isDeletable = () => true,
   onSuccess,
+  customDeleteHandler,
 }: UseEntityManagementProps<T>) => {
   const queryClient = useQueryClient();
 
@@ -49,12 +51,12 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       const tableKey = queryKey[0];
 
       if (tableKey === 'vendors') {
-          await db.vendors.bulkDelete(ids);
-          // Also delete associated accounts if is_account?
-          // Supabase RPC likely handled cascading. Dexie doesn't cascade by default.
-          // For now, simple delete.
+        await db.vendors.bulkDelete(ids);
+        // Also delete associated accounts if is_account?
+        // Supabase RPC likely handled cascading. Dexie doesn't cascade by default.
+        // For now, simple delete.
       } else if (tableKey === 'categories') {
-          await db.categories.bulkDelete(ids);
+        await db.categories.bulkDelete(ids);
       }
     },
     onSuccess: async () => {
@@ -72,29 +74,29 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
 
   const batchUpsertMutation = useMutation({
     mutationFn: async (dataToUpsert: any[]) => {
-       // Only categories use this currently via CSV import
-       // useCategoryManagement passes this.
-       // We'll rely on useCategoryManagement's override or specific logic if provided,
-       // BUT this generic hook was calling RPC.
-       // Since useCategoryManagement now has its own 'batchUpsertCategoriesMutation' that calls ensureCategoryExists,
-       // this generic one might not be used?
-       // Let's check usages.
-       // useCategoryManagement passes 'batchUpsertRpcFn'.
-       // If we want to support generic upsert here, we need to know the table.
+      // Only categories use this currently via CSV import
+      // useCategoryManagement passes this.
+      // We'll rely on useCategoryManagement's override or specific logic if provided,
+      // BUT this generic hook was calling RPC.
+      // Since useCategoryManagement now has its own 'batchUpsertCategoriesMutation' that calls ensureCategoryExists,
+      // this generic one might not be used?
+      // Let's check usages.
+      // useCategoryManagement passes 'batchUpsertRpcFn'.
+      // If we want to support generic upsert here, we need to know the table.
 
-       const tableKey = queryKey[0];
-       if (tableKey === 'categories') {
-            // Assume dataToUpsert are names? Or objects?
-            // The RPC expected objects.
-            // But locally we probably shouldn't use this generic RPC replacement blindly without strict types.
-            // Assuming the caller handles specific logic.
-            // Actually, useCategoryManagement DEFINES its own batchUpsertCategoriesMutation and DOES NOT use this generic batchUpsertMutation exposed here?
-            // Let's check useCategoryManagement.ts ... it defines `batchUpsertCategoriesMutation` but does NOT return `batchUpsertMutation` from `useEntityManagement`.
-            // So this `batchUpsertMutation` here might be unused by categories.
-            // Let's check Vendors? usePayeeManagement?
+      const tableKey = queryKey[0];
+      if (tableKey === 'categories') {
+        // Assume dataToUpsert are names? Or objects?
+        // The RPC expected objects.
+        // But locally we probably shouldn't use this generic RPC replacement blindly without strict types.
+        // Assuming the caller handles specific logic.
+        // Actually, useCategoryManagement DEFINES its own batchUpsertCategoriesMutation and DOES NOT use this generic batchUpsertMutation exposed here?
+        // Let's check useCategoryManagement.ts ... it defines `batchUpsertCategoriesMutation` but does NOT return `batchUpsertMutation` from `useEntityManagement`.
+        // So this `batchUpsertMutation` here might be unused by categories.
+        // Let's check Vendors? usePayeeManagement?
 
-            // If unused, we can stub it.
-       }
+        // If unused, we can stub it.
+      }
     },
     onSuccess: async (_data, variables) => {
       showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
@@ -132,7 +134,19 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   const confirmDelete = () => {
     const idsToDelete = isBulkDelete ? selectedRows : (entityToDelete ? [entityToDelete.id] : []);
     if (idsToDelete.length > 0) {
-      deleteMutation.mutate(idsToDelete);
+      if (customDeleteHandler) {
+        customDeleteHandler(idsToDelete);
+        // Manually trigger success side effects since mutation wrapper normally does it
+        // But for undo context, the context handles toast + invalidation.
+        // We just need to close dialogs.
+        setIsConfirmOpen(false); // Helper or set state directly
+        setEntityToDelete(null);
+        setSelectedRows([]);
+        setIsBulkDelete(false);
+        if (onSuccess) onSuccess();
+      } else {
+        deleteMutation.mutate(idsToDelete);
+      }
     } else {
       setIsConfirmOpen(false);
     }

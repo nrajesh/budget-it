@@ -1,13 +1,20 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { ScheduledTransactionsTable } from "@/components/ScheduledTransactionsTable";
+import { Plus, Sparkles } from "lucide-react";
+import { ScheduledTransactionsTable } from "@/components/scheduled-transactions/ScheduledTransactionsTable";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
 import { ScheduledTransaction } from "@/types/dataProvider";
-import { toast } from "sonner"; // Assuming sonner is used for toasts, or ui/use-toast
+import { toast } from "sonner";
+import { useLocalTransactionFilters } from "@/hooks/transactions/useLocalTransactionFilters";
+import { ScheduledSearchFilterBar } from "@/components/scheduled-transactions/ScheduledSearchFilterBar";
+import { SmartScheduleDialog } from "@/components/scheduled-transactions/SmartScheduleDialog";
+import { addMonths, addWeeks, addYears } from "date-fns";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { slugify } from "@/lib/utils";
 
 const ScheduledTransactionsPage = () => {
+  const navigate = useNavigate();
   const {
     scheduledTransactions,
     addScheduledTransaction,
@@ -17,12 +24,97 @@ const ScheduledTransactionsPage = () => {
     vendors,
     categories,
     allSubCategories,
-
+    addTransaction, // For processing 'make happen today'
+    invalidateAllData,
+    deleteMultipleScheduledTransactions,
+    unlinkScheduledTransaction,
   } = useTransactions();
+
+  // Independent Search State
+  const filterState = useLocalTransactionFilters();
+  const {
+    searchTerm,
+    dateRange,
+    selectedAccounts,
+    selectedCategories,
+    selectedSubCategories,
+    selectedVendors,
+    minAmount,
+    maxAmount
+  } = filterState;
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransaction | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSmartSchedulerOpen, setIsSmartSchedulerOpen] = React.useState(false);
+
+  // --- Smart Scheduler Logic ---
+  // --- Smart Scheduler Logic ---
+  const handleSmartSchedule = () => {
+    setIsSmartSchedulerOpen(true);
+  };
+
+  // --- Filtering Logic ---
+  const [searchParams] = useSearchParams();
+  const targetId = searchParams.get("id");
+
+  const filteredTransactions = React.useMemo(() => {
+    // If we have no transactions yet, return empty
+    if (!scheduledTransactions || scheduledTransactions.length === 0) return [];
+
+    let result = scheduledTransactions.filter(t => {
+      // Direct ID Match (if passed via URL)
+      if (targetId) {
+        return t.id === targetId;
+      }
+
+      // Date Range (Future looking)
+      if (dateRange && dateRange.from) {
+        const tDate = new Date(t.date);
+        // Start of 'from' day
+        const fromDate = new Date(dateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+
+        if (tDate < fromDate) return false;
+
+        if (dateRange.to) {
+          const endDate = new Date(dateRange.to);
+          endDate.setHours(23, 59, 59, 999);
+          if (tDate > endDate) return false;
+        }
+      }
+
+      if (selectedAccounts.length > 0 && !selectedAccounts.includes(slugify(t.account))) return false;
+      if (selectedCategories.length > 0 && !selectedCategories.includes(slugify(t.category))) return false;
+      if (selectedSubCategories.length > 0 && !selectedSubCategories.includes(slugify(t.sub_category || ''))) return false;
+      if (selectedVendors.length > 0 && !selectedVendors.includes(slugify(t.vendor))) return false;
+
+      // Amount
+      if (minAmount !== undefined && Math.abs(t.amount) < minAmount) return false;
+      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount) return false;
+
+      // Search Term (Generic)
+      if (searchTerm) {
+        const lower = searchTerm.toLowerCase();
+        return (
+          (t.remarks || "").toLowerCase().includes(lower) ||
+          (t.vendor || "").toLowerCase().includes(lower) ||
+          (t.category || "").toLowerCase().includes(lower) ||
+          (t.account || "").toLowerCase().includes(lower)
+        );
+      }
+
+      return true;
+    });
+
+    // Sorting
+    result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return result;
+  }, [scheduledTransactions, dateRange, selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors, minAmount, maxAmount, searchTerm, targetId]);
+
+
+  // --- Actions ---
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -37,10 +129,68 @@ const ScheduledTransactionsPage = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteScheduledTransaction(id);
-      toast.success("Scheduled transaction deleted");
     } catch (error) {
       console.error("Failed to delete scheduled transaction:", error);
       toast.error("Failed to delete scheduled transaction");
+    }
+  };
+
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      if (ids.length === 0) return;
+      await deleteMultipleScheduledTransactions(ids);
+    } catch (error) {
+      console.error("Failed to bulk delete scheduled transactions:", error);
+      toast.error("Failed to delete scheduled transactions");
+    }
+  };
+
+  const calculateNextDate = (currentDate: Date, frequency: string): Date => {
+    const d = new Date(currentDate);
+    if (frequency === 'Weekly') return addWeeks(d, 1);
+    if (frequency === 'Monthly') return addMonths(d, 1);
+    if (frequency === 'Yearly') return addYears(d, 1);
+    // Daily?
+    if (frequency === 'Daily') {
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      return next;
+    }
+    return d;
+  };
+
+  const handleProcessToday = async (st: ScheduledTransaction) => {
+    try {
+      const today = new Date();
+      const transactionPayload = {
+        date: today.toISOString(),
+        account: st.account,
+        vendor: st.vendor,
+        category: st.category,
+        sub_category: st.sub_category,
+        amount: st.amount,
+        currency: st.currency,
+        remarks: st.remarks || "Processed from schedule",
+        is_scheduled_origin: true,
+        user_id: st.user_id,
+        // recurrence_id: st.id 
+      };
+
+      await addTransaction(transactionPayload);
+
+      const currentNextDate = new Date(st.date);
+      let nextDate = calculateNextDate(currentNextDate, st.frequency);
+
+      await updateScheduledTransaction({
+        ...st,
+        date: nextDate.toISOString()
+      });
+
+      toast.success("Transaction processed and schedule advanced!");
+
+    } catch (e) {
+      console.error("Process Today Error", e);
+      toast.error("Failed to process transaction.");
     }
   };
 
@@ -51,14 +201,13 @@ const ScheduledTransactionsPage = () => {
         ...values,
         frequency: `${values.frequency_value}${values.frequency_unit}`
       };
-      // Remove helper fields
       delete transactionData.frequency_value;
       delete transactionData.frequency_unit;
 
-      // Currency is derived from account or default 'USD'
       const accountObj = accounts.find(a => a.name === values.account);
       const currency = accountObj?.currency || 'USD';
-
+      // Ensure ID is present for local optimistic updates if needed, though dataProvider usually adds it.
+      // But let's let backend handle.
       const payload = { ...transactionData, currency };
 
       if (editingTransaction) {
@@ -77,36 +226,44 @@ const ScheduledTransactionsPage = () => {
     }
   };
 
-  // Convert ScheduledTransaction to display item format for table
-  // The table expects ScheduledTransactionDisplayItem which is slightly different
-  // Convert ScheduledTransaction to display item format for table
-  const tableData = scheduledTransactions.map(t => ({
-    ...t,
-    // Ensure fields match
-    sub_category: t.sub_category || undefined,
-  }));
-
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-            Scheduled Transactions
-          </h1>
-          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage your recurring income and expenses</p>
+      <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+              Scheduled Transactions
+            </h1>
+            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage recurring payments & subscriptions</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button onClick={handleSmartSchedule} variant="outline" className="border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950">
+              <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Auto-Schedule
+            </Button>
+            <Button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Plus className="mr-2 h-4 w-4" /> Add Scheduled
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            <Plus className="mr-2 h-4 w-4" /> Add Scheduled
-          </Button>
-        </div>
+
+        <ScheduledSearchFilterBar
+          filterState={filterState}
+          targetId={targetId}
+          onClearId={() => {
+            // Use navigate to replace URL without the ID
+            navigate("/scheduled", { replace: true });
+          }}
+        />
       </div>
 
       <div className="grid gap-4">
         <ScheduledTransactionsTable
-          transactions={tableData}
+          transactions={filteredTransactions}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
+          onProcessToday={handleProcessToday}
+          onUnlink={unlinkScheduledTransaction}
         />
       </div>
 
@@ -117,10 +274,19 @@ const ScheduledTransactionsPage = () => {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         accounts={accounts}
-        allPayees={vendors.map(v => ({ value: v.name, label: v.name, isAccount: v.is_account }))}
+        allPayees={[
+          ...vendors.map(v => ({ value: v.name, label: v.name, isAccount: false })),
+          ...accounts.map(a => ({ value: a.name, label: a.name, isAccount: true }))
+        ].sort((a, b) => a.label.localeCompare(b.label))}
         categories={categories}
         allSubCategories={allSubCategories}
         isLoading={false}
+      />
+
+      <SmartScheduleDialog
+        isOpen={isSmartSchedulerOpen}
+        onClose={() => setIsSmartSchedulerOpen(false)}
+        onSave={invalidateAllData}
       />
     </div>
   );

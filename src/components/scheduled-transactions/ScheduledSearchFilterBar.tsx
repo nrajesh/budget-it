@@ -1,20 +1,28 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { RefreshCw } from "lucide-react";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { RefreshCw, X } from "lucide-react";
 import { parseSearchQuery } from "@/utils/searchParser";
+import { NLPSearchInput } from "@/components/ui/NLPSearchInput";
+import { LocalFilterState } from "@/hooks/transactions/useLocalTransactionFilters";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { slugify } from "@/lib/utils";
-import { NLPSearchInput } from "@/components/ui/NLPSearchInput";
-import { ActiveFiltersDisplay } from "@/components/ActiveFiltersDisplay";
-import { useTheme } from "@/contexts/ThemeContext";
+// import { ActiveFiltersDisplay } from "@/components/filters/ActiveFiltersDisplay";
 
-/**
- * Common component for Search and Filtering across the app.
- * Persists state via useTransactionFilters hook.
- */
-export const SearchFilterBar = () => {
+// Mock version of ActiveFiltersDisplay that accepts local state props?
+// The original ActiveFiltersDisplay likely uses the global hook internally.
+// We might need to duplicate it or simple inline display for now to avoid refactoring the global one.
+// Let's create a local version of chips display or accept we might not show chips yet for this first pass?
+// Actually, `ActiveFiltersDisplay.tsx` probably imports `useTransactionFilters`.
+// I will just implement a simpler inline display for now or check if I can refactor ActiveFiltersDisplay later.
+// For now: Just the Input.
+
+interface Props {
+    filterState: LocalFilterState;
+    targetId?: string | null;
+    onClearId?: () => void;
+}
+
+export const ScheduledSearchFilterBar: React.FC<Props> = ({ filterState, targetId, onClearId }) => {
     const {
         setSearchTerm,
         setDateRange,
@@ -23,23 +31,21 @@ export const SearchFilterBar = () => {
         setSelectedSubCategories,
         setSelectedVendors,
         handleResetFilters,
-        excludeTransfers,
-        setExcludeTransfers,
+        // setExcludeTransfers,
         setMinAmount,
         setMaxAmount,
         setLimit,
         setSortOrder,
         rawSearchQuery,
         setRawSearchQuery
-    } = useTransactionFilters();
+    } = filterState;
 
     const { categories, allSubCategories, accounts, vendors } = useTransactions();
-    const { isFinancialPulse } = useTheme();
+    // const { isFinancialPulse } = useTheme(); // Unused for now
 
     const handleSearch = (value: string) => {
         setRawSearchQuery(value);
 
-        // Perform NLP parsing
         const update = parseSearchQuery(
             value,
             {
@@ -50,51 +56,33 @@ export const SearchFilterBar = () => {
             }
         );
 
-        // Apply updates
         if (update.dateRange) setDateRange(update.dateRange);
-        if (update.selectedCategories) {
-            setSelectedCategories(update.selectedCategories);
-            // If "Transfer" category is selected (likely slug 'transfer' or 'transfers'), ensure we don't exclude them
-            const hasTransfer = update.selectedCategories.some(s => s.toLowerCase().includes('transfer'));
-            if (hasTransfer) {
-                setExcludeTransfers(false);
-            }
-        }
+        if (update.selectedCategories) setSelectedCategories(update.selectedCategories);
         if (update.selectedSubCategories) setSelectedSubCategories(update.selectedSubCategories);
-
         if (value.trim().length > 0) {
             setSelectedAccounts(update.selectedAccounts || []);
         } else {
             if (update.selectedAccounts) setSelectedAccounts(update.selectedAccounts);
         }
-
         if (update.selectedVendors) setSelectedVendors(update.selectedVendors);
-
-        // Amount
         if (update.minAmount !== undefined) setMinAmount(update.minAmount);
         else setMinAmount(undefined);
-
         if (update.maxAmount !== undefined) setMaxAmount(update.maxAmount);
         else setMaxAmount(undefined);
-
         if (update.limit !== undefined) setLimit(update.limit);
         else setLimit(undefined);
-
         if (update.sortOrder !== undefined) setSortOrder(update.sortOrder);
         else setSortOrder(undefined);
 
-        // Use the remaining text as the generic search term
         if (update.searchTerm !== undefined) setSearchTerm(update.searchTerm);
     };
 
     const handleReset = () => {
-        setRawSearchQuery("");
         handleResetFilters();
     };
 
     return (
         <div className="w-full space-y-4">
-            {/* Main Search Input */}
             <NLPSearchInput
                 value={rawSearchQuery}
                 onChange={(val) => {
@@ -102,25 +90,22 @@ export const SearchFilterBar = () => {
                     handleSearch(val);
                 }}
                 onClear={() => handleSearch("")}
+                placeholder="Search future transactions (e.g. 'Rent next month', 'Netflix')..."
             />
 
-            {/* Active Filters Summary (Chips) */}
-            <ActiveFiltersDisplay />
-
-            {/* Additional Controls */}
-            <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                    <Switch
-                        id="exclude-transfers"
-                        checked={excludeTransfers}
-                        onCheckedChange={setExcludeTransfers}
-                        className={isFinancialPulse ? "data-[state=checked]:bg-indigo-500" : ""}
-                    />
-                    <label htmlFor="exclude-transfers" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700 dark:text-slate-300">
-                        Exclude Transfers
-                    </label>
-                </div>
-
+            <div className="flex items-center justify-end px-1 gap-2 flex-wrap">
+                {targetId && (
+                    <div className="flex items-center gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2.5 py-1 rounded-full text-xs font-medium animate-in fade-in zoom-in-95">
+                        <span>Filtered by Reference</span>
+                        <button
+                            onClick={onClearId}
+                            className="ml-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors"
+                        >
+                            <X className="h-3 w-3" />
+                            <span className="sr-only">Clear reference filter</span>
+                        </button>
+                    </div>
+                )}
                 <Button variant="outline" size="sm" onClick={handleReset} className="h-8">
                     <RefreshCw className="mr-2 h-3 w-3" />
                     Reset

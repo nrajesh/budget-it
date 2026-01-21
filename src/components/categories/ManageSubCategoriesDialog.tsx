@@ -21,7 +21,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
+import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 
 interface ManageSubCategoriesDialogProps {
     isOpen: boolean;

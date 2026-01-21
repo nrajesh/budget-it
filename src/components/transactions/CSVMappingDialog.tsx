@@ -70,7 +70,7 @@ const CSVMappingDialog = ({
         }
     }, [isOpen, file]);
 
-    const handleParse = () => {
+    const handleParse = (shouldAdvanceStart: boolean = false) => {
         if (!file) return;
         setIsLoading(true);
 
@@ -124,7 +124,9 @@ const CSVMappingDialog = ({
                     }
                 }
 
-                setStep('mapping');
+                if (shouldAdvanceStart) {
+                    setStep('mapping');
+                }
                 setIsLoading(false);
             },
             error: (error: any) => {
@@ -275,7 +277,7 @@ const CSVMappingDialog = ({
                                     <div className="text-xs text-muted-foreground p-2 text-center">
                                         {isLoading ? "Reading..." : "No data properly parsed. Check delimiter."}
                                         <div className="mt-2">
-                                            <Button variant="outline" size="sm" onClick={handleParse}>Refresh Preview</Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleParse(false)}>Refresh Preview</Button>
                                         </div>
                                     </div>
                                 )}
@@ -319,7 +321,7 @@ const CSVMappingDialog = ({
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     {step === 'config' ? (
-                        <Button onClick={handleParse} disabled={!file || isLoading}>
+                        <Button onClick={() => handleParse(true)} disabled={!file || isLoading}>
                             {isLoading ? "Reading..." : "Next"}
                         </Button>
                     ) : (

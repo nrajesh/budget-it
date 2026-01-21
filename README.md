@@ -9,6 +9,7 @@ A privacy-focused, local-first personal finance application designed to help you
 - **Local-First & Private**: All your data stored securely in your browser using IndexedDB. No external servers see your financial data.
 - **Comprehensive Budgeting**: Set monthly, quarterly, yearly, or one-time budgets.
 - **Transaction Management**: Easy tracking with categories, sub-categories, vendors, and account groups.
+- **Conversational Search**: Natural language filtering for transactions, categories, and dates.
 - **Smart Analytics**: Visual breakdowns of income, expenses, and savings trends.
 - **Import/Export**: Flexible CSV importing and data management.
 
@@ -23,6 +24,19 @@ This application is built as a Single Page Application (SPA) with a focus on cli
 - **State Management**: [TanStack Query](https://tanstack.com/query/latest) (React Query)
 - **Local Database**: [Dexie.js](https://dexie.org/) (Wrapper for IndexedDB)
 - **Routing**: [React Router](https://reactrouter.com/)
+
+### Project Structure
+The codebase is organized to promote modularity and reusability:
+
+- `src/components/`: Reusable UI components.
+  - `dialogs/`: Modal dialogs (e.g., Add Transaction, Confirmation).
+  - `filters/`: Search and filter components.
+  - `feedback/`: Loading spinners, progress bars, and alerts.
+  - `transactions/`: Transaction-specific components (tables, headers).
+- `src/pages/`: Main application pages (Dashboard, Transactions, Reports).
+- `src/hooks/`: Custom React hooks for logic and state management.
+- `src/contexts/`: React Context providers for global state (Transactions, Theme, User).
+- `src/utils/`: Helper functions and utilities.
 
 ### Data Flow
 1. **Local Storage**: The app uses `Dexie.js` to interface with the browser's IndexedDB. This acts as the primary data source.
@@ -65,6 +79,25 @@ To create a production-ready build:
 pnpm build
 ```
 The build artifacts will be stored in the `dist/` directory.
+
+## 🛠️ Development Guide
+
+### Adding New Components
+1. **Choose the Right Directory**:
+   - `src/components/ui`: Generic, reusable UI primitives (buttons, inputs).
+   - `src/components/features`: Complex feature-specific components.
+   - `src/components/layout`: Layout wrappers.
+
+2. **Guidelines**:
+   - Use **functional components** with TypeScript interfaces.
+   - Style using **Tailwind CSS** utility classes.
+   - Ensure responsive design (mobile-first).
+   - Add JSDoc comments for complex logic or props.
+
+### State Management
+- Use `useTransactions()` for global financial data.
+- Use local `useState` for UI-only state (dialog open/close).
+- Use `useQuery` for any async data fetching.
 
 ## 📦 Deployment
 
