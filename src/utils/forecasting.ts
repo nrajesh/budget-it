@@ -77,7 +77,9 @@ export function projectScheduledTransactions(
                 switch (st.frequency) {
                     case 'Daily': intervalUnit = 'd'; break;
                     case 'Weekly': intervalUnit = 'w'; break;
+                    case 'Bi-Weekly': intervalUnit = 'w'; intervalValue = 2; break;
                     case 'Monthly': intervalUnit = 'm'; break;
+                    case 'Quarterly': intervalUnit = 'm'; intervalValue = 3; break;
                     case 'Yearly': intervalUnit = 'y'; break;
                 }
             } else {

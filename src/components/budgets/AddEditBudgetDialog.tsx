@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
-import { useUser } from "@/contexts/UserContext";
+// import { useUser } from "@/contexts/UserContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useLedger } from "@/contexts/LedgerContext";
 
 interface AddEditBudgetDialogProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ interface AddEditBudgetDialogProps {
 }
 
 export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets, onSuccess }) => {
-  const { user } = useUser();
+  const { activeLedger } = useLedger();
   const { categories, subCategories, accounts } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
@@ -67,8 +68,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     }
 
     if (!allBudgets) return;
-    const frequency = `${data.frequency_value}${data.frequency_unit}`;
-    const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
+    // const frequency = `${data.frequency_value}${data.frequency_unit}`;
+    // const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
 
     // Strict duplicate check: One budget per Category/Sub-category pair
     const isDuplicate = allBudgets.some(b =>
@@ -161,7 +162,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
   }, [isOpen, budget, form, selectedCurrency]);
 
   const onSubmit = async (values: BudgetFormData) => {
-    if (!user) return;
+    if (!activeLedger) return;
     setIsSubmitting(true);
 
     const frequency = `${values.frequency_value}${values.frequency_unit}`;
@@ -169,7 +170,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     const subCatName = values.sub_category_id ? subCategories.find(s => s.id === values.sub_category_id)?.name : null;
 
     const dbPayload: any = {
-      user_id: user.id,
+      user_id: activeLedger.id,
       category_id: values.category_id,
       category_name: selectedCategory?.name || '',
       sub_category_id: values.sub_category_id || null,

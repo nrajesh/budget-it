@@ -10,7 +10,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useQuery } from '@tanstack/react-query';
-import { useUser } from '@/contexts/UserContext';
+import { useLedger } from "@/contexts/LedgerContext";
 import { Budget } from '@/types/dataProvider';
 import { slugify } from '@/lib/utils';
 import { useDataProvider } from '@/context/DataProviderContext';
@@ -33,7 +33,7 @@ interface ReportLayoutProps {
 
 const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
   const { accounts, vendors, categories, transactions: allTransactions } = useTransactions();
-  const { user } = useUser();
+  const { activeLedger } = useLedger();
 
 
 
@@ -69,17 +69,17 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const dataProvider = useDataProvider();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
-    queryKey: ['budgets', user?.id],
+    queryKey: ['budgets', activeLedger?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!activeLedger?.id) return [];
       // Use data provider to fetch budgets. DataProvider returns budgets with category_name usually.
       // But getBudgetsWithSpending might be overkill if we just want basic list?
       // Actually, ReportLayout just wants the list to calculate things maybe.
       // Let's use getBudgetsWithSpending as it is the main getter we implemented.
-      const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+      const budgets = await dataProvider.getBudgetsWithSpending(activeLedger.id);
       return budgets;
     },
-    enabled: !!user,
+    enabled: !!activeLedger,
   });
 
 

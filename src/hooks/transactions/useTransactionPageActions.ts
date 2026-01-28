@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from "react";
 import Papa from "papaparse";
-import { useSession } from "@/hooks/useSession";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
@@ -17,7 +17,7 @@ import { slugify } from "@/lib/utils";
  * @param filteredTransactions - The list of transactions currently visible/filtered on the page, used for export.
  */
 export const useTransactionPageActions = (filteredTransactions: any[]) => {
-    const session = useSession();
+    const { activeLedger } = useLedger();
     const dataProvider = useDataProvider();
     const { detectAndLinkTransfers, setOperationProgress, invalidateAllData } = useTransactions();
     const { toast } = useToast();
@@ -47,7 +47,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             "Transfer ID": t.transfer_id || ""
         }));
 
-        let fileName = "transactions.csv";
+        let fileName = activeLedger ? `${slugify(activeLedger.name)}_transactions.csv` : "transactions.csv";
 
         // Template Generation if empty
         if (filteredTransactions.length === 0) {
@@ -191,9 +191,9 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
    */
     const processImport = async (data: any[], config?: any) => {
         try {
-            const userId = session?.user?.id;
+            const userId = activeLedger?.id;
             if (!userId) {
-                showError("User not logged in");
+                showError("No active ledger selected. Please select a ledger to import transactions.");
                 return;
             }
 
@@ -223,7 +223,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             const knownCategoryIds = new Set<string>();
             const knownSubCategoryIds = new Set<string>();
 
-            const existingVendors = await dataProvider.getAllVendors();
+            const existingVendors = await dataProvider.getAllVendors(userId);
             existingVendors.forEach(v => {
                 if (v.is_account) knownAccountIds.add(v.id);
                 else knownVendorIds.add(v.id);
@@ -249,7 +249,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                 const currency = row?.Currency || 'USD';
                 const type = row?.["Account Type"];
 
-                const id = await dataProvider.ensurePayeeExists(name, true, { currency, type });
+                const id = await dataProvider.ensurePayeeExists(name, true, userId, { currency, type });
                 if (id && !knownAccountIds.has(id)) {
                     newAccountsCount++;
                     knownAccountIds.add(id);
@@ -268,7 +268,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             let newVendorsCount = 0;
             const uniquePayees = [...new Set(data.map((r: any) => (r.Payee || r.Vendor || "").trim()).filter(Boolean))];
             for (const name of uniquePayees) {
-                const id = await dataProvider.ensurePayeeExists(name, false);
+                const id = await dataProvider.ensurePayeeExists(name, false, userId);
                 if (id && !knownVendorIds.has(id) && !knownAccountIds.has(id)) {
                     newVendorsCount++;
                     knownVendorIds.add(id);

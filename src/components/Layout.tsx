@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import {
   Users,
@@ -19,6 +20,12 @@ import {
   Banknote,
   Tag,
   Calendar,
+  Building2,
+  Globe,
+  Home,
+  Baby,
+  Wallet,
+  Landmark
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -34,6 +41,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
@@ -54,15 +62,24 @@ import {
 } from "@/components/ui/sidebar";
 
 import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDialog";
-import { useUser } from "@/contexts/UserContext";
+// import { useUser } from "@/contexts/UserContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
-  const { user, userProfile, isLoadingUser } = useUser();
+  // const { user, userProfile, isLoadingUser } = useUser();
+  const { activeLedger, ledgers, switchLedger, isLoading } = useLedger();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isLoading && !activeLedger) {
+      navigate('/ledgers');
+    }
+  }, [isLoading, activeLedger, navigate]);
 
   // Initialize default account selection globally
   useDefaultAccountSelection();
@@ -96,12 +113,17 @@ const Layout = () => {
 
   const pageTitle = getPageTitle(location.pathname);
 
-  const displayName = userProfile?.first_name && userProfile?.last_name
-    ? `${userProfile.first_name} ${userProfile.last_name}`
-    : userProfile?.first_name || userProfile?.last_name || "User Name";
-  const displayEmail = userProfile?.email || user?.email || "user@example.com";
-  const displayAvatar = userProfile?.avatar_url || "/placeholder.svg";
-  const avatarFallback = (userProfile?.first_name?.charAt(0) || "") + (userProfile?.last_name?.charAt(0) || "");
+  const displayName = activeLedger?.name || "Select Ledger";
+  const displayEmail = activeLedger?.short_name || "Budget";
+  // const displayAvatar = null; // Removed
+  const avatarFallback = activeLedger?.icon ? (
+    activeLedger.icon === 'home' ? <Home className="h-4 w-4" /> :
+      activeLedger.icon === 'globe' ? <Globe className="h-4 w-4" /> :
+        activeLedger.icon === 'baby' ? <Baby className="h-4 w-4" /> :
+          activeLedger.icon === 'wallet' ? <Wallet className="h-4 w-4" /> :
+            activeLedger.icon === 'landmark' ? <Landmark className="h-4 w-4" /> :
+              <Building2 className="h-4 w-4" />
+  ) : (activeLedger?.name?.substring(0, 2).toUpperCase() || "LG");
 
   return (
     <SidebarProvider
@@ -251,31 +273,41 @@ const Layout = () => {
               <Button
                 variant="ghost"
                 className="h-auto w-full justify-start gap-2 p-2"
-                disabled={isLoadingUser}
               >
-                <Avatar className="size-8">
-                  <AvatarImage src={displayAvatar} alt={displayName} />
-                  <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
-                </Avatar>
-                <div className="text-left">
-                  <p className="text-sm font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  {typeof avatarFallback === 'string' ? avatarFallback : avatarFallback}
+                </div>
+                <div className="text-left flex-1 truncate">
+                  <p className="text-sm font-medium truncate">{displayName}</p>
+                  <p className="text-xs text-muted-foreground truncate">
                     {displayEmail}
                   </p>
                 </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuLabel>My Ledgers</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                {ledgers.map(l => (
+                  <DropdownMenuItem key={l.id} onClick={() => switchLedger(l.id)}>
+                    <span className={cn("mr-2 flex h-4 w-4 items-center justify-center", activeLedger?.id === l.id ? "opacity-100" : "opacity-0")}>
+                      ✓
+                    </span>
+                    <span>{l.name}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
 
-              <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
-                // No-op for local mode or reset state
-                window.location.reload();
+                localStorage.removeItem('activeLedgerId');
+                localStorage.setItem('userLoggedOut', 'true');
+                window.location.href = '/ledgers';
               }}>
                 Log out
               </DropdownMenuItem>
@@ -307,22 +339,31 @@ const Layout = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative size-8 rounded-full">
-                  <Avatar className="size-8">
-                    <AvatarImage src={displayAvatar} alt={displayName} />
-                    <AvatarFallback>{avatarFallback || "JD"}</AvatarFallback>
-                  </Avatar>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary border border-border">
+                    {typeof avatarFallback === 'string' ? avatarFallback : avatarFallback}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>My Ledgers</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ledgers.map(l => (
+                  <DropdownMenuItem key={l.id} onClick={() => switchLedger(l.id)}>
+                    <span className={cn("mr-2 flex h-4 w-4 items-center justify-center", activeLedger?.id === l.id ? "opacity-100" : "opacity-0")}>
+                      ✓
+                    </span>
+                    <span>{l.name}</span>
+                  </DropdownMenuItem>
+                ))}
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem>Billing</DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
-                  window.location.reload();
+                  localStorage.removeItem('activeLedgerId');
+                  localStorage.setItem('userLoggedOut', 'true');
+                  window.location.href = '/ledgers';
                 }}>
                   Log out
                 </DropdownMenuItem>

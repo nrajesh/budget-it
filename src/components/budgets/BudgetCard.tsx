@@ -98,7 +98,11 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           <span>Spent: {formatCurrency(budget.spent_amount, budget.currency)}</span>
           <span>Target: {formatCurrency(budget.target_amount, budget.currency)}</span>
         </div>
-        <Progress value={percentage} className={isOverBudget ? "bg-red-500" : ""} />
+        <Progress
+          value={percentage}
+          className="bg-slate-300/50 dark:bg-slate-700 h-3"
+          indicatorClassName={isOverBudget ? "bg-red-500" : "bg-budget-bar"}
+        />
         <div className="text-sm">
           {remaining >= 0 ? (
             <span className="text-green-600 font-medium">

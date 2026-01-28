@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useUser } from "@/contexts/UserContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
 import Papa from "papaparse";
@@ -16,7 +16,7 @@ export const useTransactionCSV = () => {
     detectAndLinkTransfers,
     setOperationProgress
   } = useTransactions();
-  const { user } = useUser();
+  const { activeLedger } = useLedger();
   const dataProvider = useDataProvider();
 
   const [isImporting, setIsImporting] = React.useState(false);
@@ -29,8 +29,8 @@ export const useTransactionCSV = () => {
   const handleFileChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!user?.id) {
-      showError("You must be logged in to import transactions.");
+    if (!activeLedger?.id) {
+      showError("You must select a ledger to import transactions.");
       setIsImporting(false);
       return;
     }
@@ -75,14 +75,14 @@ export const useTransactionCSV = () => {
           })).filter(item => item.name);
 
           await Promise.all(uniqueAccountsData.map(async (acc) => {
-            await dataProvider.ensurePayeeExists(acc.name, true, { currency: acc.currency, startingBalance: 0 });
+            await dataProvider.ensurePayeeExists(acc.name, true, activeLedger!.id, { currency: acc.currency, startingBalance: 0 });
           }));
 
           const uniqueVendors = [...new Set(parsedData.map(row => row.Vendor).filter(Boolean))];
           await Promise.all(uniqueVendors.map(name => {
             const row = parsedData.find(r => r.Vendor === name);
             const isTransfer = row?.Category === 'Transfer';
-            return dataProvider.ensurePayeeExists(name, isTransfer);
+            return dataProvider.ensurePayeeExists(name, isTransfer, activeLedger!.id);
           }));
 
           setOperationProgress({
@@ -95,7 +95,7 @@ export const useTransactionCSV = () => {
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [...new Set(parsedData.map(row => row.Category).filter(Boolean))];
-          await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, user.id)));
+          await Promise.all(uniqueCategories.map(name => dataProvider.ensureCategoryExists(name, activeLedger!.id)));
 
           await Promise.all([refetchVendors(), refetchAccounts()]);
 
@@ -119,7 +119,7 @@ export const useTransactionCSV = () => {
             }
 
             return {
-              user_id: user.id, // Required by type
+              user_id: activeLedger!.id, // Required by type
               date: parseDateFromDDMMYYYY(row.Date).toISOString(),
               account: row.Account,
               vendor: row.Vendor,
@@ -209,7 +209,7 @@ export const useTransactionCSV = () => {
         setIsImporting(false);
       },
     });
-  }, [user, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap]);
+  }, [activeLedger, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap]);
 
   const handleExportClick = React.useCallback(() => {
     if (transactions.length === 0) {
@@ -238,7 +238,8 @@ export const useTransactionCSV = () => {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "transactions_export.csv");
+    const fileName = activeLedger ? `${activeLedger.name.replace(/\s+/g, '_')}_transactions_export.csv` : "transactions_export.csv";
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

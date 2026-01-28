@@ -1,25 +1,21 @@
 import Dexie, { Table } from 'dexie';
-import { Transaction, Budget, Vendor, Category, ScheduledTransaction } from '@/types/dataProvider';
+import { Transaction, Budget, Vendor, Category, ScheduledTransaction, Account, SubCategory } from '@/types/dataProvider';
 
 // Extend the interfaces to include Dexie-specific keys (optional, but good for TS)
 // We reuse the DataProvider interfaces which already have 'id'.
 
-export interface SubCategory {
-  id: string;
-  user_id: string;
-  category_id: string;
-  name: string;
-  created_at: string;
-}
+// Interfaces removed; imported from types/dataProvider
+// Extended interfaces can be defined here if strictly Dexie specific, but we use shared ones.
 
-export interface Account {
+
+export interface Ledger {
   id: string;
+  name: string;
+  short_name?: string;
+  icon?: string;
   currency: string;
-  starting_balance: number;
-  remarks: string;
   created_at: string;
-  type: 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
-  credit_limit?: number;
+  last_accessed: string;
 }
 
 export class FinanceDatabase extends Dexie {
@@ -30,20 +26,22 @@ export class FinanceDatabase extends Dexie {
   accounts!: Table<Account>;
   categories!: Table<Category>;
   sub_categories!: Table<SubCategory>;
+  ledgers!: Table<Ledger>;
 
   constructor() {
     super('FinanceTrackerDB');
 
     // Schema definition
     // Note: ++id is not used because we use UUIDs (strings) for compatibility
-    this.version(5).stores({
+    this.version(6).stores({
       transactions: 'id, user_id, date, account, vendor, category, transfer_id, recurrence_id',
       scheduled_transactions: 'id, user_id, date, account, vendor',
       budgets: 'id, user_id, category_name',
-      vendors: 'id, name, is_account, account_id',
-      accounts: 'id, type', // Added type for indexing if needed
-      categories: 'id, user_id, name',
-      sub_categories: 'id, user_id, category_id, name'
+      vendors: 'id, [user_id+name], name, is_account, account_id, user_id', // Added user_id to indexes
+      accounts: 'id, user_id, type', // Added user_id
+      categories: 'id, [user_id+name], user_id, name',
+      sub_categories: 'id, user_id, category_id, name',
+      ledgers: 'id, name, last_accessed'
     });
   }
 }

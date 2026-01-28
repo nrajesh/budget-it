@@ -27,36 +27,44 @@ const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 
+
+const LedgerEntryPage = lazy(() => import("@/pages/LedgerEntryPage"));
+
+import { LedgerProvider } from "./contexts/LedgerContext";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <DataProviderProvider>
         <ThemeProvider>
           <FilterProvider>
-            <UserProvider>
-              <TransactionsProvider>
-                <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Routes>
-                      <Route path="/" element={<Layout />}>
-                        <Route index element={<Index />} />
-                        <Route path="/transactions" element={<Transactions />} />
-                        <Route path="/vendors" element={<Vendors />} />
-                        <Route path="/accounts" element={<Accounts />} />
-                        <Route path="/categories" element={<Categories />} />
-                        <Route path="/scheduled" element={<ScheduledTransactions />} />
-                        <Route path="/budgets" element={<Budgets />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/reports/essential" element={<EssentialReports />} />
-                        <Route path="/reports/advanced" element={<AdvancedReports />} />
-                        <Route path="/settings" element={<SettingsPage />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Route>
-                    </Routes>
-                  </Suspense>
-                </Router>
-              </TransactionsProvider>
-            </UserProvider>
+            <LedgerProvider>
+              <UserProvider>
+                <TransactionsProvider>
+                  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
+                        <Route path="/ledgers" element={<LedgerEntryPage />} />
+                        <Route path="/" element={<Layout />}>
+                          <Route index element={<Index />} />
+                          <Route path="/transactions" element={<Transactions />} />
+                          <Route path="/vendors" element={<Vendors />} />
+                          <Route path="/accounts" element={<Accounts />} />
+                          <Route path="/categories" element={<Categories />} />
+                          <Route path="/scheduled" element={<ScheduledTransactions />} />
+                          <Route path="/budgets" element={<Budgets />} />
+                          <Route path="/analytics" element={<Analytics />} />
+                          <Route path="/reports/essential" element={<EssentialReports />} />
+                          <Route path="/reports/advanced" element={<AdvancedReports />} />
+                          <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Route>
+                      </Routes>
+                    </Suspense>
+                  </Router>
+                </TransactionsProvider>
+              </UserProvider>
+            </LedgerProvider>
           </FilterProvider>
         </ThemeProvider>
       </DataProviderProvider>

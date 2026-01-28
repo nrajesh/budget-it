@@ -134,10 +134,10 @@
     --popover-foreground: 210 40% 98%;
     /* White */
 
-    --primary: 210 40% 98%;
-    /* White Primary */
-    --primary-foreground: 222.2 47.4% 11.2%;
-    /* Dark Foreground for Primary */
+    --primary: 243 75% 59%;
+    /* Indigo Primary */
+    --primary-foreground: 210 40% 98%;
+    /* White Foreground */
 
     --secondary: 217.2 32.6% 17.5%;
     /* Dark Secondary */
@@ -179,5 +179,18 @@
     @apply uppercase tracking-widest font-semibold;
     font-size: 11px !important;
     fill: rgba(255, 255, 255, 0.7) !important;
+  }
+}
+
+@layer components {
+
+  /* Default Budget Bar (Standard Theme uses Primary/Black) */
+  .bg-budget-bar {
+    background-color: hsl(var(--primary));
+  }
+
+  /* Financial Pulse Override (Uses Indigo) */
+  [data-dashboard-style="financial-pulse"] .bg-budget-bar {
+    background-color: #4f46e5;
   }
 }

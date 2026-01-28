@@ -9,7 +9,7 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useSession } from "@/hooks/useSession";
+import { useLedger } from "@/contexts/LedgerContext";
 
 interface AccountBalanceReconciliationDialogProps {
   isOpen: boolean;
@@ -27,7 +27,8 @@ interface AccountRowData {
 
 const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
-  const session = useSession();
+  // const session = useSession();
+  const { activeLedger } = useLedger();
   const { accounts, transactions, invalidateAllData } = useTransactions();
   const { formatCurrency } = useCurrency();
 
@@ -77,8 +78,8 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
 
   const handleReconcile = async () => {
     if (selectedIds.length === 0) return;
-    if (!session?.user?.id) {
-      showError("User not logged in.");
+    if (!activeLedger?.id) {
+      showError("No active ledger.");
       return;
     }
 
@@ -95,7 +96,7 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
 
       await Promise.all(adjustments.map(adj =>
         dataProvider.addTransaction({
-          user_id: session.user.id,
+          user_id: activeLedger.id,
           date: new Date().toISOString(),
           account: adj.name,
           vendor: "Balance Adjustment",

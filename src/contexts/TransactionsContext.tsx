@@ -4,13 +4,14 @@ import { startOfDay } from "date-fns";
 import { db } from '@/lib/dexieDB';
 import { useCurrency } from './CurrencyContext';
 import { Payee } from '@/components/dialogs/AddEditPayeeDialog';
-import { useUser } from './UserContext';
+// import { useUser } from './UserContext'; // Replaced by useLedger
+import { useLedger } from './LedgerContext';
 import { useQuery, useQueryClient, QueryObserverResult } from '@tanstack/react-query';
 import { useDataProvider } from '@/context/DataProviderContext';
 import { ScheduledTransaction } from '@/types/dataProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/components/ui/use-toast';
-import { ToastAction } from '@/components/ui/toast';
+import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
 
 interface TransactionToDelete {
   id: string;
@@ -124,7 +125,10 @@ const transformCategoryData = (data: any[]): Category[] => {
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
-  const { user } = useUser();
+  // const { user } = useUser();
+  const { activeLedger, refreshLedgers, switchLedger } = useLedger();
+  const ledgerId = activeLedger?.id || '';
+
   const [operationProgress, setOperationProgress] = React.useState<OperationProgress | null>(null);
   const dataProvider = useDataProvider();
 
@@ -138,21 +142,23 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const { toast, dismiss } = useToast();
   const lastToastIdRef = React.useRef<string | null>(null);
   const { data: rawTransactions = [], isLoading: isLoadingTransactions, refetch: refetchTransactions } = useQuery<Transaction[], Error>({
-    queryKey: ['transactions', user?.id],
+    queryKey: ['transactions', ledgerId],
     queryFn: async () => {
-      const userId = user?.id || 'local-user'; // Use local-user if not auth
-      return await dataProvider.getTransactions(userId);
+      if (!ledgerId) return [];
+      const txs = await dataProvider.getTransactions(ledgerId);
+
+      return txs;
     },
-    enabled: true, // Always enable
+    enabled: !!ledgerId, // Only run if ledger is active
   });
 
   const { data: rawScheduledTransactions = [], isLoading: isLoadingScheduledTransactions, refetch: refetchScheduledTransactions } = useQuery({
-    queryKey: ['scheduledTransactions', user?.id],
+    queryKey: ['scheduledTransactions', ledgerId],
     queryFn: async () => {
-      const userId = user?.id || 'local-user';
-      return await dataProvider.getScheduledTransactions(userId);
+      if (!ledgerId) return [];
+      return await dataProvider.getScheduledTransactions(ledgerId);
     },
-    enabled: true,
+    enabled: !!ledgerId,
   });
 
   // Undo System State
@@ -244,9 +250,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // ... (transactions query above)
 
   const { data: vendors = [], isLoading: isLoadingVendors, refetch: refetchVendors } = useQuery({
-    queryKey: ['vendors', user?.id, transactions.length],
+    queryKey: ['vendors', ledgerId, transactions.length],
     queryFn: async () => {
       // Local or Auth logic
+      if (!ledgerId) return [];
 
       // dataProvider.getAllVendors() might return ALL if it ignores ID (LocalDataProvider does).
       // But if we wanted per-user:
@@ -257,7 +264,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // LocalDataProvider.getAllVendors() takes 0 args. It returns all.
       // So filtering should happen here or provider should accept ID.
       // For now, let's assume it returns all and we filter in memory or rely on single-user local DB.
-      const allVendors = await dataProvider.getAllVendors();
+      const allVendors = await dataProvider.getAllVendors(ledgerId);
 
       // Filter for payees (is_account=false usually for "Vendors" list, but we return all Payees here?)
       // transformPayeeData handles shaping.
@@ -278,11 +285,12 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const { data: accounts = [], isLoading: isLoadingAccounts, refetch: refetchAccounts } = useQuery({
-    queryKey: ['accounts', user?.id, transactions], // Depend on transactions for balance calc
+    queryKey: ['accounts', ledgerId, transactions], // Depend on transactions for balance calc
     queryFn: async () => {
-      const allVendors = await dataProvider.getAllVendors();
+      if (!ledgerId) return [];
+      const allVendors = await dataProvider.getAllVendors(ledgerId);
       const accountVendors = allVendors.filter(v => v.is_account);
-      const allAccountsDetails = await dataProvider.getAllAccounts();
+      const allAccountsDetails = await dataProvider.getAllAccounts(ledgerId);
       const accountMap = new Map(allAccountsDetails.map(a => [a.id, a]));
 
       const nameToAccountMap = new Map<string, any>();
@@ -300,7 +308,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
 
         const startingBalance = accountDetails?.starting_balance || 0;
-        const currency = accountDetails?.currency || await dataProvider.getAccountCurrency(v.name);
+        const currency = accountDetails?.currency || await dataProvider.getAccountCurrency(v.name, ledgerId);
         const type = accountDetails?.type;
         const creditLimit = accountDetails?.credit_limit;
 
@@ -334,10 +342,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   });
 
   const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useQuery({
-    queryKey: ['categories', user?.id, transactions.length],
+    queryKey: ['categories', ledgerId, transactions.length],
     queryFn: async () => {
-      const userId = user?.id || 'local-user';
-      const cats = await dataProvider.getUserCategories(userId);
+      if (!ledgerId) return [];
+      const cats = await dataProvider.getUserCategories(ledgerId);
       return cats.map(c => ({
         ...c,
         total_transactions: transactions.filter(t => t.category === c.name).length
@@ -350,10 +358,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 
   const { data: subCategories = [], isLoading: isLoadingSubCategories, refetch: refetchSubCategories } = useQuery<SubCategory[], Error>({
-    queryKey: ['sub_categories', user?.id],
+    queryKey: ['sub_categories', ledgerId],
     queryFn: async () => {
-      const userId = user?.id || 'local-user';
-      return await dataProvider.getSubCategories(userId);
+      if (!ledgerId) return [];
+      return await dataProvider.getSubCategories(ledgerId);
     },
     enabled: true,
   });
@@ -437,7 +445,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Check if it's a transfer
     // In our app, a transfer is identified if the vendor name matches an account name
     const isTransfer = accounts.some(acc => acc.name === transaction.vendor);
-    const userId = user?.id || 'local-user';
+    const userId = ledgerId;
 
     if (isTransfer) {
       const transferId = uuidv4();
@@ -645,7 +653,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addScheduledTransaction = async (transaction: any) => {
-    const userId = user?.id || 'local-user';
+    const userId = ledgerId;
 
     // Check for transfer
     const isTransfer = accounts.some(acc => acc.name === transaction.vendor);
@@ -687,7 +695,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const unlinkScheduledTransaction = async (transferId: string) => {
-    const userId = user?.id || 'local-user';
+    const userId = ledgerId;
     const pair = scheduledTransactions.filter(t => t.transfer_id === transferId);
 
     for (const t of pair) {
@@ -702,7 +710,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const updateScheduledTransaction = async (transaction: any) => {
     // Ensure we preserve user_id or set it if missing
-    const userId = transaction.user_id || user?.id || 'local-user';
+    const userId = transaction.user_id || ledgerId;
 
     // 1. Determine if this update makes it a Transfer
     const isTargetTransfer = accounts.some(acc => acc.name === transaction.vendor);
@@ -1050,30 +1058,41 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const generateDiverseDemoData = async () => {
     try {
-      setOperationProgress({
-        title: "Generating Demo Data",
-        description: "Creating a diverse set of transactions, accounts, and vendors...",
-        stage: 'Starting...',
-        progress: 0,
-        totalStages: 4
+      await import('@/utils/demoDataGenerator').then(async (mod) => {
+        await mod.generateDiverseDemoData(dataProvider, (progress) => {
+          setOperationProgress({
+            title: "Generating Demo Data",
+            description: progress.stage,
+            stage: progress.stage,
+            progress: progress.progress,
+            totalStages: progress.totalStages
+          });
+        });
       });
-      const { generateDemoData } = await import('@/utils/demoDataGenerator');
-      await generateDemoData(dataProvider, setOperationProgress);
+
+      // Cleanup and refresh
+      await refreshLedgers();
+      // Switch to first ledger if available? Or just refresh current
+      const ledgers = await dataProvider.getLedgers();
+      if (ledgers.length > 0) {
+        await switchLedger(ledgers[0].id);
+      }
+
       await invalidateAllData();
       await refetchTransactions();
-      // Optional: Force a complete reload if context state isn't enough, but invalidate should work
+
     } catch (error) {
       console.error("Failed to generate demo data:", error);
     } finally {
-      // Keep at 100 for a moment so dialog can close gracefully
       setOperationProgress({
         title: "Generating Demo Data",
         description: "Finalizing...",
         stage: 'Complete',
         progress: 100,
-        totalStages: 4
+        totalStages: 100
       });
-      // The GlobalProgressDialog handles closing via timeout when progress is 100
+      // Clear progress after short delay
+      setTimeout(() => setOperationProgress(null), 1000);
     }
   };
 
@@ -1251,7 +1270,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (isLoadingTransactions || isLoadingCategories || isLoadingSubCategories || transactions.length === 0) return;
 
     const syncEntities = async () => {
-      const userId = user?.id || 'local-user';
+      const userId = ledgerId;
 
       for (const t of transactions) {
         if (t.category) {
@@ -1284,7 +1303,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         refetchAccounts();
       });
     }
-  }, [transactions, isLoadingTransactions, isLoadingCategories, isLoadingSubCategories, dataProvider, user?.id, refetchCategories, refetchSubCategories, detectAndLinkTransfers, refetchTransactions, refetchVendors, refetchAccounts]);
+  }, [transactions, isLoadingTransactions, isLoadingCategories, isLoadingSubCategories, dataProvider, ledgerId, refetchCategories, refetchSubCategories, detectAndLinkTransfers, refetchTransactions, refetchVendors, refetchAccounts]);
 
   const filteredVendors = React.useMemo(() => {
     const hidden = hiddenEntityIds.get('vendor');

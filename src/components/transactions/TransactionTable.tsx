@@ -33,6 +33,7 @@ interface TransactionTableProps {
   onScheduleTransactions?: (transactions: any[], clearSelection: () => void) => void;
   onUnlinkTransaction?: (transferId: string) => void;
   onLinkTransactions?: (id1: string, id2: string) => void;
+  accountCurrencyMap?: Map<string, string>;
 }
 
 const TransactionTable = ({
@@ -44,6 +45,7 @@ const TransactionTable = ({
   onRowDoubleClick,
   onUnlinkTransaction,
   onLinkTransactions,
+  accountCurrencyMap,
 }: TransactionTableProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -136,7 +138,10 @@ const TransactionTable = ({
     return (
       <span className="cursor-pointer">
         {field === 'amount'
-          ? value.toLocaleString(undefined, { style: 'currency', currency: transaction.currency || selectedCurrency })
+          ? value.toLocaleString(undefined, {
+            style: 'currency',
+            currency: (accountCurrencyMap?.get(transaction.account) || transaction.currency || selectedCurrency)
+          })
           : field === 'date'
             ? new Date(value).toLocaleDateString()
             : (value || "-")

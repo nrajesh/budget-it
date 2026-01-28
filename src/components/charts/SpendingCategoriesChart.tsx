@@ -36,7 +36,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
 
     accountFilteredTransactions.forEach(t => {
       if (t.amount < 0 && t.category && t.category !== 'Transfer') {
-        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || selectedCurrency, selectedCurrency);
         const current = categoryMap.get(t.category) || 0;
         categoryMap.set(t.category, current + convertedAmount);
       }
@@ -61,7 +61,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
       .filter(t => t.category === selectedCategory.name && t.amount < 0)
       .forEach(t => {
         const subCat = t.sub_category || "Uncategorized";
-        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || selectedCurrency, selectedCurrency);
         const current = subCatMap.get(subCat) || 0;
         subCatMap.set(subCat, current + convertedAmount);
       });

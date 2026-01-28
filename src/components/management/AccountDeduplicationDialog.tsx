@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2 } from "lucide-react";
 
@@ -17,6 +18,7 @@ interface AccountReconciliationDialogProps {
 const AccountDeduplicationDialog: React.FC<AccountReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
   const { refetchAccounts, accounts: contextAccounts, invalidateAllData } = useTransactions();
+  const { activeLedger } = useLedger();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [selectedMaster, setSelectedMaster] = useState<string>("");
@@ -24,15 +26,15 @@ const AccountDeduplicationDialog: React.FC<AccountReconciliationDialogProps> = (
 
   // Filter only accounts (is_account=true is handled by contextAccounts usually, but let's be safe)
   const accounts = useMemo(() => {
-      // Typically contextAccounts are the ones displayed in Accounts page
-      return contextAccounts.sort((a, b) => a.name.localeCompare(b.name));
+    // Typically contextAccounts are the ones displayed in Accounts page
+    return contextAccounts.sort((a, b) => a.name.localeCompare(b.name));
   }, [contextAccounts]);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-        setSelectedMaster("");
-        setSelectedDuplicates([]);
+      setSelectedMaster("");
+      setSelectedDuplicates([]);
     }
   }, [isOpen]);
 
@@ -41,27 +43,27 @@ const AccountDeduplicationDialog: React.FC<AccountReconciliationDialogProps> = (
 
     setIsProcessing(true);
     try {
-        await dataProvider.mergePayees(selectedMaster, selectedDuplicates);
-        showSuccess(`Successfully merged ${selectedDuplicates.length} accounts into ${selectedMaster}.`);
-        await invalidateAllData();
-        onClose();
+      await dataProvider.mergePayees(selectedMaster, selectedDuplicates, activeLedger?.id || '');
+      showSuccess(`Successfully merged ${selectedDuplicates.length} accounts into ${selectedMaster}.`);
+      await invalidateAllData();
+      onClose();
     } catch (error: any) {
-        showError(`Merge failed: ${error.message}`);
+      showError(`Merge failed: ${error.message}`);
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
 
   const potentialDuplicates = useMemo(() => {
-      return accounts.filter(a => a.name !== selectedMaster);
+    return accounts.filter(a => a.name !== selectedMaster);
   }, [accounts, selectedMaster]);
 
   const handleToggleDuplicate = (name: string) => {
-      setSelectedDuplicates(prev =>
-          prev.includes(name)
-              ? prev.filter(n => n !== name)
-              : [...prev, name]
-      );
+    setSelectedDuplicates(prev =>
+      prev.includes(name)
+        ? prev.filter(n => n !== name)
+        : [...prev, name]
+    );
   };
 
   return (
@@ -79,45 +81,45 @@ const AccountDeduplicationDialog: React.FC<AccountReconciliationDialogProps> = (
           <div className="space-y-2">
             <Label>Primary Account (Keep this one)</Label>
             <Select value={selectedMaster} onValueChange={(val) => {
-                setSelectedMaster(val);
-                setSelectedDuplicates([]); // Reset duplicates if master changes
+              setSelectedMaster(val);
+              setSelectedDuplicates([]); // Reset duplicates if master changes
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select account..." />
               </SelectTrigger>
               <SelectContent>
                 {accounts.map(acc => (
-                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                  <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           {selectedMaster && (
-              <div className="space-y-2">
-                <Label>Duplicate Accounts (Merge these)</Label>
-                <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
-                    {potentialDuplicates.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No other accounts found.</p>
-                    ) : (
-                        potentialDuplicates.map(acc => (
-                            <div key={acc.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`dup-${acc.id}`}
-                                    checked={selectedDuplicates.includes(acc.name)}
-                                    onCheckedChange={() => handleToggleDuplicate(acc.name)}
-                                />
-                                <Label htmlFor={`dup-${acc.id}`} className="cursor-pointer font-normal">
-                                    {acc.name}
-                                </Label>
-                            </div>
-                        ))
-                    )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                    Selected duplicates will be permanently deleted after merging their transactions.
-                </p>
+            <div className="space-y-2">
+              <Label>Duplicate Accounts (Merge these)</Label>
+              <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
+                {potentialDuplicates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No other accounts found.</p>
+                ) : (
+                  potentialDuplicates.map(acc => (
+                    <div key={acc.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`dup-${acc.id}`}
+                        checked={selectedDuplicates.includes(acc.name)}
+                        onCheckedChange={() => handleToggleDuplicate(acc.name)}
+                      />
+                      <Label htmlFor={`dup-${acc.id}`} className="cursor-pointer font-normal">
+                        {acc.name}
+                      </Label>
+                    </div>
+                  ))
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Selected duplicates will be permanently deleted after merging their transactions.
+              </p>
+            </div>
           )}
         </div>
 

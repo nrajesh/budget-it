@@ -9,12 +9,16 @@ import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilter
 import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
-import { RotateCcw, DatabaseZap, Upload, FileLock, FileJson, AlertCircle } from "lucide-react";
+import { RotateCcw, DatabaseZap, Upload, FileLock, FileJson, AlertCircle, RefreshCw } from "lucide-react";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { encryptData, decryptData } from "@/utils/crypto";
 import PasswordDialog from "@/components/dialogs/PasswordDialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+
+import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
+import { CurrencyConversionDialog } from "@/components/dialogs/CurrencyConversionDialog";
+import { useLedger } from "@/contexts/LedgerContext";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
@@ -22,9 +26,13 @@ const SettingsPage = () => {
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const dataProvider = useDataProvider();
   const { handleClearAllFilters } = useTransactionFilters();
+  const { activeLedger, updateLedgerDetails } = useLedger();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
+  const [isManageLedgerOpen, setIsManageLedgerOpen] = React.useState(false);
+  const [isCreateLedgerOpen, setIsCreateLedgerOpen] = React.useState(false);
+  const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = React.useState(false);
   const [futureMonths, setFutureMonths] = React.useState<number>(2);
 
   // Data Management State
@@ -40,8 +48,18 @@ const SettingsPage = () => {
     }
   }, []);
 
-  const handleCurrencyChange = (value: string) => {
+  const handleCurrencyChange = async (value: string) => {
     setCurrency(value);
+
+    // Also update the active ledger's currency so it persists in exports
+    if (activeLedger) {
+      try {
+        await updateLedgerDetails(activeLedger.id, { currency: value });
+      } catch (error) {
+        console.error("Failed to update ledger currency:", error);
+      }
+    }
+
     showSuccess(`Default currency set to ${value}.`);
   };
 
@@ -64,6 +82,7 @@ const SettingsPage = () => {
       clearAllTransactions();
       handleClearAllFilters();
       showSuccess("All application data has been reset.");
+      window.location.href = '/ledgers';
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
     } finally {
@@ -124,7 +143,7 @@ const SettingsPage = () => {
       const jsonString = JSON.stringify(data, null, 2);
       const filename = `budget_backup_${new Date().toISOString().split('T')[0]}.json`;
 
-      const usedPicker = await saveFile(filename, jsonString, "Budget It JSON Backup");
+      const usedPicker = await saveFile(filename, jsonString, "Budget It Full Backup (All Ledgers)");
 
       if (usedPicker) {
         showSuccess("File saved successfully!");
@@ -145,7 +164,7 @@ const SettingsPage = () => {
       const encrypted = await encryptData(jsonString, password);
       const filename = `budget_backup_enc_${new Date().toISOString().split('T')[0]}.lock`;
 
-      const usedPicker = await saveFile(filename, encrypted, "Encrypted Budget Backup");
+      const usedPicker = await saveFile(filename, encrypted, "Budget It Full Backup (Encrypted)");
 
       if (usedPicker) {
         showSuccess("Encrypted file saved successfully!");
@@ -224,12 +243,12 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Consolidated Data Management Section */}
+      {/* Data Management Section */}
       <ThemedCard className="mt-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
         <ThemedCardHeader>
           <ThemedCardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">Data Management</ThemedCardTitle>
           <ThemedCardDescription>
-            Export your data to a local file. The file will be saved to your browser's default download location.
+            Export your data to a local file. This will include <strong>all ledgers</strong> and their associated data.
           </ThemedCardDescription>
         </ThemedCardHeader>
         <ThemedCardContent className="space-y-4">
@@ -273,6 +292,22 @@ const SettingsPage = () => {
         </ThemedCardContent>
       </ThemedCard>
 
+      {/* Ledger Settings Card */}
+      <ThemedCard>
+        <ThemedCardHeader>
+          <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
+          <ThemedCardDescription>Manage your current ledger details or create a new one.</ThemedCardDescription>
+        </ThemedCardHeader>
+        <ThemedCardContent className="flex gap-4">
+          <Button onClick={() => setIsManageLedgerOpen(true)} className="bg-primary text-primary-foreground">
+            Edit Current Ledger
+          </Button>
+          <Button onClick={() => setIsCreateLedgerOpen(true)} variant="outline">
+            Create New Ledger
+          </Button>
+        </ThemedCardContent>
+      </ThemedCard>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         {/* Currency Selection Card */}
         <ThemedCard>
@@ -293,6 +328,16 @@ const SettingsPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <div className="pt-4">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => setIsCurrencyDialogOpen(true)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Currency Conversion
+              </Button>
+            </div>
           </ThemedCardContent>
         </ThemedCard>
 
@@ -393,7 +438,7 @@ const SettingsPage = () => {
         onOpenChange={setIsResetConfirmOpen}
         onConfirm={handleResetData}
         title="Are you sure you want to reset all data?"
-        description="This action cannot be undone. All your transaction, vendor, and account data will be permanently deleted."
+        description="This action cannot be undone. All your transaction, vendor, and account data for ALL ledgers will be permanently deleted."
         confirmText="Reset Data"
       />
 
@@ -404,6 +449,23 @@ const SettingsPage = () => {
         title="Generate new demo data?"
         description="This will clear all existing transactions and generate new diverse demo data. This action cannot be undone."
         confirmText="Generate"
+      />
+
+      <ManageLedgerDialog
+        isOpen={isManageLedgerOpen}
+        onOpenChange={setIsManageLedgerOpen}
+        ledgerToEdit={activeLedger || undefined}
+      />
+
+      <ManageLedgerDialog
+        isOpen={isCreateLedgerOpen}
+        onOpenChange={setIsCreateLedgerOpen}
+        ledgerToEdit={undefined}
+      />
+
+      <CurrencyConversionDialog
+        isOpen={isCurrencyDialogOpen}
+        onOpenChange={setIsCurrencyDialogOpen}
       />
 
 

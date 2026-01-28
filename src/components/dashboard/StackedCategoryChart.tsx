@@ -33,7 +33,7 @@ export const StackedCategoryChart = ({ transactions, className }: StackedCategor
             // Only expenses for this chart usually? Reference image says "Spending by Category"
             if (t.amount >= 0) return;
 
-            const amount = Math.abs(convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD'));
+            const amount = Math.abs(convertBetweenCurrencies(t.amount, t.currency || selectedCurrency, selectedCurrency));
             const catName = t.category || 'Uncategorized';
             const subCatName = t.sub_category || 'Other'; // Or maybe 'General'
 

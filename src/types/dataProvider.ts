@@ -38,6 +38,7 @@ export interface Budget {
 
 export interface Vendor {
   id: string;
+  user_id?: string; // Ledger ID
   name: string;
   is_account: boolean;
   account_id?: string | null;
@@ -47,6 +48,7 @@ export type AccountType = 'Checking' | 'Savings' | 'Credit Card' | 'Investment' 
 
 export interface Account {
   id: string;
+  user_id?: string; // Ledger ID
   currency: string;
   starting_balance: number;
   remarks: string;
@@ -90,7 +92,24 @@ export interface ScheduledTransaction {
   transfer_id?: string | null;
 }
 
+
+export interface Ledger {
+  id: string;
+  name: string;
+  short_name?: string;
+  icon?: string;
+  currency: string;
+  created_at: string;
+  last_accessed: string;
+}
+
 export interface DataProvider {
+  // Ledgers
+  getLedgers(): Promise<Ledger[]>;
+  addLedger(ledger: Omit<Ledger, 'id' | 'created_at' | 'last_accessed'>): Promise<Ledger>;
+  updateLedger(ledger: Ledger): Promise<void>;
+  deleteLedger(id: string): Promise<void>;
+
   // Transactions
   getTransactions(userId: string): Promise<Transaction[]>;
   addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction>;
@@ -110,20 +129,21 @@ export interface DataProvider {
   deleteMultipleScheduledTransactions(ids: string[]): Promise<void>;
 
   // Payees/Vendors/Accounts
-  ensurePayeeExists(name: string, isAccount: boolean, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null>;
-  checkIfPayeeIsAccount(name: string): Promise<boolean>;
-  getAccountCurrency(accountName: string): Promise<string>;
-  getAllVendors(): Promise<Vendor[]>;
-  mergePayees(targetName: string, sourceNames: string[]): Promise<void>;
+  ensurePayeeExists(name: string, isAccount: boolean, userId: string, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null>;
+  checkIfPayeeIsAccount(name: string, userId: string): Promise<boolean>;
+  getAccountCurrency(accountName: string, userId: string): Promise<string>;
+  getAllVendors(userId: string): Promise<Vendor[]>;
+  getVendorByName(name: string, userId: string): Promise<Vendor | undefined>;
+  mergePayees(targetName: string, sourceNames: string[], userId: string): Promise<void>;
   deletePayee(id: string): Promise<void>;
-  getAllAccounts(): Promise<Account[]>;
+  getAllAccounts(userId: string): Promise<Account[]>;
 
   // Categories
   ensureCategoryExists(name: string, userId: string): Promise<string | null>;
   ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null>;
   getUserCategories(userId: string): Promise<Category[]>;
   getSubCategories(userId: string): Promise<SubCategory[]>;
-  mergeCategories(targetName: string, sourceNames: string[]): Promise<void>;
+  mergeCategories(targetName: string, sourceNames: string[], userId: string): Promise<void>;
   deleteCategory(id: string): Promise<void>;
 
   // Budgets
@@ -136,6 +156,6 @@ export interface DataProvider {
   linkTransactionsAsTransfer(id1: string, id2: string): Promise<void>;
   unlinkTransactions(transferId: string): Promise<void>;
   clearAllData(): Promise<void>;
-  exportData(): Promise<any>;
-  importData(data: any): Promise<void>;
+  exportData(userId?: string): Promise<any>;
+  importData(data: any, userId?: string): Promise<void>;
 }

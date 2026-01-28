@@ -6,24 +6,24 @@ import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Loader2 } from "lucide-react";
 import { Budget } from '@/data/finance-data';
-import { useUser } from "@/contexts/UserContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useQuery } from '@tanstack/react-query';
 import { useDataProvider } from '@/context/DataProviderContext';
 
 export const BudgetVsConsumptionChart = () => {
-    const { user } = useUser();
+    const { activeLedger } = useLedger();
     const { transactions } = useTransactions();
     const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
     const dataProvider = useDataProvider();
 
     const { data: budgets = [], isLoading } = useQuery<Budget[], Error>({
-        queryKey: ['budgets', user?.id],
+        queryKey: ['budgets', activeLedger?.id],
         queryFn: async () => {
-            if (!user?.id) return [];
-            const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+            if (!activeLedger?.id) return [];
+            const budgets = await dataProvider.getBudgetsWithSpending(activeLedger.id);
             return budgets;
         },
-        enabled: !!user,
+        enabled: !!activeLedger,
     });
 
     const metrics = React.useMemo(() => {
@@ -42,7 +42,7 @@ export const BudgetVsConsumptionChart = () => {
         let totalSpent = 0;
 
         activeMonthlyBudgets.forEach(b => {
-            totalBudget += convertBetweenCurrencies(b.target_amount, b.currency, selectedCurrency);
+            totalBudget += convertBetweenCurrencies(b.target_amount, b.currency || selectedCurrency, selectedCurrency);
 
             const spentForBudget = transactions
                 .filter(t => {
@@ -52,7 +52,7 @@ export const BudgetVsConsumptionChart = () => {
                         transactionDate <= periodEnd &&
                         t.amount < 0;
                 })
-                .reduce((sum, t) => sum + convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency), 0);
+                .reduce((sum, t) => sum + convertBetweenCurrencies(Math.abs(t.amount), t.currency || selectedCurrency, selectedCurrency), 0);
 
             totalSpent += spentForBudget;
         });

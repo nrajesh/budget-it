@@ -26,6 +26,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from '@/context/DataProviderContext';
 import { db } from '@/lib/dexieDB';
 
@@ -70,6 +71,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   isAccountOnly = false,
 }) => {
   const { availableCurrencies } = useCurrency();
+  const { activeLedger } = useLedger();
   const { invalidateAllData } = useTransactions();
   const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -118,10 +120,23 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         // Pragmatic update for payee using db directly
         if (payee.name !== values.name) {
           await db.vendors.update(payee.id, { name: values.name });
-          // Also update transactions? Supabase RPC did it.
-          // Ideally we cascade update transactions vendor field
+
+          // Propagate name change to transactions
           await db.transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
           await db.transactions.where('account').equals(payee.name).modify({ account: values.name });
+
+          // Propagate name change to scheduled transactions
+          await db.scheduled_transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
+          await db.scheduled_transactions.where('account').equals(payee.name).modify({ account: values.name });
+        }
+
+        // Always propagate currency to transactions and scheduled transactions
+        // (This ensures consistency even if previous updates failed or if state is stale)
+        if (payee.is_account) {
+          const newCurrency = values.currency || "EUR";
+          // Using values.name because if name changed, it was updated above.
+          await db.transactions.where('account').equals(values.name).modify({ currency: newCurrency });
+          await db.scheduled_transactions.where('account').equals(values.name).modify({ currency: newCurrency });
         }
 
         if (payee.is_account && payee.account_id) {
@@ -135,7 +150,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         }
         showSuccess(`${payee.is_account ? "Account" : "Payee"} updated successfully!`);
       } else {
-        await dataProvider.ensurePayeeExists(values.name, values.is_account, {
+        await dataProvider.ensurePayeeExists(values.name, values.is_account, activeLedger?.id || 'local-user', {
           currency: values.currency,
           startingBalance: values.starting_balance,
           remarks: values.remarks,

@@ -6,7 +6,7 @@ import { BudgetSummary } from "../components/budgets/BudgetSummary";
 import { AddEditBudgetDialog } from "../components/budgets/AddEditBudgetDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useDataProvider } from "@/context/DataProviderContext";
-import { useUser } from "@/contexts/UserContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { PlusCircle, Wand2 } from "lucide-react";
 import {
   AlertDialog,
@@ -35,8 +35,10 @@ export default function BudgetsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const dataProvider = useDataProvider();
-  const { user } = useUser();
-  const userId = user?.id || null;
+
+  // Use Ledger Context
+  const { activeLedger } = useLedger();
+  const userId = activeLedger?.id || null;
 
   // Contexts for real-time calculation
   const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();

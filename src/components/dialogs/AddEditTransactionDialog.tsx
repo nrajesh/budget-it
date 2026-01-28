@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import { useDataProvider } from '@/context/DataProviderContext';
 import { Loader2 } from 'lucide-react';
@@ -34,6 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecurrenceUpdateDialog } from "./RecurrenceUpdateDialog";
 
 interface AddEditTransactionFormValues {
@@ -63,14 +65,6 @@ const formSchema = z.object({
 }).refine(data => data.account !== data.vendor, {
   message: "Source and destination accounts cannot be the same.",
   path: ["vendor"],
-}).refine(data => {
-  if (data.recurrenceFrequency && data.recurrenceFrequency !== 'None') {
-    return data.recurrenceEndDate !== undefined && data.recurrenceEndDate !== '';
-  }
-  return true;
-}, {
-  message: "End date is required when recurrence frequency is set",
-  path: ["recurrenceEndDate"],
 });
 
 interface AddEditTransactionDialogProps {
@@ -88,17 +82,20 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
 }) => {
   // ... existing code ...
   const { addTransaction, updateTransaction, updateScheduledTransaction, scheduledTransactions, accountCurrencyMap, categories: allCategories, accounts, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
-  const { currencySymbols, convertBetweenCurrencies, formatCurrency } = useCurrency();
+  const { currencySymbols, convertBetweenCurrencies, formatCurrency, selectedCurrency } = useCurrency();
+  const { activeLedger } = useLedger();
   const dataProvider = useDataProvider();
 
   const [recurrenceDialogOpen, setRecurrenceDialogOpen] = React.useState(false);
   const [pendingValues, setPendingValues] = React.useState<AddEditTransactionFormValues | null>(null);
+  const [transactionType, setTransactionType] = React.useState<'expense' | 'income'>('expense');
 
   // ... existing hooks ...
   const allAccounts = React.useMemo(() => accounts.map(p => p.name), [accounts]);
   const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
 
-  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>('$');
+  const [accountCurrencySymbol, setAccountCurrencySymbol] = React.useState<string>(currencySymbols[selectedCurrency] || selectedCurrency);
+  const [activeAccountCurrencyCode, setActiveAccountCurrencyCode] = React.useState<string>(selectedCurrency);
   const [destinationAccountCurrency, setDestinationAccountCurrency] = React.useState<string | null>(null);
   const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] = React.useState<number>(0);
 
@@ -130,12 +127,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
           vendor: transactionToEdit.vendor || "",
           category: transactionToEdit.category || "",
           sub_category: transactionToEdit.sub_category || "",
-          amount: transactionToEdit.amount || 0,
+          amount: Math.abs(transactionToEdit.amount || 0),
           remarks: transactionToEdit.remarks || "",
           receivingAmount: transactionToEdit.receivingAmount || 0,
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date ? formatDateToYYYYMMDD(new Date(transactionToEdit.recurrence_end_date)) : "",
         });
+        setTransactionType(transactionToEdit.amount >= 0 ? 'income' : 'expense');
       } else {
         reset({
           date: formatDateToYYYYMMDD(new Date()),
@@ -149,8 +147,9 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
           recurrenceFrequency: "None",
           recurrenceEndDate: "",
         });
+        setTransactionType('expense');
       }
-      setAccountCurrencySymbol('$');
+      setAccountCurrencySymbol(currencySymbols[selectedCurrency] || selectedCurrency);
       setDestinationAccountCurrency(null);
       setAutoCalculatedReceivingAmount(0);
       setRecurrenceDialogOpen(false);
@@ -169,10 +168,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   React.useEffect(() => {
     const updateCurrencySymbol = async () => {
       if (accountValue) {
-        const currencyCode = accountCurrencyMap.get(accountValue) || await dataProvider.getAccountCurrency(accountValue);
+        const currencyCode = accountCurrencyMap.get(accountValue) || await dataProvider.getAccountCurrency(accountValue, activeLedger?.id || '');
         setAccountCurrencySymbol(currencySymbols[currencyCode] || currencyCode);
+        setActiveAccountCurrencyCode(currencyCode);
       } else {
-        setAccountCurrencySymbol('$');
+        setAccountCurrencySymbol(currencySymbols[selectedCurrency] || selectedCurrency);
+        setActiveAccountCurrencyCode(selectedCurrency);
       }
     };
     updateCurrencySymbol();
@@ -181,7 +182,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   React.useEffect(() => {
     const fetchDestinationCurrency = async () => {
       if (isTransfer && vendorValue) {
-        const currencyCode = accountCurrencyMap.get(vendorValue) || await dataProvider.getAccountCurrency(vendorValue);
+        const currencyCode = accountCurrencyMap.get(vendorValue) || await dataProvider.getAccountCurrency(vendorValue, activeLedger?.id || '');
         setDestinationAccountCurrency(currencyCode);
       } else {
         setDestinationAccountCurrency(null);
@@ -222,6 +223,8 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   }, [isTransfer, setValue, getValues]);
 
   const handleTransactionSave = async (values: AddEditTransactionFormValues, updateFuture: boolean = false) => {
+    const finalAmount = transactionType === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
+
     const transactionData = {
       ...transactionToEdit,
       date: values.date,
@@ -229,11 +232,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       vendor: values.vendor,
       category: values.category,
       sub_category: values.sub_category,
-      amount: values.amount,
+      amount: finalAmount,
       remarks: values.remarks,
       receivingAmount: values.receivingAmount,
       recurrence_frequency: values.recurrenceFrequency,
       recurrence_end_date: values.recurrenceEndDate,
+      currency: activeAccountCurrencyCode,
     };
 
     if (transactionToEdit) {
@@ -303,6 +307,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
 
   const isEditMode = !!transactionToEdit;
 
+  React.useEffect(() => {
+    if (isTransfer) {
+      setTransactionType('expense');
+    }
+  }, [isTransfer]);
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -319,7 +329,15 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-2 gap-4">
+              <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.error("Form Validation Errors:", errors))} className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 flex justify-center mb-4">
+                  <Tabs value={transactionType} onValueChange={(v) => !isTransfer && setTransactionType(v as 'expense' | 'income')} className="w-[400px]">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="expense">Expense</TabsTrigger>
+                      <TabsTrigger value="income" disabled={isTransfer}>Income</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
                 <FormField
                   control={form.control}
                   name="date"

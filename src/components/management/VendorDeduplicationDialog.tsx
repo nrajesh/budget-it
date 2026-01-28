@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { showSuccess, showError } from "@/utils/toast";
 import { Loader2 } from "lucide-react";
 
@@ -17,6 +18,7 @@ interface VendorReconciliationDialogProps {
 const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
   const { refetchVendors, vendors: contextVendors, invalidateAllData } = useTransactions();
+  const { activeLedger } = useLedger();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const [selectedMaster, setSelectedMaster] = useState<string>("");
@@ -26,14 +28,14 @@ const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ 
   // In TransactionsContext, 'vendors' are payees. 'accounts' are accounts.
   // We use contextVendors here.
   const vendors = useMemo(() => {
-      return contextVendors.sort((a, b) => a.name.localeCompare(b.name));
+    return contextVendors.sort((a, b) => a.name.localeCompare(b.name));
   }, [contextVendors]);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-        setSelectedMaster("");
-        setSelectedDuplicates([]);
+      setSelectedMaster("");
+      setSelectedDuplicates([]);
     }
   }, [isOpen]);
 
@@ -42,27 +44,27 @@ const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ 
 
     setIsProcessing(true);
     try {
-        await dataProvider.mergePayees(selectedMaster, selectedDuplicates);
-        showSuccess(`Successfully merged ${selectedDuplicates.length} vendors into ${selectedMaster}.`);
-        await invalidateAllData();
-        onClose();
+      await dataProvider.mergePayees(selectedMaster, selectedDuplicates, activeLedger?.id || '');
+      showSuccess(`Successfully merged ${selectedDuplicates.length} vendors into ${selectedMaster}.`);
+      await invalidateAllData();
+      onClose();
     } catch (error: any) {
-        showError(`Merge failed: ${error.message}`);
+      showError(`Merge failed: ${error.message}`);
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
 
   const potentialDuplicates = useMemo(() => {
-      return vendors.filter(v => v.name !== selectedMaster);
+    return vendors.filter(v => v.name !== selectedMaster);
   }, [vendors, selectedMaster]);
 
   const handleToggleDuplicate = (name: string) => {
-      setSelectedDuplicates(prev =>
-          prev.includes(name)
-              ? prev.filter(n => n !== name)
-              : [...prev, name]
-      );
+    setSelectedDuplicates(prev =>
+      prev.includes(name)
+        ? prev.filter(n => n !== name)
+        : [...prev, name]
+    );
   };
 
   return (
@@ -80,45 +82,45 @@ const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ 
           <div className="space-y-2">
             <Label>Primary Vendor (Keep this one)</Label>
             <Select value={selectedMaster} onValueChange={(val) => {
-                setSelectedMaster(val);
-                setSelectedDuplicates([]);
+              setSelectedMaster(val);
+              setSelectedDuplicates([]);
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select vendor..." />
               </SelectTrigger>
               <SelectContent>
                 {vendors.map(v => (
-                    <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
+                  <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           {selectedMaster && (
-              <div className="space-y-2">
-                <Label>Duplicate Vendors (Merge these)</Label>
-                <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
-                    {potentialDuplicates.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No other vendors found.</p>
-                    ) : (
-                        potentialDuplicates.map(v => (
-                            <div key={v.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`dup-${v.id}`}
-                                    checked={selectedDuplicates.includes(v.name)}
-                                    onCheckedChange={() => handleToggleDuplicate(v.name)}
-                                />
-                                <Label htmlFor={`dup-${v.id}`} className="cursor-pointer font-normal">
-                                    {v.name}
-                                </Label>
-                            </div>
-                        ))
-                    )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                    Selected duplicates will be permanently deleted after merging their transactions.
-                </p>
+            <div className="space-y-2">
+              <Label>Duplicate Vendors (Merge these)</Label>
+              <div className="border rounded-md p-4 max-h-[200px] overflow-y-auto space-y-2">
+                {potentialDuplicates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No other vendors found.</p>
+                ) : (
+                  potentialDuplicates.map(v => (
+                    <div key={v.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`dup-${v.id}`}
+                        checked={selectedDuplicates.includes(v.name)}
+                        onCheckedChange={() => handleToggleDuplicate(v.name)}
+                      />
+                      <Label htmlFor={`dup-${v.id}`} className="cursor-pointer font-normal">
+                        {v.name}
+                      </Label>
+                    </div>
+                  ))
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Selected duplicates will be permanently deleted after merging their transactions.
+              </p>
+            </div>
           )}
         </div>
 

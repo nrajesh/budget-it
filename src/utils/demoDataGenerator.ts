@@ -1,87 +1,8 @@
+import { DataProvider } from '@/types/dataProvider';
+
 export interface ProgressCallback {
     (progress: { stage: string; progress: number; totalStages: number }): void;
 }
-
-const ACCOUNTS: { name: string; type: any; currency: string; creditLimit?: number }[] = [
-    { name: 'Checking Account', type: 'Checking', currency: 'USD' },
-    { name: 'Savings Vault', type: 'Savings', currency: 'USD' },
-    { name: 'London Stash', type: 'Savings', currency: 'GBP' },
-    { name: 'Euro Travel', type: 'Checking', currency: 'EUR' },
-    { name: 'Credit Card', type: 'Credit Card', currency: 'USD', creditLimit: 2000 },
-];
-
-const CATEGORIES_WITH_SUBS = [
-    { name: 'Groceries', subs: ['Supermarket', 'Butcher', 'Bakery', 'Convenience Store'] },
-    { name: 'Utilities', subs: ['Electricity', 'Water', 'Internet', 'Phone'] },
-    { name: 'Transport', subs: ['Fuel', 'Public Transport', 'Taxi/Uber', 'Car Maintenance'] },
-    { name: 'Entertainment', subs: ['Movies', 'Streaming', 'Games', 'Concerts', 'Events'] },
-    { name: 'Shopping', subs: ['Clothing', 'Electronics', 'Home', 'Gifts', 'Hobbies'] },
-    { name: 'Health', subs: ['Doctor', 'Pharmacy', 'Gym', 'Insurance', 'Dental'] },
-    { name: 'Dining Out', subs: ['Restaurants', 'Coffee', 'Fast Food', 'Bars'] },
-    { name: 'Income', subs: ['Salary', 'Freelance', 'Dividends', 'Refunds'] },
-    { name: 'Transfer', subs: [] },
-    { name: 'Education', subs: ['Courses', 'Books', 'Tuition'] },
-    { name: 'Personal Care', subs: ['Hair', 'Spa', 'Cosmetics'] },
-    { name: 'Pets', subs: ['Food', 'Vet', 'Toys'] },
-    { name: 'Home Services', subs: ['Cleaning', 'Repairs', 'Gardening'] },
-    { name: 'Travel', subs: ['Flights', 'Hotels', 'Car Rental', 'Activities'] },
-    { name: 'Subscriptions', subs: ['Software', 'News', 'Music', 'Video'] },
-    { name: 'Kids', subs: ['Activities', 'School', 'Clothing', 'Toys'] },
-    { name: 'Charity', subs: ['Donations'] },
-    { name: 'Automotive', subs: ['Insurance', 'Repairs', 'Parking'] }
-];
-
-const VENDORS = [
-    { name: 'Whole Foods Market', category: 'Groceries', sub: 'Supermarket' },
-    { name: 'Trader Joe\'s', category: 'Groceries', sub: 'Supermarket' },
-    { name: 'Local Butcher', category: 'Groceries', sub: 'Butcher' },
-    { name: 'Corner Store', category: 'Groceries', sub: 'Convenience Store' },
-    { name: 'Shell', category: 'Transport', sub: 'Fuel' },
-    { name: 'Uber', category: 'Transport', sub: 'Taxi/Uber' },
-    { name: 'MTA', category: 'Transport', sub: 'Public Transport' },
-    { name: 'Netflix', category: 'Entertainment', sub: 'Streaming' },
-    { name: 'Spotify', category: 'Entertainment', sub: 'Streaming' },
-    { name: 'AMC Theaters', category: 'Entertainment', sub: 'Movies' },
-    { name: 'Ticketmaster', category: 'Entertainment', sub: 'Concerts' },
-    { name: 'Electric Company', category: 'Utilities', sub: 'Electricity' },
-    { name: 'AT&T', category: 'Utilities', sub: 'Internet' },
-    { name: 'Verizon', category: 'Utilities', sub: 'Phone' },
-    { name: 'Amazon', category: 'Shopping', sub: 'Home' },
-    { name: 'Target', category: 'Shopping', sub: 'Clothing' },
-    { name: 'Best Buy', category: 'Shopping', sub: 'Electronics' },
-    { name: 'Steam', category: 'Entertainment', sub: 'Games' },
-    { name: 'CVS Pharmacy', category: 'Health', sub: 'Pharmacy' },
-    { name: 'Planet Fitness', category: 'Health', sub: 'Gym' },
-    { name: 'Dr. Smith', category: 'Health', sub: 'Doctor' },
-    { name: 'Smile Dental', category: 'Health', sub: 'Dental' },
-    { name: 'Pizza Hut', category: 'Dining Out', sub: 'Fast Food' },
-    { name: 'Starbucks', category: 'Dining Out', sub: 'Coffee' },
-    { name: 'Local Pub', category: 'Dining Out', sub: 'Bars' },
-    { name: 'Sushi Palace', category: 'Dining Out', sub: 'Restaurants' },
-    { name: 'Tech Corp', category: 'Income', sub: 'Salary' },
-    { name: 'SNCF', category: 'Transport', sub: 'Public Transport' }, // EUR Vendor
-    { name: 'Pret A Manger', category: 'Dining Out', sub: 'Coffee' }, // GBP Vendor
-    { name: 'Udemy', category: 'Education', sub: 'Courses' },
-    { name: 'Barnes & Noble', category: 'Education', sub: 'Books' },
-    { name: 'Sephora', category: 'Personal Care', sub: 'Cosmetics' },
-    { name: 'Supercuts', category: 'Personal Care', sub: 'Hair' },
-    { name: 'PetSmart', category: 'Pets', sub: 'Food' },
-    { name: 'Vet Clinic', category: 'Pets', sub: 'Vet' },
-    { name: 'Local Plumber', category: 'Home Services', sub: 'Repairs' },
-    { name: 'University', category: 'Education', sub: 'Tuition' },
-    { name: 'Chewy', category: 'Pets', sub: 'Toys' },
-    { name: 'Apple', category: 'Shopping', sub: 'Electronics' },
-    { name: 'Delta Airlines', category: 'Travel', sub: 'Flights' },
-    { name: 'Airbnb', category: 'Travel', sub: 'Hotels' },
-    { name: 'Hertz', category: 'Travel', sub: 'Car Rental' },
-    { name: 'Adobe', category: 'Subscriptions', sub: 'Software' },
-    { name: 'NY Times', category: 'Subscriptions', sub: 'News' },
-    { name: 'Kumon', category: 'Kids', sub: 'School' },
-    { name: 'Gap Kids', category: 'Kids', sub: 'Clothing' },
-    { name: 'Red Cross', category: 'Charity', sub: 'Donations' },
-    { name: 'Geico', category: 'Automotive', sub: 'Insurance' },
-    { name: 'City Parking', category: 'Automotive', sub: 'Parking' }
-];
 
 const DEMO_BUDGETS = [
     { category: 'Groceries', amount: 800, frequency: 'Monthly' },
@@ -101,17 +22,21 @@ const DEMO_BUDGETS = [
     { category: 'Shopping', sub: 'Clothing', amount: 200, frequency: 'Monthly' }
 ];
 
-const DEMO_SCHEDULED = [
+// Template for scheduled transactions.
+// We will map 'Checking Account', 'Savings Vault', 'Credit Card' to actual accounts in the ledger.
+// Template for scheduled transactions for HOME budget
+const HOME_SCHEDULED_TRANSACTIONS = [
     {
-        account: 'Checking Account',
+        accountType: 'Checking',
         vendor: 'Landlord',
         category: 'Housing',
+        sub_category: 'Rent',
         amount: -1200,
         frequency: 'Monthly',
         remarks: 'Rent Payment'
     },
     {
-        account: 'Credit Card',
+        accountType: 'Credit Card',
         vendor: 'Netflix',
         category: 'Entertainment',
         sub_category: 'Streaming',
@@ -120,8 +45,8 @@ const DEMO_SCHEDULED = [
         remarks: 'Netflix Subscription'
     },
     {
-        account: 'Checking Account',
-        vendor: 'Savings Vault',
+        accountType: 'Checking',
+        vendor: 'Savings',
         category: 'Transfer',
         amount: -500,
         frequency: 'Monthly',
@@ -129,16 +54,7 @@ const DEMO_SCHEDULED = [
         isTransfer: true
     },
     {
-        account: 'Savings Vault',
-        vendor: 'Checking Account',
-        category: 'Transfer',
-        amount: 500,
-        frequency: 'Monthly',
-        remarks: 'Monthly Savings Deposit',
-        isTransfer: true
-    },
-    {
-        account: 'Checking Account',
+        accountType: 'Checking',
         vendor: 'IRS',
         category: 'Health',
         sub_category: 'Insurance',
@@ -148,16 +64,7 @@ const DEMO_SCHEDULED = [
         next_date_offset: 2
     },
     {
-        account: 'Checking Account',
-        vendor: 'Spotify',
-        category: 'Entertainment',
-        sub_category: 'Streaming',
-        amount: -9.99,
-        frequency: 'Monthly',
-        remarks: 'Spotify Subscription'
-    },
-    {
-        account: 'Credit Card',
+        accountType: 'Credit Card',
         vendor: 'Gym',
         category: 'Health',
         sub_category: 'Gym',
@@ -166,408 +73,307 @@ const DEMO_SCHEDULED = [
         remarks: 'Gym Membership'
     },
     {
-        account: 'Checking Account',
+        accountType: 'Checking',
         vendor: 'Electric Company',
         category: 'Utilities',
         sub_category: 'Electricity',
         amount: -150,
         frequency: 'Monthly',
         remarks: 'Electricity Bill'
-    },
-    {
-        account: 'Checking Account',
-        vendor: 'PetSmart',
-        category: 'Pets',
-        sub_category: 'Food',
-        amount: -80,
-        frequency: 'Monthly',
-        remarks: 'Pet Food'
     }
 ];
 
-export const generateDemoData = async (
-    dataProvider: any,
+// Template for CHILD budget
+const CHILD_SCHEDULED_TRANSACTIONS = [
+    {
+        accountType: 'Checking', // Allowance account
+        vendor: 'Spotify',
+        category: 'Entertainment',
+        sub_category: 'Streaming',
+        amount: -9.99,
+        frequency: 'Monthly',
+        remarks: 'Music Subscription'
+    },
+    {
+        accountType: 'Checking',
+        vendor: 'Savings', // Junior Isa
+        category: 'Transfer',
+        amount: -20,
+        frequency: 'Monthly',
+        remarks: 'Save for game console',
+        isTransfer: true
+    }
+];
+
+// Template for OFFSHORE budget
+const OFFSHORE_SCHEDULED_TRANSACTIONS = [
+    {
+        accountType: 'Checking', // Foreign Checking
+        vendor: 'Property Management',
+        category: 'Housing',
+        sub_category: 'Rent',
+        amount: -250, // Maintenance fee?
+        frequency: 'Monthly',
+        remarks: 'Villa Maintenance'
+    },
+    {
+        accountType: 'Checking',
+        vendor: 'Offshore Savings',
+        category: 'Transfer',
+        amount: -2000,
+        frequency: 'Quarterly',
+        remarks: 'Quarterly Profit Transfer',
+        isTransfer: true
+    }
+];
+
+export const generateDiverseDemoData = async (
+    dataProvider: DataProvider,
     onProgress: ProgressCallback
 ) => {
     const TOTAL_STAGES = 100;
-    const userId = 'local-user';
 
-    // Stage 1: Clear existing data
-    onProgress({ stage: 'Clearing existing data...', progress: 10, totalStages: TOTAL_STAGES });
+    // 1. Clear ALL Data
+    onProgress({ stage: 'Clearing existing data...', progress: 5, totalStages: TOTAL_STAGES });
     await dataProvider.clearAllData();
 
-    // Stage 2: Create Categories & Sub-categories
-    onProgress({ stage: 'Creating categories...', progress: 30, totalStages: TOTAL_STAGES });
+    // 2. Create Ledgers
+    onProgress({ stage: 'Creating Ledgers...', progress: 10, totalStages: TOTAL_STAGES });
 
-    const categoryMap: Record<string, string> = {};
-    const subCategoryMap: Record<string, Record<string, string>> = {};
+    const ledgersToCreate = [
+        {
+            name: 'Home Budget',
+            currency: 'EUR',
+            icon: 'home',
+            short_name: 'Home',
+            accounts: ['Joint Checking', 'Savings', 'Credit Card'],
+            currencies: ['EUR', 'GBP', 'USD'],
+            scheduledTransactions: HOME_SCHEDULED_TRANSACTIONS
+        },
+        {
+            name: 'Child Budget',
+            currency: 'EUR',
+            icon: 'baby',
+            short_name: 'Child',
+            accounts: ['Allowance', 'Pocket Money', 'Junior Isa'],
+            currencies: ['EUR', 'EUR', 'EUR'],
+            scheduledTransactions: CHILD_SCHEDULED_TRANSACTIONS
+        },
+        {
+            name: 'Offshore',
+            currency: 'EUR',
+            icon: 'globe',
+            short_name: 'Off',
+            accounts: ['Offshore Savings', 'Foreign Checking'],
+            currencies: ['INR', 'EUR'],
+            scheduledTransactions: OFFSHORE_SCHEDULED_TRANSACTIONS
+        }
+    ];
 
-    for (const cat of CATEGORIES_WITH_SUBS) {
-        const catId = await dataProvider.ensureCategoryExists(cat.name, userId);
-        if (catId) {
-            categoryMap[cat.name] = catId;
-            subCategoryMap[cat.name] = {};
+    const createdLedgers = [];
 
-            if (cat.subs.length > 0) {
-                for (const sub of cat.subs) {
-                    const subId = await dataProvider.ensureSubCategoryExists(sub, catId, userId);
-                    if (subId) {
-                        subCategoryMap[cat.name][sub] = subId;
-                    }
-                }
+    for (const l of ledgersToCreate) {
+        const newLedger = await dataProvider.addLedger({
+            name: l.name,
+            currency: l.currency,
+            icon: l.icon,
+            short_name: l.short_name
+        });
+        createdLedgers.push({ ...newLedger, config: l });
+    }
+
+    // 3. Populate Data per Ledger
+    const totalLedgers = createdLedgers.length;
+    let currentLedgerIndex = 0;
+
+    for (const ledgerItem of createdLedgers) {
+        const ledger = ledgerItem as any;
+        const lId = ledger.id;
+        const config = ledger.config;
+
+        onProgress({ stage: `Populating ${config.name}...`, progress: 10 + (currentLedgerIndex / totalLedgers) * 80, totalStages: TOTAL_STAGES });
+
+        // --- Create Accounts ---
+        const accountMap = new Map<string, string>(); // Name -> ID or Currency? Just need check existence.
+        const createdAccountNames: string[] = [];
+
+        for (let i = 0; i < config.accounts.length; i++) {
+            const accName = config.accounts[i];
+            const accCurr = config.currencies[i];
+
+            await dataProvider.ensurePayeeExists(accName, true, lId, {
+                currency: accCurr,
+                startingBalance: Math.floor(Math.random() * 5000) + 1000,
+                type: accName.includes('Isa') ? 'Investment' : (accName.includes('Card') ? 'Credit Card' : (accName.includes('Savings') ? 'Savings' : 'Checking'))
+            });
+            accountMap.set(accName, accCurr);
+            createdAccountNames.push(accName);
+        }
+
+        // --- Create Categories ---
+        const categories = ['Groceries', 'Utilities', 'Rent', 'Entertainment', 'Transport', 'Healthcare', 'Shopping', 'Dining Out', 'Pets', 'Personal Care', 'Education', 'Home Services', 'Housing', 'Transfer', 'Health'];
+        const categoryMap = new Map<string, string>(); // Name -> ID
+
+        for (const cat of categories) {
+            const id = await dataProvider.ensureCategoryExists(cat, lId);
+            if (id) categoryMap.set(cat, id);
+
+            // Ensure subs for specific categories used in demo
+            if (cat === 'Dining Out') {
+                await dataProvider.ensureSubCategoryExists('Coffee', id!, lId);
+                await dataProvider.ensureSubCategoryExists('Restaurants', id!, lId);
+                await dataProvider.ensureSubCategoryExists('Bars', id!, lId);
+            }
+            if (cat === 'Transport') {
+                await dataProvider.ensureSubCategoryExists('Fuel', id!, lId);
+                await dataProvider.ensureSubCategoryExists('Public Transport', id!, lId);
+            }
+            if (cat === 'Shopping') {
+                await dataProvider.ensureSubCategoryExists('Electronics', id!, lId);
+                await dataProvider.ensureSubCategoryExists('Clothing', id!, lId);
+            }
+            if (cat === 'Housing') {
+                await dataProvider.ensureSubCategoryExists('Rent', id!, lId);
+            }
+            if (cat === 'Health') {
+                await dataProvider.ensureSubCategoryExists('Insurance', id!, lId);
+                await dataProvider.ensureSubCategoryExists('Gym', id!, lId);
+            }
+            if (cat === 'Utilities') {
+                await dataProvider.ensureSubCategoryExists('Electricity', id!, lId);
             }
         }
-    }
 
-    // Ensure Housing category exists for Rent if not present
-    const housingId = await dataProvider.ensureCategoryExists('Housing', userId);
-    if (housingId) {
-        categoryMap['Housing'] = housingId;
-        const rentId = await dataProvider.ensureSubCategoryExists('Rent', housingId, userId);
-        if (rentId) {
-            if (!subCategoryMap['Housing']) subCategoryMap['Housing'] = {};
-            subCategoryMap['Housing']['Rent'] = rentId;
-        }
-    }
+        // --- Create Budgets ---
+        // Filter budgets for categories that exist
+        for (const budget of DEMO_BUDGETS) {
+            const catId = categoryMap.get(budget.category);
+            if (!catId) continue;
 
-    await new Promise(r => setTimeout(r, 500));
-
-    // Stage 3: Create Accounts & Vendors
-    onProgress({ stage: 'Setting up accounts...', progress: 50, totalStages: TOTAL_STAGES });
-
-    // Create Accounts
-    for (const acc of ACCOUNTS) {
-        await dataProvider.ensurePayeeExists(acc.name, true, {
-            currency: acc.currency,
-            startingBalance: Math.floor(Math.random() * 5000) + 1000,
-            remarks: 'Demo Account',
-            type: acc.type,
-            creditLimit: acc.creditLimit
-        });
-    }
-
-    // Create Vendors
-    for (const v of VENDORS) {
-        if (v.category === 'Income') continue;
-        await dataProvider.ensurePayeeExists(v.name, false, {
-            remarks: 'Demo Vendor'
-        });
-    }
-
-    // Initialize Payee for Landlord to ensure it exists for scheduled transaction
-    await dataProvider.ensurePayeeExists('Landlord', false, { remarks: 'Property Manager' });
-
-    // Ensure 'Emergency Services' vendor for alerts
-    await dataProvider.ensurePayeeExists('Emergency Services', false, { remarks: 'One-time large expense' });
-
-    // Stage 4: Create Budgets
-    onProgress({ stage: 'Setting up budgets...', progress: 60, totalStages: TOTAL_STAGES });
-
-    const addedBudgets = new Set<string>();
-
-    for (const budget of DEMO_BUDGETS) {
-        const catId = categoryMap[budget.category];
-        if (!catId) continue;
-
-        let subId = null;
-        if (budget.sub) {
-            subId = subCategoryMap[budget.category]?.[budget.sub] || null;
+            // Just add budget, no ID constraint uniqueness check needed here for demo really as we wiped data
+            await dataProvider.addBudget({
+                user_id: lId,
+                category_id: catId,
+                category_name: budget.category,
+                // sub_category_id: ... needs lookup but DataProvider usually handles name lookup? 
+                // LocalDataProvider addBudget takes names but stores them. It doesn't strictly validate sub_category_id presence in this simple implementation? 
+                // Let's rely on names which UI uses mostly. 
+                // Actually `addBudget` in context or provider just stores what we give.
+                target_amount: budget.amount,
+                currency: config.currency, // Use ledger currency
+                start_date: new Date().toISOString(),
+                end_date: null,
+                frequency: budget.frequency as any,
+                sub_category_name: budget.sub
+            });
         }
 
-        // Deduplicate
-        const uniqueKey = `${catId}-${subId || 'null'}`;
-        if (addedBudgets.has(uniqueKey)) {
-            console.warn(`Skipping duplicate budget for ${budget.category} - ${budget.sub || 'All'}`);
-            continue;
-        }
-        addedBudgets.add(uniqueKey);
+        // --- Create Scheduled Transactions ---
+        // Use the ledger-specific scheduled transactions, or default to empty if none found
+        const scheduledTransactions = config.scheduledTransactions || [];
 
-        await dataProvider.addBudget({
-            user_id: userId,
-            category_id: catId,
-            category_name: budget.category,
-            sub_category_id: subId,
-            sub_category_name: budget.sub || null,
-            target_amount: budget.amount,
-            currency: 'USD',
-            start_date: new Date().toISOString(),
-            end_date: null,
-            frequency: budget.frequency,
-        });
-    }
+        for (const sched of scheduledTransactions) {
+            // Map Account Type to Real Account
+            let accountName = createdAccountNames.find(n => {
+                if (sched.accountType === 'Checking') return n.includes('Checking') || n.includes('Allowance') || n.includes('Foreign Checking');
+                if (sched.accountType === 'Credit Card') return n.includes('Card');
+                if (sched.accountType === 'Savings') return n.includes('Savings') || n.includes('Isa') || n.includes('Offshore Savings');
+                return false;
+            });
 
-    // Stage 5: Create Scheduled Transactions
-    onProgress({ stage: 'Scheduling transactions...', progress: 65, totalStages: TOTAL_STAGES });
+            if (!accountName) {
+                // Fallback
+                accountName = createdAccountNames[0];
+            }
 
-    for (const sched of DEMO_SCHEDULED) {
-        const schedDate = new Date();
-        schedDate.setDate(schedDate.getDate() + (sched.next_date_offset || 1));
+            // Map Vendor
+            let vendorName = sched.vendor;
+            if (sched.isTransfer) {
+                // Determine target account
+                const targetAcc = createdAccountNames.find(n => {
+                    if (sched.vendor.includes('Savings')) return n.includes('Savings') || n.includes('Isa') || n.includes('Pocket');
+                    if (sched.vendor.includes('Checking')) return n.includes('Checking');
+                    if (sched.vendor.includes('Offshore')) return n.includes('Offshore');
+                    return false;
+                });
+                if (targetAcc) vendorName = targetAcc;
+                else vendorName = createdAccountNames[createdAccountNames.length - 1]; // Last one as fallback
 
-        await dataProvider.addScheduledTransaction({
-            user_id: userId,
-            account: sched.account,
-            vendor: sched.vendor,
-            category: sched.category,
-            sub_category: sched.sub_category || null,
-            amount: sched.amount,
-            currency: 'USD',
-            date: schedDate.toISOString(),
-            frequency: sched.frequency,
-            remarks: sched.remarks,
-        });
-    }
+                // If source == target, skip
+                if (accountName === vendorName) continue;
+            }
 
-    // Stage 4: Generate Transactions
-    onProgress({ stage: 'Generating transactions...', progress: 70, totalStages: TOTAL_STAGES });
+            const schedDate = new Date();
+            schedDate.setDate(schedDate.getDate() + (sched.next_date_offset || 1));
 
-    const transactions = [];
-    // Generate ~600 random transactions + regular monthly items
-    // First, generate regular monthly items for "Salary" and "Rent" to ensure stable income/expense
-    const MONTHS_TO_GENERATE = 24; // 2 Years
-    const today = new Date();
+            // Ensure vendor/payee exists if it's external
+            if (!sched.isTransfer) {
+                await dataProvider.ensurePayeeExists(vendorName, false, lId);
+            }
 
-    // Regular Income (Salary)
-    // Helper to generate N monthly occurrences starting from the latest valid date
-    const generateMonthlySequence = (
-        dayOfMonth: number,
-        count: number,
-        generator: (date: string) => void
-    ) => {
-        let latestDate = new Date(today);
-        latestDate.setDate(dayOfMonth);
-        // If the date for this month is in the future, start from last month
-        if (latestDate > today) {
-            latestDate.setMonth(latestDate.getMonth() - 1);
-        }
+            await dataProvider.addScheduledTransaction({
+                user_id: lId,
+                account: accountName,
+                vendor: vendorName,
+                category: sched.category,
+                sub_category: sched.sub_category || null,
+                amount: sched.amount,
+                currency: accountMap.get(accountName) || 'USD',
+                date: schedDate.toISOString(),
+                frequency: sched.frequency,
+                remarks: sched.remarks,
+            });
 
-        for (let i = 0; i < count; i++) {
-            const d = new Date(latestDate);
-            d.setMonth(latestDate.getMonth() - i);
-            generator(d.toISOString());
-        }
-    };
-
-    // 1. Salary (25th)
-    generateMonthlySequence(25, MONTHS_TO_GENERATE, (dateIso) => {
-        transactions.push({
-            date: dateIso,
-            amount: 5000 + Math.random() * 200,
-            vendor: 'Tech Corp',
-            category: 'Income',
-            sub_category: 'Salary',
-            account: 'Checking Account',
-            remarks: 'Monthly Salary',
-            currency: 'USD',
-            user_id: userId,
-        });
-    });
-
-    // 2. Rent (1st)
-    generateMonthlySequence(1, MONTHS_TO_GENERATE, (dateIso) => {
-        transactions.push({
-            date: dateIso,
-            amount: -1200,
-            vendor: 'Landlord',
-            category: 'Housing',
-            sub_category: 'Rent',
-            account: 'Checking Account',
-            remarks: 'Monthly Rent',
-            currency: 'USD',
-            user_id: userId,
-        });
-    });
-
-    // 3. Credit Card Payment (15th)
-    generateMonthlySequence(15, MONTHS_TO_GENERATE, (dateIso) => {
-        const amount = 1500 + Math.random() * 500;
-        // Out from Checking
-        transactions.push({
-            date: dateIso,
-            amount: -amount,
-            vendor: 'Credit Card',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'Checking Account',
-            remarks: 'Credit Card Bill Payment',
-            currency: 'USD',
-            user_id: userId,
-        });
-        // In to CC
-        transactions.push({
-            date: dateIso,
-            amount: amount,
-            vendor: 'Checking Account',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'Credit Card',
-            remarks: 'Payment Received',
-            currency: 'USD',
-            user_id: userId,
-        });
-    });
-
-    // 4. GBP Transfer (20th)
-    generateMonthlySequence(20, MONTHS_TO_GENERATE, (dateIso) => {
-        // Out
-        transactions.push({
-            date: dateIso,
-            amount: -200,
-            vendor: 'London Stash',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'Checking Account',
-            remarks: 'Transfer to GBP Savings',
-            currency: 'USD',
-            user_id: userId,
-        });
-        // In
-        transactions.push({
-            date: dateIso,
-            amount: 150,
-            vendor: 'Checking Account',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'London Stash',
-            remarks: 'Received from Checking',
-            currency: 'GBP',
-            user_id: userId,
-        });
-    });
-
-    // 5. Weekly Savings Transfer (Every Friday logic approximation - just 4 times a month)
-    generateMonthlySequence(5, MONTHS_TO_GENERATE * 4, (dateIso) => {
-        transactions.push({
-            date: dateIso,
-            amount: -50,
-            vendor: 'Savings Vault',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'Checking Account',
-            remarks: 'Weekly Savings',
-            currency: 'USD',
-            user_id: userId,
-        });
-        transactions.push({
-            date: dateIso,
-            amount: 50,
-            vendor: 'Checking Account',
-            category: 'Transfer',
-            sub_category: null,
-            account: 'Savings Vault',
-            remarks: 'Weekly Savings Deposit',
-            currency: 'USD',
-            user_id: userId,
-        });
-    });
-
-
-    // Generate ~1200 random transactions to fill the gaps, with density in recent months
-    for (let i = 0; i < 1200; i++) {
-        const randomVendor = VENDORS[Math.floor(Math.random() * VENDORS.length)];
-        // Skip Income or Transfer vendors for random noise, focus on spending
-        if (randomVendor.category === 'Income' || randomVendor.category === 'Transfer') continue;
-
-        // Weighted Date Generation:
-        // 5% chance for Future (1-90 days ahead)
-        // 45% chance for Recent (0-30 days ago)
-        // 25% chance for Mid-term (30-90 days ago)
-        // 25% chance for Long-term (90-730 days ago)
-        const rand = Math.random();
-        let daysAgo = 0;
-
-        if (rand < 0.05) {
-            // Future: 1-90 days ahead (negative daysAgo)
-            daysAgo = -Math.floor(Math.random() * 90) - 1;
-        } else if (rand < 0.50) {
-            // Recent: 0-30 days ago
-            daysAgo = Math.floor(Math.random() * 30);
-        } else if (rand < 0.75) {
-            // Mid-term: 30-90 days ago
-            daysAgo = 30 + Math.floor(Math.random() * 60);
-        } else {
-            // Long-term: 90-730 days ago
-            daysAgo = 90 + Math.floor(Math.random() * 640);
+            // Note: For transfers, we probably should create the PAIR too? 
+            // The Context `addScheduledTransaction` handles pairing. This `dataProvider.addScheduledTransaction` does NOT.
+            // So we manually create pair for transfer.
+            if (sched.isTransfer) {
+                await dataProvider.ensureCategoryExists('Transfer', lId);
+                // Create destination pair
+                await dataProvider.addScheduledTransaction({
+                    user_id: lId,
+                    account: vendorName, // Swapped
+                    vendor: accountName, // Swapped
+                    category: 'Transfer',
+                    sub_category: null,
+                    amount: -sched.amount, // Negate
+                    currency: accountMap.get(vendorName) || 'USD',
+                    date: schedDate.toISOString(),
+                    frequency: sched.frequency,
+                    remarks: sched.remarks,
+                    transfer_id: undefined // We can link them if we generated a UUID but checking Context flow it might settle later. 
+                    // Let's just create unlinked or link them? 
+                    // `dataProvider` doesn't enforce link UUID. 
+                    // Better to link them if we can.
+                });
+            }
         }
 
-        const date = new Date(today);
-        date.setDate(date.getDate() - daysAgo);
+        // --- Create Random Transactions ---
+        const now = new Date();
+        const numTransactions = 60; // 6 months of data roughly
 
-        // Amount Variety logic
-        let baseAmount = 10;
-        if (['Groceries'].includes(randomVendor.category)) baseAmount = 50 + Math.random() * 100;
-        if (['Dining Out'].includes(randomVendor.category)) baseAmount = 15 + Math.random() * 60; // Coffee vs Dinner
-        if (['Transport'].includes(randomVendor.category)) baseAmount = 20 + Math.random() * 40;
-        if (['Travel'].includes(randomVendor.category)) baseAmount = 200 + Math.random() * 800;
-        if (['Shopping'].includes(randomVendor.category)) baseAmount = 30 + Math.random() * 200;
-        if (['Utilities'].includes(randomVendor.category)) baseAmount = 80 + Math.random() * 120;
+        for (let i = 0; i < numTransactions; i++) {
+            const daysAgo = Math.floor(Math.random() * 180);
+            const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            const isExpense = Math.random() > 0.3;
+            const amount = isExpense ? -Math.floor(Math.random() * 100) - 5 : Math.floor(Math.random() * 2000) + 500;
+            const category = categories[Math.floor(Math.random() * categories.length)];
+            const account = config.accounts[Math.floor(Math.random() * config.accounts.length)];
+            const currency = accountMap.get(account) || config.currency;
 
-        // Add some noise
-        const amount = -(baseAmount + (Math.random() * 20 - 10));
-
-        // Pick random account, prioritize Credit Card for liabilities
-        let accountName = Math.random() > 0.4 ? 'Credit Card' : 'Checking Account';
-        let currency = 'USD';
-
-        // Add some EUR transactions
-        if (Math.random() > 0.92) {
-            accountName = 'Euro Travel';
-            currency = 'EUR';
+            await dataProvider.addTransaction({
+                user_id: lId,
+                date: date.toISOString(),
+                amount: amount,
+                currency: currency,
+                account: account,
+                vendor: isExpense ? `Store ${Math.floor(Math.random() * 10)}` : 'Employer',
+                category: category,
+                remarks: 'Demo transaction'
+            });
         }
-
-        transactions.push({
-            date: date.toISOString(),
-            amount: Number(amount.toFixed(2)),
-            vendor: randomVendor.name,
-            category: randomVendor.category,
-            sub_category: randomVendor.sub,
-            account: accountName,
-            remarks: `Demo Transaction`,
-            currency: currency,
-            user_id: userId,
-        });
-    }
-
-    // --- ALERT SCENARIOS ---
-
-    // 1. Negative Balance Alert
-    // Add a large one-time expense to 'Checking Account' about 45 days ago
-    const largeExpenseDate = new Date(today);
-    largeExpenseDate.setDate(largeExpenseDate.getDate() - 45);
-    transactions.push({
-        date: largeExpenseDate.toISOString(),
-        amount: -8000, // Large amount to dip into negative (assuming balance < 8000)
-        vendor: 'Emergency Services',
-        category: 'Health',
-        sub_category: 'Doctor',
-        account: 'Checking Account',
-        remarks: 'Emergency Medical Bill (Simulated Negative Balance)',
-        currency: 'USD',
-        user_id: userId,
-    });
-
-    // 2. Budget Breach Alert (Shopping)
-    // Create excessive shopping transactions for the last 3 months
-    for (let m = 0; m < 3; m++) {
-        const breachDate = new Date(today);
-        breachDate.setMonth(today.getMonth() - m);
-        breachDate.setDate(10); // 10th of each month
-
-        transactions.push({
-            date: breachDate.toISOString(),
-            amount: -300, // Significantly over $150 budget
-            vendor: 'Amazon',
-            category: 'Shopping',
-            sub_category: 'Home',
-            account: 'Credit Card',
-            remarks: 'Impulse Buying Spree (Simulated Budget Breach)',
-            currency: 'USD',
-            user_id: userId,
-        });
-    }
-
-    // Batch add transactions
-    for (const t of transactions) {
-        await dataProvider.addTransaction(t);
+        currentLedgerIndex++;
     }
 
     onProgress({ stage: 'Finalizing...', progress: 100, totalStages: TOTAL_STAGES });

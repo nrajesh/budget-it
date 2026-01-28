@@ -6,12 +6,13 @@ import Papa from "papaparse";
 import { showError, showSuccess } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from '@tanstack/react-query';
-import { useUser } from "@/contexts/UserContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from '@/context/DataProviderContext';
 import { db } from '@/lib/dexieDB';
+import { slugify } from "@/lib/utils";
 
 export const useCategoryManagement = () => {
-  const { user } = useUser();
+  const { activeLedger } = useLedger();
   const { categories, isLoadingCategories, refetchCategories, invalidateAllData, deleteEntity } = useTransactions();
   const navigate = useNavigate();
   const dataProvider = useDataProvider();
@@ -19,7 +20,7 @@ export const useCategoryManagement = () => {
   const managementProps = useEntityManagement<Category>({
     entityName: "Category",
     entityNamePlural: "categories",
-    queryKey: ['categories', user?.id || ''],
+    queryKey: ['categories', activeLedger?.id || ''],
     deleteRpcFn: 'delete_categories_batch', // Ignored in local version as generic hook likely needs update too
     isDeletable: (item) => item.name !== 'Others',
     onSuccess: invalidateAllData,
@@ -29,8 +30,8 @@ export const useCategoryManagement = () => {
   // Specific mutations for categories that don't fit the generic RPC model
   const addCategoryMutation = useMutation({
     mutationFn: async (newCategoryName: string) => {
-      if (!user?.id) throw new Error("User not logged in.");
-      await dataProvider.ensureCategoryExists(newCategoryName.trim(), user.id);
+      if (!activeLedger?.id) throw new Error("No active ledger.");
+      await dataProvider.ensureCategoryExists(newCategoryName.trim(), activeLedger.id);
     },
     onSuccess: async () => {
       showSuccess("Category added successfully!");
@@ -41,8 +42,8 @@ export const useCategoryManagement = () => {
 
   const batchUpsertCategoriesMutation = useMutation({
     mutationFn: async (categoryNames: string[]) => {
-      if (!user?.id) throw new Error("User not logged in.");
-      await Promise.all(categoryNames.map(name => dataProvider.ensureCategoryExists(name.trim(), user.id)));
+      if (!activeLedger?.id) throw new Error("No active ledger.");
+      await Promise.all(categoryNames.map(name => dataProvider.ensureCategoryExists(name.trim(), activeLedger.id)));
     },
     onSuccess: async (_data, variables) => {
       showSuccess(`${variables.length} categories imported successfully!`);
@@ -55,8 +56,8 @@ export const useCategoryManagement = () => {
 
   const addSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, name }: { categoryId: string; name: string }) => {
-      if (!user?.id) throw new Error("User not logged in.");
-      await dataProvider.ensureSubCategoryExists(name.trim(), categoryId, user.id);
+      if (!activeLedger?.id) throw new Error("No active ledger.");
+      await dataProvider.ensureSubCategoryExists(name.trim(), categoryId, activeLedger.id);
     },
     onSuccess: async () => {
       showSuccess("Sub-category added successfully!");
@@ -67,7 +68,7 @@ export const useCategoryManagement = () => {
 
   const renameSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, categoryName, oldSubCategoryName, newSubCategoryName }: { categoryId: string; categoryName: string; oldSubCategoryName: string; newSubCategoryName: string }) => {
-      if (!user?.id) throw new Error("User not logged in.");
+      if (!activeLedger?.id) throw new Error("No active ledger.");
 
       // Pragmatic fix: use db directly for complex updates not in provider interface yet
       await db.sub_categories
@@ -87,7 +88,7 @@ export const useCategoryManagement = () => {
 
   const deleteSubCategoryMutation = useMutation({
     mutationFn: async ({ categoryId, categoryName, subCategoryName }: { categoryId: string; categoryName: string; subCategoryName: string }) => {
-      if (!user?.id) throw new Error("User not logged in.");
+      if (!activeLedger?.id) throw new Error("No active ledger.");
 
       // Pragmatic fix: use db directly
       await db.sub_categories
@@ -114,7 +115,7 @@ export const useCategoryManagement = () => {
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !activeLedger) return;
     (managementProps as any).setIsImporting(true);
 
     Papa.parse(file, {
@@ -152,7 +153,8 @@ export const useCategoryManagement = () => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", "categories_export.csv");
+    const fileName = activeLedger ? `${slugify(activeLedger.name)}_categories_export.csv` : "categories_export.csv";
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

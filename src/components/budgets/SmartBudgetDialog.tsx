@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useDataProvider } from '@/context/DataProviderContext';
-import { useUser } from '@/contexts/UserContext';
+import { useLedger } from "@/contexts/LedgerContext";
 import { Loader2, Wand2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Transaction } from '@/data/finance-data';
@@ -35,7 +35,7 @@ interface SuggestedBudget {
 export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialogProps) {
     const { transactions } = useTransactions();
     const dataProvider = useDataProvider();
-    const { user } = useUser();
+    const { activeLedger } = useLedger();
     const { toast } = useToast();
 
     const [suggestions, setSuggestions] = useState<SuggestedBudget[]>([]);
@@ -143,7 +143,9 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
         }
 
         try {
-            const userId = user?.id || 'local-user';
+            const userId = activeLedger?.id;
+            if (!userId) throw new Error("No active ledger selected");
+
             let createdCount = 0;
 
             for (const item of selectedItems) {
@@ -161,7 +163,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                 let subCatId = null;
                 if (item.subCategory) {
                     // We need category ID for subcategory
-                    subCatId = await dataProvider.ensureSubCategoryExists(item.subCategory!, catId, userId);
+                    subCatId = await dataProvider.ensureSubCategoryExists(item.subCategory as string, catId, userId);
                 }
 
                 const newBudget: any = {

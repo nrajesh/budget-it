@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useUser } from '@/contexts/UserContext';
+import { useLedger } from "@/contexts/LedgerContext";
 import { useTransactions } from '@/contexts/TransactionsContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Budget } from '@/data/finance-data';
@@ -10,19 +10,19 @@ import { Loader2 } from 'lucide-react';
 import { useDataProvider } from '@/context/DataProviderContext';
 
 export const BudgetHealthWidget = () => {
-  const { user } = useUser();
+  const { activeLedger } = useLedger();
   const { transactions } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const dataProvider = useDataProvider();
 
   const { data: budgets = [], isLoading } = useQuery<Budget[], Error>({
-    queryKey: ['budgets', user?.id],
+    queryKey: ['budgets', activeLedger?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const budgets = await dataProvider.getBudgetsWithSpending(user.id);
+      if (!activeLedger?.id) return [];
+      const budgets = await dataProvider.getBudgetsWithSpending(activeLedger.id);
       return budgets;
     },
-    enabled: !!user,
+    enabled: !!activeLedger,
   });
 
   const healthData = React.useMemo(() => {
@@ -49,9 +49,9 @@ export const BudgetHealthWidget = () => {
         const transactionDate = new Date(t.date);
         const budgetForTransaction = activeMonthlyBudgets.find(b => b.category_name === t.category);
         return budgetForTransaction &&
-               transactionDate >= periodStart &&
-               transactionDate <= periodEnd &&
-               t.amount < 0;
+          transactionDate >= periodStart &&
+          transactionDate <= periodEnd &&
+          t.amount < 0;
       })
       .reduce((sum, t) => {
         return sum + convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);

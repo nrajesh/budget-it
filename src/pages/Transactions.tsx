@@ -5,9 +5,9 @@ import { useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import TransactionTable from "@/components/transactions/TransactionTable";
 import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDialog";
-import { useSession } from "@/hooks/useSession";
 import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
@@ -19,16 +19,14 @@ import { projectScheduledTransactions } from "@/utils/forecasting";
 import { addMonths } from "date-fns";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
-import { RecurrenceUpdateDialog } from "@/components/dialogs/RecurrenceUpdateDialog";
 
 const Transactions = () => {
-  const session = useSession();
+  //   const session = useSession();
   const {
     transactions: allTransactions,
     scheduledTransactions,
     isLoadingTransactions,
     deleteMultipleTransactions,
-    deleteMultipleScheduledTransactions,
     invalidateAllData,
     addTransaction,
     accounts,
@@ -37,7 +35,9 @@ const Transactions = () => {
     subCategories,
     unlinkTransaction,
     linkTransactions,
+    accountCurrencyMap,
   } = useTransactions();
+  const { activeLedger } = useLedger();
 
   const {
     selectedAccounts,
@@ -296,8 +296,10 @@ const Transactions = () => {
           }}
           onRowDoubleClick={(transaction) => {
             setEditingTransaction(transaction);
+            setEditingTransaction(transaction);
             setIsDialogOpen(true);
           }}
+          accountCurrencyMap={accountCurrencyMap}
         />
       </div>
 
@@ -333,7 +335,7 @@ const Transactions = () => {
             const isEdit = !!scheduledTransactionToEdit?.id;
             const payload = {
               ...values,
-              user_id: session?.user?.id || 'local-user',
+              user_id: activeLedger?.id || 'local-user',
             };
 
             if (isEdit) {
