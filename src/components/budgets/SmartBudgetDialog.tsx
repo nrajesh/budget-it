@@ -160,6 +160,11 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                 // Let's use `dataProvider.ensureCategoryExists` which returns ID.
 
                 const catId = await dataProvider.ensureCategoryExists(item.category, userId);
+
+                if (!catId) {
+                    throw new Error(`Failed to ensure category exists: ${item.category}`);
+                }
+
                 let subCatId = null;
                 if (item.subCategory) {
                     // We need category ID for subcategory

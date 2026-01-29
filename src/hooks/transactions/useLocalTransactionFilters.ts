@@ -1,6 +1,5 @@
 import React from 'react';
 import { DateRange } from "react-day-picker";
-import { startOfMonth, endOfMonth } from "date-fns";
 
 // Duplicate of the context interface but for local use
 export interface LocalFilterState {

@@ -27,7 +27,7 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, MoreHorizontal, Pencil, Trash, PlayCircle, X, Link } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash, PlayCircle, X, Link } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -97,7 +97,7 @@ export function ScheduledTransactionsTable({ transactions = [], onEdit, onDelete
         }
     };
 
-    const toggleSelect = (id: string, shiftKey: boolean = false) => {
+    const toggleSelect = (id: string) => {
         const newSelected = new Set(selectedIds);
 
         const txn = transactions.find(t => t.id === id);
@@ -181,11 +181,6 @@ export function ScheduledTransactionsTable({ transactions = [], onEdit, onDelete
                                             <TableRow
                                                 className={`group cursor-pointer hover:bg-muted/50 ${selectedIds.has(transaction.id) ? "bg-muted" : ""}`}
                                                 onDoubleClick={() => onEdit && onEdit(transaction)}
-                                                onClick={(e) => {
-                                                    // Optional: Allow row click to select? 
-                                                    // TransactionTable doesn't seem to force row click = select, but DoubleClick = Edit.
-                                                    // Let's keep checkbox for selection to avoid conflict with drilldowns/edit.
-                                                }}
                                             >
                                                 <TableCell className="w-[40px]" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                                                     <Checkbox

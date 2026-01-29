@@ -1,23 +1,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Transaction } from "@/types/transaction"; // Assuming type is exposed or I can infer
+import { Transaction } from "@/types/dataProvider";
 import { cn, slugify } from "@/lib/utils";
 import { ShoppingBag, Coffee, Home, Car, Zap, FileText, ArrowRightLeft, DollarSign } from "lucide-react";
 
-// Fallback type if import fails
-interface TransactionType {
-    id: string;
-    date: string;
-    amount: number;
-    currency?: string;
-    vendor: string;
-    category: string;
-    sub_category?: string;
-}
-
 interface RecentActivityFeedProps {
-    transactions: any[]; // Using any to avoid strict type issues if import path is wrong, but ideally use Transaction
+    transactions: Transaction[];
     className?: string;
 }
 
@@ -54,6 +43,8 @@ export const RecentActivityFeed = ({ transactions, className }: RecentActivityFe
                         const Icon = getCategoryIcon(t.category);
                         const isExpense = t.amount < 0;
                         const amount = Math.abs(convertBetweenCurrencies(t.amount, t.currency || 'USD', selectedCurrency || 'USD'));
+                        // Fallback for vendor if it's undefined (though type says string, legacy data might be loose)
+                        const label = t.vendor || t.remarks || 'Unknown';
 
                         return (
                             <div key={t.id} className="flex items-center justify-between">
@@ -62,7 +53,7 @@ export const RecentActivityFeed = ({ transactions, className }: RecentActivityFe
                                         <Icon className="h-5 w-5 text-muted-foreground" />
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-sm font-medium leading-none">{t.vendor || t.description || 'Unknown'}</p>
+                                        <p className="text-sm font-medium leading-none">{label}</p>
                                         <p className="text-xs text-muted-foreground">
                                             {new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                         </p>

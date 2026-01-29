@@ -7,10 +7,27 @@ import { useTransactionPagination } from "@/hooks/transactions/useTransactionPag
 import { useTransactionSelection } from "@/hooks/transactions/useTransactionSelection";
 import { useTransactionCSV } from "@/hooks/transactions/useTransactionCSV";
 import { useTransactionUI } from "@/hooks/transactions/useTransactionUI";
+import { slugify } from "@/lib/utils";
 
 export const useTransactionManagement = () => {
-  const { transactions: allTransactions, accountCurrencyMap, refetchTransactions } = useTransactions(); // Get refetchTransactions
+  const { transactions: allTransactions, accountCurrencyMap } = useTransactions(); // Get refetchTransactions
   const { formatCurrency } = useCurrency();
+
+  // Calculate available options from transactions
+  const availableAccountOptions = React.useMemo(() => {
+    const accounts = Array.from(new Set(allTransactions.map(t => t.account))).filter(Boolean);
+    return accounts.map(a => ({ value: slugify(a), label: a }));
+  }, [allTransactions]);
+
+  const availableCategoryOptions = React.useMemo(() => {
+    const categories = Array.from(new Set(allTransactions.map(t => t.category))).filter(Boolean);
+    return categories.map(c => ({ value: slugify(c), label: c }));
+  }, [allTransactions]);
+
+  const availableVendorOptions = React.useMemo(() => {
+    const vendors = Array.from(new Set(allTransactions.map(t => t.vendor))).filter(Boolean);
+    return vendors.map(v => ({ value: slugify(v), label: v }));
+  }, [allTransactions]);
 
   // 1. Filters
   const {
@@ -20,13 +37,12 @@ export const useTransactionManagement = () => {
     setSelectedAccounts,
     selectedCategories,
     setSelectedCategories,
+    selectedSubCategories,
+    setSelectedSubCategories,
     selectedVendors,
     setSelectedVendors,
     dateRange,
     setDateRange,
-    availableAccountOptions,
-    availableCategoryOptions,
-    availableVendorOptions,
     handleResetFilters: resetFilterStates, // Rename to avoid conflict
   } = useTransactionFilters();
 
@@ -35,6 +51,7 @@ export const useTransactionManagement = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedSubCategories,
     selectedVendors,
     dateRange,
     availableAccountOptions,
@@ -92,6 +109,7 @@ export const useTransactionManagement = () => {
     searchTerm,
     selectedAccounts,
     selectedCategories,
+    selectedSubCategories,
     selectedVendors,
     dateRange,
     isRefreshing,
@@ -118,6 +136,7 @@ export const useTransactionManagement = () => {
     setSearchTerm,
     setSelectedAccounts,
     setSelectedCategories,
+    setSelectedSubCategories,
     setSelectedVendors,
     setDateRange,
     setIsBulkDeleteConfirmOpen,

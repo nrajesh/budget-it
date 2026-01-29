@@ -42,7 +42,7 @@ export default function BudgetsPage() {
 
   // Contexts for real-time calculation
   const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();
-  const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
+  const { convertBetweenCurrencies } = useCurrency();
 
   useEffect(() => {
     if (userId) {
