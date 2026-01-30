@@ -23,6 +23,7 @@ describe('Performance Benchmark', () => {
       account: 'Checking',
       vendor: `Vendor ${i % 10}`,
       category: `Category ${i % 5}`,
+      sub_category: `SubCategory ${i % 5}`,
       remarks: `Benchmark transaction ${i}`,
     }));
   };
@@ -40,7 +41,10 @@ describe('Performance Benchmark', () => {
         await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
     for(let i=0; i<5; i++) {
-        await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+        const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+        if (catId) {
+            await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+        }
     }
 
     const start = performance.now();
@@ -71,7 +75,10 @@ describe('Performance Benchmark', () => {
         await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
     for(let i=0; i<5; i++) {
-        await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+        const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+        if (catId) {
+            await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+        }
     }
 
     const start = performance.now();
