@@ -113,6 +113,7 @@ export interface DataProvider {
   // Transactions
   getTransactions(userId: string): Promise<Transaction[]>;
   addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction>;
+  addMultipleTransactions(transactions: Omit<Transaction, 'id' | 'created_at'>[]): Promise<Transaction[]>;
   updateTransaction(transaction: Transaction): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   deleteMultipleTransactions(ids: string[]): Promise<void>;

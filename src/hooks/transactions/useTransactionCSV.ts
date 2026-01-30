@@ -151,22 +151,7 @@ export const useTransactionCSV = () => {
           });
 
           // Step 4: Insert transactions
-          // Loop insertion
-          let insertedCount = 0;
-          for (const t of transactionsToInsert) {
-            await dataProvider.addTransaction(t);
-            insertedCount++;
-            // Update progress occasionally
-            if (insertedCount % 10 === 0) {
-              setOperationProgress({
-                title: "Importing CSV",
-                description: `Importing... (${insertedCount}/${transactionsToInsert.length})`,
-                stage: "Saving Transactions...",
-                progress: 50 + Math.floor((insertedCount / transactionsToInsert.length) * 30), // Map to 50-80%
-                totalStages: totalSteps
-              });
-            }
-          }
+          await dataProvider.addMultipleTransactions(transactionsToInsert);
 
           setOperationProgress({
             title: "Importing CSV",

@@ -82,6 +82,20 @@ export class LocalDataProvider implements DataProvider {
     return newTransaction;
   }
 
+  async addMultipleTransactions(transactions: Omit<Transaction, 'id' | 'created_at'>[]): Promise<Transaction[]> {
+    const newTransactions: Transaction[] = transactions.map(t => ({
+      ...t,
+      id: uuidv4(),
+      created_at: new Date().toISOString()
+    }));
+
+    // We assume caller (e.g. CSV import) has already ensured categories/payees exist
+    // to avoid N+1 reads here.
+
+    await db.transactions.bulkAdd(newTransactions);
+    return newTransactions;
+  }
+
   async updateTransaction(transaction: Transaction): Promise<void> {
     const userId = transaction.user_id || 'local-user';
 
