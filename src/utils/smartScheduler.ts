@@ -48,7 +48,7 @@ export const detectRecurringPatterns = (
 
         // Check for duplicate in existing scheduled
         // Key now includes amount/notes, so splitting is key.
-        const [vendor, category, subCategory, account, notes] = key.split('||');
+        const [vendor, category, subCategory, account] = key.split('||');
 
         // Skip "Unknown" vendors
         if (!vendor || vendor.toLowerCase() === 'unknown') return;

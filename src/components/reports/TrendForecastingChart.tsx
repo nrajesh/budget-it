@@ -64,7 +64,13 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
 
     // 4. Generate combined data for chart
     const forecastMonths = 6;
-    const combinedData = historicalData.map(point => ({
+    const combinedData: {
+      index: number;
+      month: string;
+      actual: number | null;
+      baselineForecast: number;
+      finalForecast: number | null;
+    }[] = historicalData.map(point => ({
       ...point,
       baselineForecast: slope * point.index + intercept,
       finalForecast: null,
