@@ -29,7 +29,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
     const file = event.target.files?.[0];
     if (!file) return;
     managementProps.batchUpsertMutation.reset(); // Reset mutation state
-    const setIsImporting = (managementProps as any).setIsImporting; // A bit of a hack, ideally the hook would expose this
+    const { setIsImporting } = managementProps;
     setIsImporting(true);
 
     Papa.parse(file, {

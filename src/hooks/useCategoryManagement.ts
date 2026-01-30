@@ -51,7 +51,7 @@ export const useCategoryManagement = () => {
       if (managementProps.fileInputRef.current) managementProps.fileInputRef.current.value = "";
     },
     onError: (error: any) => showError(`Import failed: ${error.message}`),
-    onSettled: () => (managementProps as any).setIsImporting(false),
+    onSettled: () => managementProps.setIsImporting(false),
   });
 
   const addSubCategoryMutation = useMutation({
@@ -116,7 +116,7 @@ export const useCategoryManagement = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !activeLedger) return;
-    (managementProps as any).setIsImporting(true);
+    managementProps.setIsImporting(true);
 
     Papa.parse(file, {
       header: true,
@@ -125,20 +125,20 @@ export const useCategoryManagement = () => {
         const hasHeader = results.meta.fields?.includes("Category Name");
         if (!hasHeader) {
           showError(`CSV is missing required header: "Category Name"`);
-          (managementProps as any).setIsImporting(false);
+          managementProps.setIsImporting(false);
           return;
         }
         const categoryNames = results.data.map((row: any) => row["Category Name"]).filter(Boolean);
         if (categoryNames.length === 0) {
           showError("No valid category names found in the CSV file.");
-          (managementProps as any).setIsImporting(false);
+          managementProps.setIsImporting(false);
           return;
         }
         batchUpsertCategoriesMutation.mutate(categoryNames);
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
-        (managementProps as any).setIsImporting(false);
+        managementProps.setIsImporting(false);
       },
     });
   };

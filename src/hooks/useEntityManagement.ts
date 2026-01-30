@@ -170,7 +170,7 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
     selectedEntity,
     isConfirmOpen, setIsConfirmOpen,
     selectedRows,
-    isImporting, fileInputRef,
+    isImporting, setIsImporting, fileInputRef,
     deleteMutation,
     batchUpsertMutation,
     isLoadingMutation: deleteMutation.isPending || batchUpsertMutation.isPending,
