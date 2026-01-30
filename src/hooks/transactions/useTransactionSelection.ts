@@ -36,7 +36,7 @@ export const useTransactionSelection = (currentTransactions: Transaction[], allT
   const handleBulkDelete = React.useCallback(() => {
     const transactionsToDelete = selectedTransactionIds.map(id => {
       const transaction = allTransactions.find(t => t.id === id);
-      return { id, transfer_id: transaction?.transfer_id };
+      return { id, transfer_id: transaction?.transfer_id || undefined };
     });
     deleteMultipleTransactions(transactionsToDelete);
     setSelectedTransactionIds([]);

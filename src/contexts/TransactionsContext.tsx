@@ -811,7 +811,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await invalidateAllData();
   };
 
-  const deleteScheduledTransaction = async (id: string, transfer_id?: string) => {
+  const deleteScheduledTransaction = async (id: string) => {
     // Check if we have transfer_id passed or need to look it up
     // The signature in context is (id: string).
     // Let's resolve transfer_id from state if not passed.
