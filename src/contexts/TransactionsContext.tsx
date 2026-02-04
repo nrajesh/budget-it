@@ -1271,22 +1271,40 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const syncEntities = async () => {
       const userId = ledgerId;
 
+      const uniqueCategories = new Set<string>();
+      const uniqueSubCategories = new Map<string, Set<string>>(); // category -> subCategories
+
       for (const t of transactions) {
         if (t.category) {
-          const catId = await dataProvider.ensureCategoryExists(t.category, userId);
-          if (catId && t.sub_category) {
-            await dataProvider.ensureSubCategoryExists(t.sub_category, catId, userId);
-            // We don't strictly need to track if something was added here, 
-            // but if we wanted to avoid unnecessary refetches, we could.
-            // LocalDataProvider already checks for existence.
+          uniqueCategories.add(t.category);
+          if (t.sub_category) {
+            if (!uniqueSubCategories.has(t.category)) {
+              uniqueSubCategories.set(t.category, new Set());
+            }
+            uniqueSubCategories.get(t.category)!.add(t.sub_category);
           }
         }
       }
 
-      // Since it's hard to track if something was actually added without changing provider,
-      // we'll just refetch if we think it's necessary based on some heuristic or just once.
-      // For now, let's just refetch once after sync completes if we find it helpful.
-      // Refetching might cause loops if not careful, so we use a ref.
+      const categoryIdMap = new Map<string, string>();
+
+      // 1. Ensure Categories
+      for (const catName of uniqueCategories) {
+        const catId = await dataProvider.ensureCategoryExists(catName, userId);
+        if (catId) {
+          categoryIdMap.set(catName, catId);
+        }
+      }
+
+      // 2. Ensure SubCategories
+      for (const [catName, subs] of uniqueSubCategories) {
+        const catId = categoryIdMap.get(catName);
+        if (catId) {
+          for (const subName of subs) {
+            await dataProvider.ensureSubCategoryExists(subName, catId, userId);
+          }
+        }
+      }
     };
 
     const syncDoneKey = 'last_entity_sync_count';
