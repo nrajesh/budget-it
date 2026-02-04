@@ -11,6 +11,7 @@ import { useDataProvider } from '@/context/DataProviderContext';
 import { ScheduledTransaction } from '@/types/dataProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/components/ui/use-toast';
+import { calculateAccountStats } from '@/utils/accountUtils';
 import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
 
 interface TransactionToDelete {
@@ -301,6 +302,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
       });
 
+      // Optimized: Pre-calculate balances and counts in a single pass
+      const { balances, sourceCounts, vendorCounts } = calculateAccountStats(transactions);
+
       return await Promise.all(accountVendors.map(async v => {
         let accountDetails = v.account_id ? accountMap.get(v.account_id) : undefined;
         if (!accountDetails) {
@@ -313,18 +317,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const creditLimit = accountDetails?.credit_limit;
 
         const vNameNormalized = v.name.trim().toLowerCase();
-        const now = new Date();
-        const todayStr = now.toISOString().substring(0, 10);
 
-        // Simple balance calculation
-        const accountTransactions = transactions.filter(t =>
-          (t.account || '').trim().toLowerCase() === vNameNormalized &&
-          (t.date || '').substring(0, 10) <= todayStr
-        );
-        const totalTransactionAmount = accountTransactions.reduce((sum, t) => sum + t.amount, 0);
+        const totalTransactionAmount = balances.get(vNameNormalized) || 0;
         const runningBalance = startingBalance + totalTransactionAmount;
 
-        const count = accountTransactions.length + transactions.filter(t => t.vendor === v.name && t.account !== v.name).length;
+        const sourceCount = sourceCounts.get(vNameNormalized) || 0;
+        const vendorCount = vendorCounts.get(v.name) || 0;
+        const count = sourceCount + vendorCount;
 
         return {
           ...v,
