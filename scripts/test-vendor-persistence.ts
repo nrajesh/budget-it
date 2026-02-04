@@ -1,5 +1,5 @@
 import { LocalDataProvider } from '../src/providers/LocalDataProvider';
-import { v4 as uuidv4 } from 'uuid';
+
 
 async function testVendorPersistence() {
     const provider = new LocalDataProvider();
@@ -20,7 +20,7 @@ async function testVendorPersistence() {
 
         console.log('Transaction added:', txn.id);
 
-        const allVendors = await provider.getAllVendors();
+        const allVendors = await provider.getAllVendors('local-user');
         const foundVendor = allVendors.find(v => v.name === testVendorName);
 
         if (foundVendor) {

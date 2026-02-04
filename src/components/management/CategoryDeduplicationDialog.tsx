@@ -17,7 +17,7 @@ interface CategoryReconciliationDialogProps {
 
 const CategoryDeduplicationDialog: React.FC<CategoryReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
-  const { refetchCategories, categories: contextCategories, invalidateAllData } = useTransactions();
+  const { refetchCategories: _refetchCategories, categories: contextCategories, invalidateAllData } = useTransactions();
   const { activeLedger } = useLedger();
   const [isProcessing, setIsProcessing] = useState(false);
 

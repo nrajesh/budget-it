@@ -17,7 +17,7 @@ interface VendorReconciliationDialogProps {
 
 const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
-  const { refetchVendors, vendors: contextVendors, invalidateAllData } = useTransactions();
+  const { refetchVendors: _refetchVendors, vendors: contextVendors, invalidateAllData } = useTransactions();
   const { activeLedger } = useLedger();
   const [isProcessing, setIsProcessing] = useState(false);
 

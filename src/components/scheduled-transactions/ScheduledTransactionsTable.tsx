@@ -54,11 +54,7 @@ export function ScheduledTransactionsTable({ transactions = [], onEdit, onDelete
     const [currentPage, setCurrentPage] = React.useState(1);
     const transactionsPerPage = 10;
 
-    // Safety check
-    if (!accountCurrencyMap) {
-        console.error("ScheduledTransactionsTable: accountCurrencyMap is missing from context.");
-        return <div className="p-4 text-red-500">Error loading table context.</div>;
-    }
+
 
     const handleAccountClick = (accountName: string) => {
         navigate('/transactions', { state: { filterAccount: accountName } });
@@ -130,6 +126,12 @@ export function ScheduledTransactionsTable({ transactions = [], onEdit, onDelete
         }
     };
 
+    // Safety check
+    if (!accountCurrencyMap) {
+        console.error("ScheduledTransactionsTable: accountCurrencyMap is missing from context.");
+        return <div className="p-4 text-red-500">Error loading table context.</div>;
+    }
+
     return (
         <div className="space-y-4">
             {/* Bulk Toolbar */}
@@ -198,7 +200,7 @@ export function ScheduledTransactionsTable({ transactions = [], onEdit, onDelete
                                                     <div className="flex items-center">
                                                         {transaction.transfer_id && (
                                                             <button
-                                                                onClick={(e) => { e.stopPropagation(); onUnlink && onUnlink(transaction.transfer_id!); }}
+                                                                onClick={(e) => { e.stopPropagation(); if (onUnlink) onUnlink(transaction.transfer_id!); }}
                                                                 className="mr-1 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors group/link"
                                                                 title="Unlink Pair"
                                                             >

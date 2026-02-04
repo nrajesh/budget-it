@@ -15,6 +15,8 @@ interface UseEntityManagementProps<T> {
   customDeleteHandler?: (ids: string[]) => void;
 }
 
+
+
 export const useEntityManagement = <T extends { id: string; name: string }>({
   entityName,
   entityNamePlural,
@@ -73,7 +75,7 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   });
 
   const batchUpsertMutation = useMutation({
-    mutationFn: async (dataToUpsert: any[]) => {
+    mutationFn: async (_dataToUpsert: any[]) => {
       // Only categories use this currently via CSV import
       // useCategoryManagement passes this.
       // We'll rely on useCategoryManagement's override or specific logic if provided,

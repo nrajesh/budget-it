@@ -25,9 +25,7 @@ const Index = () => {
     dateRange
   } = useTransactionFilters();
 
-  if (dashboardStyle === 'financial-pulse') {
-    return <FinancialPulseDashboard />;
-  }
+
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -144,6 +142,10 @@ const Index = () => {
         : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
     );
   };
+
+  if (dashboardStyle === 'financial-pulse') {
+    return <FinancialPulseDashboard />;
+  }
 
   return (
     <div className="space-y-8 p-1">

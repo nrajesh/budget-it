@@ -94,7 +94,8 @@ const SettingsPage = () => {
     // setIsDemoDataProgressDialogOpen(true); // Handled globally by context now
     try {
       await generateDiverseDemoData();
-    } catch (error: any) {
+    } catch {
+      // Ignore error during demo data generation
     } finally {
       setIsGenerateConfirmOpen(false);
     }
@@ -104,9 +105,10 @@ const SettingsPage = () => {
   const saveFile = async (filename: string, content: string, description: string) => {
     try {
       // Try File System Access API first (Chrome/Edge/Desktop)
-      // @ts-ignore - showSaveFilePicker is not yet in all TS definitions
+      // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
       if (window.showSaveFilePicker) {
-        // @ts-ignore
+        // @ts-expect-error - showSaveFilePicker types
+
         const handle = await window.showSaveFilePicker({
           suggestedName: filename,
           types: [{
@@ -209,7 +211,7 @@ const SettingsPage = () => {
           // Optional: reload or refresh
           window.location.reload();
         }
-      } catch (e) {
+      } catch {
         showError("Invalid file format.");
       }
     };

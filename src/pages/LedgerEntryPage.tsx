@@ -52,7 +52,7 @@ const LedgerEntryPage = () => {
                     // Force reload to ensure all states (including Ledgers) are fresh
                     window.location.reload();
                 }
-            } catch (e) {
+            } catch {
                 showError("Invalid file format.");
             }
         };

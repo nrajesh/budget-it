@@ -96,16 +96,16 @@ const CategoryPieChart = () => {
     setSelectedCategory(null);
   }, [handleResetFilters]);
 
+  const renderActiveShape = useCallback((props: any) => {
+    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} />;
+  }, [formatCurrency, resetActiveIndex]);
+
   if (isLoading) return <div className="flex justify-center items-center h-64">Loading chart data...</div>;
   if (!chartData || chartData.length === 0) return <div className="text-center py-4">No data to display.</div>;
 
   const renderLabel = ({ name, percent }: { name: string; percent: number }) => {
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
-
-  const renderActiveShape = useCallback((props: any) => {
-    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetActiveIndex} />;
-  }, [formatCurrency, resetActiveIndex]);
 
   return (
     <Card className="w-full h-full mx-auto overflow-hidden shadow-lg border-slate-200">

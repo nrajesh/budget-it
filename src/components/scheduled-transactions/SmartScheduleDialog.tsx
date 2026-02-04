@@ -51,7 +51,7 @@ export function SmartScheduleDialog({ isOpen, onClose, onSave }: SmartScheduleDi
         setTimeout(() => {
             try {
                 const patterns = detectRecurringPatterns(transactions, scheduledTransactions);
-                let enriched: SuggestedSchedule[] = patterns.map(p => ({ ...p, isSelected: true }));
+                const enriched: SuggestedSchedule[] = patterns.map(p => ({ ...p, isSelected: true }));
 
                 // --- Pairing Logic ---
                 // Find potential pairs: Same Date, Inverse Amount, "Transfer" related?

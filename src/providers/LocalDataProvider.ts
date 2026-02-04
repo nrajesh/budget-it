@@ -206,7 +206,7 @@ export class LocalDataProvider implements DataProvider {
     const name = rawName.trim();
 
     // Scope check to userId
-    let vendor = await db.vendors.where('[user_id+name]').equals([userId, name]).first();
+    const vendor = await db.vendors.where('[user_id+name]').equals([userId, name]).first();
 
     if (vendor) {
       if (isAccount) {

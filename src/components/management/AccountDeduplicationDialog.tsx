@@ -17,7 +17,7 @@ interface AccountReconciliationDialogProps {
 
 const AccountDeduplicationDialog: React.FC<AccountReconciliationDialogProps> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
-  const { refetchAccounts, accounts: contextAccounts, invalidateAllData } = useTransactions();
+  const { refetchAccounts: _refetchAccounts, accounts: contextAccounts, invalidateAllData } = useTransactions();
   const { activeLedger } = useLedger();
   const [isProcessing, setIsProcessing] = useState(false);
 

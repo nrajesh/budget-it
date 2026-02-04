@@ -12,7 +12,7 @@ import { ScheduledTransaction } from '@/types/dataProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateAccountStats } from '@/utils/accountUtils';
-import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
+// import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
 
 interface TransactionToDelete {
   id: string;
@@ -459,7 +459,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       // Destructure receivingAmount as we don't store it in the source side amount field directly usually
       // but the dialog sends it.
-      const { receivingAmount, ...cleanSource } = sourceTransaction;
+      const { receivingAmount: _receivingAmount, ...cleanSource } = sourceTransaction;
 
       await dataProvider.addTransaction(cleanSource);
 
@@ -474,7 +474,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         category: 'Transfer',
         date: new Date(transaction.date).toISOString(),
       };
-      const { receivingAmount: _, ...cleanDest } = destTransaction;
+      const { receivingAmount: _receivingAmount2, ...cleanDest } = destTransaction;
 
       await dataProvider.addTransaction(cleanDest);
       await dataProvider.ensureCategoryExists('Transfer', userId);
@@ -1121,7 +1121,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
           // ... Logic to advance Schedule duplicated ...
           // Refactor idea: Extract advance logic. But for now, copy-paste to be safe and sequential.
-          let newNextDate = new Date(nextDate);
+          const newNextDate = new Date(nextDate);
 
           let intervalValue = 1;
           let intervalUnit = 'm';
@@ -1178,7 +1178,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await addTransaction(transactionPayload);
 
         // 2. Advance Schedule
-        let newNextDate = new Date(nextDate);
+        const newNextDate = new Date(nextDate);
 
         let intervalValue = 1;
         let intervalUnit = 'm';

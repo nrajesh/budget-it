@@ -62,7 +62,7 @@ const ScheduledTransactionsPage = () => {
     // If we have no transactions yet, return empty
     if (!scheduledTransactions || scheduledTransactions.length === 0) return [];
 
-    let result = scheduledTransactions.filter(t => {
+    const result = scheduledTransactions.filter(t => {
       // Direct ID Match (if passed via URL)
       if (targetId) {
         return t.id === targetId;
@@ -179,7 +179,7 @@ const ScheduledTransactionsPage = () => {
       await addTransaction(transactionPayload);
 
       const currentNextDate = new Date(st.date);
-      let nextDate = calculateNextDate(currentNextDate, st.frequency);
+      const nextDate = calculateNextDate(currentNextDate, st.frequency);
 
       await updateScheduledTransaction({
         ...st,

@@ -9,10 +9,8 @@ interface Transaction {
   // Other fields irrelevant for this benchmark
 }
 
-interface DataProvider {
-  ensureCategoryExists(name: string, userId: string): Promise<string | null>;
-  ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null>;
-}
+// function signature interfaces omitted since they are mock types
+
 
 // Generate dummy transactions
 const generateTransactions = (count: number, categoryCount: number): Transaction[] => {
@@ -33,11 +31,11 @@ const generateTransactions = (count: number, categoryCount: number): Transaction
 // Mock DataProvider with simulated delay
 const createMockDataProvider = () => {
   return {
-    ensureCategoryExists: vi.fn(async (name: string, userId: string) => {
+    ensureCategoryExists: vi.fn(async (name: string, _userId: string) => {
       await new Promise(resolve => setTimeout(resolve, 0)); // minimal async delay
       return `cat-id-${name}`;
     }),
-    ensureSubCategoryExists: vi.fn(async (name: string, catId: string, userId: string) => {
+    ensureSubCategoryExists: vi.fn(async (name: string, _catId: string, _userId: string) => {
       await new Promise(resolve => setTimeout(resolve, 0));
       return `sub-id-${name}`;
     })

@@ -122,7 +122,7 @@ export function ManageLedgerDialog({
                 await deleteLedger(ledgerToEdit.id);
                 toast({ title: "Ledger deleted" });
                 onOpenChange(false);
-            } catch (error) {
+            } catch {
                 toast({ title: "Error deleting ledger", variant: "destructive" });
             }
         }

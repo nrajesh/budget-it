@@ -42,12 +42,13 @@ export function BudgetSummary({ budgets, isLoading }: BudgetSummaryProps) {
       case 'Yearly':
         normalizedTarget = budget.target_amount / 12;
         break;
-      case 'One-time':
+      case 'One-time': {
         const endDate = budget.end_date ? new Date(budget.end_date) : now;
         const durationInDays = differenceInDays(endDate, startDate) + 1;
         const durationInMonths = Math.max(1, durationInDays / 30.44); // Avg days in a month
         normalizedTarget = budget.target_amount / durationInMonths;
         break;
+      }
     }
 
     // Normalize Spent Amount to a monthly average based on elapsed time

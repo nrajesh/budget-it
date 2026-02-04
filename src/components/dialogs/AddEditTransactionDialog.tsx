@@ -46,7 +46,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   onSuccess,
   transactionToEdit,
 }) => {
-  const { addTransaction, updateTransaction, updateScheduledTransaction, scheduledTransactions, categories: allCategories, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories } = useTransactions();
+  const { addTransaction, updateTransaction, updateScheduledTransaction, scheduledTransactions, categories: allCategories, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories, accountCurrencyMap } = useTransactions();
   const { currencySymbols, formatCurrency } = useCurrency();
 
   const [recurrenceDialogOpen, setRecurrenceDialogOpen] = React.useState(false);
