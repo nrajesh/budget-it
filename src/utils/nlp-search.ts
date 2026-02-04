@@ -45,7 +45,6 @@ export const parseSearchQuery = (query: string): SearchFilters => {
     } else if (lowerQuery.includes('today')) {
         const startToday = new Date(today);
         startToday.setHours(0, 0, 0, 0);
-        filters.dateRange = { from: startToday, to: endOfWeek(today) }; // Use end of day? Fix below.
         const endToday = new Date(today);
         endToday.setHours(23, 59, 59, 999);
         filters.dateRange = { from: startToday, to: endToday };

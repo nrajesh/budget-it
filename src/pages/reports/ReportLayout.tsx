@@ -52,6 +52,14 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     [categories]
   );
 
+  const accountNameMap = React.useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((acc: any) => {
+      map.set(slugify(acc.name), acc.name);
+    });
+    return map;
+  }, [accounts]);
+
   const filterProps = useTransactionFilters();
 
   const effectiveAccounts = React.useMemo(() => {
@@ -141,7 +149,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         : "All Dates";
 
       const accountText = filterProps.selectedAccounts.length > 0
-        ? `Accounts: ${filterProps.selectedAccounts.map(slug => accounts.find((a: any) => slugify(a.name) === slug)?.name || slug).join(', ')}`
+        ? `Accounts: ${filterProps.selectedAccounts.map(slug => accountNameMap.get(slug) || slug).join(', ')}`
         : "All Accounts";
 
       // Wrap text for accounts if too long
