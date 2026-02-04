@@ -146,6 +146,7 @@ export interface DataProvider {
   getSubCategories(userId: string): Promise<SubCategory[]>;
   mergeCategories(targetName: string, sourceNames: string[], userId: string): Promise<void>;
   deleteCategory(id: string): Promise<void>;
+  renameSubCategory(categoryId: string, oldName: string, newName: string, userId: string): Promise<void>;
 
   // Budgets
   getBudgetsWithSpending(userId: string): Promise<Budget[]>;

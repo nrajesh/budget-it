@@ -84,4 +84,34 @@ describe('LocalDataProvider', () => {
     const accounts = await provider.getAllAccounts('user1');
     expect(accounts.find(a => a.id === vendors.find(v => v.name === 'Checking')?.account_id)).toBeDefined();
   });
+
+  it('should rename a sub-category and update related transactions', async () => {
+    // 1. Setup
+    const categoryId = await provider.ensureCategoryExists('Transport', 'user1');
+    if (!categoryId) throw new Error("Failed to create category");
+    await provider.ensureSubCategoryExists('Taxi', categoryId, 'user1');
+
+    await provider.addTransaction({
+      date: '2023-01-01',
+      amount: 100,
+      currency: 'USD',
+      account: 'Cash',
+      vendor: 'Driver',
+      category: 'Transport',
+      sub_category: 'Taxi',
+      user_id: 'user1'
+    });
+
+    // 2. Rename
+    await provider.renameSubCategory(categoryId, 'Taxi', 'Uber', 'user1');
+
+    // 3. Verify SubCategory
+    const subCats = await provider.getSubCategories('user1');
+    expect(subCats.find(s => s.name === 'Uber')).toBeDefined();
+    expect(subCats.find(s => s.name === 'Taxi')).toBeUndefined();
+
+    // 4. Verify Transaction
+    const txs = await provider.getTransactions('user1');
+    expect(txs[0].sub_category).toBe('Uber');
+  });
 });

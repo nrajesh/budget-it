@@ -67,17 +67,9 @@ export const useCategoryManagement = () => {
   });
 
   const renameSubCategoryMutation = useMutation({
-    mutationFn: async ({ categoryId, categoryName, oldSubCategoryName, newSubCategoryName }: { categoryId: string; categoryName: string; oldSubCategoryName: string; newSubCategoryName: string }) => {
+    mutationFn: async ({ categoryId, oldSubCategoryName, newSubCategoryName }: { categoryId: string; categoryName: string; oldSubCategoryName: string; newSubCategoryName: string }) => {
       if (!activeLedger?.id) throw new Error("No active ledger.");
-
-      // Pragmatic fix: use db directly for complex updates not in provider interface yet
-      await db.sub_categories
-        .where({ category_id: categoryId, name: oldSubCategoryName })
-        .modify({ name: newSubCategoryName.trim() });
-
-      await db.transactions
-        .where({ category: categoryName, sub_category: oldSubCategoryName })
-        .modify({ sub_category: newSubCategoryName.trim() });
+      await dataProvider.renameSubCategory(categoryId, oldSubCategoryName, newSubCategoryName, activeLedger.id);
     },
     onSuccess: async () => {
       showSuccess("Sub-category renamed successfully!");

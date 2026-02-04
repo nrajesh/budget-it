@@ -434,6 +434,26 @@ export class LocalDataProvider implements DataProvider {
     await db.sub_categories.where('category_id').equals(id).delete();
   }
 
+  async renameSubCategory(categoryId: string, oldName: string, newName: string, userId: string): Promise<void> {
+    await db.transaction('rw', db.sub_categories, db.transactions, db.categories, async () => {
+      // 1. Get category name to update transactions
+      const category = await db.categories.get(categoryId);
+      if (!category) return;
+
+      // 2. Update sub_category name
+      await db.sub_categories
+        .where({ category_id: categoryId, name: oldName })
+        .modify({ name: newName.trim() });
+
+      // 3. Update transactions
+      // Scope to userId and category to avoid updating other ledgers or wrong categories
+      await db.transactions
+        .where('user_id').equals(userId)
+        .filter(t => t.category === category.name && t.sub_category === oldName)
+        .modify({ sub_category: newName.trim() });
+    });
+  }
+
   // Budgets
   async getBudgetsWithSpending(userId: string): Promise<Budget[]> {
     // Replicating RPC 'get_budgets_with_spending'
