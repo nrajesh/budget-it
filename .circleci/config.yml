@@ -8,7 +8,7 @@ jobs:
       - checkout
       - run:
           name: Enable Corepack
-          command: corepack enable
+          command: sudo corepack enable
       - restore_cache:
           name: Restore Package Cache
           keys:
@@ -36,7 +36,7 @@ jobs:
       - checkout
       - run:
           name: Enable Corepack
-          command: corepack enable
+          command: sudo corepack enable
       - restore_cache:
           name: Restore Package Cache
           keys:
@@ -53,7 +53,6 @@ jobs:
           destination: build-artifacts
 
 workflows:
-  version: 2
   build_and_test:
     jobs:
       - lint-and-typecheck
