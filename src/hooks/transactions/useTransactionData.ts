@@ -51,7 +51,24 @@ export const useTransactionData = ({
 
     const projectedTransactions = projectScheduledTransactions(scheduledTransactions, new Date(), projectionHorizon);
 
-    return [...transactions, ...projectedTransactions].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Dedup: Filter out projected transactions that have a matching REAL transaction
+    // Match criteria: Same Day, Same Amount, Same Vendor (or Account if transfer)
+    const validProjected = projectedTransactions.filter(p => {
+      const pDate = new Date(p.date).toISOString().split('T')[0];
+      const pVendor = (p.vendor || '').toLowerCase().trim();
+      const pAmount = p.amount;
+
+      // Check if ANY real transaction matches
+      const hasMatch = transactions.some(t => {
+        const tDate = new Date(t.date).toISOString().split('T')[0];
+        const tVendor = (t.vendor || '').toLowerCase().trim();
+        return tDate === pDate && Math.abs(t.amount - pAmount) < 0.01 && tVendor === pVendor;
+      });
+
+      return !hasMatch;
+    });
+
+    return [...transactions, ...validProjected].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [transactions, scheduledTransactions]);
 
   const filteredTransactions = React.useMemo(() => {

@@ -12,6 +12,8 @@ import { useDataProvider } from "@/context/DataProviderContext";
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 // import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
+import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
+
 
 import { slugify } from "@/lib/utils";
 import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
@@ -36,6 +38,7 @@ const Transactions = () => {
     unlinkTransaction,
     linkTransactions,
     accountCurrencyMap,
+    cleanUpDuplicates,
   } = useTransactions();
   const { activeLedger } = useLedger();
 
@@ -101,7 +104,7 @@ const Transactions = () => {
       }
       window.history.replaceState({}, document.title)
     }
-  }, [location.state]);
+  }, [location.state, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors]);
 
   const dataProvider = useDataProvider();
 
@@ -111,6 +114,9 @@ const Transactions = () => {
   const [isScheduledDialogOpen, setIsScheduledDialogOpen] = useState(false);
   const [scheduledTransactionToEdit, setScheduledTransactionToEdit] = useState<any>(null);
   const [selectedTransactionForSchedule, setSelectedTransactionForSchedule] = useState<any>(null);
+
+  const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
 
 
 
@@ -260,6 +266,24 @@ const Transactions = () => {
     handleDetectTransfers
   } = useTransactionPageActions(filteredTransactions);
 
+  const handleCleanupDuplicates = async () => {
+    setIsCleaningUp(true);
+    try {
+      const count = await cleanUpDuplicates();
+      if (count > 0) {
+        toast({ title: "Cleanup Complete", description: `Removed ${count} duplicate transactions.` });
+        invalidateAllData();
+      } else {
+        toast({ title: "No Duplicates", description: "No duplicate transactions were found." });
+      }
+    } catch (_error) {
+      toast({ title: "Cleanup Failed", description: "An error occurred while removing duplicates.", variant: "destructive" });
+    } finally {
+      setIsCleaningUp(false);
+      setIsCleanupConfirmOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
@@ -268,6 +292,7 @@ const Transactions = () => {
           onExportClick={handleExport}
           onDetectTransfers={handleDetectTransfers}
           onAddTransaction={() => { setEditingTransaction(null); setIsDialogOpen(true); }}
+          onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
         />
@@ -371,6 +396,15 @@ const Transactions = () => {
         file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}
         onConfirm={handleMappingConfirm}
+      />
+
+      <ConfirmationDialog
+        isOpen={isCleanupConfirmOpen}
+        onOpenChange={setIsCleanupConfirmOpen}
+        onConfirm={handleCleanupDuplicates}
+        title="Remove Duplicate Transactions?"
+        description="This will scan for transactions with identical recurrence IDs on the same date and remove the duplicates. This action cannot be undone."
+        confirmText={isCleaningUp ? "Cleaning..." : "Remove Duplicates"}
       />
     </div>
   );

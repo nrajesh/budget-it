@@ -7,11 +7,14 @@ A privacy-focused, local-first personal finance application designed to help you
 ## 🌟 Key Features
 
 - **Local-First & Private**: All your data stored securely in your browser using IndexedDB. No external servers see your financial data.
+- **Multi-Ledger Support**: Create and manage separate ledgers (Personal, Business, Joint) within a single app.
 - **Comprehensive Budgeting**: Set monthly, quarterly, yearly, or one-time budgets.
 - **Transaction Management**: Easy tracking with categories, sub-categories, vendors, and account groups.
+- **Smart Deduplication**: Intelligent import logic prevents duplicate transactions even when projections overlap.
+- **Instant Backup & Restore**: Import encrypted or plain JSON backups instantly without page reloads.
 - **Conversational Search**: Natural language filtering for transactions, categories, and dates.
 - **Smart Analytics**: Visual breakdowns of income, expenses, and savings trends.
-- **Import/Export**: Flexible CSV importing and data management.
+- **Financial Pulse**: A premium dashboard view for high-level financial health monitoring.
 
 ## 🏗️ System Architecture
 
@@ -35,13 +38,14 @@ The codebase is organized to promote modularity and reusability:
   - `transactions/`: Transaction-specific components (tables, headers).
 - `src/pages/`: Main application pages (Dashboard, Transactions, Reports).
 - `src/hooks/`: Custom React hooks for logic and state management.
-- `src/contexts/`: React Context providers for global state (Transactions, Theme, User).
+- `src/contexts/`: React Context providers for global state (Transactions, Theme, Ledger).
 - `src/utils/`: Helper functions and utilities.
 
 ### Data Flow
 1. **Local Storage**: The app uses `Dexie.js` to interface with the browser's IndexedDB. This acts as the primary data source.
-2. **State Sync**: `TanStack Query` manages asynchronous state, caching data from Dexie and ensuring the UI stays in sync with the local database.
-3. **Optimistic Updates**: UI updates immediately upon user action, providing a snappy experience while data persists in the background.
+2. **Multi-Ledger Scoping**: All data operations are scoped to the active `ledger_id`, allowing complete separation of distinct financial datasets.
+3. **State Sync**: `TanStack Query` manages asynchronous state, caching data from Dexie and ensuring the UI stays in sync with the local database.
+4. **Optimistic Updates**: UI updates immediately upon user action, providing a snappy experience while data persists in the background.
 
 ## 🚀 Getting Started
 

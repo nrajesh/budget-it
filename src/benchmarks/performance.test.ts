@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { LocalDataProvider } from '@/providers/LocalDataProvider';
 import { db } from '@/lib/dexieDB';
-import { v4 as uuidv4 } from 'uuid';
+
 
 describe('Performance Benchmark', () => {
   const dataProvider = new LocalDataProvider();
@@ -37,14 +37,14 @@ describe('Performance Benchmark', () => {
     // So to be accurate, we should ensure they exist here too.
 
     await dataProvider.ensurePayeeExists('Checking', true, LEDGER_ID, { currency: 'USD' });
-    for(let i=0; i<10; i++) {
-        await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
+    for (let i = 0; i < 10; i++) {
+      await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
-    for(let i=0; i<5; i++) {
-        const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
-        if (catId) {
-            await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
-        }
+    for (let i = 0; i < 5; i++) {
+      const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+      if (catId) {
+        await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+      }
     }
 
     const start = performance.now();
@@ -71,14 +71,14 @@ describe('Performance Benchmark', () => {
     // However, here we are measuring the insertion step specifically.
 
     await dataProvider.ensurePayeeExists('Checking', true, LEDGER_ID, { currency: 'USD' });
-    for(let i=0; i<10; i++) {
-        await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
+    for (let i = 0; i < 10; i++) {
+      await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
-    for(let i=0; i<5; i++) {
-        const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
-        if (catId) {
-            await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
-        }
+    for (let i = 0; i < 5; i++) {
+      const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+      if (catId) {
+        await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+      }
     }
 
     const start = performance.now();

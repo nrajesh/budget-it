@@ -117,7 +117,7 @@ const CSVMappingDialog = ({
                 if (amountHeader) {
                     const sampleValues = results.data.slice(0, 5).map((row: any) => row[amountHeader]).filter(Boolean);
                     const hasComma = sampleValues.some((val: string) => val.includes(',') && !val.includes('.'));
-                    const hasCommaDecimal = sampleValues.some((val: string) => /^\d+\,\d{2}$/.test(val.replace(/[^\d,]/g, '')) || /-\d+\,\d{2}$/.test(val.replace(/[^\d,-]/g, '')));
+                    const hasCommaDecimal = sampleValues.some((val: string) => /^\d+,\d{2}$/.test(val.replace(/[^\d,]/g, '')) || /-\d+,\d{2}$/.test(val.replace(/[^\d,-]/g, '')));
 
                     if (hasComma || hasCommaDecimal) {
                         setConfig(prev => ({ ...prev, decimalSeparator: ',' }));

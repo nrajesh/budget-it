@@ -1,0 +1,403 @@
+
+> vite_react_shadcn_ts@0.0.0 lint /Users/nrajesh/dyad-apps/budget-it
+> eslint .
+
+
+/Users/nrajesh/dyad-apps/budget-it/scripts/test-vendor-persistence.ts
+  2:16  error  'uuidv4' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/benchmarks/accountLookup.test.ts
+  23:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/benchmarks/context_performance.test.ts
+  66:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/benchmarks/entity_sync_benchmark.test.ts
+  12:11  error  'DataProvider' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  36:54  error  'userId' is defined but never used. Allowed unused args must match /^_/u        @typescript-eslint/no-unused-vars
+  40:57  error  'catId' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  40:72  error  'userId' is defined but never used. Allowed unused args must match /^_/u        @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/benchmarks/performance.test.ts
+  4:16  error  'uuidv4' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/budgets/AddEditBudgetDialog.tsx
+  172:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/budgets/BudgetDialog.tsx
+  141:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/budgets/BudgetSummary.tsx
+  46:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  47:9  error  Unexpected lexical declaration in case block  no-case-declarations
+  48:9  error  Unexpected lexical declaration in case block  no-case-declarations
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/budgets/SmartBudgetDialog.tsx
+   49:8   warning  React Hook useEffect has a missing dependency: 'calculateSuggestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  174:34  warning  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+  199:25  warning  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/charts/ActivePieShape.tsx
+  14:12  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/charts/BalanceOverTimeChart.tsx
+  136:9   error    'currentBalances' is never reassigned. Use 'const' instead                                                                      prefer-const
+  243:11  error    'currentDate' is never reassigned. Use 'const' instead                                                                          prefer-const
+  256:9   error    'currentRunningBalances' is never reassigned. Use 'const' instead                                                               prefer-const
+  298:6   warning  React Hook React.useMemo has an unnecessary dependency: 'allDefinedAccounts'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  306:9   error    'previousDayBalances' is never reassigned. Use 'const' instead                                                                  prefer-const
+  382:52  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  428:26  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  431:58  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  451:24  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/charts/CategoryPieChart.tsx
+   68:41  warning  Unexpected any. Specify a different type                                                                                                                                                       @typescript-eslint/no-explicit-any
+  106:29  error    React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  106:49  warning  Unexpected any. Specify a different type                                                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/charts/SpendingByVendorChart.tsx
+  52:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/charts/SpendingCategoriesChart.tsx
+   79:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:49  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dashboard/StackedCategoryChart.tsx
+   8:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dialogs/AddEditPayeeDialog.tsx
+  165:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dialogs/AddEditTransactionDialog.tsx
+   40:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dialogs/CurrencyConversionDialog.tsx
+  45:18  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dialogs/ManageLedgerDialog.tsx
+  125:22  error  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/dialogs/hooks/useTransactionFormLogic.ts
+  30:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/AccountBalanceReconciliationDialog.tsx
+  113:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/AccountDeduplicationDialog.tsx
+  20:11  error    'refetchAccounts' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  50:21  warning  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/CategoryDeduplicationDialog.tsx
+  20:11  error    'refetchCategories' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  49:21  warning  Unexpected any. Specify a different type                                                      @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/CleanupEntitiesDialog.tsx
+   1:38  error    'useMemo' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  20:56  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  27:44  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+  72:23  warning  Unexpected any. Specify a different type                                   @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/EntityManagementPage.tsx
+  23:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  96:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/management/VendorDeduplicationDialog.tsx
+  20:11  error    'refetchVendors' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  51:21  warning  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/AlertsAndInsights.tsx
+   13:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   14:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   15:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/ExportButtons.tsx
+  4:10  error  'showSuccess' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/IncomeExpenseSummary.tsx
+  9:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/NetWorthStatement.tsx
+   9:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/SankeyChart.tsx
+    7:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    8:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/TrendForecastingChart.tsx
+  8:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/reports/TrendsAndAnalytics.tsx
+  9:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/scheduled-transactions/AddEditScheduledTransactionDialog.tsx
+  43:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/scheduled-transactions/ScheduledTransactionsTable.tsx
+   84:5    error  React Hook "React.useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+   88:43   error  React Hook "React.useState" is called conditionally. React Hooks must be called in the exact same order in every component render   react-hooks/rules-of-hooks
+  201:104  error  Expected an assignment or function call and instead saw an expression                                                               @typescript-eslint/no-unused-expressions
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/scheduled-transactions/SmartScheduleDialog.tsx
+   47:8   warning  React Hook useEffect has a missing dependency: 'calculateSuggestions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   54:21  error    'enriched' is never reassigned. Use 'const' instead                                                                      prefer-const
+  146:25  warning  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/transactions/CSVMappingDialog.tsx
+   26:26   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   77:28   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:33   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:77   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:85   error    Unnecessary escape character: \,          no-useless-escape
+  120:136  error    Unnecessary escape character: \,          no-useless-escape
+  132:28   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  151:27   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:58   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/transactions/TransactionTable.tsx
+   27:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   32:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   33:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/badge.tsx
+  36:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/button.tsx
+  56:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/form.tsx
+  169:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/navigation-menu.tsx
+  119:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/sidebar.tsx
+  768:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/Users/nrajesh/dyad-apps/budget-it/src/components/ui/toggle.tsx
+  43:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/context/DataProviderContext.tsx
+  18:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/CurrencyContext.tsx
+   31:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   44:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  172:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/FilterContext.tsx
+  150:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/LedgerContext.tsx
+   34:55  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   77:34  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   87:8   warning  React Hook useEffect has a missing dependency: 'refreshLedgers'. Either include it or remove the dependency array               react-hooks/exhaustive-deps
+   94:36  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  122:50  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  139:36  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  148:32  warning  Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  173:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/ThemeContext.tsx
+  41:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/TransactionsContext.tsx
+    15:10  error    'ToastAction' is defined but never used. Allowed unused vars must match /^_/u                                                                                                                          @typescript-eslint/no-unused-vars
+   107:14  warning  Fast refresh only works when a file only exports components. Move your React context(s) to a separate file                                                                                             react-refresh/only-export-components
+   109:35  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   111:26  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   119:38  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   121:26  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   230:55  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   232:28  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   297:48  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   443:46  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   462:15  error    'receivingAmount' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                             @typescript-eslint/no-unused-vars
+   490:49  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   654:55  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+   710:58  warning  Unexpected any. Specify a different type                                                                                                                                                               @typescript-eslint/no-explicit-any
+  1124:15  error    'newNextDate' is never reassigned. Use 'const' instead                                                                                                                                                 prefer-const
+  1181:13  error    'newNextDate' is never reassigned. Use 'const' instead                                                                                                                                                 prefer-const
+  1223:6   warning  React Hook React.useCallback has a missing dependency: 'addTransaction'. Either include it or remove the dependency array                                                                              react-hooks/exhaustive-deps
+  1359:7   warning  React Hook React.useMemo has missing dependencies: 'deleteMultipleTransactions', 'processScheduledTransactions', and 'unlinkScheduledTransaction'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  1386:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                         react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/contexts/UserContext.tsx
+  62:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/transactions/useTransactionCSV.ts
+   54:44  warning  Unexpected any. Specify a different type                                                                                                                                         @typescript-eslint/no-explicit-any
+  181:25  warning  Unexpected any. Specify a different type                                                                                                                                         @typescript-eslint/no-explicit-any
+  192:22  warning  Unexpected any. Specify a different type                                                                                                                                         @typescript-eslint/no-explicit-any
+  197:6   warning  React Hook React.useCallback has missing dependencies: 'dataProvider', 'detectAndLinkTransfers', and 'setOperationProgress'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  231:6   warning  React Hook React.useCallback has a missing dependency: 'activeLedger'. Either include it or remove the dependency array                                                          react-hooks/exhaustive-deps
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/transactions/useTransactionData.ts
+  54:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/transactions/useTransactionPageActions.ts
+   19:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  245:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  248:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  269:59  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  292:63  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  326:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  392:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  435:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  445:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  445:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  447:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/useCategoryManagement.ts
+   40:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  131:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/useEntityManagement.ts
+   72:22  warning  Unexpected any. Specify a different type                                        @typescript-eslint/no-explicit-any
+   76:24  error    'dataToUpsert' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+   76:38  warning  Unexpected any. Specify a different type                                        @typescript-eslint/no-explicit-any
+  107:22  warning  Unexpected any. Specify a different type                                        @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/usePayeeManagement.ts
+  48:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/hooks/useSession.ts
+   3:10  error  'useEffect' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  18:19  error  'setSession' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/Analytics.tsx
+  108:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/Budgets.tsx
+   53:6   warning  React Hook useEffect has a missing dependency: 'fetchBudgets'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   62:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   80:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  147:21  warning  Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/Categories.tsx
+   61:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  197:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/LedgerEntryPage.tsx
+  73:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/ScheduledTransactions.tsx
+  197:39  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/SettingsPage.tsx
+   75:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/Transactions.tsx
+  104:6   warning  React Hook React.useEffect has missing dependencies: 'setSelectedAccounts', 'setSelectedCategories', 'setSelectedSubCategories', and 'setSelectedVendors'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  109:64  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  112:80  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  113:88  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  120:20  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  208:61  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  370:53  warning  Unexpected any. Specify a different type                                                                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/Vendors.tsx
+   32:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/reports/IncomeExpenseSummary.tsx
+  7:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/reports/NetWorthStatement.tsx
+  7:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:13  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/reports/ReportLayout.tsx
+   25:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   26:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   27:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   28:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:15  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:24  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:32  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  260:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/pages/reports/TrendsAndAnalytics.tsx
+  7:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/providers/LocalDataProvider.ts
+  571:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  573:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  609:26  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  614:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/types/dataProvider.ts
+  160:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/utils/crypto.ts
+  18:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:76  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  87:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/utils/demoDataGenerator.ts
+  190:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  266:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/utils/forecasting.ts
+  17:4   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/nrajesh/dyad-apps/budget-it/src/utils/nlp-search.ts
+  156:50  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 238 problems (36 errors, 202 warnings)
+  7 errors and 0 warnings potentially fixable with the `--fix` option.
+
+ ELIFECYCLE  Command failed with exit code 1.

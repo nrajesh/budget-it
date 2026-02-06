@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Budget } from "../types/budgets";
@@ -44,15 +44,7 @@ export default function BudgetsPage() {
   const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();
   const { convertBetweenCurrencies } = useCurrency();
 
-  useEffect(() => {
-    if (userId) {
-      fetchBudgets(userId);
-    } else {
-      setIsLoading(false);
-    }
-  }, [userId]);
-
-  const fetchBudgets = async (currentUserId: string) => {
+  const fetchBudgets = useCallback(async (currentUserId: string) => {
     setIsLoading(true);
     try {
       // We still fetch budgets to get the configuration, but we might ignore the returned 'spent_amount'
@@ -67,7 +59,15 @@ export default function BudgetsPage() {
       });
     }
     setIsLoading(false);
-  };
+  }, [dataProvider, toast]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchBudgets(userId);
+    } else {
+      setIsLoading(false);
+    }
+  }, [userId, fetchBudgets]);
 
   // Recalculate spent amounts using shared logic
   const processedBudgets = useMemo(() => {

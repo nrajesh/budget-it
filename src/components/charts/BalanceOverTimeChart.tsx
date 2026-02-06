@@ -133,7 +133,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     });
 
     const result = [];
-    let currentBalances = { ...openingBalances };
+    const currentBalances = { ...openingBalances };
 
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
@@ -240,7 +240,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
       const firstDate = new Date(sortedTransactions[0].date);
       const lastDate = new Date(sortedTransactions[sortedTransactions.length - 1].date);
 
-      let currentDate = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+      const currentDate = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
       while (currentDate <= lastDate) {
         allMonths.push(`${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`);
         currentDate.setMonth(currentDate.getMonth() + 1);
@@ -253,7 +253,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     const firstMonthStart = new Date(allMonths[0] + '-01');
     firstMonthStart.setHours(0, 0, 0, 0);
 
-    let currentRunningBalances: { [account: string]: number } = {};
+    const currentRunningBalances: { [account: string]: number } = {};
     accounts.forEach(acc => {
       const accountCurrency = acc.currency || 'USD';
       const startingBalance = acc.starting_balance || 0;
@@ -295,7 +295,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     });
 
     return finalMonthlyData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, accounts, allTransactions]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, accounts, allTransactions]);
 
   // Data for Waterfall Chart (daily net changes)
   const dailyNetChangeData = React.useMemo(() => {
@@ -303,7 +303,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     if (data.length === 0) return [];
 
     const netChanges: { date: string; totalChange: number;[key: string]: number | string }[] = [];
-    let previousDayBalances: { [account: string]: number } = {};
+    const previousDayBalances: { [account: string]: number } = {};
 
     if (data.length > 0) {
       accountsToDisplay.forEach(account => {

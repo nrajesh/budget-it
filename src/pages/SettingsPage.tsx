@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+
 import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
@@ -22,10 +22,9 @@ import { useLedger } from "@/contexts/LedgerContext";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
+  const { generateDiverseDemoData } = useTransactions();
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const dataProvider = useDataProvider();
-  const { handleClearAllFilters } = useTransactionFilters();
   const { activeLedger, updateLedgerDetails } = useLedger();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
@@ -78,11 +77,18 @@ const SettingsPage = () => {
 
   const handleResetData = async () => {
     try {
+      // Just clear the persistent database.
       await dataProvider.clearAllData();
-      clearAllTransactions();
-      handleClearAllFilters();
+
+      // Explicitly clear persistent state to ensure we land on the setup screen
+      localStorage.removeItem('activeLedgerId');
+      localStorage.removeItem('userLoggedOut');
+      localStorage.removeItem('filter_selectedAccounts');
+
       showSuccess("All application data has been reset.");
-      window.location.href = '/ledgers';
+
+      // Force hard navigation to the entry page
+      window.location.assign('/ledgers');
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
     } finally {
@@ -94,7 +100,8 @@ const SettingsPage = () => {
     // setIsDemoDataProgressDialogOpen(true); // Handled globally by context now
     try {
       await generateDiverseDemoData();
-    } catch (error: any) {
+    } catch {
+      // Ignore error during demo data generation
     } finally {
       setIsGenerateConfirmOpen(false);
     }
@@ -104,9 +111,10 @@ const SettingsPage = () => {
   const saveFile = async (filename: string, content: string, description: string) => {
     try {
       // Try File System Access API first (Chrome/Edge/Desktop)
-      // @ts-ignore - showSaveFilePicker is not yet in all TS definitions
+      // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
       if (window.showSaveFilePicker) {
-        // @ts-ignore
+        // @ts-expect-error - showSaveFilePicker types
+
         const handle = await window.showSaveFilePicker({
           suggestedName: filename,
           types: [{
@@ -209,7 +217,7 @@ const SettingsPage = () => {
           // Optional: reload or refresh
           window.location.reload();
         }
-      } catch (e) {
+      } catch {
         showError("Invalid file format.");
       }
     };

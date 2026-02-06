@@ -12,7 +12,7 @@ import { ScheduledTransaction } from '@/types/dataProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/components/ui/use-toast';
 import { calculateAccountStats } from '@/utils/accountUtils';
-import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
+// import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
 
 interface TransactionToDelete {
   id: string;
@@ -102,9 +102,12 @@ interface TransactionsContextType {
   deleteBudget: (id: string) => void;
   deleteEntity: (type: 'vendor' | 'account' | 'category', ids: string[]) => void;
   hiddenBudgetIds: Set<string>;
+
+  /** Scans for duplicate transactions (same recurrence_id and date) and removes them */
+  cleanUpDuplicates: () => Promise<number>;
 }
 
-export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
+const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 const transformPayeeData = (data: any[]): Payee[] => {
   if (!data) return [];
@@ -123,6 +126,36 @@ const transformCategoryData = (data: any[]): Category[] => {
   })).sort((a, b) => a.name.localeCompare(b.name));
 };
 
+const calculateNextDate = (currentDate: Date, frequency: string): Date => {
+  const newDate = new Date(currentDate);
+  let intervalValue = 1;
+  let intervalUnit = 'm';
+
+  if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(frequency)) {
+    switch (frequency) {
+      case 'Daily': intervalUnit = 'd'; break;
+      case 'Weekly': intervalUnit = 'w'; break;
+      case 'Monthly': intervalUnit = 'm'; break;
+      case 'Yearly': intervalUnit = 'y'; break;
+    }
+  } else {
+    const match = frequency.match(/^(\d+)([dwmy])$/);
+    if (match) {
+      intervalValue = parseInt(match[1], 10);
+      intervalUnit = match[2];
+    }
+  }
+
+  switch (intervalUnit) {
+    case 'd': newDate.setDate(newDate.getDate() + intervalValue); break;
+    case 'w': newDate.setDate(newDate.getDate() + (intervalValue * 7)); break;
+    case 'm': newDate.setMonth(newDate.getMonth() + intervalValue); break;
+    case 'y': newDate.setFullYear(newDate.getFullYear() + intervalValue); break;
+    default: newDate.setMonth(newDate.getMonth() + 1); break;
+  }
+  return newDate;
+};
+
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
@@ -131,6 +164,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const ledgerId = activeLedger?.id || '';
 
   const [operationProgress, setOperationProgress] = React.useState<OperationProgress | null>(null);
+  const operationProgressRef = React.useRef(operationProgress);
+  React.useEffect(() => {
+    operationProgressRef.current = operationProgress;
+  }, [operationProgress]);
+
   const dataProvider = useDataProvider();
 
   const convertBetweenCurrenciesRef = React.useRef(_convert);
@@ -150,7 +188,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       return txs;
     },
-    enabled: !!ledgerId, // Only run if ledger is active
+    enabled: !!ledgerId && !operationProgress, // Only run if ledger is active and no long operation running
   });
 
   const { data: rawScheduledTransactions = [], isLoading: isLoadingScheduledTransactions, refetch: refetchScheduledTransactions } = useQuery({
@@ -159,7 +197,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!ledgerId) return [];
       return await dataProvider.getScheduledTransactions(ledgerId);
     },
-    enabled: !!ledgerId,
+    enabled: !!ledgerId && !operationProgress,
   });
 
   // Undo System State
@@ -281,7 +319,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       });
     },
-    enabled: true,
+    enabled: !operationProgress,
     select: transformPayeeData,
   });
 
@@ -336,7 +374,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       }));
     },
-    enabled: true,
+    enabled: !operationProgress,
     select: transformPayeeData,
   });
 
@@ -350,7 +388,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         total_transactions: transactions.filter(t => t.category === c.name).length
       }));
     },
-    enabled: true,
+    enabled: !operationProgress,
     select: transformCategoryData,
   });
 
@@ -362,7 +400,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!ledgerId) return [];
       return await dataProvider.getSubCategories(ledgerId);
     },
-    enabled: true,
+    enabled: !operationProgress,
   });
 
   const accountCurrencyMap = React.useMemo(() => {
@@ -424,7 +462,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   // Helper for Undo Toasts
-  const showUndoToast = (count: number, itemLabel: string) => {
+  const showUndoToast = React.useCallback((count: number, itemLabel: string) => {
     const { id } = toast({
       title: "Deleted",
       description: (
@@ -436,11 +474,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       duration: 7000,
     });
     lastToastIdRef.current = id;
-  }
+  }, [undoLastAction, toast]);
 
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
-  const addTransaction = async (transaction: any) => {
+  const addTransaction = React.useCallback(async (transaction: any) => {
     // Check if it's a transfer
     // In our app, a transfer is identified if the vendor name matches an account name
     const isTransfer = accounts.some(acc => acc.name === transaction.vendor);
@@ -459,7 +497,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       // Destructure receivingAmount as we don't store it in the source side amount field directly usually
       // but the dialog sends it.
-      const { receivingAmount, ...cleanSource } = sourceTransaction;
+      const { receivingAmount: _receivingAmount, ...cleanSource } = sourceTransaction;
 
       await dataProvider.addTransaction(cleanSource);
 
@@ -474,7 +512,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         category: 'Transfer',
         date: new Date(transaction.date).toISOString(),
       };
-      const { receivingAmount: _, ...cleanDest } = destTransaction;
+      const { receivingAmount: _receivingAmount2, ...cleanDest } = destTransaction;
 
       await dataProvider.addTransaction(cleanDest);
       await dataProvider.ensureCategoryExists('Transfer', userId);
@@ -486,8 +524,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const updateTransaction = async (transaction: any) => {
+  }, [accounts, ledgerId, dataProvider, invalidateAllData]);
+  const updateTransaction = React.useCallback(async (transaction: any) => {
     // 1. Update the primary transaction
     await dataProvider.updateTransaction(transaction);
 
@@ -523,21 +561,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const deleteTransaction = async (id: string, transfer_id?: string) => {
-    const idsToDelete: string[] = [];
-    if (transfer_id) {
-      // Find all transactions with this transfer_id
-      const linked = transactions.filter(t => t.transfer_id === transfer_id);
-      linked.forEach(t => idsToDelete.push(t.id));
-    } else {
-      idsToDelete.push(id);
-    }
+  }, [dataProvider, invalidateAllData, transactions]);
 
-    // execute soft delete
-    await deleteMultipleTransactions(idsToDelete.map(i => ({ id: i })));
-  };
-  const deleteMultipleTransactions = async (items: { id: string, transfer_id?: string, is_projected?: boolean, recurrence_id?: string, date?: string }[]) => {
+  const deleteMultipleTransactions = React.useCallback(async (items: { id: string, transfer_id?: string, is_projected?: boolean, recurrence_id?: string, date?: string }[]) => {
     // Separate real and projected items
     const realItems = [];
     const projectedItems = [];
@@ -645,13 +671,27 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const clearAllTransactions = async () => {
+  }, [transactions, dataProvider, invalidateAllData, scheduledTransactions, showUndoToast]);
+
+  const deleteTransaction = React.useCallback(async (id: string, transfer_id?: string) => {
+    const idsToDelete: string[] = [];
+    if (transfer_id) {
+      // Find all transactions with this transfer_id
+      const linked = transactions.filter(t => t.transfer_id === transfer_id);
+      linked.forEach(t => idsToDelete.push(t.id));
+    } else {
+      idsToDelete.push(id);
+    }
+
+    // execute soft delete
+    await deleteMultipleTransactions(idsToDelete.map(i => ({ id: i })));
+  }, [transactions, deleteMultipleTransactions]);
+  const clearAllTransactions = React.useCallback(async () => {
     await dataProvider.clearAllData();
     await invalidateAllData();
-  };
+  }, [dataProvider, invalidateAllData]);
 
-  const addScheduledTransaction = async (transaction: any) => {
+  const addScheduledTransaction = React.useCallback(async (transaction: any) => {
     const userId = ledgerId;
 
     // Check for transfer
@@ -691,9 +731,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
+  }, [ledgerId, accounts, dataProvider, invalidateAllData]);
 
-  const unlinkScheduledTransaction = async (transferId: string) => {
+  const unlinkScheduledTransaction = React.useCallback(async (transferId: string) => {
     const userId = ledgerId;
     const pair = scheduledTransactions.filter(t => t.transfer_id === transferId);
 
@@ -705,9 +745,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
     }
     await invalidateAllData();
-  };
+  }, [ledgerId, scheduledTransactions, dataProvider, invalidateAllData]);
 
-  const updateScheduledTransaction = async (transaction: any) => {
+  const updateScheduledTransaction = React.useCallback(async (transaction: any) => {
     // Ensure we preserve user_id or set it if missing
     const userId = transaction.user_id || ledgerId;
 
@@ -808,26 +848,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
+  }, [ledgerId, accounts, dataProvider, invalidateAllData, scheduledTransactions]);
 
-  const deleteScheduledTransaction = async (id: string) => {
-    // Check if we have transfer_id passed or need to look it up
-    // The signature in context is (id: string).
-    // Let's resolve transfer_id from state if not passed.
 
-    const idsToDelete = [id];
 
-    // Look up transaction to see if it has transfer_id
-    const tx = scheduledTransactions.find(t => t.id === id);
-    if (tx && tx.transfer_id) {
-      const pair = scheduledTransactions.find(t => t.transfer_id === tx.transfer_id && t.id !== id);
-      if (pair) idsToDelete.push(pair.id);
-    }
-
-    await deleteMultipleScheduledTransactions(idsToDelete);
-  };
-
-  const deleteMultipleScheduledTransactions = async (ids: string[]) => {
+  const deleteMultipleScheduledTransactions = React.useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
 
     // Resolve all paired IDs
@@ -872,12 +897,27 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
 
     // 4. Show Toast
-    showUndoToast(finalIds.length, "schedule");
-  };
+    showUndoToast(finalIds.length, "scheduled transaction");
+  }, [scheduledTransactions, dataProvider, invalidateAllData, showUndoToast]);
 
+  const deleteScheduledTransaction = React.useCallback(async (id: string) => {
+    // Check if we have transfer_id passed or need to look it up
+    // The signature in context is (id: string).
+    // Let's resolve transfer_id from state if not passed.
 
+    const idsToDelete = [id];
 
-  const deleteBudget = (id: string) => {
+    // Look up transaction to see if it has transfer_id
+    const tx = scheduledTransactions.find(t => t.id === id);
+    if (tx && tx.transfer_id) {
+      const pair = scheduledTransactions.find(t => t.transfer_id === tx.transfer_id && t.id !== id);
+      if (pair) idsToDelete.push(pair.id);
+    }
+
+    await deleteMultipleScheduledTransactions(idsToDelete);
+  }, [scheduledTransactions, deleteMultipleScheduledTransactions]);
+
+  const deleteBudget = React.useCallback((id: string) => {
     // 1. Soft Delete
     setHiddenBudgetIds(prev => {
       const next = new Set(prev);
@@ -914,9 +954,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // 4. Show Toast
     showUndoToast(1, "budget");
-  };
+  }, [dataProvider, invalidateAllData, showUndoToast]);
 
-  const deleteEntity = (type: 'vendor' | 'account' | 'category', ids: string[]) => {
+  const deleteEntity = React.useCallback((type: 'vendor' | 'account' | 'category', ids: string[]) => {
     if (ids.length === 0) return;
 
     // 1. Soft Delete
@@ -958,9 +998,48 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       timeoutId
     });
 
-    // 4. Show Toast
     showUndoToast(ids.length, type);
-  }
+  }, [showUndoToast, invalidateAllData]);
+
+  const cleanUpDuplicates = React.useCallback(async () => {
+    // Group by recurrence_id + date + amount + vendor (Strict safety)
+    // Actually, the bug produced exact duplicates (same recurrence_id, same date, same details).
+    // The only difference would be ID and created_at.
+
+    const duplicatesToDelete: string[] = [];
+    const seenKeys = new Set<string>();
+
+    // Sort by created_at desc so we keep the OLDEST (original) or NEWEST?
+    // Usually keep the first created.
+    // Let's sort created_at ASC.
+    const sorted = [...transactions].sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+
+    for (const t of sorted) {
+      if (!t.recurrence_id) continue;
+
+      // We identify a "duplicate instance" by: Recurrence ID + Date
+      // If two transactions came from same schedule on same day, they are dupes.
+      // (Unless frequency is < 1 day, which isn't supported).
+      const key = `${t.recurrence_id}|${t.date.substring(0, 10)}`;
+
+      if (seenKeys.has(key)) {
+        duplicatesToDelete.push(t.id);
+      } else {
+        seenKeys.add(key);
+      }
+    }
+
+    if (duplicatesToDelete.length > 0) {
+      console.log(`Found ${duplicatesToDelete.length} duplicates to clean up.`);
+      await deleteMultipleTransactions(duplicatesToDelete.map(id => ({ id })));
+      // toast is shown by deleteMultipleTransactions usually? 
+      // deleteMultipleTransactions shows "X transactions deleted" toast.
+      // But maybe we want a specific message.
+      // deleteMultipleTransactions has built-in toast.
+    }
+
+    return duplicatesToDelete.length;
+  }, [transactions, deleteMultipleTransactions]);
 
   const detectAndLinkTransfers = React.useCallback(async (batch?: Transaction[]) => {
     const listToScan = batch || transactions;
@@ -1055,9 +1134,24 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await invalidateAllData();
   }, [dataProvider, invalidateAllData]);
 
-  const generateDiverseDemoData = async () => {
+  const generateDiverseDemoData = React.useCallback(async () => {
     try {
       await import('@/utils/demoDataGenerator').then(async (mod) => {
+        // Set progress FIRST to trigger query disabling
+        setOperationProgress({
+          title: "Generating Demo Data",
+          description: "Initializing...",
+          stage: "Initializing",
+          progress: 0,
+          totalStages: 100
+        });
+
+        // Forcefully cancel all running queries to release DB locks
+        await queryClient.cancelQueries();
+
+        // Wait for React to update and queries to disable/cancel
+        await new Promise(r => setTimeout(r, 1000));
+
         await mod.generateDiverseDemoData(dataProvider, (progress) => {
           setOperationProgress({
             title: "Generating Demo Data",
@@ -1070,15 +1164,25 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       // Cleanup and refresh
+      // Instead of entering the first ledger, we logout to let user choose
       await refreshLedgers();
-      // Switch to first ledger if available? Or just refresh current
+
+      // Logout sequence
+      localStorage.removeItem('activeLedgerId');
+      localStorage.setItem('userLoggedOut', 'true');
+
+      // Force reload to reset application state
+      window.location.reload();
+
+      // The codes below won't be reached due to reload, but kept for logic flow correctness if reload was opt
+      /* 
       const ledgers = await dataProvider.getLedgers();
       if (ledgers.length > 0) {
         await switchLedger(ledgers[0].id);
       }
-
       await invalidateAllData();
       await refetchTransactions();
+      */
 
     } catch (error) {
       console.error("Failed to generate demo data:", error);
@@ -1093,10 +1197,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  };
+  }, [dataProvider, refreshLedgers, switchLedger, invalidateAllData, refetchTransactions]);
 
   const processScheduledTransactions = React.useCallback(async () => {
-    if (isLoadingScheduledTransactions || scheduledTransactions.length === 0) return;
+    if (isLoadingScheduledTransactions || scheduledTransactions.length === 0 || operationProgress) return;
 
     // console.log("Checking for due scheduled transactions...");
     const today = new Date();
@@ -1105,11 +1209,57 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let processedCount = 0;
 
     for (const st of scheduledTransactions) {
+      if (operationProgressRef.current) break; // Break loop if an operation is in progress
+
       const nextDate = new Date(st.date);
       nextDate.setHours(0, 0, 0, 0);
 
-      // If scheduled date is today or in the past
+      // FAST-FORWARD LOGIC:
+      // If the scheduled date is strictly in the past (before today), we skip execution
+      // and just advance the pointer until it catches up to today or future.
+      if (nextDate < today) {
+        console.log(`Fast-forwarding past scheduled transaction: ${st.vendor} (Date: ${st.date})`);
+
+        // Loop until we are at least at 'today'
+        // If we land ON today, it will be picked up by the execution logic below (nextDate <= today check)
+        // effectively executing it for *this* cycle only.
+        // BUT wait, user said "No need run schedule transactions against past dates".
+        // If we catch up to TODAY, that is technically a valid recurrence for "now".
+        // If we want to strictly SKIP everything including today IF it started in past... no that's probably wrong.
+        // "Why are all scheduled transactions (even those from past) getting executed today?"
+        // The issue is that ALL missed ones execute. 
+        // We just want to execute the LATEST one if it falls on today, or NONE if it falls in future.
+        // Let's safe-guard: advance until >= today.
+
+        let advancedDate = new Date(nextDate);
+        while (advancedDate < today) {
+          advancedDate = calculateNextDate(advancedDate, st.frequency);
+        }
+
+        // Update the schedule with the new date
+        await dataProvider.updateScheduledTransaction({
+          ...st,
+          date: advancedDate.toISOString()
+        });
+
+        // We DO NOT execute the transaction here. We just updated the date.
+        // If the new date is TODAY, we *could* let it fall through, but because we just updated DB,
+        // we should let the system refresh and process it in next pass (if applicable) to avoid race conditions.
+        // So we continue.
+        processedCount++; // Mark as "touched" so we invalidate
+        continue;
+      }
+
+      // If scheduled date is today (or past due - but past due is handled above now)
+      // The only case leftover here is nextDate === today (after normalization)
+      // Or if logic above failed?      if (operationProgressRef.current) break;
+
+      // Check if due
+      // The nextDate variable is already defined above the loop.
       if (nextDate <= today) {
+        // Double check ref before async
+        if (operationProgressRef.current) break;
+
         // Check if this specific date (ISO string match) is in ignored_dates
         // Note: st.date is the "next scheduled date". If we skipped it, it should be in ignored_dates.
         // We need to compare st.date with ignored_dates.
@@ -1117,44 +1267,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         if (isIgnored) {
           console.log(`Skipping ignored scheduled transaction: ${st.vendor} on ${st.date}`);
-          // We must STILL advance the schedule, otherwise it will be stuck on this date forever!
-
-          // ... Logic to advance Schedule duplicated ...
-          // Refactor idea: Extract advance logic. But for now, copy-paste to be safe and sequential.
-          let newNextDate = new Date(nextDate);
-
-          let intervalValue = 1;
-          let intervalUnit = 'm';
-
-          if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(st.frequency)) {
-            switch (st.frequency) {
-              case 'Daily': intervalUnit = 'd'; break;
-              case 'Weekly': intervalUnit = 'w'; break;
-              case 'Monthly': intervalUnit = 'm'; break;
-              case 'Yearly': intervalUnit = 'y'; break;
-            }
-          } else {
-            const match = st.frequency.match(/^(\d+)([dwmy])$/);
-            if (match) {
-              intervalValue = parseInt(match[1], 10);
-              intervalUnit = match[2];
-            }
-          }
-
-          switch (intervalUnit) {
-            case 'd': newNextDate.setDate(newNextDate.getDate() + intervalValue); break;
-            case 'w': newNextDate.setDate(newNextDate.getDate() + (intervalValue * 7)); break;
-            case 'm': newNextDate.setMonth(newNextDate.getMonth() + intervalValue); break;
-            case 'y': newNextDate.setFullYear(newNextDate.getFullYear() + intervalValue); break;
-            default: newNextDate.setMonth(newNextDate.getMonth() + 1); break;
-          }
+          // Advance without creating
+          const newNextDate = calculateNextDate(nextDate, st.frequency);
 
           await dataProvider.updateScheduledTransaction({
             ...st,
             date: newNextDate.toISOString()
           });
 
-          // Continue to next item without creating transaction
+          processedCount++;
           continue;
         }
 
@@ -1162,6 +1283,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         // 1. Create Real Transaction
         const transactionPayload = {
+          // If for some reason it's still past today (shouldn't be due to fast-forward), clamp to today?
+          // But fast-forward handles < today. So here it must be === today.
           date: nextDate < today ? startOfDay(today).toISOString() : st.date,
           account: st.account,
           vendor: st.vendor,
@@ -1178,33 +1301,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await addTransaction(transactionPayload);
 
         // 2. Advance Schedule
-        let newNextDate = new Date(nextDate);
-
-        let intervalValue = 1;
-        let intervalUnit = 'm';
-
-        if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(st.frequency)) {
-          switch (st.frequency) {
-            case 'Daily': intervalUnit = 'd'; break;
-            case 'Weekly': intervalUnit = 'w'; break;
-            case 'Monthly': intervalUnit = 'm'; break;
-            case 'Yearly': intervalUnit = 'y'; break;
-          }
-        } else {
-          const match = st.frequency.match(/^(\d+)([dwmy])$/);
-          if (match) {
-            intervalValue = parseInt(match[1], 10);
-            intervalUnit = match[2];
-          }
-        }
-
-        switch (intervalUnit) {
-          case 'd': newNextDate.setDate(newNextDate.getDate() + intervalValue); break;
-          case 'w': newNextDate.setDate(newNextDate.getDate() + (intervalValue * 7)); break;
-          case 'm': newNextDate.setMonth(newNextDate.getMonth() + intervalValue); break;
-          case 'y': newNextDate.setFullYear(newNextDate.getFullYear() + intervalValue); break;
-          default: newNextDate.setMonth(newNextDate.getMonth() + 1); break;
-        }
+        const newNextDate = calculateNextDate(nextDate, st.frequency);
 
         await dataProvider.updateScheduledTransaction({
           ...st,
@@ -1220,7 +1317,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // toast.success(`Processed ${processedCount} scheduled transactions.`); // Requires toast import or notifying user
       // console.log(`Processed ${processedCount} scheduled transactions.`);
     }
-  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData]);
+
+  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData, addTransaction, operationProgress]);
 
   // Run on mount / data load
   React.useEffect(() => {
@@ -1355,20 +1453,25 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     detectAndLinkTransfers,
     unlinkTransaction,
     linkTransactions,
-    deleteBudget, deleteEntity, hiddenBudgetIds
+    deleteBudget,
+    deleteEntity,
+    hiddenBudgetIds,
+    cleanUpDuplicates
   }), [
     transactions, filteredVendors, filteredAccounts, filteredCategories, subCategories, accountCurrencyMap, allSubCategories,
     refetchVendors, refetchAccounts, refetchCategories, refetchSubCategories, invalidateAllData, refetchTransactions,
     operationProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
     scheduledTransactions, isLoadingScheduledTransactions, refetchScheduledTransactions,
-    addTransaction, updateTransaction, deleteTransaction, deleteMultipleScheduledTransactions, clearAllTransactions,
+    addTransaction, updateTransaction, deleteTransaction, clearAllTransactions,
     generateDiverseDemoData, addScheduledTransaction, updateScheduledTransaction, deleteScheduledTransaction,
     deleteMultipleScheduledTransactions,
     detectAndLinkTransfers,
     unlinkTransaction,
     linkTransactions,
-    deleteBudget, deleteEntity, hiddenBudgetIds
+    // dependencies added for exhaustive-deps
+    deleteMultipleTransactions, processScheduledTransactions, unlinkScheduledTransaction,
+    deleteBudget, deleteEntity, hiddenBudgetIds, cleanUpDuplicates
   ]);
 
   return (
@@ -1383,6 +1486,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
  * Provides access to transaction data, metadata (accounts, vendors, categories),
  * and operations for managing them.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTransactions = () => {
   const context = React.useContext(TransactionsContext);
   if (context === undefined) {

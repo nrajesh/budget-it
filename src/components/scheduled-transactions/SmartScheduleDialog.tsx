@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -40,18 +40,12 @@ export function SmartScheduleDialog({ isOpen, onClose, onSave }: SmartScheduleDi
     const [isCalculating, setIsCalculating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            calculateSuggestions();
-        }
-    }, [isOpen, transactions]);
-
-    const calculateSuggestions = async () => {
+    const calculateSuggestions = useCallback(async () => {
         setIsCalculating(true);
         setTimeout(() => {
             try {
                 const patterns = detectRecurringPatterns(transactions, scheduledTransactions);
-                let enriched: SuggestedSchedule[] = patterns.map(p => ({ ...p, isSelected: true }));
+                const enriched: SuggestedSchedule[] = patterns.map(p => ({ ...p, isSelected: true }));
 
                 // --- Pairing Logic ---
                 // Find potential pairs: Same Date, Inverse Amount, "Transfer" related?
@@ -105,7 +99,15 @@ export function SmartScheduleDialog({ isOpen, onClose, onSave }: SmartScheduleDi
                 setIsCalculating(false);
             }
         }, 500);
-    };
+    }, [transactions, scheduledTransactions]);
+
+    useEffect(() => {
+        if (isOpen) {
+            calculateSuggestions();
+        }
+    }, [isOpen, calculateSuggestions]);
+
+
 
     const handleCreateSchedules = async () => {
         setIsSaving(true);

@@ -57,7 +57,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
         if (s === 'tomorrow') return addDays(today, 1);
 
         // Try DD/MM/YYYY
-        const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+        const dmy = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/);
         if (dmy) {
             return new Date(parseInt(dmy[3]), parseInt(dmy[2]) - 1, parseInt(dmy[1]), 12, 0, 0);
         }
@@ -105,7 +105,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     else if (lowerQuery.includes('this month')) { replaceMatch('this month'); result.dateRange = { from: startOfMonth(today), to: endOfMonth(today) }; }
 
     else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
-    else if (lowerQuery.includes('this year')) { replaceMatch('this year'); result.dateRange = { from: startOfYear(today), to: endOfYear(today) }; }
+
     else if (lowerQuery.includes('last year')) { replaceMatch('last year'); result.dateRange = { from: startOfYear(subWeeks(today, 52)), to: endOfYear(subWeeks(today, 52)) }; }
 
     // --- Quarter Parsing ---
@@ -226,7 +226,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     if (/\bthis week\b/i.test(remainingQuery)) {
         // Monday of current week. 
         // Iterate back to Monday
-        let d = new Date(today);
+        const d = new Date(today);
         const day = d.getDay();
         const diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
         const monday = new Date(d.setDate(diff));
@@ -297,7 +297,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
     // --- 1.0 Explicit Date Parsing (Range: DD/MM/YYYY - DD/MM/YYYY) ---
     // Check for ranges first so single-date regex doesn't consume the start date
     // Supports: 01/01/2025-31/01/2025, 01/01/2025 - 31/01/2025, 01/01/2025 to 31/01/2025
-    const rangeRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\s*(?:-|to)\s*(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/i;
+    const rangeRegex = /(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})\s*(?:-|to)\s*(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/i;
     const rangeMatch = remainingQuery.match(rangeRegex);
     if (rangeMatch) {
         const fromDay = parseInt(rangeMatch[1], 10);
@@ -320,7 +320,7 @@ export const parseSearchQuery = (query: string, context: SearchContext): ParsedF
 
     // --- 1.1 Single Date (DD/MM/YYYY) ---
     // Match DD/MM/YYYY or DD-MM-YYYY
-    const dmyRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/;
+    const dmyRegex = /(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/;
     const dmyMatch = remainingQuery.match(dmyRegex);
     if (dmyMatch) {
         const day = parseInt(dmyMatch[1], 10);

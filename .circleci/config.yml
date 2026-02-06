@@ -1,0 +1,61 @@
+version: 2.1
+
+jobs:
+  lint-and-typecheck:
+    docker:
+      - image: cimg/node:20.11.1
+    steps:
+      - checkout
+      - run:
+          name: Enable Corepack
+          command: sudo corepack enable
+      - restore_cache:
+          name: Restore Package Cache
+          keys:
+            - v1-deps-{{ checksum "pnpm-lock.yaml" }}
+            - v1-deps-
+      - run:
+          name: Install Dependencies
+          command: pnpm install --frozen-lockfile
+      - save_cache:
+          name: Save Package Cache
+          key: v1-deps-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - node_modules
+      - run:
+          name: Lint
+          command: pnpm lint
+      - run:
+          name: Type Check
+          command: pnpm exec tsc --noEmit
+
+  build:
+    docker:
+      - image: cimg/node:20.11.1
+    steps:
+      - checkout
+      - run:
+          name: Enable Corepack
+          command: sudo corepack enable
+      - restore_cache:
+          name: Restore Package Cache
+          keys:
+            - v1-deps-{{ checksum "pnpm-lock.yaml" }}
+            - v1-deps-
+      - run:
+          name: Install Dependencies
+          command: pnpm install --frozen-lockfile
+      - run:
+          name: Build
+          command: pnpm build
+      - store_artifacts:
+          path: dist
+          destination: build-artifacts
+
+workflows:
+  build_and_test:
+    jobs:
+      - lint-and-typecheck
+      - build:
+          requires:
+            - lint-and-typecheck

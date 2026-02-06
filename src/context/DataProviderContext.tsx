@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState } from 'react';
 import { DataProvider } from '@/types/dataProvider';
 import { LocalDataProvider } from '@/providers/LocalDataProvider';
 
@@ -15,6 +15,7 @@ export const DataProviderProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDataProvider = () => {
   const context = useContext(DataProviderContext);
   if (!context) {

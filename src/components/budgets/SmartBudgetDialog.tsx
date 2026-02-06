@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -42,13 +42,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
     const [isCalculating, setIsCalculating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            calculateSuggestions();
-        }
-    }, [isOpen, transactions]);
-
-    const calculateSuggestions = async () => {
+    const calculateSuggestions = useCallback(async () => {
         setIsCalculating(true);
         // Simulate a brief calculation time for better UX or if we make it async later
         setTimeout(() => {
@@ -61,7 +55,14 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                 setIsCalculating(false);
             }
         }, 500);
-    };
+    }, [transactions]);
+
+    useEffect(() => {
+        if (isOpen) {
+            calculateSuggestions();
+        }
+    }, [isOpen, calculateSuggestions]);
+
 
     const generateBudgetSuggestions = (txs: Transaction[]): SuggestedBudget[] => {
         // 1. Group transactions by Category (and SubCategory optionally, but let's stick to Category for now to keep it simple, or maybe top-level only?)
@@ -179,7 +180,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                     sub_category_name: item.subCategory,
                     target_amount: item.proposedAmount,
                     spent_amount: 0, // Initial state
-                    currency: 'USD', // Default or fetch from user settings? Use 'USD' for now or context
+                    currency: activeLedger?.currency || 'USD', // Default or fetch from user settings
                     start_date: new Date().toISOString().substring(0, 10), // Today
                     end_date: null,
                     frequency: 'Monthly',
@@ -285,7 +286,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                                                 </div>
                                             </div>
                                             <div className="col-span-2 text-right text-sm text-muted-foreground">
-                                                {item.averageSpend.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                                                {item.averageSpend.toLocaleString('en-US', { style: 'currency', currency: activeLedger?.currency || 'USD', maximumFractionDigits: 0 })}
                                             </div>
                                             <div className="col-span-3">
                                                 <Input

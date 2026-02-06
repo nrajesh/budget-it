@@ -42,7 +42,7 @@ export const CurrencyConversionDialog: React.FC<CurrencyConversionDialogProps> =
         try {
             await refreshExchangeRates();
             showSuccess("Exchange rates updated successfully.");
-        } catch (error) {
+        } catch {
             showError("Failed to update exchange rates. Please check your internet connection.");
         } finally {
             setIsRefreshing(false);

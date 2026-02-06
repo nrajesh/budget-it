@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { currencySymbols, availableCurrencies, defaultExchangeRates } from '@/constants/currency';
 
 interface CurrencyContextType {
   selectedCurrency: string;
@@ -14,46 +15,6 @@ interface CurrencyContextType {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-// Exchange rates relative to a base currency (USD)
-const exchangeRates: { [key: string]: number } = {
-  USD: 1.0,
-  EUR: 0.92,
-  GBP: 0.79,
-  JPY: 155.0,
-  CAD: 1.37,
-  AUD: 1.51,
-  CHF: 0.90,
-  INR: 83.5,
-  BRL: 5.15,
-  CNY: 7.25,
-};
-
-export const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: 'C$',
-  AUD: 'A$',
-  CHF: 'CHF',
-  INR: '₹',
-  BRL: 'R$',
-  CNY: '¥',
-};
-
-export const availableCurrencies = [
-  { code: 'USD', name: 'US Dollar' },
-  { code: 'EUR', name: 'Euro' },
-  { code: 'GBP', name: 'British Pound' },
-  { code: 'JPY', name: 'Japanese Yen' },
-  { code: 'CAD', name: 'Canadian Dollar' },
-  { code: 'AUD', name: 'Australian Dollar' },
-  { code: 'CHF', name: 'Swiss Franc' },
-  { code: 'INR', name: 'Indian Rupee' },
-  { code: 'BRL', name: 'Brazilian Real' },
-  { code: 'CNY', name: 'Chinese Yuan' },
-];
-
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
     return localStorage.getItem('selectedCurrency') || 'USD';
@@ -61,7 +22,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
   const [exchangeRatesState, setExchangeRatesState] = useState<{ [key: string]: number }>(() => {
     const savedRates = localStorage.getItem('currency_exchange_rates');
-    return savedRates ? JSON.parse(savedRates) : exchangeRates;
+    return savedRates ? JSON.parse(savedRates) : defaultExchangeRates;
   });
 
   useEffect(() => {
@@ -110,7 +71,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           newRates[curr.code] = exchangeRatesState[curr.code];
         } else {
           // Fallback to initial hardcoded
-          newRates[curr.code] = exchangeRates[curr.code] || 1;
+          newRates[curr.code] = defaultExchangeRates[curr.code] || 1;
         }
       });
 
@@ -169,6 +130,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);
   if (context === undefined) {
