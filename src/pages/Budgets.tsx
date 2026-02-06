@@ -44,14 +44,6 @@ export default function BudgetsPage() {
   const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();
   const { convertBetweenCurrencies } = useCurrency();
 
-  useEffect(() => {
-    if (userId) {
-      fetchBudgets(userId);
-    } else {
-      setIsLoading(false);
-    }
-  }, [userId, fetchBudgets]);
-
   const fetchBudgets = useCallback(async (currentUserId: string) => {
     setIsLoading(true);
     try {
@@ -68,6 +60,14 @@ export default function BudgetsPage() {
     }
     setIsLoading(false);
   }, [dataProvider, toast]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchBudgets(userId);
+    } else {
+      setIsLoading(false);
+    }
+  }, [userId, fetchBudgets]);
 
   // Recalculate spent amounts using shared logic
   const processedBudgets = useMemo(() => {
