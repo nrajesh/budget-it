@@ -158,11 +158,11 @@ export const detectRecurringPatterns = (
         // Next occurrence: Next month on baselineDay?
         // Need to find the *next* valid date after today.
 
-        let nextDate = new Date(today.getFullYear(), today.getMonth(), baselineDay);
+        const initialNextDate = new Date(today.getFullYear(), today.getMonth(), baselineDay);
         // If today is past this month's baseline, move to next month
-        if (nextDate <= today) {
-            nextDate = new Date(today.getFullYear(), today.getMonth() + 1, baselineDay);
-        }
+        const nextDate = initialNextDate <= today
+            ? new Date(today.getFullYear(), today.getMonth() + 1, baselineDay)
+            : initialNextDate;
 
         // Handle edges (e.g. 31st in a 30-day month) - Date constructor handles overflow (Feb 30 -> Mar 2), but maybe we want "Last day"?
         // For simplicity, native overflow is usually acceptable or we clamp.

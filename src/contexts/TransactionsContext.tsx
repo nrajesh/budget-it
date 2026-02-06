@@ -107,7 +107,7 @@ interface TransactionsContextType {
   cleanUpDuplicates: () => Promise<number>;
 }
 
-export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
+const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
 
 const transformPayeeData = (data: any[]): Payee[] => {
   if (!data) return [];
@@ -457,7 +457,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   // Helper for Undo Toasts
-  const showUndoToast = (count: number, itemLabel: string) => {
+  const showUndoToast = React.useCallback((count: number, itemLabel: string) => {
     const { id } = toast({
       title: "Deleted",
       description: (
@@ -469,11 +469,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       duration: 7000,
     });
     lastToastIdRef.current = id;
-  }
+  }, [undoLastAction, toast]);
 
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
-  const addTransaction = async (transaction: any) => {
+  const addTransaction = React.useCallback(async (transaction: any) => {
     // Check if it's a transfer
     // In our app, a transfer is identified if the vendor name matches an account name
     const isTransfer = accounts.some(acc => acc.name === transaction.vendor);
@@ -519,8 +519,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const updateTransaction = async (transaction: any) => {
+  }, [accounts, ledgerId, dataProvider, invalidateAllData]);
+  const updateTransaction = React.useCallback(async (transaction: any) => {
     // 1. Update the primary transaction
     await dataProvider.updateTransaction(transaction);
 
@@ -556,21 +556,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const deleteTransaction = async (id: string, transfer_id?: string) => {
-    const idsToDelete: string[] = [];
-    if (transfer_id) {
-      // Find all transactions with this transfer_id
-      const linked = transactions.filter(t => t.transfer_id === transfer_id);
-      linked.forEach(t => idsToDelete.push(t.id));
-    } else {
-      idsToDelete.push(id);
-    }
+  }, [dataProvider, invalidateAllData, transactions]);
 
-    // execute soft delete
-    await deleteMultipleTransactions(idsToDelete.map(i => ({ id: i })));
-  };
-  const deleteMultipleTransactions = async (items: { id: string, transfer_id?: string, is_projected?: boolean, recurrence_id?: string, date?: string }[]) => {
+  const deleteMultipleTransactions = React.useCallback(async (items: { id: string, transfer_id?: string, is_projected?: boolean, recurrence_id?: string, date?: string }[]) => {
     // Separate real and projected items
     const realItems = [];
     const projectedItems = [];
@@ -678,13 +666,27 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
-  const clearAllTransactions = async () => {
+  }, [transactions, dataProvider, invalidateAllData, scheduledTransactions, showUndoToast]);
+
+  const deleteTransaction = React.useCallback(async (id: string, transfer_id?: string) => {
+    const idsToDelete: string[] = [];
+    if (transfer_id) {
+      // Find all transactions with this transfer_id
+      const linked = transactions.filter(t => t.transfer_id === transfer_id);
+      linked.forEach(t => idsToDelete.push(t.id));
+    } else {
+      idsToDelete.push(id);
+    }
+
+    // execute soft delete
+    await deleteMultipleTransactions(idsToDelete.map(i => ({ id: i })));
+  }, [transactions, deleteMultipleTransactions]);
+  const clearAllTransactions = React.useCallback(async () => {
     await dataProvider.clearAllData();
     await invalidateAllData();
-  };
+  }, [dataProvider, invalidateAllData]);
 
-  const addScheduledTransaction = async (transaction: any) => {
+  const addScheduledTransaction = React.useCallback(async (transaction: any) => {
     const userId = ledgerId;
 
     // Check for transfer
@@ -724,9 +726,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
+  }, [ledgerId, accounts, dataProvider, invalidateAllData]);
 
-  const unlinkScheduledTransaction = async (transferId: string) => {
+  const unlinkScheduledTransaction = React.useCallback(async (transferId: string) => {
     const userId = ledgerId;
     const pair = scheduledTransactions.filter(t => t.transfer_id === transferId);
 
@@ -738,9 +740,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
     }
     await invalidateAllData();
-  };
+  }, [ledgerId, scheduledTransactions, dataProvider, invalidateAllData]);
 
-  const updateScheduledTransaction = async (transaction: any) => {
+  const updateScheduledTransaction = React.useCallback(async (transaction: any) => {
     // Ensure we preserve user_id or set it if missing
     const userId = transaction.user_id || ledgerId;
 
@@ -841,26 +843,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     await invalidateAllData();
-  };
+  }, [ledgerId, accounts, dataProvider, invalidateAllData, scheduledTransactions]);
 
-  const deleteScheduledTransaction = async (id: string) => {
-    // Check if we have transfer_id passed or need to look it up
-    // The signature in context is (id: string).
-    // Let's resolve transfer_id from state if not passed.
 
-    const idsToDelete = [id];
 
-    // Look up transaction to see if it has transfer_id
-    const tx = scheduledTransactions.find(t => t.id === id);
-    if (tx && tx.transfer_id) {
-      const pair = scheduledTransactions.find(t => t.transfer_id === tx.transfer_id && t.id !== id);
-      if (pair) idsToDelete.push(pair.id);
-    }
-
-    await deleteMultipleScheduledTransactions(idsToDelete);
-  };
-
-  const deleteMultipleScheduledTransactions = async (ids: string[]) => {
+  const deleteMultipleScheduledTransactions = React.useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
 
     // Resolve all paired IDs
@@ -905,12 +892,27 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
 
     // 4. Show Toast
-    showUndoToast(finalIds.length, "schedule");
-  };
+    showUndoToast(finalIds.length, "scheduled transaction");
+  }, [scheduledTransactions, dataProvider, invalidateAllData, showUndoToast]);
 
+  const deleteScheduledTransaction = React.useCallback(async (id: string) => {
+    // Check if we have transfer_id passed or need to look it up
+    // The signature in context is (id: string).
+    // Let's resolve transfer_id from state if not passed.
 
+    const idsToDelete = [id];
 
-  const deleteBudget = (id: string) => {
+    // Look up transaction to see if it has transfer_id
+    const tx = scheduledTransactions.find(t => t.id === id);
+    if (tx && tx.transfer_id) {
+      const pair = scheduledTransactions.find(t => t.transfer_id === tx.transfer_id && t.id !== id);
+      if (pair) idsToDelete.push(pair.id);
+    }
+
+    await deleteMultipleScheduledTransactions(idsToDelete);
+  }, [scheduledTransactions, deleteMultipleScheduledTransactions]);
+
+  const deleteBudget = React.useCallback((id: string) => {
     // 1. Soft Delete
     setHiddenBudgetIds(prev => {
       const next = new Set(prev);
@@ -947,9 +949,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // 4. Show Toast
     showUndoToast(1, "budget");
-  };
+  }, [dataProvider, invalidateAllData, showUndoToast]);
 
-  const deleteEntity = (type: 'vendor' | 'account' | 'category', ids: string[]) => {
+  const deleteEntity = React.useCallback((type: 'vendor' | 'account' | 'category', ids: string[]) => {
     if (ids.length === 0) return;
 
     // 1. Soft Delete
@@ -992,7 +994,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
 
     showUndoToast(ids.length, type);
-  }
+  }, [showUndoToast, invalidateAllData]);
 
   const cleanUpDuplicates = React.useCallback(async () => {
     // Group by recurrence_id + date + amount + vendor (Strict safety)
@@ -1127,7 +1129,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await invalidateAllData();
   }, [dataProvider, invalidateAllData]);
 
-  const generateDiverseDemoData = async () => {
+  const generateDiverseDemoData = React.useCallback(async () => {
     try {
       await import('@/utils/demoDataGenerator').then(async (mod) => {
         await mod.generateDiverseDemoData(dataProvider, (progress) => {
@@ -1165,7 +1167,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  };
+  }, [dataProvider, refreshLedgers, switchLedger, invalidateAllData, refetchTransactions]);
 
   const processScheduledTransactions = React.useCallback(async () => {
     if (isLoadingScheduledTransactions || scheduledTransactions.length === 0) return;
@@ -1177,7 +1179,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let processedCount = 0;
 
     for (const st of scheduledTransactions) {
-      let nextDate = new Date(st.date);
+      const nextDate = new Date(st.date);
       nextDate.setHours(0, 0, 0, 0);
 
       // FAST-FORWARD LOGIC:
@@ -1277,7 +1279,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // toast.success(`Processed ${processedCount} scheduled transactions.`); // Requires toast import or notifying user
       // console.log(`Processed ${processedCount} scheduled transactions.`);
     }
-  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData]);
+
+  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData, addTransaction]);
 
   // Run on mount / data load
   React.useEffect(() => {
@@ -1422,15 +1425,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     operationProgress,
     isLoadingTransactions, isLoadingVendors, isLoadingAccounts, isLoadingCategories, isLoadingSubCategories,
     scheduledTransactions, isLoadingScheduledTransactions, refetchScheduledTransactions,
-    addTransaction, updateTransaction, deleteTransaction, deleteMultipleScheduledTransactions, clearAllTransactions,
+    addTransaction, updateTransaction, deleteTransaction, clearAllTransactions,
     generateDiverseDemoData, addScheduledTransaction, updateScheduledTransaction, deleteScheduledTransaction,
     deleteMultipleScheduledTransactions,
     detectAndLinkTransfers,
     unlinkTransaction,
     linkTransactions,
-    linkTransactions,
-    deleteBudget, deleteEntity, hiddenBudgetIds,
-    cleanUpDuplicates
+    // dependencies added for exhaustive-deps
+    deleteMultipleTransactions, processScheduledTransactions, unlinkScheduledTransaction,
+    deleteBudget, deleteEntity, hiddenBudgetIds, cleanUpDuplicates
   ]);
 
   return (
@@ -1445,6 +1448,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
  * Provides access to transaction data, metadata (accounts, vendors, categories),
  * and operations for managing them.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTransactions = () => {
   const context = React.useContext(TransactionsContext);
   if (context === undefined) {

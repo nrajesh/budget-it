@@ -104,7 +104,7 @@ const Transactions = () => {
       }
       window.history.replaceState({}, document.title)
     }
-  }, [location.state]);
+  }, [location.state, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors]);
 
   const dataProvider = useDataProvider();
 
@@ -276,7 +276,7 @@ const Transactions = () => {
       } else {
         toast({ title: "No Duplicates", description: "No duplicate transactions were found." });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({ title: "Cleanup Failed", description: "An error occurred while removing duplicates.", variant: "destructive" });
     } finally {
       setIsCleaningUp(false);
