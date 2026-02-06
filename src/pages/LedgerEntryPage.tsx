@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 
 
 const LedgerEntryPage = () => {
-    const { ledgers, switchLedger } = useLedger();
+    const { ledgers, switchLedger, refreshLedgers } = useLedger();
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     // Import Logic State
@@ -34,23 +34,20 @@ const LedgerEntryPage = () => {
             if (!content) return;
 
             try {
-                // Try parsing as simple JSON first to see if it's a plain backup
-                JSON.parse(content);
-                // If successful, it might be plain or the encrypted wrapper (which is also JSON)
-                // Check structure
+                // Optimize: Parse once
                 const parsed = JSON.parse(content);
+
                 if (parsed.ciphertext && parsed.iv && parsed.salt) {
                     // It's encrypted
                     setTempImportFile(content);
                     setIsImportPasswordOpen(true);
                 } else {
                     // Assume plain text
-                    // If global import, we just import.
                     await dataProvider.importData(parsed);
                     showSuccess("Data imported successfully!");
 
-                    // Force reload to ensure all states (including Ledgers) are fresh
-                    window.location.reload();
+                    // Instant refresh instead of reload
+                    await refreshLedgers();
                 }
             } catch {
                 showError("Invalid file format.");
@@ -69,7 +66,9 @@ const LedgerEntryPage = () => {
             await dataProvider.importData(data);
             showSuccess("Encrypted data imported successfully!");
             setTempImportFile(null);
-            window.location.reload();
+
+            // Instant refresh instead of reload
+            await refreshLedgers();
         } catch (e: any) {
             showError(`Import failed: ${e.message}`);
         }

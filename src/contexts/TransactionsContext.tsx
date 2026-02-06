@@ -102,6 +102,9 @@ interface TransactionsContextType {
   deleteBudget: (id: string) => void;
   deleteEntity: (type: 'vendor' | 'account' | 'category', ids: string[]) => void;
   hiddenBudgetIds: Set<string>;
+
+  /** Scans for duplicate transactions (same recurrence_id and date) and removes them */
+  cleanUpDuplicates: () => Promise<number>;
 }
 
 export const TransactionsContext = React.createContext<TransactionsContextType | undefined>(undefined);
@@ -121,6 +124,36 @@ const transformCategoryData = (data: any[]): Category[] => {
   return data.map((item: any) => ({
     id: item.id, name: item.name, user_id: item.user_id, created_at: item.created_at, totalTransactions: item.total_transactions || 0,
   })).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const calculateNextDate = (currentDate: Date, frequency: string): Date => {
+  const newDate = new Date(currentDate);
+  let intervalValue = 1;
+  let intervalUnit = 'm';
+
+  if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(frequency)) {
+    switch (frequency) {
+      case 'Daily': intervalUnit = 'd'; break;
+      case 'Weekly': intervalUnit = 'w'; break;
+      case 'Monthly': intervalUnit = 'm'; break;
+      case 'Yearly': intervalUnit = 'y'; break;
+    }
+  } else {
+    const match = frequency.match(/^(\d+)([dwmy])$/);
+    if (match) {
+      intervalValue = parseInt(match[1], 10);
+      intervalUnit = match[2];
+    }
+  }
+
+  switch (intervalUnit) {
+    case 'd': newDate.setDate(newDate.getDate() + intervalValue); break;
+    case 'w': newDate.setDate(newDate.getDate() + (intervalValue * 7)); break;
+    case 'm': newDate.setMonth(newDate.getMonth() + intervalValue); break;
+    case 'y': newDate.setFullYear(newDate.getFullYear() + intervalValue); break;
+    default: newDate.setMonth(newDate.getMonth() + 1); break;
+  }
+  return newDate;
 };
 
 export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -958,9 +991,48 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       timeoutId
     });
 
-    // 4. Show Toast
     showUndoToast(ids.length, type);
   }
+
+  const cleanUpDuplicates = React.useCallback(async () => {
+    // Group by recurrence_id + date + amount + vendor (Strict safety)
+    // Actually, the bug produced exact duplicates (same recurrence_id, same date, same details).
+    // The only difference would be ID and created_at.
+
+    const duplicatesToDelete: string[] = [];
+    const seenKeys = new Set<string>();
+
+    // Sort by created_at desc so we keep the OLDEST (original) or NEWEST?
+    // Usually keep the first created.
+    // Let's sort created_at ASC.
+    const sorted = [...transactions].sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+
+    for (const t of sorted) {
+      if (!t.recurrence_id) continue;
+
+      // We identify a "duplicate instance" by: Recurrence ID + Date
+      // If two transactions came from same schedule on same day, they are dupes.
+      // (Unless frequency is < 1 day, which isn't supported).
+      const key = `${t.recurrence_id}|${t.date.substring(0, 10)}`;
+
+      if (seenKeys.has(key)) {
+        duplicatesToDelete.push(t.id);
+      } else {
+        seenKeys.add(key);
+      }
+    }
+
+    if (duplicatesToDelete.length > 0) {
+      console.log(`Found ${duplicatesToDelete.length} duplicates to clean up.`);
+      await deleteMultipleTransactions(duplicatesToDelete.map(id => ({ id })));
+      // toast is shown by deleteMultipleTransactions usually? 
+      // deleteMultipleTransactions shows "X transactions deleted" toast.
+      // But maybe we want a specific message.
+      // deleteMultipleTransactions has built-in toast.
+    }
+
+    return duplicatesToDelete.length;
+  }, [transactions, deleteMultipleTransactions]);
 
   const detectAndLinkTransfers = React.useCallback(async (batch?: Transaction[]) => {
     const listToScan = batch || transactions;
@@ -1105,10 +1177,48 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let processedCount = 0;
 
     for (const st of scheduledTransactions) {
-      const nextDate = new Date(st.date);
+      let nextDate = new Date(st.date);
       nextDate.setHours(0, 0, 0, 0);
 
-      // If scheduled date is today or in the past
+      // FAST-FORWARD LOGIC:
+      // If the scheduled date is strictly in the past (before today), we skip execution
+      // and just advance the pointer until it catches up to today or future.
+      if (nextDate < today) {
+        console.log(`Fast-forwarding past scheduled transaction: ${st.vendor} (Date: ${st.date})`);
+
+        // Loop until we are at least at 'today'
+        // If we land ON today, it will be picked up by the execution logic below (nextDate <= today check)
+        // effectively executing it for *this* cycle only.
+        // BUT wait, user said "No need run schedule transactions against past dates".
+        // If we catch up to TODAY, that is technically a valid recurrence for "now".
+        // If we want to strictly SKIP everything including today IF it started in past... no that's probably wrong.
+        // "Why are all scheduled transactions (even those from past) getting executed today?"
+        // The issue is that ALL missed ones execute. 
+        // We just want to execute the LATEST one if it falls on today, or NONE if it falls in future.
+        // Let's safe-guard: advance until >= today.
+
+        let advancedDate = new Date(nextDate);
+        while (advancedDate < today) {
+          advancedDate = calculateNextDate(advancedDate, st.frequency);
+        }
+
+        // Update the schedule with the new date
+        await dataProvider.updateScheduledTransaction({
+          ...st,
+          date: advancedDate.toISOString()
+        });
+
+        // We DO NOT execute the transaction here. We just updated the date.
+        // If the new date is TODAY, we *could* let it fall through, but because we just updated DB,
+        // we should let the system refresh and process it in next pass (if applicable) to avoid race conditions.
+        // So we continue.
+        processedCount++; // Mark as "touched" so we invalidate
+        continue;
+      }
+
+      // If scheduled date is today (or past due - but past due is handled above now)
+      // The only case leftover here is nextDate === today (after normalization)
+      // Or if logic above failed? No, < covers strict past. <= covers today.
       if (nextDate <= today) {
         // Check if this specific date (ISO string match) is in ignored_dates
         // Note: st.date is the "next scheduled date". If we skipped it, it should be in ignored_dates.
@@ -1117,44 +1227,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         if (isIgnored) {
           console.log(`Skipping ignored scheduled transaction: ${st.vendor} on ${st.date}`);
-          // We must STILL advance the schedule, otherwise it will be stuck on this date forever!
-
-          // ... Logic to advance Schedule duplicated ...
-          // Refactor idea: Extract advance logic. But for now, copy-paste to be safe and sequential.
-          const newNextDate = new Date(nextDate);
-
-          let intervalValue = 1;
-          let intervalUnit = 'm';
-
-          if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(st.frequency)) {
-            switch (st.frequency) {
-              case 'Daily': intervalUnit = 'd'; break;
-              case 'Weekly': intervalUnit = 'w'; break;
-              case 'Monthly': intervalUnit = 'm'; break;
-              case 'Yearly': intervalUnit = 'y'; break;
-            }
-          } else {
-            const match = st.frequency.match(/^(\d+)([dwmy])$/);
-            if (match) {
-              intervalValue = parseInt(match[1], 10);
-              intervalUnit = match[2];
-            }
-          }
-
-          switch (intervalUnit) {
-            case 'd': newNextDate.setDate(newNextDate.getDate() + intervalValue); break;
-            case 'w': newNextDate.setDate(newNextDate.getDate() + (intervalValue * 7)); break;
-            case 'm': newNextDate.setMonth(newNextDate.getMonth() + intervalValue); break;
-            case 'y': newNextDate.setFullYear(newNextDate.getFullYear() + intervalValue); break;
-            default: newNextDate.setMonth(newNextDate.getMonth() + 1); break;
-          }
+          // Advance without creating
+          const newNextDate = calculateNextDate(nextDate, st.frequency);
 
           await dataProvider.updateScheduledTransaction({
             ...st,
             date: newNextDate.toISOString()
           });
 
-          // Continue to next item without creating transaction
+          processedCount++;
           continue;
         }
 
@@ -1162,6 +1243,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
         // 1. Create Real Transaction
         const transactionPayload = {
+          // If for some reason it's still past today (shouldn't be due to fast-forward), clamp to today?
+          // But fast-forward handles < today. So here it must be === today.
           date: nextDate < today ? startOfDay(today).toISOString() : st.date,
           account: st.account,
           vendor: st.vendor,
@@ -1178,33 +1261,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await addTransaction(transactionPayload);
 
         // 2. Advance Schedule
-        const newNextDate = new Date(nextDate);
-
-        let intervalValue = 1;
-        let intervalUnit = 'm';
-
-        if (['Daily', 'Weekly', 'Monthly', 'Yearly'].includes(st.frequency)) {
-          switch (st.frequency) {
-            case 'Daily': intervalUnit = 'd'; break;
-            case 'Weekly': intervalUnit = 'w'; break;
-            case 'Monthly': intervalUnit = 'm'; break;
-            case 'Yearly': intervalUnit = 'y'; break;
-          }
-        } else {
-          const match = st.frequency.match(/^(\d+)([dwmy])$/);
-          if (match) {
-            intervalValue = parseInt(match[1], 10);
-            intervalUnit = match[2];
-          }
-        }
-
-        switch (intervalUnit) {
-          case 'd': newNextDate.setDate(newNextDate.getDate() + intervalValue); break;
-          case 'w': newNextDate.setDate(newNextDate.getDate() + (intervalValue * 7)); break;
-          case 'm': newNextDate.setMonth(newNextDate.getMonth() + intervalValue); break;
-          case 'y': newNextDate.setFullYear(newNextDate.getFullYear() + intervalValue); break;
-          default: newNextDate.setMonth(newNextDate.getMonth() + 1); break;
-        }
+        const newNextDate = calculateNextDate(nextDate, st.frequency);
 
         await dataProvider.updateScheduledTransaction({
           ...st,
@@ -1355,7 +1412,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     detectAndLinkTransfers,
     unlinkTransaction,
     linkTransactions,
-    deleteBudget, deleteEntity, hiddenBudgetIds
+    deleteBudget,
+    deleteEntity,
+    hiddenBudgetIds,
+    cleanUpDuplicates
   }), [
     transactions, filteredVendors, filteredAccounts, filteredCategories, subCategories, accountCurrencyMap, allSubCategories,
     refetchVendors, refetchAccounts, refetchCategories, refetchSubCategories, invalidateAllData, refetchTransactions,
@@ -1368,7 +1428,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     detectAndLinkTransfers,
     unlinkTransaction,
     linkTransactions,
-    deleteBudget, deleteEntity, hiddenBudgetIds
+    linkTransactions,
+    deleteBudget, deleteEntity, hiddenBudgetIds,
+    cleanUpDuplicates
   ]);
 
   return (

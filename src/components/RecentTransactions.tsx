@@ -47,39 +47,70 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
    * We iterate through ALL transactions chronologically to build the correct historical state.
    */
   const transactionsWithCorrectBalance = React.useMemo(() => {
+    // 1. Define the Master Sort Comparator (Descending / Newest First)
+    // This is the SINGLE source of truth for display order
+    const sortDesc = (a: Transaction, b: Transaction) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+
+      const createdDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (createdDiff !== 0) return createdDiff;
+
+      return b.id.localeCompare(a.id);
+    };
+
+    // 2. Sort ALL transactions Descending (Master Display Order)
+    // We merge global transactions with the passed 'transactions' prop.
+    const combinedTransactions = (() => {
+      const seenIds = new Set(allTransactions.map(t => t.id));
+      const uniqueExtras = transactions.filter(t => !seenIds.has(t.id));
+      return [...allTransactions, ...uniqueExtras];
+    })();
+
+    const allSortedDesc = [...combinedTransactions].sort(sortDesc);
+
+    // 3. Calculate balances by processing Oldest -> Newest (Reverse of Master Display)
+    // This ensures calculation perfectly opposes the display order
+    const allSortedAsc = [...allSortedDesc].reverse();
+
     const balanceMap = new Map<string, number>();
     const accountRunningBalances = new Map<string, number>();
 
     // Initialize with starting balances
     accounts.forEach(acc => {
-      accountRunningBalances.set(acc.name, acc.starting_balance || 0);
+      if (acc.name) {
+        // console.log(`[BalanceCalc] Initializing ${acc.name} with ${acc.starting_balance}`);
+        accountRunningBalances.set(acc.name.trim().toLowerCase(), acc.starting_balance || 0);
+      }
     });
 
-    // Process all transactions chronologically
-    const sortedTransactions = [...allTransactions]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    sortedTransactions.forEach(t => {
-      const currentBalance = accountRunningBalances.get(t.account) || 0;
+    allSortedAsc.forEach(t => {
+      const normalizedAccountName = t.account.trim().toLowerCase();
+      const currentBalance = accountRunningBalances.get(normalizedAccountName) || 0;
       // We assume transaction amount is already in the account's currency
-      // If it's a transfer, we might need special handling, but usually the amount reflects the impact on the account
       const newBalance = currentBalance + t.amount;
 
-      accountRunningBalances.set(t.account, newBalance);
+      accountRunningBalances.set(normalizedAccountName, newBalance);
       balanceMap.set(t.id, newBalance);
     });
 
-    // Attach the correct historical balance to the filtered transactions passed via props
-    // And ensure we display the specific account currency for the balance
+    // Debug: Log top 3 transactions and their balances
+    // console.log("[BalanceCalc] Top 3 Sorted Transactions:", allSortedDesc.slice(0, 3).map(t => ({
+    //   id: t.id,
+    //   date: t.date,
+    //   created_at: t.created_at,
+    //   amount: t.amount,
+    //   bal: balanceMap.get(t.id)
+    // })));
+
+    // 4. Attach balances to the VIEW transactions and ensure they are sorted by Master Sort
+    // This guarantees visual consistency with the calculation
     return transactions
       .map(t => ({
         ...t,
         runningBalance: balanceMap.get(t.id) ?? 0,
-        // Ensure we pass the account currency for display if needed later, 
-        // though we look it up in the render function usually.
       }))
-      // Sort for display, most recent first
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort(sortDesc);
   }, [allTransactions, transactions, accounts]);
 
   // Filter transactions for display based on selected categories
