@@ -357,7 +357,8 @@ export const generateDiverseDemoData = async (
         }
 
         // --- Create Budgets ---
-        const budgetCategories = Object.keys(CATEGORIES_CONFIG).filter(c => c !== 'Income' && c !== 'Transfer');
+        // --- Create Budgets ---
+        // const budgetCategories = ... (unused)
         const shuffledBudgets = DEMO_BUDGETS.sort(() => 0.5 - Math.random());
         const selectedBudgets = shuffledBudgets.slice(0, config.budgetCount);
 
@@ -439,7 +440,7 @@ export const generateDiverseDemoData = async (
         // --- GENERATE BULK TRANSACTIONS ---
         const numTransactions = 1000;
         const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(c => c !== 'Transfer');
-        const transactionsBatch = [];
+        const transactionsBatch: any[] = []; // Explicit type to prevent 'never' inference
         const vendorsToEnsure = new Set<string>();
 
         // Generate phase (in-memory)
