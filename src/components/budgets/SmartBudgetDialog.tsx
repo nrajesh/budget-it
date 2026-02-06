@@ -179,7 +179,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                     sub_category_name: item.subCategory,
                     target_amount: item.proposedAmount,
                     spent_amount: 0, // Initial state
-                    currency: 'USD', // Default or fetch from user settings? Use 'USD' for now or context
+                    currency: activeLedger?.currency || 'USD', // Default or fetch from user settings
                     start_date: new Date().toISOString().substring(0, 10), // Today
                     end_date: null,
                     frequency: 'Monthly',
@@ -285,7 +285,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                                                 </div>
                                             </div>
                                             <div className="col-span-2 text-right text-sm text-muted-foreground">
-                                                {item.averageSpend.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                                                {item.averageSpend.toLocaleString('en-US', { style: 'currency', currency: activeLedger?.currency || 'USD', maximumFractionDigits: 0 })}
                                             </div>
                                             <div className="col-span-3">
                                                 <Input

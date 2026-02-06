@@ -545,26 +545,16 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async clearAllData(): Promise<void> {
-    // Use a single transaction to ensure atomicity and prevent UI thrashing/deadlocks
-    await db.transaction('rw', [
-      db.transactions,
-      db.scheduled_transactions,
-      db.budgets,
-      db.vendors,
-      db.accounts,
-      db.categories,
-      db.sub_categories,
-      db.ledgers
-    ], async () => {
-      await db.transactions.clear();
-      await db.scheduled_transactions.clear();
-      await db.budgets.clear();
-      await db.vendors.clear();
-      await db.accounts.clear();
-      await db.categories.clear();
-      await db.sub_categories.clear();
-      await db.ledgers.clear();
-    });
+    // Clear tables sequentially to avoid deadlocks from acquiring locks on all tables simultaneously.
+    // While less atomic, it is more robust for a "reset" operation where partial failure isn't critical (as we are wiping anyway).
+    await db.transactions.clear();
+    await db.scheduled_transactions.clear();
+    await db.budgets.clear();
+    await db.vendors.clear();
+    await db.accounts.clear();
+    await db.categories.clear();
+    await db.sub_categories.clear();
+    await db.ledgers.clear();
   }
 
   // Migration Utils

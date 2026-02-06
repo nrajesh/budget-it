@@ -164,6 +164,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const ledgerId = activeLedger?.id || '';
 
   const [operationProgress, setOperationProgress] = React.useState<OperationProgress | null>(null);
+  const operationProgressRef = React.useRef(operationProgress);
+  React.useEffect(() => {
+    operationProgressRef.current = operationProgress;
+  }, [operationProgress]);
+
   const dataProvider = useDataProvider();
 
   const convertBetweenCurrenciesRef = React.useRef(_convert);
@@ -183,7 +188,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       return txs;
     },
-    enabled: !!ledgerId, // Only run if ledger is active
+    enabled: !!ledgerId && !operationProgress, // Only run if ledger is active and no long operation running
   });
 
   const { data: rawScheduledTransactions = [], isLoading: isLoadingScheduledTransactions, refetch: refetchScheduledTransactions } = useQuery({
@@ -192,7 +197,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!ledgerId) return [];
       return await dataProvider.getScheduledTransactions(ledgerId);
     },
-    enabled: !!ledgerId,
+    enabled: !!ledgerId && !operationProgress,
   });
 
   // Undo System State
@@ -314,7 +319,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       });
     },
-    enabled: true,
+    enabled: true && !operationProgress,
     select: transformPayeeData,
   });
 
@@ -369,7 +374,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       }));
     },
-    enabled: true,
+    enabled: true && !operationProgress,
     select: transformPayeeData,
   });
 
@@ -383,7 +388,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         total_transactions: transactions.filter(t => t.category === c.name).length
       }));
     },
-    enabled: true,
+    enabled: true && !operationProgress,
     select: transformCategoryData,
   });
 
@@ -395,7 +400,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!ledgerId) return [];
       return await dataProvider.getSubCategories(ledgerId);
     },
-    enabled: true,
+    enabled: true && !operationProgress,
   });
 
   const accountCurrencyMap = React.useMemo(() => {
@@ -1132,6 +1137,21 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const generateDiverseDemoData = React.useCallback(async () => {
     try {
       await import('@/utils/demoDataGenerator').then(async (mod) => {
+        // Set progress FIRST to trigger query disabling
+        setOperationProgress({
+          title: "Generating Demo Data",
+          description: "Initializing...",
+          stage: "Initializing",
+          progress: 0,
+          totalStages: 100
+        });
+
+        // Forcefully cancel all running queries to release DB locks
+        await queryClient.cancelQueries();
+
+        // Wait for React to update and queries to disable/cancel
+        await new Promise(r => setTimeout(r, 1000));
+
         await mod.generateDiverseDemoData(dataProvider, (progress) => {
           setOperationProgress({
             title: "Generating Demo Data",
@@ -1144,15 +1164,25 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       });
 
       // Cleanup and refresh
+      // Instead of entering the first ledger, we logout to let user choose
       await refreshLedgers();
-      // Switch to first ledger if available? Or just refresh current
+
+      // Logout sequence
+      localStorage.removeItem('activeLedgerId');
+      localStorage.setItem('userLoggedOut', 'true');
+
+      // Force reload to reset application state
+      window.location.reload();
+
+      // The codes below won't be reached due to reload, but kept for logic flow correctness if reload was opt
+      /* 
       const ledgers = await dataProvider.getLedgers();
       if (ledgers.length > 0) {
         await switchLedger(ledgers[0].id);
       }
-
       await invalidateAllData();
       await refetchTransactions();
+      */
 
     } catch (error) {
       console.error("Failed to generate demo data:", error);
@@ -1170,7 +1200,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [dataProvider, refreshLedgers, switchLedger, invalidateAllData, refetchTransactions]);
 
   const processScheduledTransactions = React.useCallback(async () => {
-    if (isLoadingScheduledTransactions || scheduledTransactions.length === 0) return;
+    if (isLoadingScheduledTransactions || scheduledTransactions.length === 0 || operationProgress) return;
 
     // console.log("Checking for due scheduled transactions...");
     const today = new Date();
@@ -1179,6 +1209,8 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     let processedCount = 0;
 
     for (const st of scheduledTransactions) {
+      if (operationProgressRef.current) break; // Break loop if an operation is in progress
+
       const nextDate = new Date(st.date);
       nextDate.setHours(0, 0, 0, 0);
 
@@ -1220,8 +1252,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // If scheduled date is today (or past due - but past due is handled above now)
       // The only case leftover here is nextDate === today (after normalization)
-      // Or if logic above failed? No, < covers strict past. <= covers today.
+      // Or if logic above failed?      if (operationProgressRef.current) break;
+
+      // Check if due
+      // The nextDate variable is already defined above the loop.
       if (nextDate <= today) {
+        // Double check ref before async
+        if (operationProgressRef.current) break;
+
         // Check if this specific date (ISO string match) is in ignored_dates
         // Note: st.date is the "next scheduled date". If we skipped it, it should be in ignored_dates.
         // We need to compare st.date with ignored_dates.
@@ -1280,7 +1318,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // console.log(`Processed ${processedCount} scheduled transactions.`);
     }
 
-  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData, addTransaction]);
+  }, [scheduledTransactions, isLoadingScheduledTransactions, dataProvider, invalidateAllData, addTransaction, operationProgress]);
 
   // Run on mount / data load
   React.useEffect(() => {
