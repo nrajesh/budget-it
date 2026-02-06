@@ -545,7 +545,7 @@ export const generateDiverseDemoData = async (
         } else {
             // Fallback (Should not happen with LocalDataProvider)
             for (const tx of transactionsBatch) {
-                await dataProvider.addTransaction(tx);
+                await (dataProvider as any).addTransaction(tx);
             }
         }
 
