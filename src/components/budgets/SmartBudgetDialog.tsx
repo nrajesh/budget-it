@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -42,13 +42,7 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
     const [isCalculating, setIsCalculating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            calculateSuggestions();
-        }
-    }, [isOpen, transactions]);
-
-    const calculateSuggestions = async () => {
+    const calculateSuggestions = useCallback(async () => {
         setIsCalculating(true);
         // Simulate a brief calculation time for better UX or if we make it async later
         setTimeout(() => {
@@ -61,7 +55,14 @@ export function SmartBudgetDialog({ isOpen, onClose, onSave }: SmartBudgetDialog
                 setIsCalculating(false);
             }
         }, 500);
-    };
+    }, [transactions]);
+
+    useEffect(() => {
+        if (isOpen) {
+            calculateSuggestions();
+        }
+    }, [isOpen, calculateSuggestions]);
+
 
     const generateBudgetSuggestions = (txs: Transaction[]): SuggestedBudget[] => {
         // 1. Group transactions by Category (and SubCategory optionally, but let's stick to Category for now to keep it simple, or maybe top-level only?)

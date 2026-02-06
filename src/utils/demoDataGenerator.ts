@@ -1,4 +1,4 @@
-import { DataProvider, Budget } from '@/types/dataProvider';
+import { DataProvider, Budget, Transaction, Ledger } from '@/types/dataProvider';
 
 export interface ProgressCallback {
     (progress: { stage: string; progress: number; totalStages: number }): void;
@@ -315,7 +315,7 @@ export const generateDiverseDemoData = async (
     let currentLedgerIndex = 0;
 
     for (const ledgerItem of createdLedgers) {
-        const ledger = ledgerItem as any;
+        const ledger = ledgerItem as Ledger & { config: any };
         const lId = ledger.id;
         const config = ledger.config;
 
@@ -440,7 +440,7 @@ export const generateDiverseDemoData = async (
         // --- GENERATE BULK TRANSACTIONS ---
         const numTransactions = 1000;
         const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(c => c !== 'Transfer');
-        const transactionsBatch: any[] = []; // Explicit type to prevent 'never' inference
+        const transactionsBatch: Partial<Transaction>[] = []; // Explicit type to prevent 'never' inference
         const vendorsToEnsure = new Set<string>();
 
         // Generate phase (in-memory)

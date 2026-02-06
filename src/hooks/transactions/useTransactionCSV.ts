@@ -194,7 +194,7 @@ export const useTransactionCSV = () => {
         setIsImporting(false);
       },
     });
-  }, [activeLedger, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap]);
+  }, [activeLedger, refetchTransactions, refetchVendors, refetchAccounts, accountCurrencyMap, dataProvider, detectAndLinkTransfers, setOperationProgress]);
 
   const handleExportClick = React.useCallback(() => {
     if (transactions.length === 0) {

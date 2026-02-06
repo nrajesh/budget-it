@@ -295,7 +295,7 @@ export function BalanceOverTimeChart({ transactions, projectedTransactions = [],
     });
 
     return finalMonthlyData;
-  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, allDefinedAccounts, accounts, allTransactions]);
+  }, [transactions, selectedCurrency, convertBetweenCurrencies, accountsToDisplay, accounts, allTransactions]);
 
   // Data for Waterfall Chart (daily net changes)
   const dailyNetChangeData = React.useMemo(() => {
