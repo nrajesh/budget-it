@@ -8,6 +8,65 @@ import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
 import { showError, showSuccess } from "@/utils/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
+import { Transaction, AccountType } from "@/types/dataProvider";
+
+export interface ImportConfig {
+    importMode?: 'replace' | 'append';
+    decimalSeparator?: '.' | ',';
+    dateFormat?: string;
+}
+
+export interface ExportRow {
+    "Date": string | undefined;
+    "Account": string;
+    "Payee": string;
+    "Category": string;
+    "Subcategory": string;
+    "Amount": number;
+    "Notes": string;
+    "Currency": string;
+    "Frequency": string;
+    "End Date": string;
+    "Transfer ID": string;
+}
+
+// Loose interface for raw CSV rows since headers can vary
+export interface ImportRow {
+    [key: string]: string | undefined;
+    Date?: string;
+    date?: string;
+    Account?: string;
+    account?: string;
+    "Account Type"?: string;
+    Payee?: string;
+    payee?: string;
+    Vendor?: string;
+    vendor?: string;
+    Counterparty?: string;
+    counterparty?: string;
+    Transfer?: string;
+    transfer?: string;
+    Category?: string;
+    category?: string;
+    Subcategory?: string;
+    subcategory?: string;
+    "Sub_Category"?: string;
+    "sub-category"?: string;
+    Amount?: string;
+    amount?: string;
+    Notes?: string;
+    notes?: string;
+    Remarks?: string;
+    remarks?: string;
+    Currency?: string;
+    currency?: string;
+    Frequency?: string;
+    frequency?: string;
+    "End Date"?: string;
+    "end date"?: string;
+    "Transfer ID"?: string;
+    "transfer id"?: string;
+}
 
 /**
  * Custom hook to handle high-level actions on the Transactions page,
@@ -16,7 +75,7 @@ import { slugify } from "@/lib/utils";
  * 
  * @param filteredTransactions - The list of transactions currently visible/filtered on the page, used for export.
  */
-export const useTransactionPageActions = (filteredTransactions: any[]) => {
+export const useTransactionPageActions = (filteredTransactions: Transaction[]) => {
     const { activeLedger } = useLedger();
     const dataProvider = useDataProvider();
     const { detectAndLinkTransfers, setOperationProgress, invalidateAllData } = useTransactions();
@@ -33,14 +92,14 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
 
     // --- Export Logic ---
     const handleExport = () => {
-        let dataToExport = filteredTransactions.map(t => ({
+        let dataToExport: ExportRow[] = filteredTransactions.map(t => ({
             "Date": t.date ? parseRobustDate(t.date)?.split('T')[0] : t.date,
             "Account": t.account,
             "Payee": t.vendor,
             "Category": t.category,
-            "Subcategory": t.sub_category,
+            "Subcategory": t.sub_category || "",
             "Amount": t.amount,
-            "Notes": t.remarks,
+            "Notes": t.remarks || "",
             "Currency": t.currency,
             "Frequency": t.recurrence_frequency || "",
             "End Date": t.recurrence_end_date || "",
@@ -147,7 +206,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                     "End Date": "",
                     "Transfer ID": transferId2
                 }
-            ] as any;
+            ];
             fileName = "transaction_template.csv";
             toast({
                 title: "Template Downloaded",
@@ -189,7 +248,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
    * @param data - The array of row objects from PapaParse
    * @param config - Configuration options like date format or decimal separator
    */
-    const processImport = async (data: any[], config?: any) => {
+    const processImport = async (data: ImportRow[], config?: ImportConfig) => {
         try {
             const userId = activeLedger?.id;
             if (!userId) {
@@ -242,12 +301,12 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                 totalStages: 4
             });
             let newAccountsCount = 0;
-            const uniqueAccounts = [...new Set(data.map((r: any) => (r.Account || "").trim()).filter(Boolean))];
+            const uniqueAccounts = [...new Set(data.map(r => (r.Account || "").trim()).filter(Boolean))];
 
             for (const name of uniqueAccounts) {
-                const row = data.find((r: any) => (r.Account || "").trim() === name);
+                const row = data.find(r => (r.Account || "").trim() === name);
                 const currency = row?.Currency || 'USD';
-                const type = row?.["Account Type"];
+                const type = row?.["Account Type"] as AccountType | undefined;
 
                 const id = await dataProvider.ensurePayeeExists(name, true, userId, { currency, type });
                 if (id && !knownAccountIds.has(id)) {
@@ -266,7 +325,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                 totalStages: 4
             });
             let newVendorsCount = 0;
-            const uniquePayees = [...new Set(data.map((r: any) => (r.Payee || r.Vendor || "").trim()).filter(Boolean))];
+            const uniquePayees = [...new Set(data.map(r => (r.Payee || r.Vendor || "").trim()).filter(Boolean))];
             for (const name of uniquePayees) {
                 const id = await dataProvider.ensurePayeeExists(name, false, userId);
                 if (id && !knownVendorIds.has(id) && !knownAccountIds.has(id)) {
@@ -289,7 +348,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             const categoryNameIdMap = new Map<string, string>();
             existingCategories.forEach(c => categoryNameIdMap.set(c.name, c.id));
 
-            const uniqueCategories = [...new Set(data.map((r: any) => (r.Category || "").trim()).filter(Boolean))];
+            const uniqueCategories = [...new Set(data.map(r => (r.Category || "").trim()).filter(Boolean))];
             for (const name of uniqueCategories) {
                 const id = await dataProvider.ensureCategoryExists(name, userId);
                 if (id) {
@@ -302,7 +361,7 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             }
 
             const uniqueSubCats = new Set<string>();
-            data.forEach((r: any) => {
+            data.forEach(r => {
                 const cat = (r.Category || "").trim();
                 const sub = (r.Subcategory || r.Sub_Category || "").trim();
                 if (cat && sub) {
@@ -323,20 +382,28 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
             }
 
             // 4. Prepare Transactions
-            const transactionsToInsert: any[] = [];
+            const transactionsToInsert: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>[] = [];
             let skippedCount = 0;
 
             for (const row of data) {
-                const amount = parseRobustAmount(row.Amount, config?.decimalSeparator);
-                const date = parseRobustDate(row.Date, config?.dateFormat);
+                const amountRaw = row.Amount;
+                const dateRaw = row.Date;
+
+                if (!amountRaw || !dateRaw) {
+                   skippedCount++;
+                   continue;
+                }
+
+                const amount = parseRobustAmount(amountRaw, config?.decimalSeparator);
+                const date = parseRobustDate(dateRaw, config?.dateFormat);
 
                 if (!date) {
-                    console.warn("Skipping row due to invalid date. Raw Date:", row.Date, "Parsed:", date, "Row:", row);
+                    console.warn("Skipping row due to invalid date. Raw Date:", dateRaw, "Parsed:", date, "Row:", row);
                     skippedCount++;
                     continue;
                 }
 
-                const t = {
+                const t: Omit<Transaction, 'id' | 'created_at' | 'updated_at'> = {
                     user_id: userId,
                     date: date,
                     account: (row.Account || row.account || "Uncategorized Account").trim(),
@@ -346,9 +413,10 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                     amount: amount,
                     remarks: (row.Notes || row.Remarks || row.notes || row.remarks || "").trim(),
                     currency: (row.Currency || row.currency || "USD").trim(),
-                    recurrence_frequency: row.Frequency || row.frequency || null,
-                    recurrence_end_date: parseRobustDate(row["End Date"] || row["end date"], config?.dateFormat) || null,
+                    recurrence_frequency: (row.Frequency || row.frequency || null) as any, // TODO: validate Frequency
+                    recurrence_end_date: parseRobustDate(row["End Date"] || row["end date"] || "", config?.dateFormat) || null,
                     transfer_id: (row["Transfer ID"] || row["transfer id"] || "").trim() || null,
+                    is_scheduled_origin: false
                 };
                 transactionsToInsert.push(t);
             }
@@ -374,8 +442,10 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
                 let successCount = 0;
                 const UPDATE_BATCH = Math.max(10, Math.floor(transactionsToInsert.length / 20));
 
+                // Batch insert using addMultipleTransactions if available or loop
+                // The original code looped addTransaction
                 for (const t of transactionsToInsert) {
-                    await dataProvider.addTransaction(t);
+                    await dataProvider.addTransaction(t as Transaction); // Type assertion needed as addTransaction expects Transaction usually but handles omits
                     successCount++;
                     if (successCount % UPDATE_BATCH === 0) {
                         const percent = 55 + Math.floor((successCount / transactionsToInsert.length) * 40);
@@ -442,9 +512,9 @@ export const useTransactionPageActions = (filteredTransactions: any[]) => {
         }
     };
 
-    const handleMappingConfirm = (data: any[], config: any) => {
+    const handleMappingConfirm = (data: ImportRow[], config: ImportConfig) => {
         processImport(data, config);
-        setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }));
+        setMappingDialogState(prev => ({ ...prev, isOpen: false }));
     };
 
     const handleDetectTransfers = async () => {
