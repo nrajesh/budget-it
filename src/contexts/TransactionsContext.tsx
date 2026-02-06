@@ -319,7 +319,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       });
     },
-    enabled: true && !operationProgress,
+    enabled: !operationProgress,
     select: transformPayeeData,
   });
 
@@ -374,7 +374,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
       }));
     },
-    enabled: true && !operationProgress,
+    enabled: !operationProgress,
     select: transformPayeeData,
   });
 
@@ -388,7 +388,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         total_transactions: transactions.filter(t => t.category === c.name).length
       }));
     },
-    enabled: true && !operationProgress,
+    enabled: !operationProgress,
     select: transformCategoryData,
   });
 
@@ -400,7 +400,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (!ledgerId) return [];
       return await dataProvider.getSubCategories(ledgerId);
     },
-    enabled: true && !operationProgress,
+    enabled: !operationProgress,
   });
 
   const accountCurrencyMap = React.useMemo(() => {

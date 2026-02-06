@@ -1,4 +1,4 @@
-import { DataProvider } from '@/types/dataProvider';
+import { DataProvider, Budget } from '@/types/dataProvider';
 
 export interface ProgressCallback {
     (progress: { stage: string; progress: number; totalStages: number }): void;
@@ -374,7 +374,7 @@ export const generateDiverseDemoData = async (
                 currency: config.currency,
                 start_date: new Date(new Date().getFullYear(), 0, 1).toISOString(), // Start of year
                 end_date: null,
-                frequency: budget.frequency as any,
+                frequency: budget.frequency as Budget['frequency'],
                 sub_category_name: budget.sub
             });
         }
@@ -541,10 +541,12 @@ export const generateDiverseDemoData = async (
         // DataProvider might not have addMultipleTransactions interface fully typed in all contexts,
         // but LocalDataProvider has it. Cast if necessary or assume DataProvider interface has it.
         if ('addMultipleTransactions' in dataProvider) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (dataProvider as any).addMultipleTransactions(transactionsBatch);
         } else {
             // Fallback (Should not happen with LocalDataProvider)
             for (const tx of transactionsBatch) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 await (dataProvider as any).addTransaction(tx);
             }
         }
