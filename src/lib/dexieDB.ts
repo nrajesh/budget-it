@@ -46,4 +46,25 @@ export class FinanceDatabase extends Dexie {
   }
 }
 
-export const db = new FinanceDatabase();
+
+// Singleton pattern to prevent multiple instances during HMR
+const globalForDb = globalThis as unknown as {
+  financeTrackerDb: FinanceDatabase | undefined;
+};
+
+
+export const db = globalForDb.financeTrackerDb ?? new FinanceDatabase();
+
+// Add listeners for debugging blocking issues
+db.on('blocked', () => {
+  console.error('[Dexie] Database operation BLOCKED. You may have another tab open.');
+});
+
+db.on('versionchange', () => {
+  console.warn('[Dexie] Database version change detected. Closing connection to allow upgrade.');
+  db.close();
+});
+
+if (process.env.NODE_ENV !== 'production') globalForDb.financeTrackerDb = db;
+
+

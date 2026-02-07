@@ -24,19 +24,20 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async deleteLedger(id: string): Promise<void> {
-    await db.transaction('rw', [db.ledgers, db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories], async () => {
-      // Delete Ledger
-      await db.ledgers.delete(id);
+    // Avoid large transaction block to prevent deadlocks with other active queries (e.g. live queries).
+    // Delete data sequentially.
 
-      // Cascade delete all scoped data
-      await db.transactions.where('user_id').equals(id).delete();
-      await db.scheduled_transactions.where('user_id').equals(id).delete();
-      await db.budgets.where('user_id').equals(id).delete();
-      await db.vendors.where('user_id').equals(id).delete();
-      await db.accounts.where('user_id').equals(id).delete();
-      await db.categories.where('user_id').equals(id).delete();
-      await db.sub_categories.where('user_id').equals(id).delete();
-    });
+    // 1. Delete all related data first
+    await db.transactions.where('user_id').equals(id).delete();
+    await db.scheduled_transactions.where('user_id').equals(id).delete();
+    await db.budgets.where('user_id').equals(id).delete();
+    await db.vendors.where('user_id').equals(id).delete();
+    await db.accounts.where('user_id').equals(id).delete();
+    await db.categories.where('user_id').equals(id).delete();
+    await db.sub_categories.where('user_id').equals(id).delete();
+
+    // 2. Delete the ledger itself last
+    await db.ledgers.delete(id);
   }
 
   // Transactions
@@ -545,16 +546,41 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async clearAllData(): Promise<void> {
-    // Clear tables sequentially to avoid deadlocks from acquiring locks on all tables simultaneously.
-    // While less atomic, it is more robust for a "reset" operation where partial failure isn't critical (as we are wiping anyway).
-    await db.transactions.clear();
-    await db.scheduled_transactions.clear();
-    await db.budgets.clear();
-    await db.vendors.clear();
-    await db.accounts.clear();
-    await db.categories.clear();
-    await db.sub_categories.clear();
-    await db.ledgers.clear();
+    console.log("[LocalDataProvider] clearAllData: Starting Hard Reset...");
+    try {
+      // 1. Close the connection
+      console.log("[LocalDataProvider] Closing DB connection...");
+      db.close();
+
+      // 2. Delete the database (This clears EVERYTHING: data, schema, locks)
+      console.log("[LocalDataProvider] Deleting DB...");
+      await db.delete();
+      console.log("[LocalDataProvider] DB Deleted successfully.");
+
+      // 3. Re-open to re-initialize schema
+      console.log("[LocalDataProvider] Re-opening DB...");
+      await db.open();
+      console.log("[LocalDataProvider] DB Re-opened. Ready.");
+    } catch (error) {
+      console.error("[LocalDataProvider] clearAllData: Hard Reset FAILED:", error);
+      console.error("[LocalDataProvider] Attempting fallback (Table Clear)...");
+
+      // Fallback: Try to open and clear tables if delete failed (e.g. blocked)
+      try {
+        if (!db.isOpen()) await db.open();
+        await db.transaction('rw', db.tables, async () => {
+          // Clear all tables dynamically
+          for (const table of db.tables) {
+            console.log(`[LocalDataProvider] Clearing table: ${table.name}`);
+            await table.clear();
+          }
+        });
+        console.log("[LocalDataProvider] Fallback Clear Complete.");
+      } catch (fallbackError) {
+        console.error("[LocalDataProvider] Fallback Clear FAILED:", fallbackError);
+        throw fallbackError; // Re-throw to show error to user
+      }
+    }
   }
 
   // Migration Utils
