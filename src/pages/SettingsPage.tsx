@@ -165,7 +165,7 @@ const SettingsPage = () => {
       // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
       if (window.showSaveFilePicker) {
         try {
-          // @ts-expect-error
+          // @ts-expect-error - showSaveFilePicker types
           const handle = await window.showSaveFilePicker({
             suggestedName: filename,
             types: [{

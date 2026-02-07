@@ -228,7 +228,7 @@ export const useTransactionCSV = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [transactions]);
+  }, [transactions, activeLedger]);
 
   return {
     isImporting,
