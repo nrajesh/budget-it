@@ -1197,7 +1197,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  }, [dataProvider, refreshLedgers, switchLedger, invalidateAllData, refetchTransactions]);
+  }, [dataProvider, refreshLedgers, switchLedger, invalidateAllData, refetchTransactions, queryClient]);
 
   const processScheduledTransactions = React.useCallback(async () => {
     if (isLoadingScheduledTransactions || scheduledTransactions.length === 0 || operationProgress) return;

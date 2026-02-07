@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Ledger } from '@/types/dataProvider';
 import { useDataProvider } from '@/context/DataProviderContext';
 import { useCurrency } from '@/contexts/CurrencyContext';
@@ -13,7 +13,7 @@ interface LedgerContextType {
     createLedger: (name: string, currency: string, icon?: string, shortName?: string, startFromScratch?: boolean) => Promise<void>;
     updateLedgerDetails: (ledgerId: string, updates: Partial<Ledger>) => Promise<void>;
     deleteLedger: (ledgerId: string) => Promise<void>;
-    refreshLedgers: () => Promise<void>;
+    refreshLedgers: () => Promise<Ledger[]>;
 }
 
 const LedgerContext = createContext<LedgerContextType | undefined>(undefined);
@@ -25,16 +25,16 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     const [ledgers, setLedgers] = useState<Ledger[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const refreshLedgers = async () => {
+    const refreshLedgers = useCallback(async () => {
         // We use dataProvider directly or db? dataProvider has getLedgers
         // But dataProvider interface might not be updated in the context wrapper yet?
         // Casting for now if TS complains, or assume it works since we updated LocalDataProvider
         // and strict typing might need interface update in DataProviderContext too maybe?
         // Let's assume usage of dataProvider as `any` or cast
-        const displayLedgers = await (dataProvider as any).getLedgers(); // Cast until Context type updated
+        const displayLedgers = await dataProvider.getLedgers();
         setLedgers(displayLedgers);
         return displayLedgers;
-    };
+    }, [dataProvider]);
 
     useEffect(() => {
         const init = async () => {
@@ -74,7 +74,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
                 }
 
                 // Update last_accessed async
-                (dataProvider as any).updateLedger({
+                dataProvider.updateLedger({
                     ...ledgerToUse,
                     last_accessed: new Date().toISOString()
                 });
@@ -84,14 +84,14 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
         };
 
         init();
-    }, [dataProvider, setCurrency]);
+    }, [dataProvider, setCurrency, refreshLedgers]);
 
     const switchLedger = async (ledgerId: string) => {
         const target = ledgers.find(l => l.id === ledgerId);
         if (target) {
             setActiveLedger(target);
             localStorage.setItem('activeLedgerId', target.id);
-            await (dataProvider as any).updateLedger({
+            await dataProvider.updateLedger({
                 ...target,
                 last_accessed: new Date().toISOString()
             });
@@ -119,7 +119,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const createLedger = async (name: string, currency: string, icon?: string, shortName?: string /*, startFromScratch: boolean = true */) => {
-        const newLedger = await (dataProvider as any).addLedger({
+        const newLedger = await dataProvider.addLedger({
             name,
             currency,
             icon,
@@ -136,7 +136,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
         const target = ledgers.find(l => l.id === ledgerId);
         if (target) {
             const updated = { ...target, ...updates };
-            await (dataProvider as any).updateLedger(updated);
+            await dataProvider.updateLedger(updated);
             await refreshLedgers();
             if (activeLedger?.id === ledgerId) {
                 setActiveLedger(updated);
@@ -145,7 +145,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const deleteLedger = async (ledgerId: string) => {
-        await (dataProvider as any).deleteLedger(ledgerId);
+        await dataProvider.deleteLedger(ledgerId);
         await refreshLedgers();
         if (activeLedger?.id === ledgerId) {
             setActiveLedger(null);

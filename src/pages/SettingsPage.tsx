@@ -1,10 +1,12 @@
 import * as React from "react";
 import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
 import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
@@ -22,10 +24,12 @@ import { useLedger } from "@/contexts/LedgerContext";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { generateDiverseDemoData } = useTransactions();
+  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
+  const { handleClearAllFilters } = useTransactionFilters();
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const dataProvider = useDataProvider();
-  const { activeLedger, updateLedgerDetails } = useLedger();
+  const { activeLedger, updateLedgerDetails, refreshLedgers } = useLedger();
+  const navigate = useNavigate();
 
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
@@ -77,18 +81,23 @@ const SettingsPage = () => {
 
   const handleResetData = async () => {
     try {
-      // Just clear the persistent database.
       await dataProvider.clearAllData();
+      // Refresh ledgers to ensure context is aware of the wipe
+      await refreshLedgers();
 
-      // Explicitly clear persistent state to ensure we land on the setup screen
+      clearAllTransactions();
+      handleClearAllFilters();
+
+      // Clear non-filter persistent state if desired
       localStorage.removeItem('activeLedgerId');
       localStorage.removeItem('userLoggedOut');
-      localStorage.removeItem('filter_selectedAccounts');
+      // filter_selectedAccounts is handled by handleClearAllFilters
 
       showSuccess("All application data has been reset.");
 
-      // Force hard navigation to the entry page
-      window.location.assign('/ledgers');
+      // Navigate cleanly if needed, but context updates should trigger UI changes
+      // window.location.assign('/ledgers'); // Removed hard reload
+      navigate('/ledgers');
     } catch (error: any) {
       showError(`Failed to reset data: ${error.message}`);
     } finally {
@@ -147,17 +156,60 @@ const SettingsPage = () => {
 
   const handleExportPlain = async () => {
     try {
-      const data = await dataProvider.exportData();
-      const jsonString = JSON.stringify(data, null, 2);
       const filename = `budget_backup_${new Date().toISOString().split('T')[0]}.json`;
+      const description = "Budget It Full Backup (All Ledgers)";
+      let usedFilePicker = false;
 
-      const usedPicker = await saveFile(filename, jsonString, "Budget It Full Backup (All Ledgers)");
+      // Strategy 1: File System Access API (Chrome/Edge)
+      // We request the handle FIRST to consume the user gesture immediately.
+      // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
+      if (window.showSaveFilePicker) {
+        try {
+          // @ts-expect-error - showSaveFilePicker types
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: description,
+              accept: { 'application/json': ['.json', '.lock'] },
+            }],
+          });
 
-      if (usedPicker) {
-        showSuccess("File saved successfully!");
-      } else {
+          // If we got here, user picked a file. Now fetch data.
+          const data = await dataProvider.exportData();
+          const jsonString = JSON.stringify(data, null, 2);
+
+          // Write to file
+          const writable = await handle.createWritable();
+          await writable.write(jsonString);
+          await writable.close();
+          usedFilePicker = true;
+          showSuccess("File saved successfully!");
+          return;
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            // User cancelled picker, do nothing
+            return;
+          }
+          // Start legacy download if Strategy 1 failed for other reasons (e.g. security)
+          console.error("File System Access API failed, falling back:", err);
+        }
+      }
+
+      // Strategy 2: Legacy Download (Safari/Firefox/Fallback)
+      if (!usedFilePicker) {
+        const data = await dataProvider.exportData();
+        const jsonString = JSON.stringify(data, null, 2);
+
+        const element = document.createElement("a");
+        const file = new Blob([jsonString], { type: "application/json" });
+        element.href = URL.createObjectURL(file);
+        element.download = filename;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
         showSuccess("File downloaded via browser manager.");
       }
+
     } catch (e: any) {
       if (e.message !== "Save cancelled by user") {
         showError(`Export failed: ${e.message}`);

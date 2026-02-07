@@ -31,18 +31,18 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-      if (session?.user) {
-          setUser(session.user);
-          setUserProfile({
-              id: session.user.id,
-              first_name: session.user.user_metadata?.full_name?.split(' ')[0] || "Local",
-              last_name: session.user.user_metadata?.full_name?.split(' ')[1] || "User",
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-              email: session.user.email || null,
-              updated_at: new Date().toISOString()
-          });
-      }
-      setIsLoadingUser(false);
+    if (session?.user) {
+      setUser(session.user);
+      setUserProfile({
+        id: session.user.id,
+        first_name: session.user.user_metadata?.full_name?.split(' ')[0] || "Local",
+        last_name: session.user.user_metadata?.full_name?.split(' ')[1] || "User",
+        avatar_url: session.user.user_metadata?.avatar_url || null,
+        email: session.user.email || null,
+        updated_at: new Date().toISOString()
+      });
+    }
+    setIsLoadingUser(false);
   }, [session]);
 
   const value = React.useMemo(() => ({
@@ -59,6 +59,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useUser = () => {
   const context = useContext(UserContext);
   if (context === undefined) {

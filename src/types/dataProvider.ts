@@ -105,6 +105,7 @@ export interface Ledger {
 
 export interface DataProvider {
   // Ledgers
+  // Ledgers
   getLedgers(): Promise<Ledger[]>;
   addLedger(ledger: Omit<Ledger, 'id' | 'created_at' | 'last_accessed'>): Promise<Ledger>;
   updateLedger(ledger: Ledger): Promise<void>;
