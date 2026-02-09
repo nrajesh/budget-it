@@ -27,7 +27,7 @@ describe('Unlink Transactions Optimization Benchmark', () => {
       category: `Category ${i % 5}`,
       sub_category: `SubCategory ${i % 5}`,
       remarks: `Benchmark transaction ${i}`,
-      transfer_id: transferId,
+      transfer_id: transferId, created_at: new Date().toISOString(),
     }));
   };
 
