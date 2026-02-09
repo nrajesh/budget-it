@@ -538,10 +538,7 @@ export class LocalDataProvider implements DataProvider {
 
   async unlinkTransactions(transferId: string): Promise<void> {
     await db.transaction('rw', db.transactions, async () => {
-      const transactions = await db.transactions.where('transfer_id').equals(transferId).toArray();
-      for (const t of transactions) {
-        await db.transactions.update(t.id, { transfer_id: null }); // Keep category as is (User can change manually)
-      }
+      await db.transactions.where('transfer_id').equals(transferId).modify({ transfer_id: null });
     });
   }
 
