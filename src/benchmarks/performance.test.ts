@@ -91,4 +91,27 @@ describe('Performance Benchmark', () => {
     console.log(`\n\n[Optimized] Bulk Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`);
     expect(inserted.length).toBe(TRANSACTION_COUNT);
   });
+
+  it('Unlink Transactions', async () => {
+    const TRANSFER_ID = 'test-transfer-id';
+    const transactions = generateTransactions(TRANSACTION_COUNT).map(t => ({
+      ...t,
+      transfer_id: TRANSFER_ID
+    }));
+
+    await dataProvider.addMultipleTransactions(transactions);
+
+    const start = performance.now();
+    await dataProvider.unlinkTransactions(TRANSFER_ID);
+    const end = performance.now();
+    const duration = end - start;
+
+    console.log(`\n\n[Benchmark] Unlink Transactions ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`);
+
+    const unlinked = await db.transactions.where('transfer_id').equals(TRANSFER_ID).toArray();
+    expect(unlinked.length).toBe(0);
+
+    const all = await db.transactions.toArray();
+    expect(all.length).toBe(TRANSACTION_COUNT);
+  }, 20000);
 });
