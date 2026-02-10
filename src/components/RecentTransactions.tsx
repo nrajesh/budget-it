@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle, ThemedCardFooter } from "@/components/ThemedCard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge, badgeVariants } from "@/components/ui/badge";
 import {
   Pagination,
   PaginationContent,
@@ -12,7 +12,7 @@ import {
 import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { slugify, formatDateToDDMMYYYY } from "@/lib/utils";
+import { slugify, formatDateToDDMMYYYY, cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
 interface RecentTransactionsProps {
@@ -163,11 +163,33 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                     <TableRow key={transaction.id}>
                       <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell>
                       <TableCell>
-                        <div onClick={() => handleVendorClick(transaction.vendor)} className="font-medium cursor-pointer hover:text-primary hover:underline">{transaction.vendor}</div>
-                        <div onClick={() => handleAccountClick(transaction.account)} className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline">{transaction.account}</div>
+                        <button
+                          onClick={() => handleVendorClick(transaction.vendor)}
+                          className="font-medium cursor-pointer hover:text-primary hover:underline bg-transparent border-0 p-0 text-left"
+                          aria-label={`Filter by vendor ${transaction.vendor}`}
+                        >
+                          {transaction.vendor}
+                        </button>
+                        <button
+                          onClick={() => handleAccountClick(transaction.account)}
+                          className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline bg-transparent border-0 p-0 text-left block"
+                          aria-label={`Filter by account ${transaction.account}`}
+                        >
+                          {transaction.account}
+                        </button>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" onClick={() => handleCategoryClick(transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:border-primary" : ""}>{transaction.category}</Badge>
+                        {transaction.category === 'Transfer' ? (
+                          <Badge variant="outline">{transaction.category}</Badge>
+                        ) : (
+                          <button
+                            onClick={() => handleCategoryClick(transaction.category)}
+                            className={cn(badgeVariants({ variant: "outline" }), "cursor-pointer hover:border-primary bg-transparent")}
+                            aria-label={`Filter by category ${transaction.category}`}
+                          >
+                            {transaction.category}
+                          </button>
+                        )}
                       </TableCell>
                       <TableCell>
                         {transaction.sub_category && <Badge variant="secondary" className="text-xs">{transaction.sub_category}</Badge>}

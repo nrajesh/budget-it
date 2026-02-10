@@ -26,6 +26,7 @@ const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions")
 const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
+const Insights = lazy(() => import("@/pages/Insights"));
 
 
 const LedgerEntryPage = lazy(() => import("@/pages/LedgerEntryPage"));
@@ -56,6 +57,7 @@ function App() {
                           <Route path="/analytics" element={<Analytics />} />
                           <Route path="/reports/essential" element={<EssentialReports />} />
                           <Route path="/reports/advanced" element={<AdvancedReports />} />
+                          <Route path="/insights" element={<Insights />} />
                           <Route path="/settings" element={<SettingsPage />} />
                           <Route path="*" element={<NotFound />} />
                         </Route>

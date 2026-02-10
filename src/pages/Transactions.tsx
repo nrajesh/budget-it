@@ -59,11 +59,10 @@ const Transactions = () => {
     setSelectedSubCategories,
     setSelectedAccounts,
     setSelectedVendors,
+    setDateRange,
   } = useTransactionFilters();
 
   const location = useLocation();
-
-  // useDefaultAccountSelection hook call removed (handled in Layout.tsx)
 
   React.useEffect(() => {
     if (location.state) {
@@ -72,6 +71,7 @@ const Transactions = () => {
         filterSubCategory?: string;
         filterVendor?: string;
         filterAccount?: string;
+        dateRange?: { from: string | Date; to: string | Date };
       };
 
       if (state.filterCategory || state.filterSubCategory || state.filterVendor || state.filterAccount) {
@@ -102,9 +102,17 @@ const Transactions = () => {
           setSelectedVendors([]);
         }
       }
+
+      if (state.dateRange) {
+        setDateRange({
+          from: new Date(state.dateRange.from),
+          to: new Date(state.dateRange.to),
+        });
+      }
+
       window.history.replaceState({}, document.title)
     }
-  }, [location.state, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors]);
+  }, [location.state, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange]);
 
   const dataProvider = useDataProvider();
 
