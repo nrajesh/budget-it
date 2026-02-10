@@ -1,181 +1,320 @@
-# Personal Finance Tracker
+<h1 align="center">💰 Budget It — Personal Finance Tracker</h1>
 
-[![CircleCI][circleci-badge]][circleci-url]
-[![Vercel Deployment][vercel-status-badge]][vercel-status-url]
-[![Last Commit][last-commit-badge]][last-commit-url]
-[![Google Gemini][gemini-badge]][gemini-url]
-[![License: MIT][license-badge]][license-url]
-[![TypeScript][typescript-badge]][typescript-url]
-[![React][react-badge]][react-url]
-[![Electron][electron-badge]][electron-url]
-[![Vite][vite-badge]][vite-url]
-[![TailwindCSS][tailwind-badge]][tailwind-url]
+<p align="center">
+  <i>A privacy-focused, local-first personal finance app. Track spending, manage budgets, and gain insights — without sending your data to the cloud.</i>
+</p>
 
+<!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
+<p align="center">
+  <a href="https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/main">
+    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
+  </a>
+  <a href="https://budget-it-nine.vercel.app/">
+    <img src="https://deploy-badge.vercel.app/vercel/budget-it-nine?style=flat" alt="Vercel Deployment">
+  </a>
+  <a href="https://github.com/nrajesh/budget-it">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white" alt="GitHub">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+  </a>
+</p>
 
-A privacy-focused, local-first personal finance application designed to help you track spending, manage budgets, and gain insights into your financial health without sending your data to the cloud.
+<!-- ─── Tech Stack Badges ─────────────────────────────────────── -->
+<p align="center">
+  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=electron&logoColor=white" alt="Electron">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS">
+  <img src="https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white" alt="Google Gemini">
+</p>
 
-![Dashboard Preview](docs/dashboard-preview.png)
+---
 
 ## 🌟 Key Features
 
-- **Local-First & Private**: All your data stored securely in your browser using IndexedDB. No external servers see your financial data.
-- **Multi-Ledger Support**: Create and manage separate ledgers (Personal, Business, Joint) within a single app.
-- **Comprehensive Budgeting**: Set monthly, quarterly, yearly, or one-time budgets.
-- **Transaction Management**: Easy tracking with categories, sub-categories, vendors, and account groups.
-- **Smart Deduplication**: Intelligent import logic prevents duplicate transactions even when projections overlap.
-- **Instant Backup & Restore**: Import encrypted or plain JSON backups instantly without page reloads.
-- **Automated Backups**: Configure automatic backups to run in the background (Electron only) or on a schedule using the File System Access API.
-- **Conversational Search**: Natural language filtering for transactions, categories, and dates.
-- **Smart Analytics**: Visual breakdowns of income, expenses, and savings trends.
-- **Financial Pulse**: A premium dashboard view for high-level financial health monitoring.
+| Category | Feature |
+|----------|---------|
+| 🔒 **Privacy** | 100% local — data lives in your browser's IndexedDB. No cloud, no servers. |
+| 📚 **Multi-Ledger** | Separate ledgers for Personal, Business, Joint finances. |
+| 💳 **Transactions** | Track with categories, sub-categories, vendors, and account groups. |
+| 📊 **Budgets** | Monthly, quarterly, yearly, or one-time budgets with progress tracking. |
+| 🔁 **Scheduled** | Recurring transactions with smart deduplication on import. |
+| 📈 **Analytics** | Visual breakdowns of income, expenses, and savings trends. |
+| 🫀 **Financial Pulse** | Premium dashboard for high-level financial health monitoring. |
+| 💬 **Smart Search** | Natural language filtering for transactions, categories, and dates. |
+| 💾 **Backup & Restore** | Encrypted or plain JSON backups — import instantly without page reloads. |
+| ⏰ **Auto-Backup** | Scheduled backups via File System Access API (web) or direct filesystem (Electron). |
+
+---
 
 ## 🏗️ System Architecture
 
-This application is built as a Single Page Application (SPA) with a focus on client-side processing and storage.
+### Web Application Architecture
 
-### Tech Stack
-- **Frontend Framework**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **UI Components**: [Shadcn UI](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/)
-- **State Management**: [TanStack Query](https://tanstack.com/query/latest) (React Query)
-- **Local Database**: [Dexie.js](https://dexie.org/) (Wrapper for IndexedDB)
-- **Routing**: [React Router](https://reactrouter.com/)
+```mermaid
+graph TB
+    subgraph Browser["🌐 Browser"]
+        direction TB
+        UI["React UI<br/>(Shadcn + Tailwind)"]
+        Router["React Router<br/>(SPA Navigation)"]
+        State["TanStack Query<br/>(State & Cache)"]
+        Contexts["Context Providers<br/>(Ledger · Transactions · Filter<br/>Currency · Theme · User)"]
+        DB["Dexie.js<br/>(IndexedDB Wrapper)"]
+        IDB[("IndexedDB<br/>Local Storage")]
+    end
 
-### Project Structure
-The codebase is organized to promote modularity and reusability:
+    UI --> Router
+    Router --> Contexts
+    Contexts --> State
+    State --> DB
+    DB --> IDB
 
-- `src/components/`: Reusable UI components.
-  - `dialogs/`: Modal dialogs (e.g., Add Transaction, Confirmation).
-  - `filters/`: Search and filter components.
-  - `feedback/`: Loading spinners, progress bars, and alerts.
-  - `transactions/`: Transaction-specific components (tables, headers).
-- `src/pages/`: Main application pages (Dashboard, Transactions, Reports).
-- `src/hooks/`: Custom React hooks for logic and state management.
-- `src/contexts/`: React Context providers for global state (Transactions, Theme, Ledger).
-- `src/utils/`: Helper functions and utilities.
+    style Browser fill:#1a1a2e,stroke:#16213e,color:#e8e8e8
+    style UI fill:#61DAFB,stroke:#20232A,color:#000
+    style Router fill:#f44250,stroke:#20232A,color:#fff
+    style State fill:#ff4154,stroke:#20232A,color:#fff
+    style Contexts fill:#764abc,stroke:#20232A,color:#fff
+    style DB fill:#ff6f00,stroke:#20232A,color:#fff
+    style IDB fill:#2e7d32,stroke:#1b5e20,color:#fff
+```
+
+### Electron Desktop Architecture
+
+```mermaid
+graph TB
+    subgraph Electron["🖥️ Electron Shell"]
+        direction TB
+        Main["Main Process<br/>(electron/main.ts)"]
+        Preload["Preload Script<br/>(electron/preload.ts)"]
+
+        subgraph Renderer["Renderer Process (Chromium)"]
+            direction TB
+            WebApp["React Web App<br/>(same as web version)"]
+            Bridge["contextBridge API<br/>(window.electron)"]
+        end
+
+        IPC["IPC Channels"]
+        FS["Node.js fs<br/>(Direct File System)"]
+        Dialog["Native Dialogs<br/>(Folder Picker)"]
+    end
+
+    Main -->|"ipcMain.handle"| IPC
+    IPC -->|"ipcRenderer.invoke"| Preload
+    Preload -->|"contextBridge"| Bridge
+    Bridge --> WebApp
+
+    Main --> FS
+    Main --> Dialog
+
+    style Electron fill:#1a1a2e,stroke:#16213e,color:#e8e8e8
+    style Main fill:#2f3241,stroke:#47475c,color:#9feaf9
+    style Preload fill:#2f3241,stroke:#47475c,color:#9feaf9
+    style Renderer fill:#0d1117,stroke:#30363d,color:#e8e8e8
+    style WebApp fill:#61DAFB,stroke:#20232A,color:#000
+    style Bridge fill:#f0db4f,stroke:#20232A,color:#000
+    style IPC fill:#ff9800,stroke:#e65100,color:#000
+    style FS fill:#2e7d32,stroke:#1b5e20,color:#fff
+    style Dialog fill:#5c6bc0,stroke:#3949ab,color:#fff
+```
 
 ### Data Flow
-1. **Local Storage**: The app uses `Dexie.js` to interface with the browser's IndexedDB. This acts as the primary data source.
-2. **Multi-Ledger Scoping**: All data operations are scoped to the active `ledger_id`, allowing complete separation of distinct financial datasets.
-3. **State Sync**: `TanStack Query` manages asynchronous state, caching data from Dexie and ensuring the UI stays in sync with the local database.
-4. **Optimistic Updates**: UI updates immediately upon user action, providing a snappy experience while data persists in the background.
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant UI as React UI
+    participant TQ as TanStack Query
+    participant Ctx as Context Providers
+    participant Dex as Dexie.js
+    participant IDB as IndexedDB
+
+    U->>UI: Interact (add transaction, etc.)
+    UI->>Ctx: Dispatch action
+    Ctx->>TQ: Optimistic update (instant UI)
+    Ctx->>Dex: Persist data
+    Dex->>IDB: Write to local store
+    IDB-->>Dex: Confirmation
+    Dex-->>TQ: Invalidate & refetch
+    TQ-->>UI: Render updated view
+```
+
+---
 
 ## 🚀 Getting Started
 
-Follow these steps to get the application running on your local machine.
-
 ### Prerequisites
-- **Node.js**: Version 18 or higher recommended.
-- **Package Manager**: [pnpm](https://pnpm.io/) is **strongly recommended** as the project uses `pnpm-lock.yaml` and scripts rely on it.
-  - *If you don't have pnpm installed:* `npm install -g pnpm`
 
-### Installation
+> [!IMPORTANT]
+> Before you begin, make sure you have the following installed:
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd budget-it
-   ```
+| Requirement | Version | How to Install |
+|-------------|---------|----------------|
+| **Node.js** | v18+ | [Download](https://nodejs.org/) or use `nvm install 18` |
+| **pnpm** | v8+ | `npm install -g pnpm` |
+| **Git** | Any | [Download](https://git-scm.com/) |
 
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   ```
+> [!NOTE]
+> **pnpm** is strongly recommended. The project uses `pnpm-lock.yaml`, and all scripts are configured for it.
 
-### 🌐 Running Web Version
+### Step-by-Step Setup
 
-Start the development server for the browser-based version:
+```bash
+# 1. Clone the repository
+git clone https://github.com/nrajesh/budget-it.git
+cd budget-it
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Verify the setup (optional but recommended)
+pnpm lint && pnpm build
+```
+
+> [!TIP]
+> If `pnpm install` fails, try deleting `node_modules` and running `pnpm install` again:
+> ```bash
+> rm -rf node_modules && pnpm install
+> ```
+
+---
+
+### 🌐 Running the Web App
+
 ```bash
 pnpm dev
-# or: npm run dev
 ```
-Open your browser and navigate to `http://localhost:8081`.
 
-### 🖥️ Running Desktop Version (Electron)
+Open **http://localhost:8081** in your browser. That's it!
 
-This application can also run as a standalone desktop app on macOS, Windows, and Linux.
+---
 
-To start the Electron development version:
+### 🖥️ Running the Electron Desktop App
+
 ```bash
 pnpm run electron:dev
-# or: npm run electron:dev
 ```
 
-**⚠️ Important Notes:**
-- **Do NOT run `pnpm dev` manually before this.** The `electron:dev` command automatically starts the Vite dev server and the Electron app concurrently. Running them separately may cause port conflicts.
-- **First Run**: The first time you run this, it may take a moment to compile Main/Preload scripts.
-- **Mobile Support**: The **Electron** desktop app *cannot* run on iPhone or Android devices. For mobile access, you must host the Web Version and access it via a mobile browser.
+This single command does everything:
+1. Starts the Vite dev server on port `8081`
+2. Waits for the server to be ready (`wait-on`)
+3. Compiles Electron main & preload TypeScript
+4. Launches the Electron window
 
-### Building for Production
+> [!WARNING]
+> **Do NOT run `pnpm dev` separately before `electron:dev`.**
+> The `electron:dev` script already starts Vite internally using `concurrently`. Running them separately will cause a port conflict on `8081`.
 
-To build the web version:
-```bash
-pnpm build
+> [!NOTE]
+> **First-time Electron run** may take longer as it compiles TypeScript files and downloads the Electron binary (~100 MB).
+
+---
+
+### 📱 Mobile Support
+
+| Platform | Supported? | How |
+|----------|-----------|-----|
+| **macOS** | ✅ | Electron desktop app or browser |
+| **Windows** | ✅ | Electron desktop app or browser |
+| **Linux** | ✅ | Electron desktop app or browser |
+| **iOS / Android** | ⚠️ Web only | Deploy to Vercel/Netlify and open in mobile Safari/Chrome |
+
+> Electron cannot run on mobile devices. For mobile access, host the web version and access it via a mobile browser.
+
+---
+
+### 🔨 Building for Production
+
+| Target | Command | Output |
+|--------|---------|--------|
+| Web | `pnpm build` | `dist/` |
+| Desktop (all platforms) | `pnpm run electron:build` | `release/` (DMG, EXE, AppImage) |
+
+---
+
+## 📂 Project Structure
+
 ```
-Artifacts will be in `dist/`.
-
-To build the desktop application (Mac/Windows/Linux):
-```bash
-pnpm run electron:build
+budget-it/
+├── electron/                  # Electron-specific code
+│   ├── main.ts                #   Main process (window, IPC, fs access)
+│   └── preload.ts             #   Preload script (contextBridge)
+├── src/
+│   ├── components/            # Reusable UI components
+│   │   ├── ui/                #   Shadcn primitives (Button, Dialog, etc.)
+│   │   ├── backup/            #   Backup & scheduled backup components
+│   │   ├── budgets/           #   Budget cards, tables, forms
+│   │   ├── charts/            #   Recharts chart wrappers
+│   │   ├── dashboard/         #   Dashboard widgets
+│   │   ├── dialogs/           #   Modal dialogs (Add/Edit Transaction, etc.)
+│   │   ├── filters/           #   Search & filter controls
+│   │   ├── reports/           #   Report generation components
+│   │   └── transactions/      #   Transaction tables & headers
+│   ├── contexts/              # React Context providers
+│   │   ├── TransactionsContext.tsx  # Core financial data
+│   │   ├── LedgerContext.tsx        # Multi-ledger management
+│   │   ├── FilterContext.tsx        # Global filter state
+│   │   ├── CurrencyContext.tsx      # Currency & exchange rates
+│   │   ├── ThemeContext.tsx          # Theme management
+│   │   └── UserContext.tsx          # User preferences
+│   ├── hooks/                 # Custom React hooks
+│   ├── pages/                 # Route-level page components
+│   ├── types/                 # TypeScript type definitions
+│   └── utils/                 # Helper functions & utilities
+├── .circleci/                 # CI/CD configuration
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
 ```
-Artifacts (DMG, AppImage, EXE) will be in `dist-electron/` or `release/`.
+
+---
 
 ## 🛠️ Development Guide
 
 ### Adding New Components
-1. **Choose the Right Directory**:
-   - `src/components/ui`: Generic, reusable UI primitives (buttons, inputs).
-   - `src/components/features`: Complex feature-specific components.
-   - `src/components/layout`: Layout wrappers.
+1. `src/components/ui/` — Generic, reusable UI primitives
+2. `src/components/<feature>/` — Feature-specific components
+3. `src/components/layout/` — Layout wrappers
 
-2. **Guidelines**:
-   - Use **functional components** with TypeScript interfaces.
-   - Style using **Tailwind CSS** utility classes.
-   - Ensure responsive design (mobile-first).
-   - Add JSDoc comments for complex logic or props.
+**Guidelines:**
+- Use **functional components** with TypeScript interfaces
+- Style with **Tailwind CSS** utility classes
+- Ensure **responsive design** (mobile-first)
+- Add JSDoc comments for complex logic
 
 ### State Management
-- Use `useTransactions()` for global financial data.
-- Use local `useState` for UI-only state (dialog open/close).
-- Use `useQuery` for any async data fetching.
+- `useTransactions()` — global financial data
+- `useState` — UI-only state (dialog open/close)
+- `useQuery` — async data fetching with TanStack Query
 
 ### Testing
-- Run unit and integration tests with `pnpm test` (Vitest).
-- Run lint checks with `pnpm lint`.
+```bash
+pnpm test              # Run unit tests (Vitest)
+pnpm test:coverage     # Run with coverage report
+pnpm lint              # Run ESLint checks
+pnpm validate          # TypeScript + ESLint in one shot
+```
+
+---
 
 ## 📦 Deployment
 
-### Deploy Web Version to Vercel
-This project is optimized for Vercel.
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run `vercel deploy` in the project root.
-3. Follow the prompts to ship your local-first finance tracker to the web.
+### Deploy to Vercel (Recommended)
+```bash
+npm i -g vercel
+vercel deploy
+```
+Since the app is fully client-side, it works on any static host: **Vercel**, **Netlify**, **GitHub Pages**, or **Cloudflare Pages**.
 
-Since the app is client-side only (local-first), it can be hosted on any static site provider like Vercel, Netlify, or GitHub Pages.
+---
 
 ## 🛡️ Privacy Note
-This application runs entirely in your browser (or local Electron instance). Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
 
-<!-- Badge Links -->
-[circleci-badge]: https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9
-[circleci-url]: https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/main
-[vercel-status-badge]: https://deploy-badge.vercel.app/vercel/budget-it-nine?style=flat
-[vercel-status-url]: https://budget-it-nine.vercel.app/
-[last-commit-badge]: https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white
-[last-commit-url]: https://github.com/nrajesh/budget-it
-[gemini-badge]: https://img.shields.io/badge/Google%20Gemini-8E75B2?style=flat&logo=google%20gemini&logoColor=white
-[gemini-url]: https://gemini.google.com/
-[license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
+> This application runs entirely in your browser (or local Electron instance). **No data is ever sent to a server.** Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
 
+---
 
-[license-url]: https://opensource.org/licenses/MIT
-[typescript-badge]: https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white
-[typescript-url]: https://www.typescriptlang.org/
-[react-badge]: https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB
-[react-url]: https://reactjs.org/
-[electron-badge]: https://img.shields.io/badge/Electron-191970?style=flat&logo=Electron&logoColor=white
-[electron-url]: https://www.electronjs.org/
-[vite-badge]: https://img.shields.io/badge/Vite-646CFF?style=flat&logo=Vite&logoColor=white
-[vite-url]: https://vitejs.dev/
-[tailwind-badge]: https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white
-[tailwind-url]: https://tailwindcss.com/
+<p align="center">
+  Made with ❤️ for your financial freedom
+</p>
