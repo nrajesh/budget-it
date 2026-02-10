@@ -1030,7 +1030,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     if (duplicatesToDelete.length > 0) {
-      console.log(`Found ${duplicatesToDelete.length} duplicates to clean up.`);
+      // Log removed
       await deleteMultipleTransactions(duplicatesToDelete.map(id => ({ id })));
       // toast is shown by deleteMultipleTransactions usually? 
       // deleteMultipleTransactions shows "X transactions deleted" toast.
@@ -1218,7 +1218,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // If the scheduled date is strictly in the past (before today), we skip execution
       // and just advance the pointer until it catches up to today or future.
       if (nextDate < today) {
-        console.log(`Fast-forwarding past scheduled transaction: ${st.vendor} (Date: ${st.date})`);
+        // Log removed
 
         // Loop until we are at least at 'today'
         // If we land ON today, it will be picked up by the execution logic below (nextDate <= today check)
@@ -1266,7 +1266,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const isIgnored = st.ignored_dates?.includes(st.date);
 
         if (isIgnored) {
-          console.log(`Skipping ignored scheduled transaction: ${st.vendor} on ${st.date}`);
+          // Log removed
           // Advance without creating
           const newNextDate = calculateNextDate(nextDate, st.frequency);
 
@@ -1342,7 +1342,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         // Find the most frequent currency or just the first one
         const firstCurrency = accounts[0].currency;
         if (firstCurrency && firstCurrency !== 'USD') {
-          console.log(`Auto-switching currency from USD to ${firstCurrency} as no USD accounts found.`);
+          // Log removed
           setCurrency(firstCurrency);
         }
       }

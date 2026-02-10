@@ -8,7 +8,7 @@ import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
 import { showError, showSuccess } from "@/utils/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
-import { Transaction, AccountType } from "@/types/dataProvider";
+import { Transaction, AccountType, Ledger } from "@/types/dataProvider";
 
 export interface ImportConfig {
     importMode?: 'replace' | 'append';
@@ -76,7 +76,7 @@ export interface ImportRow {
  * @param filteredTransactions - The list of transactions currently visible/filtered on the page, used for export.
  */
 export const useTransactionPageActions = (filteredTransactions: Transaction[]) => {
-    const { activeLedger } = useLedger();
+    const { activeLedger }: { activeLedger: Ledger | null } = useLedger();
     const dataProvider = useDataProvider();
     const { detectAndLinkTransfers, setOperationProgress, invalidateAllData } = useTransactions();
     const { toast } = useToast();
@@ -259,13 +259,13 @@ export const useTransactionPageActions = (filteredTransactions: Transaction[]) =
             const isReplace = config?.importMode === 'replace';
 
             if (isReplace) {
-                console.log("Import mode is REPLACE. Clearing existing transactions...");
+                // Log removed
                 await dataProvider.clearTransactions(userId);
                 await dataProvider.clearBudgets(userId);
                 await dataProvider.clearScheduledTransactions(userId);
             }
 
-            console.log("Starting import with data:", data.length, "rows", config);
+            // Log removed
 
             const totalSteps = 4;
             setOperationProgress({
@@ -390,8 +390,8 @@ export const useTransactionPageActions = (filteredTransactions: Transaction[]) =
                 const dateRaw = row.Date;
 
                 if (!amountRaw || !dateRaw) {
-                   skippedCount++;
-                   continue;
+                    skippedCount++;
+                    continue;
                 }
 
                 const amount = parseRobustAmount(amountRaw, config?.decimalSeparator);
@@ -458,7 +458,7 @@ export const useTransactionPageActions = (filteredTransactions: Transaction[]) =
                         });
                     }
                 }
-                console.log(`Successfully inserted ${successCount} / ${transactionsToInsert.length} transactions`);
+                // Log removed
             } catch (e: any) {
                 console.error("Insert failed at some point", e);
             }

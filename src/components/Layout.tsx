@@ -26,7 +26,8 @@ import {
   Baby,
   Wallet,
   Landmark,
-  Lightbulb
+  Lightbulb,
+  DatabaseZap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,6 +99,8 @@ const Layout = () => {
         return "Insights";
       case "/settings":
         return "Settings";
+      case "/data-management":
+        return "Data Management";
       case "/vendors":
         return "Vendors";
       case "/accounts":
@@ -265,6 +268,14 @@ const Layout = () => {
                   <Link to="/settings">
                     <User />
                     <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === "/data-management"}>
+                  <Link to="/data-management">
+                    <DatabaseZap />
+                    <span>Data Management</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
