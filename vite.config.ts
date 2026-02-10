@@ -11,6 +11,7 @@ export default defineConfig(() => ({
   preview: {
     port: 62153,
   },
+  base: './',
   plugins: [dyadComponentTagger(), react()],
   resolve: {
     alias: {

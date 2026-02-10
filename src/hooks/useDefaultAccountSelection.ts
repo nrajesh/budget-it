@@ -78,7 +78,7 @@ export const useDefaultAccountSelection = (options: { autoRun?: boolean } = {}) 
 
         const selectionArray = Array.from(newSelection);
         if (selectionArray.length > 0) {
-            console.log("Setting default accounts:", selectionArray);
+            // Log removed
             setSelectedAccounts(selectionArray);
         }
     }, [allTransactions, allAccounts, isLoadingTransactions, isLoadingAccounts, dateRange, setSelectedAccounts]);
@@ -101,7 +101,7 @@ export const useDefaultAccountSelection = (options: { autoRun?: boolean } = {}) 
         // We checks hasData to ensure we don't run on empty state needlessly (though alphabetical strategy might want to run if accounts exist but no transactions? Yes.)
 
         if (isDataReady && noSelection && hasData) {
-            console.log("useDefaultAccountSelection Triggered. dataChanged:", dataChanged, "prevLength:", prevTxLength.current, "currentLength:", currentLength);
+            // Log removed
             // If data changed, OR if we haven't selected anything yet (maybe first load), try selecting.
             // Using dataChanged helps avoid overriding manual clear, BUT:
             // If I start app, data loads (0 -> N), dataChanged=true. Select defaults. OK.

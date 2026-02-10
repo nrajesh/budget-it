@@ -27,11 +27,12 @@ const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
 const Insights = lazy(() => import("@/pages/Insights"));
-
-
 const LedgerEntryPage = lazy(() => import("@/pages/LedgerEntryPage"));
-
 import { LedgerProvider } from "./contexts/LedgerContext";
+const DataManagementPage = lazy(() => import("@/pages/DataManagementPage"));
+import BackupManager from "@/components/backup/BackupManager";
+
+// ... existing imports
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <LedgerProvider>
               <UserProvider>
                 <TransactionsProvider>
+                  <BackupManager />
                   <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                     <Suspense fallback={<LoadingSpinner />}>
                       <Routes>
@@ -59,6 +61,7 @@ function App() {
                           <Route path="/reports/advanced" element={<AdvancedReports />} />
                           <Route path="/insights" element={<Insights />} />
                           <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="/data-management" element={<DataManagementPage />} />
                           <Route path="*" element={<NotFound />} />
                         </Route>
                       </Routes>

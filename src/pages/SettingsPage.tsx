@@ -11,11 +11,8 @@ import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilter
 import { useTheme } from "@/contexts/ThemeContext";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { showSuccess, showError } from "@/utils/toast";
-import { RotateCcw, DatabaseZap, Upload, FileLock, FileJson, AlertCircle, RefreshCw } from "lucide-react";
+import { RotateCcw, RefreshCw, DatabaseZap } from "lucide-react";
 import { useDataProvider } from "@/context/DataProviderContext";
-import { encryptData, decryptData } from "@/utils/crypto";
-import PasswordDialog from "@/components/dialogs/PasswordDialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
@@ -38,11 +35,7 @@ const SettingsPage = () => {
   const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = React.useState(false);
   const [futureMonths, setFutureMonths] = React.useState<number>(2);
 
-  // Data Management State
-  const [isExportPasswordOpen, setIsExportPasswordOpen] = React.useState(false);
-  const [isImportPasswordOpen, setIsImportPasswordOpen] = React.useState(false);
-  const [tempImportFile, setTempImportFile] = React.useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  // Data Management State moved to DataManagementPage
 
   React.useEffect(() => {
     const savedMonths = localStorage.getItem('futureMonths');
@@ -116,181 +109,7 @@ const SettingsPage = () => {
     }
   };
 
-  // --- Export Logic ---
-  const saveFile = async (filename: string, content: string, description: string) => {
-    try {
-      // Try File System Access API first (Chrome/Edge/Desktop)
-      // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
-      if (window.showSaveFilePicker) {
-        // @ts-expect-error - showSaveFilePicker types
-
-        const handle = await window.showSaveFilePicker({
-          suggestedName: filename,
-          types: [{
-            description: description,
-            accept: { 'application/json': ['.json', '.lock'] },
-          }],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(content);
-        await writable.close();
-        return true;
-      }
-      throw new Error("File System Access API not supported");
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        throw new Error("Save cancelled by user");
-      }
-
-      // Fallback to classic download
-      const element = document.createElement("a");
-      const file = new Blob([content], { type: "application/json" });
-      element.href = URL.createObjectURL(file);
-      element.download = filename;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-      return false; // Indicates fallback was used
-    }
-  };
-
-  const handleExportPlain = async () => {
-    try {
-      const filename = `budget_backup_${new Date().toISOString().split('T')[0]}.json`;
-      const description = "Budget It Full Backup (All Ledgers)";
-      let usedFilePicker = false;
-
-      // Strategy 1: File System Access API (Chrome/Edge)
-      // We request the handle FIRST to consume the user gesture immediately.
-      // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
-      if (window.showSaveFilePicker) {
-        try {
-          // @ts-expect-error - showSaveFilePicker types
-          const handle = await window.showSaveFilePicker({
-            suggestedName: filename,
-            types: [{
-              description: description,
-              accept: { 'application/json': ['.json', '.lock'] },
-            }],
-          });
-
-          // If we got here, user picked a file. Now fetch data.
-          const data = await dataProvider.exportData();
-          const jsonString = JSON.stringify(data, null, 2);
-
-          // Write to file
-          const writable = await handle.createWritable();
-          await writable.write(jsonString);
-          await writable.close();
-          usedFilePicker = true;
-          showSuccess("File saved successfully!");
-          return;
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            // User cancelled picker, do nothing
-            return;
-          }
-          // Start legacy download if Strategy 1 failed for other reasons (e.g. security)
-          console.error("File System Access API failed, falling back:", err);
-        }
-      }
-
-      // Strategy 2: Legacy Download (Safari/Firefox/Fallback)
-      if (!usedFilePicker) {
-        const data = await dataProvider.exportData();
-        const jsonString = JSON.stringify(data, null, 2);
-
-        const element = document.createElement("a");
-        const file = new Blob([jsonString], { type: "application/json" });
-        element.href = URL.createObjectURL(file);
-        element.download = filename;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-        showSuccess("File downloaded via browser manager.");
-      }
-
-    } catch (e: any) {
-      if (e.message !== "Save cancelled by user") {
-        showError(`Export failed: ${e.message}`);
-      }
-    }
-  };
-
-  const handleExportEncryptedParams = async (password: string) => {
-    try {
-      const data = await dataProvider.exportData();
-      const jsonString = JSON.stringify(data);
-      const encrypted = await encryptData(jsonString, password);
-      const filename = `budget_backup_enc_${new Date().toISOString().split('T')[0]}.lock`;
-
-      const usedPicker = await saveFile(filename, encrypted, "Budget It Full Backup (Encrypted)");
-
-      if (usedPicker) {
-        showSuccess("Encrypted file saved successfully!");
-      } else {
-        showSuccess("Encrypted file downloaded via browser manager.");
-      }
-    } catch (e: any) {
-      if (e.message !== "Save cancelled by user") {
-        showError(`Encryption failed: ${e.message}`);
-      }
-    }
-  };
-
-  // --- Import Logic ---
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-
-      try {
-        // Try parsing as simple JSON first to see if it's a plain backup
-        JSON.parse(content);
-        // If successful, it might be plain or the encrypted wrapper (which is also JSON)
-        // Check structure
-        const parsed = JSON.parse(content);
-        if (parsed.ciphertext && parsed.iv && parsed.salt) {
-          // It's encrypted
-          setTempImportFile(content);
-          setIsImportPasswordOpen(true);
-        } else {
-          // Assume plain text
-          await dataProvider.importData(parsed);
-          showSuccess("Data imported successfully!");
-          // Optional: reload or refresh
-          window.location.reload();
-        }
-      } catch {
-        showError("Invalid file format.");
-      }
-    };
-    reader.readAsText(file);
-    // Reset input
-    e.target.value = "";
-  };
-
-  const handleImportEncryptedParams = async (password: string) => {
-    if (!tempImportFile) return;
-    try {
-      const decryptedParams = await decryptData(tempImportFile, password);
-      const data = JSON.parse(decryptedParams);
-      await dataProvider.importData(data);
-      showSuccess("Encrypted data imported successfully!");
-      setTempImportFile(null);
-      window.location.reload();
-    } catch (e: any) {
-      showError(`Import failed: ${e.message}`);
-    }
-  };
+  // Data Management Logic moved to DataManagementPage
 
   return (
     <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
@@ -303,54 +122,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Data Management Section */}
-      <ThemedCard className="mt-6 border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
-        <ThemedCardHeader>
-          <ThemedCardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">Data Management</ThemedCardTitle>
-          <ThemedCardDescription>
-            Export your data to a local file. This will include <strong>all ledgers</strong> and their associated data.
-          </ThemedCardDescription>
-        </ThemedCardHeader>
-        <ThemedCardContent className="space-y-4">
-          <Alert className="bg-blue-100/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertTitle className="text-blue-800 dark:text-blue-300">Important</AlertTitle>
-            <AlertDescription className="text-blue-700 dark:text-blue-300">
-              Since this is a local-first app, if you clear your browser data, you will lose your records.
-              Please export regular backups.
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex gap-2">
-              <Button onClick={handleExportPlain} variant="outline" className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40">
-                <FileJson className="mr-2 h-4 w-4" />
-                Export JSON
-              </Button>
-              <Button onClick={() => setIsExportPasswordOpen(true)} variant="outline" className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40">
-                <FileLock className="mr-2 h-4 w-4" />
-                Export Encrypted
-              </Button>
-            </div>
-
-            <div className="w-px bg-border hidden sm:block"></div>
-
-            <div className="flex gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".json,.lock"
-              />
-              <Button onClick={handleImportClick} variant="secondary">
-                <Upload className="mr-2 h-4 w-4" />
-                Import Backup
-              </Button>
-            </div>
-          </div>
-        </ThemedCardContent>
-      </ThemedCard>
+      {/* Data Management Section Moved to /data-management */}
 
       {/* Ledger Settings Card */}
       <ThemedCard>
@@ -475,23 +247,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Dialogs */}
-      <PasswordDialog
-        isOpen={isExportPasswordOpen}
-        onOpenChange={setIsExportPasswordOpen}
-        onConfirm={handleExportEncryptedParams}
-        title="Encrypt Backup"
-        description="Enter a password to encrypt your backup file. You will need this password to restore your data."
-        confirmText="Encrypt & Download"
-      />
-
-      <PasswordDialog
-        isOpen={isImportPasswordOpen}
-        onOpenChange={setIsImportPasswordOpen}
-        onConfirm={handleImportEncryptedParams}
-        title="Decrypt Backup"
-        description="This file is encrypted. Please enter the password to restore your data."
-        confirmText="Decrypt & Import"
-      />
+      {/* Password Dialogs moved to DataManagementPage */}
 
       <ConfirmationDialog
         isOpen={isResetConfirmOpen}

@@ -604,6 +604,14 @@ export class LocalDataProvider implements DataProvider {
     }
 
     // Full export (legacy or admin)
+    // Fetch backup configs and strip non-serializable fields (directoryHandle)
+    const backupConfigs = await db.backup_configs.toArray();
+    const cleanBackupConfigs = backupConfigs.map(config => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { directoryHandle, ...rest } = config;
+      return rest;
+    });
+
     const data = {
       transactions: mapToLedgerId(await db.transactions.toArray()),
       scheduled_transactions: mapToLedgerId(await db.scheduled_transactions.toArray()),
@@ -613,6 +621,7 @@ export class LocalDataProvider implements DataProvider {
       categories: mapToLedgerId(await db.categories.toArray()),
       sub_categories: mapToLedgerId(await db.sub_categories.toArray()),
       ledgers: await db.ledgers.toArray(),
+      backup_configs: cleanBackupConfigs,
       version: 2,
       exportedAt: new Date().toISOString()
     };
@@ -638,7 +647,7 @@ export class LocalDataProvider implements DataProvider {
       return { ...rest, user_id: finalId };
     });
 
-    await db.transaction('rw', [db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories, db.ledgers], async () => {
+    await db.transaction('rw', [db.transactions, db.scheduled_transactions, db.budgets, db.vendors, db.accounts, db.categories, db.sub_categories, db.ledgers, db.backup_configs], async () => {
       if (userId) {
         // Import into specific ledger. Remove existing data for this ledger first?
         // Maybe user wants to merge? 
@@ -683,8 +692,10 @@ export class LocalDataProvider implements DataProvider {
         await db.categories.clear();
         await db.sub_categories.clear();
         await db.ledgers.clear();
+        await db.backup_configs.clear();
 
         if (data.ledgers) await db.ledgers.bulkAdd(data.ledgers);
+        if (data.backup_configs) await db.backup_configs.bulkAdd(data.backup_configs);
 
         if (data.transactions) await db.transactions.bulkAdd(mapToUserId(data.transactions));
         if (data.scheduled_transactions) await db.scheduled_transactions.bulkAdd(mapToUserId(data.scheduled_transactions));
