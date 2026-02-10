@@ -4,7 +4,7 @@ version: 2.1
 executors:
   node-executor:
     docker:
-      - image: cimg/node:20.11.1
+      - image: cimg/node:22.12
     working_directory: ~/project
 
 # Reusable commands to DRY up your config
