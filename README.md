@@ -157,12 +157,12 @@ Since the app is client-side only (local-first), it can be hosted on any static 
 This application runs entirely in your browser (or local Electron instance). Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
 
 <!-- Badge Links -->
-[circleci-badge]: https://circleci.com/gh/nrajesh/budget-it.svg?style=shield
-[circleci-url]: https://circleci.com/gh/nrajesh/budget-it
-[vercel-status-badge]: https://img.shields.io/vercel/v/budget-it/production?style=flat&logo=vercel&logoColor=white
-[vercel-status-url]: https://budget-it.vercel.app/
-[last-commit-badge]: https://img.shields.io/github/last-commit/nrajesh/budget-it?style=flat&logo=github&logoColor=white
-[last-commit-url]: https://github.com/nrajesh/budget-it/commits/main
+[circleci-badge]: https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9
+[circleci-url]: https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/main
+[vercel-status-badge]: https://deploy-badge.vercel.app/vercel/budget-it-nine?style=flat
+[vercel-status-url]: https://budget-it-nine.vercel.app/
+[last-commit-badge]: https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white
+[last-commit-url]: https://github.com/nrajesh/budget-it
 [gemini-badge]: https://img.shields.io/badge/Google%20Gemini-8E75B2?style=flat&logo=google%20gemini&logoColor=white
 [gemini-url]: https://gemini.google.com/
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
