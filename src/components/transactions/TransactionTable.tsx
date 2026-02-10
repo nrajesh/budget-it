@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -36,6 +36,163 @@ interface TransactionTableProps {
   accountCurrencyMap?: Map<string, string>;
 }
 
+// Memoized Row Component
+const TransactionRow = React.memo(({
+  transaction,
+  isSelected,
+  onToggleSelect,
+  onRowDoubleClick,
+  onUnlinkTransaction,
+  onAddTransaction,
+  onScheduleTransactions,
+  onDeleteTransactions,
+  accountCurrencyMap,
+  selectedCurrency,
+  today,
+  navigate,
+  toast
+}: {
+  transaction: any;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
+  onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
+  onUnlinkTransaction?: (transferId: string) => void;
+  onAddTransaction: (transaction: any) => void;
+  onScheduleTransactions?: (transactions: any[], clearSelection: () => void) => void;
+  onDeleteTransactions: (transactions: { id: string, transfer_id?: string }[]) => void;
+  accountCurrencyMap?: Map<string, string>;
+  selectedCurrency: string;
+  today: Date;
+  navigate: any;
+  toast: any;
+}) => {
+
+  const isFuture = useMemo(() => {
+    const txnDate = new Date(transaction.date);
+    txnDate.setHours(0, 0, 0, 0);
+    return txnDate > today;
+  }, [transaction.date, today]);
+
+  const renderCell = (field: string, value: any) => {
+    return (
+      <span className="cursor-pointer">
+        {field === 'amount'
+          ? value.toLocaleString(undefined, {
+            style: 'currency',
+            currency: (accountCurrencyMap?.get(transaction.account) || transaction.currency || selectedCurrency)
+          })
+          : field === 'date'
+            ? new Date(value).toLocaleDateString()
+            : (value || "-")
+        }
+      </span>
+    );
+  };
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <TableRow
+          data-state={isSelected ? "selected" : undefined}
+          className={`group ${isSelected ? "bg-muted" : ""} cursor-pointer hover:bg-muted/50 ${isFuture ? "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50" : ""}`}
+          onDoubleClick={(e) => {
+            if (onRowDoubleClick && !transaction.is_projected) {
+              onRowDoubleClick(transaction, e);
+            }
+          }}
+        >
+          <TableCell className="w-[40px] px-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div className="flex flex-col items-center justify-center gap-1">
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelect(transaction.id)}
+              />
+              {transaction.transfer_id && (
+                <button
+                  className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors"
+                  title="Unlink Transfer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onUnlinkTransaction) onUnlinkTransaction(transaction.transfer_id);
+                  }}
+                >
+                  <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400 group-hover/link:text-red-500" />
+                </button>
+              )}
+            </div>
+          </TableCell>
+          <TableCell className="text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2">
+              {renderCell('date', transaction.date)}
+              {transaction.is_scheduled_origin && (
+                <span
+                  title="Go to Scheduled Transaction"
+                  className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full p-1 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (transaction.recurrence_id) {
+                      navigate(`/scheduled?id=${transaction.recurrence_id}`);
+                    } else {
+                      toast({ title: "Reference Missing", description: "Could not find the original scheduled transaction.", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <CalendarClock className="h-4 w-4 text-blue-500" />
+                </span>
+              )}
+            </div>
+          </TableCell>
+          <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{renderCell('category', transaction.category)}</TableCell>
+          <TableCell className="text-slate-700 dark:text-slate-300">{renderCell('sub_category', transaction.sub_category)}</TableCell>
+          <TableCell className="text-slate-700 dark:text-slate-300">{renderCell('vendor', transaction.vendor)}</TableCell>
+          <TableCell className="text-slate-700 dark:text-slate-300">{renderCell('account', transaction.account)}</TableCell>
+          <TableCell className="max-w-[200px] truncate text-slate-600 dark:text-slate-400" title={transaction.remarks}>
+            {renderCell('remarks', transaction.remarks)}
+          </TableCell>
+          <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+            {renderCell('amount', transaction.amount)}
+          </TableCell>
+        </TableRow>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-64">
+        <ContextMenuItem inset onClick={() => onToggleSelect(transaction.id)}>
+          {isSelected ? "Deselect" : "Select"}
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        {!transaction.is_projected && (
+          <>
+            <ContextMenuItem inset onClick={(e) => onRowDoubleClick && onRowDoubleClick(transaction, e)}>
+              <Pencil className="h-4 w-4 mr-2" /> Edit
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+        <ContextMenuItem inset onClick={() => onScheduleTransactions && onScheduleTransactions([transaction], () => { })}>
+          <CalendarClock className="h-4 w-4 mr-2" /> {transaction.recurrence_id ? "Edit Schedule" : "Schedule"}
+        </ContextMenuItem>
+        <ContextMenuItem inset onClick={() => onAddTransaction({
+          ...transaction,
+          id: undefined,
+          created_at: undefined,
+          remarks: transaction.remarks + " (Copy)",
+          recurrence_id: undefined,
+          is_scheduled_origin: undefined,
+          is_projected: undefined,
+          frequency: undefined,
+          recurrence_end_date: undefined
+        })}>
+          <Copy className="h-4 w-4 mr-2" /> Duplicate
+        </ContextMenuItem>
+        <ContextMenuItem inset className="text-red-600" onClick={() => onDeleteTransactions([{ id: transaction.id }])}>
+          <Trash className="h-4 w-4 mr-2" /> Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+});
+
+TransactionRow.displayName = "TransactionRow";
+
 const TransactionTable = ({
   transactions,
   loading,
@@ -52,25 +209,34 @@ const TransactionTable = ({
   const { selectedCurrency } = useCurrency();
   const navigate = useNavigate();
 
-
-
+  // Optimization: Calculate today once per render
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   // Selection Handlers
-  const toggleSelectAll = () => {
-    if (selectedIds.size === transactions.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(transactions.map(t => t.id)));
-    }
-  };
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(prev => {
+      if (prev.size === transactions.length) {
+        return new Set();
+      } else {
+        return new Set(transactions.map(t => t.id));
+      }
+    });
+  }, [transactions]);
 
-  const toggleSelect = (id: string) => {
-    const newSelected = new Set(selectedIds);
+  const toggleSelect = useCallback((id: string) => {
+    // Determine linked IDs first (stable logic, but depends on transactions array)
+    // We can't access `selectedIds` here without adding it to deps unless we use functional update.
+    // But we also need `transactions` to find the txn.
 
+    // Finding the transaction inside the callback ensures we use the latest 'transactions'
+    // without making the callback depend on 'selectedIds' value directly.
     const txn = transactions.find(t => t.id === id);
     const idsToToggle = [id];
 
-    // If part of a transfer, define all linked IDs in the current view
     if (txn?.transfer_id) {
       transactions.forEach(t => {
         if (t.transfer_id === txn.transfer_id && t.id !== id) {
@@ -79,23 +245,22 @@ const TransactionTable = ({
       });
     }
 
-    // Determine action based on the primary clicked item
-    const isSelected = selectedIds.has(id);
+    setSelectedIds(prev => {
+      const newSelected = new Set(prev);
+      // Determine if we are selecting or deselecting based on the PRIMARY id
+      const isSelected = prev.has(id);
 
-    idsToToggle.forEach(targetId => {
-      if (isSelected) {
-        newSelected.delete(targetId);
-      } else {
-        newSelected.add(targetId);
-      }
+      idsToToggle.forEach(targetId => {
+        if (isSelected) {
+          newSelected.delete(targetId);
+        } else {
+          newSelected.add(targetId);
+        }
+      });
+
+      return newSelected;
     });
-
-    setSelectedIds(newSelected);
-  };
-
-
-
-
+  }, [transactions]); // Stable as long as transactions array ref is stable (it is memoized in parent)
 
   // Bulk Actions
   const handleBulkDelete = () => {
@@ -132,22 +297,6 @@ const TransactionTable = ({
     if (onScheduleTransactions) {
       onScheduleTransactions(toSchedule, () => setSelectedIds(new Set()));
     }
-  };
-
-  const renderCell = (transaction: any, field: string, value: any) => {
-    return (
-      <span className="cursor-pointer">
-        {field === 'amount'
-          ? value.toLocaleString(undefined, {
-            style: 'currency',
-            currency: (accountCurrencyMap?.get(transaction.account) || transaction.currency || selectedCurrency)
-          })
-          : field === 'date'
-            ? new Date(value).toLocaleDateString()
-            : (value || "-")
-        }
-      </span>
-    );
   };
 
   if (loading) {
@@ -218,111 +367,22 @@ const TransactionTable = ({
               </TableRow>
             ) : (
               transactions.map((transaction) => (
-                <ContextMenu key={transaction.id}>
-                  <ContextMenuTrigger asChild>
-                    <TableRow
-                      data-state={selectedIds.has(transaction.id) ? "selected" : undefined}
-                      className={`group ${selectedIds.has(transaction.id) ? "bg-muted" : ""} cursor-pointer hover:bg-muted/50 ${(() => {
-                        const txnDate = new Date(transaction.date);
-                        const today = new Date();
-                        txnDate.setHours(0, 0, 0, 0);
-                        today.setHours(0, 0, 0, 0);
-                        return txnDate > today;
-                      })() ? "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50" : ""
-                        }`}
-                      onDoubleClick={(e) => {
-                        if (onRowDoubleClick && !transaction.is_projected) {
-                          onRowDoubleClick(transaction, e);
-                        }
-                      }}
-                    >
-                      <TableCell className="w-[40px] px-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <Checkbox
-                            checked={selectedIds.has(transaction.id)}
-                            onCheckedChange={() => toggleSelect(transaction.id)}
-                          />
-                          {transaction.transfer_id && (
-                            <button
-                              className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors"
-                              title="Unlink Transfer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onUnlinkTransaction) onUnlinkTransaction(transaction.transfer_id);
-                              }}
-                            >
-                              <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400 group-hover/link:text-red-500" />
-                            </button>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300">
-                        <div className="flex items-center gap-2">
-                          {renderCell(transaction, 'date', transaction.date)}
-                          {transaction.is_scheduled_origin && (
-                            <span
-                              title="Go to Scheduled Transaction"
-                              className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full p-1 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (transaction.recurrence_id) {
-                                  navigate(`/scheduled?id=${transaction.recurrence_id}`);
-                                } else {
-                                  toast({ title: "Reference Missing", description: "Could not find the original scheduled transaction.", variant: "destructive" });
-                                }
-                              }}
-                            >
-                              <CalendarClock className="h-4 w-4 text-blue-500" />
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300 font-medium">{renderCell(transaction, 'category', transaction.category)}</TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'sub_category', transaction.sub_category)}</TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'vendor', transaction.vendor)}</TableCell>
-                      <TableCell className="text-slate-700 dark:text-slate-300">{renderCell(transaction, 'account', transaction.account)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-slate-600 dark:text-slate-400" title={transaction.remarks}>
-                        {renderCell(transaction, 'remarks', transaction.remarks)}
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                        {renderCell(transaction, 'amount', transaction.amount)}
-                      </TableCell>
-                    </TableRow>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="w-64">
-                    <ContextMenuItem inset onClick={() => toggleSelect(transaction.id)}>
-                      {selectedIds.has(transaction.id) ? "Deselect" : "Select"}
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    {!transaction.is_projected && (
-                      <>
-                        <ContextMenuItem inset onClick={(e) => onRowDoubleClick && onRowDoubleClick(transaction, e)}>
-                          <Pencil className="h-4 w-4 mr-2" /> Edit
-                        </ContextMenuItem>
-                        <ContextMenuSeparator />
-                      </>
-                    )}
-                    <ContextMenuItem inset onClick={() => onScheduleTransactions && onScheduleTransactions([transaction], () => { })}>
-                      <CalendarClock className="h-4 w-4 mr-2" /> {transaction.recurrence_id ? "Edit Schedule" : "Schedule"}
-                    </ContextMenuItem>
-                    <ContextMenuItem inset onClick={() => onAddTransaction({
-                      ...transaction,
-                      id: undefined,
-                      created_at: undefined,
-                      remarks: transaction.remarks + " (Copy)",
-                      recurrence_id: undefined,
-                      is_scheduled_origin: undefined,
-                      is_projected: undefined,
-                      frequency: undefined,
-                      recurrence_end_date: undefined
-                    })}>
-                      <Copy className="h-4 w-4 mr-2" /> Duplicate
-                    </ContextMenuItem>
-                    <ContextMenuItem inset className="text-red-600" onClick={() => onDeleteTransactions([{ id: transaction.id }])}>
-                      <Trash className="h-4 w-4 mr-2" /> Delete
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+                <TransactionRow
+                  key={transaction.id}
+                  transaction={transaction}
+                  isSelected={selectedIds.has(transaction.id)}
+                  onToggleSelect={toggleSelect}
+                  onRowDoubleClick={onRowDoubleClick}
+                  onUnlinkTransaction={onUnlinkTransaction}
+                  onAddTransaction={onAddTransaction}
+                  onScheduleTransactions={onScheduleTransactions}
+                  onDeleteTransactions={onDeleteTransactions}
+                  accountCurrencyMap={accountCurrencyMap}
+                  selectedCurrency={selectedCurrency}
+                  today={today}
+                  navigate={navigate}
+                  toast={toast}
+                />
               ))
             )}
           </TableBody>
