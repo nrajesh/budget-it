@@ -1,7 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { ChartStyle } from "@/components/ui/chart";
-import React from "react";
 
 describe("ChartStyle", () => {
   it("should sanitize malicious keys in config to prevent XSS", () => {
