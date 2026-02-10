@@ -14,8 +14,10 @@ commands:
     steps:
       - checkout
       - run:
-          name: Enable Corepack
-          command: sudo corepack enable
+          name: Upgrade and Enable Corepack
+          command: |
+            sudo npm install -g corepack@latest
+            sudo corepack enable
       - restore_cache:
           name: Restore pnpm Store Cache
           keys:
