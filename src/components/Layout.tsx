@@ -27,7 +27,7 @@ import {
   Wallet,
   Landmark,
   Lightbulb,
-  DatabaseZap
+  DatabaseZap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,7 +78,7 @@ const Layout = () => {
 
   React.useEffect(() => {
     if (!isLoading && !activeLedger) {
-      navigate('/ledgers');
+      navigate("/ledgers");
     }
   }, [isLoading, activeLedger, navigate]);
 
@@ -122,18 +122,25 @@ const Layout = () => {
   const displayEmail = activeLedger?.short_name || "Budget";
   // const displayAvatar = null; // Removed
   const avatarFallback = activeLedger?.icon ? (
-    activeLedger.icon === 'home' ? <Home className="h-4 w-4" /> :
-      activeLedger.icon === 'globe' ? <Globe className="h-4 w-4" /> :
-        activeLedger.icon === 'baby' ? <Baby className="h-4 w-4" /> :
-          activeLedger.icon === 'wallet' ? <Wallet className="h-4 w-4" /> :
-            activeLedger.icon === 'landmark' ? <Landmark className="h-4 w-4" /> :
-              <Building2 className="h-4 w-4" />
-  ) : (activeLedger?.name?.substring(0, 2).toUpperCase() || "LG");
+    activeLedger.icon === "home" ? (
+      <Home className="h-4 w-4" />
+    ) : activeLedger.icon === "globe" ? (
+      <Globe className="h-4 w-4" />
+    ) : activeLedger.icon === "baby" ? (
+      <Baby className="h-4 w-4" />
+    ) : activeLedger.icon === "wallet" ? (
+      <Wallet className="h-4 w-4" />
+    ) : activeLedger.icon === "landmark" ? (
+      <Landmark className="h-4 w-4" />
+    ) : (
+      <Building2 className="h-4 w-4" />
+    )
+  ) : (
+    activeLedger?.name?.substring(0, 2).toUpperCase() || "LG"
+  );
 
   return (
-    <SidebarProvider
-      className="min-h-screen"
-    >
+    <SidebarProvider className="min-h-screen">
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
@@ -156,7 +163,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/analytics"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/analytics"}
+                >
                   <Link to="/analytics">
                     <BarChart3 />
                     <span>Analytics</span>
@@ -164,7 +174,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/insights"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/insights"}
+                >
                   <Link to="/insights">
                     <Lightbulb />
                     <span>Insights</span>
@@ -172,7 +185,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/transactions"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/transactions"}
+                >
                   <Link to="/transactions">
                     <Users />
                     <span>Transactions</span>
@@ -185,7 +201,10 @@ const Layout = () => {
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/accounts"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/accounts"}
+                >
                   <Link to="/accounts">
                     <Banknote />
                     <span>Accounts</span>
@@ -193,7 +212,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/categories"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/categories"}
+                >
                   <Link to="/categories">
                     <Tag />
                     <span>Categories</span>
@@ -201,7 +223,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/vendors"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/vendors"}
+                >
                   <Link to="/vendors">
                     <Phone />
                     <span>Vendors</span>
@@ -214,7 +239,10 @@ const Layout = () => {
             <SidebarGroupLabel>Setup</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/scheduled"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/scheduled"}
+                >
                   <Link to="/scheduled">
                     <Calendar />
                     <span>Scheduled</span>
@@ -224,7 +252,9 @@ const Layout = () => {
               <Collapsible asChild>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={location.pathname.startsWith("/reports")}>
+                    <SidebarMenuButton
+                      isActive={location.pathname.startsWith("/reports")}
+                    >
                       <Newspaper />
                       Reports
                       <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]:rotate-180" />
@@ -233,17 +263,19 @@ const Layout = () => {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={location.pathname === "/reports/essential"}>
-                          <Link to="/reports/essential">
-                            Essential
-                          </Link>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={location.pathname === "/reports/essential"}
+                        >
+                          <Link to="/reports/essential">Essential</Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild isActive={location.pathname === "/reports/advanced"}>
-                          <Link to="/reports/advanced">
-                            Advanced
-                          </Link>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={location.pathname === "/reports/advanced"}
+                        >
+                          <Link to="/reports/advanced">Advanced</Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
@@ -251,7 +283,10 @@ const Layout = () => {
                 </SidebarMenuItem>
               </Collapsible>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/budgets"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/budgets"}
+                >
                   <Link to="/budgets">
                     <FileText />
                     <span>Budgets</span>
@@ -264,7 +299,10 @@ const Layout = () => {
             <SidebarGroupLabel>User</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/settings"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/settings"}
+                >
                   <Link to="/settings">
                     <User />
                     <span>Settings</span>
@@ -272,7 +310,10 @@ const Layout = () => {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/data-management"}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/data-management"}
+                >
                   <Link to="/data-management">
                     <DatabaseZap />
                     <span>Data Management</span>
@@ -296,7 +337,9 @@ const Layout = () => {
                 className="h-auto w-full justify-start gap-2 p-2"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  {typeof avatarFallback === 'string' ? avatarFallback : avatarFallback}
+                  {typeof avatarFallback === "string"
+                    ? avatarFallback
+                    : avatarFallback}
                 </div>
                 <div className="text-left flex-1 truncate">
                   <p className="text-sm font-medium truncate">{displayName}</p>
@@ -311,9 +354,17 @@ const Layout = () => {
               <DropdownMenuLabel>My Ledgers</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                {ledgers.map(l => (
-                  <DropdownMenuItem key={l.id} onClick={() => switchLedger(l.id)}>
-                    <span className={cn("mr-2 flex h-4 w-4 items-center justify-center", activeLedger?.id === l.id ? "opacity-100" : "opacity-0")}>
+                {ledgers.map((l) => (
+                  <DropdownMenuItem
+                    key={l.id}
+                    onClick={() => switchLedger(l.id)}
+                  >
+                    <span
+                      className={cn(
+                        "mr-2 flex h-4 w-4 items-center justify-center",
+                        activeLedger?.id === l.id ? "opacity-100" : "opacity-0",
+                      )}
+                    >
                       ✓
                     </span>
                     <span>{l.name}</span>
@@ -325,11 +376,13 @@ const Layout = () => {
               <DropdownMenuItem asChild>
                 <Link to="/settings">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                localStorage.removeItem('activeLedgerId');
-                localStorage.setItem('userLoggedOut', 'true');
-                window.location.href = '/ledgers';
-              }}>
+              <DropdownMenuItem
+                onClick={() => {
+                  localStorage.removeItem("activeLedgerId");
+                  localStorage.setItem("userLoggedOut", "true");
+                  window.location.href = "/ledgers";
+                }}
+              >
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -343,14 +396,18 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-
-
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setTheme(resolvedTheme === "light" ? "dark" : "light")}
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
             >
-              {resolvedTheme === 'dark' ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              {resolvedTheme === "dark" ? (
+                <Sun className="size-5" />
+              ) : (
+                <Moon className="size-5" />
+              )}
               <span className="sr-only">Toggle theme</span>
             </Button>
             <Button variant="ghost" size="icon">
@@ -359,18 +416,31 @@ const Layout = () => {
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative size-8 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative size-8 rounded-full"
+                >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary border border-border">
-                    {typeof avatarFallback === 'string' ? avatarFallback : avatarFallback}
+                    {typeof avatarFallback === "string"
+                      ? avatarFallback
+                      : avatarFallback}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Ledgers</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {ledgers.map(l => (
-                  <DropdownMenuItem key={l.id} onClick={() => switchLedger(l.id)}>
-                    <span className={cn("mr-2 flex h-4 w-4 items-center justify-center", activeLedger?.id === l.id ? "opacity-100" : "opacity-0")}>
+                {ledgers.map((l) => (
+                  <DropdownMenuItem
+                    key={l.id}
+                    onClick={() => switchLedger(l.id)}
+                  >
+                    <span
+                      className={cn(
+                        "mr-2 flex h-4 w-4 items-center justify-center",
+                        activeLedger?.id === l.id ? "opacity-100" : "opacity-0",
+                      )}
+                    >
                       ✓
                     </span>
                     <span>{l.name}</span>
@@ -381,11 +451,13 @@ const Layout = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  localStorage.removeItem('activeLedgerId');
-                  localStorage.setItem('userLoggedOut', 'true');
-                  window.location.href = '/ledgers';
-                }}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    localStorage.removeItem("activeLedgerId");
+                    localStorage.setItem("userLoggedOut", "true");
+                    window.location.href = "/ledgers";
+                  }}
+                >
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -395,11 +467,17 @@ const Layout = () => {
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
           <Outlet />
         </main>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white">
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+        >
           <Plus className="h-6 w-6" />
           <span className="sr-only">Add Transaction</span>
         </Button>
-        <AddEditTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+        <AddEditTransactionDialog
+          isOpen={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+        />
         <GlobalProgressDialog />
       </SidebarInset>
     </SidebarProvider>

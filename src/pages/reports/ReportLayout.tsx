@@ -1,22 +1,20 @@
-import * as React from 'react';
+import * as React from "react";
 
-
-import { SearchFilterBar } from '@/components/filters/SearchFilterBar';
-import ExportButtons from '@/components/reports/ExportButtons';
-import { useTransactionFilters } from '@/hooks/transactions/useTransactionFilters';
-import { useTransactionData } from '@/hooks/transactions/useTransactionData';
-import { useTransactions } from '@/contexts/TransactionsContext';
-import { showSuccess, showError } from '@/utils/toast';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { useQuery } from '@tanstack/react-query';
+import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
+import ExportButtons from "@/components/reports/ExportButtons";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { useTransactionData } from "@/hooks/transactions/useTransactionData";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { showSuccess, showError } from "@/utils/toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useQuery } from "@tanstack/react-query";
 import { useLedger } from "@/contexts/LedgerContext";
-import { Budget } from '@/types/dataProvider';
-import { slugify } from '@/lib/utils';
-import { useDataProvider } from '@/context/DataProviderContext';
-import html2canvas from 'html2canvas';
-import { format } from 'date-fns';
-
+import { Budget } from "@/types/dataProvider";
+import { slugify } from "@/lib/utils";
+import { useDataProvider } from "@/context/DataProviderContext";
+import html2canvas from "html2canvas";
+import { format } from "date-fns";
 
 interface ReportLayoutProps {
   title: string;
@@ -31,25 +29,37 @@ interface ReportLayoutProps {
   }) => React.ReactNode;
 }
 
-const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, children }) => {
-  const { accounts, vendors, categories, transactions: allTransactions } = useTransactions();
+const ReportLayout: React.FC<ReportLayoutProps> = ({
+  title,
+  description,
+  children,
+}) => {
+  const {
+    accounts,
+    vendors,
+    categories,
+    transactions: allTransactions,
+  } = useTransactions();
   const { activeLedger } = useLedger();
 
-
-
-  const availableAccountOptions = React.useMemo(() =>
-    accounts.map((acc: any) => ({ value: slugify(acc.name), label: acc.name })),
-    [accounts]
+  const availableAccountOptions = React.useMemo(
+    () =>
+      accounts.map((acc: any) => ({
+        value: slugify(acc.name),
+        label: acc.name,
+      })),
+    [accounts],
   );
 
-  const availableVendorOptions = React.useMemo(() =>
-    vendors.map((v: any) => ({ value: slugify(v.name), label: v.name })),
-    [vendors]
+  const availableVendorOptions = React.useMemo(
+    () => vendors.map((v: any) => ({ value: slugify(v.name), label: v.name })),
+    [vendors],
   );
 
-  const availableCategoryOptions = React.useMemo(() =>
-    categories.map((c: any) => ({ value: slugify(c.name), label: c.name })),
-    [categories]
+  const availableCategoryOptions = React.useMemo(
+    () =>
+      categories.map((c: any) => ({ value: slugify(c.name), label: c.name })),
+    [categories],
   );
 
   const accountNameMap = React.useMemo(() => {
@@ -64,7 +74,9 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
 
   const effectiveAccounts = React.useMemo(() => {
     if (filterProps.selectedAccounts.length === 0) return accounts;
-    return accounts.filter((a: any) => filterProps.selectedAccounts.includes(slugify(a.name)));
+    return accounts.filter((a: any) =>
+      filterProps.selectedAccounts.includes(slugify(a.name)),
+    );
   }, [accounts, filterProps.selectedAccounts]);
 
   const dataProps = useTransactionData({
@@ -77,24 +89,26 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
   const dataProvider = useDataProvider();
 
   const { data: budgets = [] } = useQuery<Budget[], Error>({
-    queryKey: ['budgets', activeLedger?.id],
+    queryKey: ["budgets", activeLedger?.id],
     queryFn: async () => {
       if (!activeLedger?.id) return [];
       // Use data provider to fetch budgets. DataProvider returns budgets with category_name usually.
       // But getBudgetsWithSpending might be overkill if we just want basic list?
       // Actually, ReportLayout just wants the list to calculate things maybe.
       // Let's use getBudgetsWithSpending as it is the main getter we implemented.
-      const budgets = await dataProvider.getBudgetsWithSpending(activeLedger.id);
+      const budgets = await dataProvider.getBudgetsWithSpending(
+        activeLedger.id,
+      );
       return budgets;
     },
     enabled: !!activeLedger,
   });
 
-
-
-
-
-  const { historicalFilteredTransactions, futureFilteredTransactions, combinedFilteredTransactions } = React.useMemo(() => {
+  const {
+    historicalFilteredTransactions,
+    futureFilteredTransactions,
+    combinedFilteredTransactions,
+  } = React.useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
 
@@ -102,25 +116,31 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     // So we just need to split them by date.
 
     // 1. Historical (<= Today)
-    const historical = dataProps.filteredTransactions.filter(t => new Date(t.date) <= today);
+    const historical = dataProps.filteredTransactions.filter(
+      (t) => new Date(t.date) <= today,
+    );
 
     // 2. Future (Actual + Projected > Today)
-    const future = dataProps.filteredTransactions.filter(t => new Date(t.date) > today);
+    const future = dataProps.filteredTransactions.filter(
+      (t) => new Date(t.date) > today,
+    );
 
     // 3. Combined (All)
     // We can just use dataProps.filteredTransactions directly for combined, but ensuring sort
-    const combinedAll = [...dataProps.filteredTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const combinedAll = [...dataProps.filteredTransactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
     return {
       historicalFilteredTransactions: historical,
       futureFilteredTransactions: future,
-      combinedFilteredTransactions: combinedAll
+      combinedFilteredTransactions: combinedAll,
     };
   }, [dataProps.filteredTransactions]);
 
   const handlePdfExport = async () => {
     try {
-      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       let yPos = 20;
@@ -144,13 +164,15 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       doc.setFontSize(10);
       doc.setTextColor(100);
 
-      const dateText = filterProps.dateRange?.from && filterProps.dateRange?.to
-        ? `${format(filterProps.dateRange.from, 'MMM d, yyyy')} - ${format(filterProps.dateRange.to, 'MMM d, yyyy')}`
-        : "All Dates";
+      const dateText =
+        filterProps.dateRange?.from && filterProps.dateRange?.to
+          ? `${format(filterProps.dateRange.from, "MMM d, yyyy")} - ${format(filterProps.dateRange.to, "MMM d, yyyy")}`
+          : "All Dates";
 
-      const accountText = filterProps.selectedAccounts.length > 0
-        ? `Accounts: ${filterProps.selectedAccounts.map(slug => accountNameMap.get(slug) || slug).join(', ')}`
-        : "All Accounts";
+      const accountText =
+        filterProps.selectedAccounts.length > 0
+          ? `Accounts: ${filterProps.selectedAccounts.map((slug) => accountNameMap.get(slug) || slug).join(", ")}`
+          : "All Accounts";
 
       // Wrap text for accounts if too long
       const splitAccountText = doc.splitTextToSize(accountText, pageWidth - 28);
@@ -158,7 +180,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       doc.text(`Date Range: ${dateText}`, 14, yPos);
       yPos += 5;
       doc.text(splitAccountText, 14, yPos);
-      yPos += (splitAccountText.length * 5) + 5;
+      yPos += splitAccountText.length * 5 + 5;
 
       doc.setDrawColor(200);
       doc.line(14, yPos, pageWidth - 14, yPos);
@@ -166,7 +188,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
       doc.setTextColor(0);
 
       // --- 3. Content Processing ---
-      const reportContent = document.getElementById('report-content');
+      const reportContent = document.getElementById("report-content");
       if (!reportContent) {
         showError("Could not find report content to export.");
         return;
@@ -187,8 +209,10 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
         // Heuristic: If it has charts (recharts) OR no tables, capture as image.
         // If it has tables and no charts, use autoTable.
 
-        const hasCharts = section.querySelector('.recharts-wrapper') || section.querySelector('canvas');
-        const tables = Array.from(section.querySelectorAll('table'));
+        const hasCharts =
+          section.querySelector(".recharts-wrapper") ||
+          section.querySelector("canvas");
+        const tables = Array.from(section.querySelectorAll("table"));
         const hasTables = tables.length > 0;
 
         // If it's a visual section (charts) or a summary card without tables
@@ -202,16 +226,16 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
               scale: 2, // Retrolution
               useCORS: true,
               logging: false,
-              backgroundColor: '#ffffff' // Ensure white background for dark mode compatibility if needed, or transparent
+              backgroundColor: "#ffffff", // Ensure white background for dark mode compatibility if needed, or transparent
             });
 
-            const imgData = canvas.toDataURL('image/png');
+            const imgData = canvas.toDataURL("image/png");
             const imgWidth = pageWidth - 28; // 14mm margin each side
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
             checkPageBreak(imgHeight);
 
-            doc.addImage(imgData, 'PNG', 14, yPos, imgWidth, imgHeight);
+            doc.addImage(imgData, "PNG", 14, yPos, imgWidth, imgHeight);
             yPos += imgHeight + 10;
           } catch (e) {
             console.error("Image capture failed for section", e);
@@ -221,10 +245,12 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
             yPos += 10;
             doc.setTextColor(0);
           }
-
         } else if (hasTables) {
           // Render Title if found (e.g. Card Title)
-          const titleEl = section.querySelector('h3') || section.querySelector('.card-title') || section.querySelector('div[class*="font-semibold"]'); // approximate selector
+          const titleEl =
+            section.querySelector("h3") ||
+            section.querySelector(".card-title") ||
+            section.querySelector('div[class*="font-semibold"]'); // approximate selector
           if (titleEl) {
             const titleText = titleEl.textContent?.trim() || "";
             if (titleText) {
@@ -240,14 +266,14 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
           // Use AutoTable for each table in this section
           for (const table of tables) {
             // Check if table has a specific predecessor title (like "Income" vs "Expenses")
-            // heuristic: find closest previous sibling header inside the section? 
+            // heuristic: find closest previous sibling header inside the section?
             // For now, simple autoTable is huge improvement over nothing.
 
             autoTable(doc, {
               html: table,
               startY: yPos,
-              theme: 'grid',
-              headStyles: { fillColor: '#16a34a' },
+              theme: "grid",
+              headStyles: { fillColor: "#16a34a" },
               margin: { left: 14, right: 14 },
               styles: { fontSize: 9 },
               didDrawPage: (data) => {
@@ -255,14 +281,14 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
                 if (data.cursor) {
                   yPos = data.cursor.y;
                 }
-              }
+              },
             });
             yPos = (doc as any).lastAutoTable.finalY + 10;
           }
         }
       }
 
-      doc.save(`${title.replace(/\s+/g, '_')}_Report.pdf`);
+      doc.save(`${title.replace(/\s+/g, "_")}_Report.pdf`);
       showSuccess("PDF export completed successfully.");
     } catch (error: any) {
       console.error("PDF Export failed:", error);
@@ -270,8 +296,10 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
     }
   };
 
-  const handleExcelExport = () => showSuccess("Excel export is not yet implemented.");
-  const handleCsvExport = () => showSuccess("CSV export is not yet implemented.");
+  const handleExcelExport = () =>
+    showSuccess("Excel export is not yet implemented.");
+  const handleCsvExport = () =>
+    showSuccess("CSV export is not yet implemented.");
 
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
@@ -280,7 +308,9 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({ title, description, childre
           <h2 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
             {title}
           </h2>
-          <div className="mt-2 text-lg text-slate-500 dark:text-slate-400">{description}</div>
+          <div className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+            {description}
+          </div>
         </div>
         <ExportButtons
           onPdfExport={handlePdfExport}

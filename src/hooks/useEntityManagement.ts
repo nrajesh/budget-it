@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
-import { db } from '@/lib/dexieDB';
+import { db } from "@/lib/dexieDB";
 
 interface UseEntityManagementProps<T> {
   entityName: string;
@@ -14,8 +14,6 @@ interface UseEntityManagementProps<T> {
   onSuccess?: () => void;
   customDeleteHandler?: (ids: string[]) => void;
 }
-
-
 
 export const useEntityManagement = <T extends { id: string; name: string }>({
   entityName,
@@ -52,18 +50,22 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       // queryKey[0] is usually 'vendors' or 'categories'
       const tableKey = queryKey[0];
 
-      if (tableKey === 'vendors') {
+      if (tableKey === "vendors") {
         await db.vendors.bulkDelete(ids);
         // Also delete associated accounts if is_account?
         // Supabase RPC likely handled cascading. Dexie doesn't cascade by default.
         // For now, simple delete.
-      } else if (tableKey === 'categories') {
+      } else if (tableKey === "categories") {
         await db.categories.bulkDelete(ids);
       }
     },
     onSuccess: async () => {
-      showSuccess(isBulkDelete ? `${selectedRows.length} ${entityNamePlural} deleted successfully.` : `${entityName} deleted successfully.`);
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      showSuccess(
+        isBulkDelete
+          ? `${selectedRows.length} ${entityNamePlural} deleted successfully.`
+          : `${entityName} deleted successfully.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["transactions"] });
       await queryClient.invalidateQueries({ queryKey });
       if (onSuccess) onSuccess();
       setIsConfirmOpen(false);
@@ -87,7 +89,7 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       // If we want to support generic upsert here, we need to know the table.
 
       const tableKey = queryKey[0];
-      if (tableKey === 'categories') {
+      if (tableKey === "categories") {
         // Assume dataToUpsert are names? Or objects?
         // The RPC expected objects.
         // But locally we probably shouldn't use this generic RPC replacement blindly without strict types.
@@ -96,12 +98,13 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
         // Let's check useCategoryManagement.ts ... it defines `batchUpsertCategoriesMutation` but does NOT return `batchUpsertMutation` from `useEntityManagement`.
         // So this `batchUpsertMutation` here might be unused by categories.
         // Let's check Vendors? usePayeeManagement?
-
         // If unused, we can stub it.
       }
     },
     onSuccess: async (_data, variables) => {
-      showSuccess(`${variables.length} ${entityNamePlural} imported successfully!`);
+      showSuccess(
+        `${variables.length} ${entityNamePlural} imported successfully!`,
+      );
       await queryClient.invalidateQueries({ queryKey });
       if (onSuccess) onSuccess();
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -134,7 +137,11 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   };
 
   const confirmDelete = () => {
-    const idsToDelete = isBulkDelete ? selectedRows : (entityToDelete ? [entityToDelete.id] : []);
+    const idsToDelete = isBulkDelete
+      ? selectedRows
+      : entityToDelete
+        ? [entityToDelete.id]
+        : [];
     if (idsToDelete.length > 0) {
       if (customDeleteHandler) {
         customDeleteHandler(idsToDelete);
@@ -155,27 +162,38 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
   };
 
   const handleSelectAll = (checked: boolean, currentEntities: T[]) => {
-    setSelectedRows(checked ? currentEntities.filter(isDeletable).map(p => p.id) : []);
+    setSelectedRows(
+      checked ? currentEntities.filter(isDeletable).map((p) => p.id) : [],
+    );
   };
 
   const handleRowSelect = (id: string, checked: boolean) => {
-    setSelectedRows(prev => checked ? [...prev, id] : prev.filter((rowId) => rowId !== id));
+    setSelectedRows((prev) =>
+      checked ? [...prev, id] : prev.filter((rowId) => rowId !== id),
+    );
   };
 
   const handleImportClick = () => fileInputRef.current?.click();
 
   return {
-    searchTerm, setSearchTerm,
-    currentPage, setCurrentPage,
+    searchTerm,
+    setSearchTerm,
+    currentPage,
+    setCurrentPage,
     itemsPerPage,
-    isDialogOpen, setIsDialogOpen,
+    isDialogOpen,
+    setIsDialogOpen,
     selectedEntity,
-    isConfirmOpen, setIsConfirmOpen,
+    isConfirmOpen,
+    setIsConfirmOpen,
     selectedRows,
-    isImporting, setIsImporting, fileInputRef,
+    isImporting,
+    setIsImporting,
+    fileInputRef,
     deleteMutation,
     batchUpsertMutation,
-    isLoadingMutation: deleteMutation.isPending || batchUpsertMutation.isPending,
+    isLoadingMutation:
+      deleteMutation.isPending || batchUpsertMutation.isPending,
     handleAddClick,
     handleEditClick,
     handleDeleteClick,

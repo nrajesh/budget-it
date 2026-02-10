@@ -17,9 +17,24 @@ const Header = () => {
           </Link>
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-4">
-            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-primary">Dashboard</Link>
-            <Link to="/transactions" className="text-sm font-medium text-muted-foreground hover:text-primary">Transactions</Link>
-            <Link to="/analytics" className="text-sm font-medium text-muted-foreground hover:text-primary">Analytics</Link>
+            <Link
+              to="/dashboard"
+              className="text-sm font-medium text-muted-foreground hover:text-primary"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/transactions"
+              className="text-sm font-medium text-muted-foreground hover:text-primary"
+            >
+              Transactions
+            </Link>
+            <Link
+              to="/analytics"
+              className="text-sm font-medium text-muted-foreground hover:text-primary"
+            >
+              Analytics
+            </Link>
           </nav>
         </div>
         <div className="flex items-center space-x-4">

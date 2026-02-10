@@ -44,20 +44,20 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
 
   const handleAccountClick = (e: React.MouseEvent, accountName: string) => {
     e.stopPropagation(); // Prevent row click event
-    navigate('/transactions', { state: { filterAccount: accountName } });
+    navigate("/transactions", { state: { filterAccount: accountName } });
   };
 
   const handleVendorClick = (e: React.MouseEvent, vendorName: string) => {
     e.stopPropagation(); // Prevent row click event
     const isAccount = accountCurrencyMap.has(vendorName);
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: vendorName } });
+    const filterKey = isAccount ? "filterAccount" : "filterVendor";
+    navigate("/transactions", { state: { [filterKey]: vendorName } });
   };
 
   const handleCategoryClick = (e: React.MouseEvent, categoryName: string) => {
     e.stopPropagation(); // Prevent row click event
-    if (categoryName === 'Transfer') return;
-    navigate('/transactions', { state: { filterCategory: categoryName } });
+    if (categoryName === "Transfer") return;
+    navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
   return (
@@ -83,24 +83,33 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
         <TableBody>
           {currentTransactions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+              <TableCell
+                colSpan={7}
+                className="text-center py-4 text-muted-foreground"
+              >
                 No transactions found matching your filters.
               </TableCell>
             </TableRow>
           ) : (
             currentTransactions.map((transaction) => {
-              const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
+              const currentAccountCurrency =
+                accountCurrencyMap.get(transaction.account) ||
+                transaction.currency;
               const isScheduledOrigin = transaction.is_scheduled_origin; // Use the new flag
               const transactionDate = new Date(transaction.date);
               const isFutureTransaction = transactionDate > today; // Check if date is in the future
 
               // Only grey out if it's from a scheduled origin AND it's in the future
-              const shouldBeGreyedOut = isScheduledOrigin && isFutureTransaction;
+              const shouldBeGreyedOut =
+                isScheduledOrigin && isFutureTransaction;
 
-              const rowClassName = cn("group", shouldBeGreyedOut && "text-muted-foreground italic");
+              const rowClassName = cn(
+                "group",
+                shouldBeGreyedOut && "text-muted-foreground italic",
+              );
               const cellClassName = cn(
                 "group-hover:bg-accent/50",
-                !shouldBeGreyedOut && "cursor-pointer" // Only allow click if not greyed out
+                !shouldBeGreyedOut && "cursor-pointer", // Only allow click if not greyed out
               );
 
               return (
@@ -113,35 +122,99 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
                       disabled={shouldBeGreyedOut} // Disable checkbox if it's a future scheduled transaction
                     />
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cellClassName}
+                  >
                     <div className="flex items-center gap-1">
-                      {isScheduledOrigin && <CalendarCheck className="h-4 w-4 text-muted-foreground" />}
+                      {isScheduledOrigin && (
+                        <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+                      )}
                       {formatDateToDDMMYYYY(transaction.date)}
                     </div>
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleAccountClick(e, transaction.account)} className="cursor-pointer hover:text-primary hover:underline">
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cellClassName}
+                  >
+                    <span
+                      onClick={(e) =>
+                        handleAccountClick(e, transaction.account)
+                      }
+                      className="cursor-pointer hover:text-primary hover:underline"
+                    >
                       {transaction.account}
                     </span>
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleVendorClick(e, transaction.vendor)} className="cursor-pointer hover:text-primary hover:underline">
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cellClassName}
+                  >
+                    <span
+                      onClick={(e) => handleVendorClick(e, transaction.vendor)}
+                      className="cursor-pointer hover:text-primary hover:underline"
+                    >
                       {transaction.vendor}
                     </span>
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
-                    <span onClick={(e) => handleCategoryClick(e, transaction.category)} className={transaction.category !== 'Transfer' ? "cursor-pointer hover:text-primary hover:underline" : ""}>
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cellClassName}
+                  >
+                    <span
+                      onClick={(e) =>
+                        handleCategoryClick(e, transaction.category)
+                      }
+                      className={
+                        transaction.category !== "Transfer"
+                          ? "cursor-pointer hover:text-primary hover:underline"
+                          : ""
+                      }
+                    >
                       {transaction.category}
                     </span>
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cn(
-                    'text-right',
-                    !shouldBeGreyedOut && (transaction.amount < 0 ? 'text-red-500' : 'text-green-500'),
-                    cellClassName
-                  )}>
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cn(
+                      "text-right",
+                      !shouldBeGreyedOut &&
+                        (transaction.amount < 0
+                          ? "text-red-500"
+                          : "text-green-500"),
+                      cellClassName,
+                    )}
+                  >
                     {formatCurrency(transaction.amount, currentAccountCurrency)}
                   </TableCell>
-                  <TableCell onDoubleClick={shouldBeGreyedOut ? undefined : () => handleRowClick(transaction)} className={cellClassName}>
+                  <TableCell
+                    onDoubleClick={
+                      shouldBeGreyedOut
+                        ? undefined
+                        : () => handleRowClick(transaction)
+                    }
+                    className={cellClassName}
+                  >
                     {transaction.remarks}
                   </TableCell>
                 </TableRow>

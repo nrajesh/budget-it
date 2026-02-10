@@ -1,11 +1,13 @@
 import * as React from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { usePayeeManagement } from "@/hooks/usePayeeManagement";
-import AddEditPayeeDialog, { Payee } from "@/components/dialogs/AddEditPayeeDialog";
+import AddEditPayeeDialog, {
+  Payee,
+} from "@/components/dialogs/AddEditPayeeDialog";
 import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
 import VendorDeduplicationDialog from "@/components/management/VendorDeduplicationDialog";
 import CleanupEntitiesDialog from "@/components/management/CleanupEntitiesDialog";
@@ -14,14 +16,22 @@ const VendorsPage = () => {
   const { vendors, isLoadingVendors, invalidateAllData } = useTransactions();
   const managementProps = usePayeeManagement(false);
 
-  const [editingVendorId, setEditingVendorId] = React.useState<string | null>(null);
+  const [editingVendorId, setEditingVendorId] = React.useState<string | null>(
+    null,
+  );
   const [editedName, setEditedName] = React.useState<string>("");
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const updateVendorNameMutation = useMutation({
-    mutationFn: async ({ vendorId, newName }: { vendorId: string; newName: string }) => {
+    mutationFn: async ({
+      vendorId,
+      newName,
+    }: {
+      vendorId: string;
+      newName: string;
+    }) => {
       // Similar pragmatic fix as Categories.tsx
-      const { db } = await import('@/lib/dexieDB');
+      const { db } = await import("@/lib/dexieDB");
       await db.vendors.update(vendorId, { name: newName.trim() });
     },
     onSuccess: async () => {
@@ -29,7 +39,8 @@ const VendorsPage = () => {
       await invalidateAllData();
       setEditingVendorId(null);
     },
-    onError: (error: any) => showError(`Failed to update vendor name: ${error.message}`),
+    onError: (error: any) =>
+      showError(`Failed to update vendor name: ${error.message}`),
   });
 
   const startEditing = (vendor: { id: string; name: string }) => {
@@ -47,8 +58,8 @@ const VendorsPage = () => {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') event.currentTarget.blur();
-    else if (event.key === 'Escape') setEditingVendorId(null);
+    if (event.key === "Enter") event.currentTarget.blur();
+    else if (event.key === "Escape") setEditingVendorId(null);
   };
 
   const columns: ColumnDefinition<Payee>[] = [
@@ -67,7 +78,10 @@ const VendorsPage = () => {
             className="h-8"
           />
         ) : (
-          <div onClick={() => managementProps.handlePayeeNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium">
+          <div
+            onClick={() => managementProps.handlePayeeNameClick(item.name)}
+            className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium"
+          >
             {item.name}
           </div>
         ),
@@ -99,15 +113,17 @@ const VendorsPage = () => {
         AddEditDialogComponent={(props) => (
           <AddEditPayeeDialog {...props} onSuccess={invalidateAllData} />
         )}
-        isDeletable={(item) => item.name !== 'Others'}
+        isDeletable={(item) => item.name !== "Others"}
         customEditHandler={startEditing}
-        isEditing={id => editingVendorId === id}
+        isEditing={(id) => editingVendorId === id}
         isUpdating={updateVendorNameMutation.isPending}
         // Pass all management props explicitly
         {...managementProps}
         selectedEntity={managementProps.selectedPayee}
         DeduplicationDialogComponent={VendorDeduplicationDialog}
-        CleanupDialogComponent={(props: any) => <CleanupEntitiesDialog {...props} entityType="vendor" />}
+        CleanupDialogComponent={(props: any) => (
+          <CleanupEntitiesDialog {...props} entityType="vendor" />
+        )}
       />
     </>
   );

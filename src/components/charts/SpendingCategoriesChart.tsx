@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle, ThemedCardDescription } from "@/components/ThemedCard";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardHeader,
+  ThemedCardTitle,
+  ThemedCardDescription,
+} from "@/components/ThemedCard";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -11,32 +17,57 @@ import { slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#36A2EB', '#FFCE56', '#FF6384'];
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#A28DFF",
+  "#36A2EB",
+  "#FFCE56",
+  "#FF6384",
+];
 
 interface SpendingCategoriesChartProps {
   transactions: Transaction[];
 }
 
-export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChartProps) {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-  const { setSelectedCategories, setSelectedSubCategories, handleResetFilters, selectedAccounts } = useTransactionFilters();
+export function SpendingCategoriesChart({
+  transactions,
+}: SpendingCategoriesChartProps) {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
+    useCurrency();
+  const {
+    setSelectedCategories,
+    setSelectedSubCategories,
+    handleResetFilters,
+    selectedAccounts,
+  } = useTransactionFilters();
 
-  const [selectedCategory, setSelectedCategory] = useState<{ name: string } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<{
+    name: string;
+  } | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
   // Apply account filter to the passed transactions (if not already applied in Analytics.tsx)
   const accountFilteredTransactions = React.useMemo(() => {
     if (selectedAccounts.length === 0) return transactions;
-    return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
+    return transactions.filter((t) =>
+      selectedAccounts.includes(slugify(t.account)),
+    );
   }, [transactions, selectedAccounts]);
 
   // Calculate category data
   const categoriesData = React.useMemo(() => {
     const categoryMap = new Map<string, number>();
 
-    accountFilteredTransactions.forEach(t => {
-      if (t.amount < 0 && t.category && t.category !== 'Transfer') {
-        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || selectedCurrency, selectedCurrency);
+    accountFilteredTransactions.forEach((t) => {
+      if (t.amount < 0 && t.category && t.category !== "Transfer") {
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(t.amount),
+          t.currency || selectedCurrency,
+          selectedCurrency,
+        );
         const current = categoryMap.get(t.category) || 0;
         categoryMap.set(t.category, current + convertedAmount);
       }
@@ -45,9 +76,9 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     return Array.from(categoryMap.entries())
       .map(([name, amount]) => ({
         name,
-        amount
+        amount,
       }))
-      .filter(c => c.amount > 0)
+      .filter((c) => c.amount > 0)
       .sort((a, b) => b.amount - a.amount);
   }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
 
@@ -58,10 +89,14 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     const subCatMap = new Map<string, number>();
 
     accountFilteredTransactions
-      .filter(t => t.category === selectedCategory.name && t.amount < 0)
-      .forEach(t => {
+      .filter((t) => t.category === selectedCategory.name && t.amount < 0)
+      .forEach((t) => {
         const subCat = t.sub_category || "Uncategorized";
-        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency || selectedCurrency, selectedCurrency);
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(t.amount),
+          t.currency || selectedCurrency,
+          selectedCurrency,
+        );
         const current = subCatMap.get(subCat) || 0;
         subCatMap.set(subCat, current + convertedAmount);
       });
@@ -69,29 +104,40 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     return Array.from(subCatMap.entries())
       .map(([name, amount]) => ({
         name,
-        amount
+        amount,
       }))
       .sort((a, b) => b.amount - a.amount);
-  }, [selectedCategory, accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
+  }, [
+    selectedCategory,
+    accountFilteredTransactions,
+    convertBetweenCurrencies,
+    selectedCurrency,
+  ]);
 
   const currentData = selectedCategory ? subCategoryData : categoriesData;
 
-  const onPieClick = useCallback((data: any, index: number) => {
-    if (!selectedCategory) {
-      setActiveIndex(index);
-      setSelectedCategory({ name: data.name });
+  const onPieClick = useCallback(
+    (data: any, index: number) => {
+      if (!selectedCategory) {
+        setActiveIndex(index);
+        setSelectedCategory({ name: data.name });
 
-      // Sync with global filters
-      setSelectedCategories([slugify(data.name)]);
-      setSelectedSubCategories([]); // Clear sub-categories when drilling into a new category
-    } else {
-      setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
+        // Sync with global filters
+        setSelectedCategories([slugify(data.name)]);
+        setSelectedSubCategories([]); // Clear sub-categories when drilling into a new category
+      } else {
+        setActiveIndex((prevIndex) =>
+          prevIndex === index ? undefined : index,
+        );
 
-      // Sync with global filters
-      const subCatSlug = data.name === "Uncategorized" ? "uncategorized" : slugify(data.name);
-      setSelectedSubCategories([subCatSlug]);
-    }
-  }, [selectedCategory, setSelectedCategories, setSelectedSubCategories]);
+        // Sync with global filters
+        const subCatSlug =
+          data.name === "Uncategorized" ? "uncategorized" : slugify(data.name);
+        setSelectedSubCategories([subCatSlug]);
+      }
+    },
+    [selectedCategory, setSelectedCategories, setSelectedSubCategories],
+  );
 
   const handleBackToCategories = useCallback(() => {
     setSelectedCategory(null);
@@ -105,9 +151,18 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
     handleResetFilters();
   }, [handleResetFilters]);
 
-  const renderActiveShape = useCallback((props: any) => {
-    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetAll} />;
-  }, [formatCurrency, resetAll]);
+  const renderActiveShape = useCallback(
+    (props: any) => {
+      return (
+        <ActivePieShape
+          {...props}
+          formatCurrency={formatCurrency}
+          onCenterClick={resetAll}
+        />
+      );
+    },
+    [formatCurrency, resetAll],
+  );
 
   if (categoriesData.length === 0) {
     return (
@@ -142,9 +197,7 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
             )}
           </ThemedCardTitle>
           {!selectedCategory && (
-            <ThemedCardDescription>
-              TAP TO DRILL DOWN
-            </ThemedCardDescription>
+            <ThemedCardDescription>TAP TO DRILL DOWN</ThemedCardDescription>
           )}
         </div>
       </ThemedCardHeader>
@@ -169,19 +222,22 @@ export function SpendingCategoriesChart({ transactions }: SpendingCategoriesChar
                 animationDuration={800}
               >
                 {currentData.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
                 contentStyle={{
-                  borderRadius: '12px',
-                  border: 'none',
-                  boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                  backgroundColor: 'var(--tooltip-bg)',
-                  color: 'var(--tooltip-text)'
+                  borderRadius: "12px",
+                  border: "none",
+                  boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                  backgroundColor: "var(--tooltip-bg)",
+                  color: "var(--tooltip-text)",
                 }}
-                itemStyle={{ color: 'var(--tooltip-text)' }}
+                itemStyle={{ color: "var(--tooltip-text)" }}
               />
             </PieChart>
           </ResponsiveContainer>

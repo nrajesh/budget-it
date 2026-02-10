@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardHeader, ThemedCardTitle, ThemedCardDescription } from "@/components/ThemedCard";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardHeader,
+  ThemedCardTitle,
+  ThemedCardDescription,
+} from "@/components/ThemedCard";
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -9,31 +15,50 @@ import { ActivePieShape } from "./ActivePieShape";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = [
+  "#8884d8",
+  "#82ca9d",
+  "#ffc658",
+  "#ff8042",
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+];
 
 interface SpendingByVendorChartProps {
   transactions: Transaction[];
 }
 
-export function SpendingByVendorChart({ transactions }: SpendingByVendorChartProps) {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
-  const { setSelectedVendors, handleResetFilters, selectedAccounts } = useTransactionFilters();
+export function SpendingByVendorChart({
+  transactions,
+}: SpendingByVendorChartProps) {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
+    useCurrency();
+  const { setSelectedVendors, handleResetFilters, selectedAccounts } =
+    useTransactionFilters();
 
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
   // Apply account filter (consistent with categories chart)
   const accountFilteredTransactions = React.useMemo(() => {
     if (selectedAccounts.length === 0) return transactions;
-    return transactions.filter(t => selectedAccounts.includes(slugify(t.account)));
+    return transactions.filter((t) =>
+      selectedAccounts.includes(slugify(t.account)),
+    );
   }, [transactions, selectedAccounts]);
 
   const vendorSpendingData = React.useMemo(() => {
     const spendingMap = new Map<string, number>();
 
-    accountFilteredTransactions.forEach(t => {
-      if (t.amount < 0 && t.category !== 'Transfer') {
-        const vendor = t.vendor || 'Unknown Vendor';
-        const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, selectedCurrency);
+    accountFilteredTransactions.forEach((t) => {
+      if (t.amount < 0 && t.category !== "Transfer") {
+        const vendor = t.vendor || "Unknown Vendor";
+        const convertedAmount = convertBetweenCurrencies(
+          Math.abs(t.amount),
+          t.currency,
+          selectedCurrency,
+        );
         const current = spendingMap.get(vendor) || 0;
         spendingMap.set(vendor, current + convertedAmount);
       }
@@ -42,29 +67,41 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
     return Array.from(spendingMap.entries())
       .map(([name, amount]) => ({
         name,
-        amount
+        amount,
       }))
-      .filter(v => v.amount > 0)
+      .filter((v) => v.amount > 0)
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 15); // Show top 15 vendors
   }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
 
-  const onPieClick = useCallback((data: any, index: number) => {
-    setActiveIndex(prevIndex => (prevIndex === index ? undefined : index));
+  const onPieClick = useCallback(
+    (data: any, index: number) => {
+      setActiveIndex((prevIndex) => (prevIndex === index ? undefined : index));
 
-    // Sync with global filters
-    const vendorSlug = slugify(data.name);
-    setSelectedVendors([vendorSlug]);
-  }, [setSelectedVendors]);
+      // Sync with global filters
+      const vendorSlug = slugify(data.name);
+      setSelectedVendors([vendorSlug]);
+    },
+    [setSelectedVendors],
+  );
 
   const resetAll = useCallback(() => {
     setActiveIndex(undefined);
     handleResetFilters();
   }, [handleResetFilters]);
 
-  const renderActiveShape = useCallback((props: any) => {
-    return <ActivePieShape {...props} formatCurrency={formatCurrency} onCenterClick={resetAll} />;
-  }, [formatCurrency, resetAll]);
+  const renderActiveShape = useCallback(
+    (props: any) => {
+      return (
+        <ActivePieShape
+          {...props}
+          formatCurrency={formatCurrency}
+          onCenterClick={resetAll}
+        />
+      );
+    },
+    [formatCurrency, resetAll],
+  );
 
   if (vendorSpendingData.length === 0) {
     return (
@@ -81,7 +118,10 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
     );
   }
 
-  const totalSpending = vendorSpendingData.reduce((sum, item) => sum + item.amount, 0);
+  const totalSpending = vendorSpendingData.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
 
   return (
     <ThemedCard className="flex flex-col h-full">
@@ -113,12 +153,19 @@ export function SpendingByVendorChart({ transactions }: SpendingByVendorChartPro
                 animationDuration={800}
               >
                 {vendorSpendingData.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip
                 formatter={(value: number) => formatCurrency(value)}
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                contentStyle={{
+                  borderRadius: "12px",
+                  border: "none",
+                  boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                }}
               />
             </PieChart>
           </ResponsiveContainer>

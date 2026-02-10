@@ -1,9 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { showSuccess, showError } from "@/utils/toast";
@@ -25,7 +39,9 @@ interface AccountRowData {
   difference: number;
 }
 
-const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationDialogProps> = ({ isOpen, onClose }) => {
+const AccountBalanceReconciliationDialog: React.FC<
+  AccountBalanceReconciliationDialogProps
+> = ({ isOpen, onClose }) => {
   const dataProvider = useDataProvider();
   // const session = useSession();
   const { activeLedger } = useLedger();
@@ -39,16 +55,16 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
   // Initialize rows when dialog opens
   useEffect(() => {
     if (isOpen) {
-      const calculatedRows = accounts.map(acc => {
+      const calculatedRows = accounts.map((acc) => {
         const sysBal = acc.running_balance || 0;
 
         return {
           id: acc.id,
           name: acc.name,
-          currency: acc.currency || 'USD',
+          currency: acc.currency || "USD",
           systemBalance: sysBal,
-          actualBalance: '',
-          difference: 0
+          actualBalance: "",
+          difference: 0,
         };
       });
       setRows(calculatedRows);
@@ -57,23 +73,27 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
   }, [isOpen, accounts, transactions]);
 
   const handleActualBalanceChange = (id: string, value: string) => {
-    setRows(prev => prev.map(row => {
-      if (row.id === id) {
-        const actual = parseFloat(value);
-        const diff = isNaN(actual) ? 0 : actual - row.systemBalance;
-        return { ...row, actualBalance: value, difference: diff };
-      }
-      return row;
-    }));
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.id === id) {
+          const actual = parseFloat(value);
+          const diff = isNaN(actual) ? 0 : actual - row.systemBalance;
+          return { ...row, actualBalance: value, difference: diff };
+        }
+        return row;
+      }),
+    );
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) setSelectedIds(rows.map(r => r.id));
+    if (checked) setSelectedIds(rows.map((r) => r.id));
     else setSelectedIds([]);
   };
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    );
   };
 
   const handleReconcile = async () => {
@@ -86,7 +106,9 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
     setIsProcessing(true);
     try {
       // Filter selected rows that have a difference to adjust
-      const adjustments = rows.filter(r => selectedIds.includes(r.id) && r.difference !== 0);
+      const adjustments = rows.filter(
+        (r) => selectedIds.includes(r.id) && r.difference !== 0,
+      );
 
       if (adjustments.length === 0) {
         showSuccess("No adjustments needed for selected accounts.");
@@ -94,18 +116,20 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
         return;
       }
 
-      await Promise.all(adjustments.map(adj =>
-        dataProvider.addTransaction({
-          user_id: activeLedger.id,
-          date: new Date().toISOString(),
-          account: adj.name,
-          vendor: "Balance Adjustment",
-          category: "Adjustment",
-          amount: adj.difference,
-          remarks: `Reconciliation Adjustment to match balance ${adj.actualBalance}`,
-          currency: adj.currency
-        })
-      ));
+      await Promise.all(
+        adjustments.map((adj) =>
+          dataProvider.addTransaction({
+            user_id: activeLedger.id,
+            date: new Date().toISOString(),
+            account: adj.name,
+            vendor: "Balance Adjustment",
+            category: "Adjustment",
+            amount: adj.difference,
+            remarks: `Reconciliation Adjustment to match balance ${adj.actualBalance}`,
+            currency: adj.currency,
+          }),
+        ),
+      );
 
       showSuccess(`Reconciled ${adjustments.length} accounts successfully.`);
       await invalidateAllData();
@@ -123,7 +147,8 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
         <DialogHeader>
           <DialogTitle>Reconcile Account Balances</DialogTitle>
           <DialogDescription>
-            Select accounts and enter their actual bank balances to automatically create adjustment transactions.
+            Select accounts and enter their actual bank balances to
+            automatically create adjustment transactions.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,8 +158,12 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
               <TableRow>
                 <TableHead className="w-[50px]">
                   <Checkbox
-                    checked={rows.length > 0 && selectedIds.length === rows.length}
-                    onCheckedChange={(checked) => handleSelectAll(Boolean(checked))}
+                    checked={
+                      rows.length > 0 && selectedIds.length === rows.length
+                    }
+                    onCheckedChange={(checked) =>
+                      handleSelectAll(Boolean(checked))
+                    }
                   />
                 </TableHead>
                 <TableHead>Account</TableHead>
@@ -153,19 +182,26 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
                     />
                   </TableCell>
                   <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(row.systemBalance, row.currency)}</TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(row.systemBalance, row.currency)}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Input
                       type="number"
                       step="0.01"
                       value={row.actualBalance}
-                      onChange={(e) => handleActualBalanceChange(row.id, e.target.value)}
+                      onChange={(e) =>
+                        handleActualBalanceChange(row.id, e.target.value)
+                      }
                       className="h-8 w-[120px] ml-auto text-right"
                       placeholder="0.00"
                     />
                   </TableCell>
-                  <TableCell className={`text-right ${row.difference === 0 ? 'text-green-600' : 'text-orange-600'}`}>
-                    {row.difference > 0 ? '+' : ''}{formatCurrency(row.difference, row.currency)}
+                  <TableCell
+                    className={`text-right ${row.difference === 0 ? "text-green-600" : "text-orange-600"}`}
+                  >
+                    {row.difference > 0 ? "+" : ""}
+                    {formatCurrency(row.difference, row.currency)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -174,8 +210,13 @@ const AccountBalanceReconciliationDialog: React.FC<AccountBalanceReconciliationD
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleReconcile} disabled={isProcessing || selectedIds.length === 0}>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleReconcile}
+            disabled={isProcessing || selectedIds.length === 0}
+          >
             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Reconcile Selected ({selectedIds.length})
           </Button>

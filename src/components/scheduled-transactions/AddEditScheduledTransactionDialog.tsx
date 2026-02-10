@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { Loader2 } from "lucide-react";
-import { ScheduledTransaction as ScheduledTransactionType } from '@/types/dataProvider';
+import { ScheduledTransaction as ScheduledTransactionType } from "@/types/dataProvider";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import { Category } from "@/data/finance-data";
@@ -49,7 +49,9 @@ interface AddEditScheduledTransactionDialogProps {
   isLoading: boolean;
 }
 
-export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransactionDialogProps> = ({
+export const AddEditScheduledTransactionDialog: React.FC<
+  AddEditScheduledTransactionDialogProps
+> = ({
   isOpen,
   onOpenChange,
   transaction,
@@ -61,26 +63,43 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
   allSubCategories,
   isLoading,
 }) => {
-  const formSchema = React.useMemo(() => z.object({
-    date: z.string().min(1, "Date is required"),
-    account: z.string().min(1, "Account is required"),
-    vendor: z.string().min(1, "Vendor is required"),
-    category: z.string().min(1, "Category is required"),
-    sub_category: z.string().optional(),
-    amount: z.coerce.number().refine(val => val !== 0, { message: "Amount cannot be zero" }),
-    frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
-    frequency_unit: z.string().min(1, "Frequency unit is required"),
-    remarks: z.string().optional(),
-    recurrence_end_date: z.string().optional(),
-  }).refine(data => {
-    const isVendorAnAccount = allPayees.find(p => p.value === data.vendor)?.isAccount;
-    if (isVendorAnAccount && data.category !== 'Transfer') return false;
-    if (!isVendorAnAccount && data.category === 'Transfer') return false;
-    return true;
-  }, {
-    message: "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
-    path: ["category"],
-  }), [allPayees]);
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          date: z.string().min(1, "Date is required"),
+          account: z.string().min(1, "Account is required"),
+          vendor: z.string().min(1, "Vendor is required"),
+          category: z.string().min(1, "Category is required"),
+          sub_category: z.string().optional(),
+          amount: z.coerce
+            .number()
+            .refine((val) => val !== 0, { message: "Amount cannot be zero" }),
+          frequency_value: z.coerce
+            .number()
+            .min(1, "Frequency value must be at least 1"),
+          frequency_unit: z.string().min(1, "Frequency unit is required"),
+          remarks: z.string().optional(),
+          recurrence_end_date: z.string().optional(),
+        })
+        .refine(
+          (data) => {
+            const isVendorAnAccount = allPayees.find(
+              (p) => p.value === data.vendor,
+            )?.isAccount;
+            if (isVendorAnAccount && data.category !== "Transfer") return false;
+            if (!isVendorAnAccount && data.category === "Transfer")
+              return false;
+            return true;
+          },
+          {
+            message:
+              "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
+            path: ["category"],
+          },
+        ),
+    [allPayees],
+  );
 
   type ScheduledTransactionFormData = z.infer<typeof formSchema>;
 
@@ -110,25 +129,27 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           account: transaction.account,
           vendor: transaction.vendor,
           category: transaction.category,
-          sub_category: transaction.sub_category || '',
+          sub_category: transaction.sub_category || "",
           amount: transaction.amount,
           frequency_value: frequencyMatch ? parseInt(frequencyMatch[1], 10) : 1,
-          frequency_unit: frequencyMatch ? frequencyMatch[2] : 'm',
-          remarks: transaction.remarks || '',
-          recurrence_end_date: transaction.end_date ? formatDateToYYYYMMDD(transaction.end_date) : '',
+          frequency_unit: frequencyMatch ? frequencyMatch[2] : "m",
+          remarks: transaction.remarks || "",
+          recurrence_end_date: transaction.end_date
+            ? formatDateToYYYYMMDD(transaction.end_date)
+            : "",
         });
       } else {
         form.reset({
           date: tomorrowDateString,
-          account: '',
-          vendor: '',
-          category: '',
-          sub_category: '',
+          account: "",
+          vendor: "",
+          category: "",
+          sub_category: "",
           amount: 0,
           frequency_value: 1,
-          frequency_unit: 'm',
-          remarks: '',
-          recurrence_end_date: '',
+          frequency_unit: "m",
+          remarks: "",
+          recurrence_end_date: "",
         });
       }
     }
@@ -136,7 +157,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
 
   const watchedVendor = form.watch("vendor");
   const isVendorAnAccount = React.useMemo(() => {
-    return allPayees.find(p => p.value === watchedVendor)?.isAccount || false;
+    return allPayees.find((p) => p.value === watchedVendor)?.isAccount || false;
   }, [watchedVendor, allPayees]);
 
   React.useEffect(() => {
@@ -152,9 +173,12 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{transaction ? "Edit" : "Add"} Scheduled Transaction</DialogTitle>
+          <DialogTitle>
+            {transaction ? "Edit" : "Add"} Scheduled Transaction
+          </DialogTitle>
           <DialogDescription>
-            Define a recurring transaction. Occurrences up to today will be automatically added to your transactions.
+            Define a recurring transaction. Occurrences up to today will be
+            automatically added to your transactions.
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
@@ -163,11 +187,14 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((values) => {
-              // Construct frequency string
-              const frequency = `${values.frequency_value}${values.frequency_unit}`;
-              onSubmit({ ...values, frequency });
-            })} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit((values) => {
+                // Construct frequency string
+                const frequency = `${values.frequency_value}${values.frequency_unit}`;
+                onSubmit({ ...values, frequency });
+              })}
+              className="space-y-4"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -176,9 +203,16 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} min={tomorrowDateString} />
+                        <Input
+                          type="date"
+                          {...field}
+                          min={tomorrowDateString}
+                        />
                       </FormControl>
-                      <FormDescription>Only future dates (from tomorrow onwards) can be selected.</FormDescription>
+                      <FormDescription>
+                        Only future dates (from tomorrow onwards) can be
+                        selected.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -192,12 +226,27 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                       <FormControl>
                         <Input
                           type="date"
-                          min={form.watch("date") ? formatDateToYYYYMMDD(new Date(Math.max(new Date(form.watch("date")).getTime(), new Date(dayAfterTomorrowDateString).getTime()))) : dayAfterTomorrowDateString}
+                          min={
+                            form.watch("date")
+                              ? formatDateToYYYYMMDD(
+                                  new Date(
+                                    Math.max(
+                                      new Date(form.watch("date")).getTime(),
+                                      new Date(
+                                        dayAfterTomorrowDateString,
+                                      ).getTime(),
+                                    ),
+                                  ),
+                                )
+                              : dayAfterTomorrowDateString
+                          }
                           {...field}
-                          value={field.value || ''}
+                          value={field.value || ""}
                         />
                       </FormControl>
-                      <FormDescription>Must be after the start date.</FormDescription>
+                      <FormDescription>
+                        Must be after the start date.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -209,7 +258,10 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     <FormItem>
                       <FormLabel>Account</FormLabel>
                       <Combobox
-                        options={accounts.map(account => ({ value: account.name, label: account.name }))}
+                        options={accounts.map((account) => ({
+                          value: account.name,
+                          label: account.name,
+                        }))}
                         value={field.value}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
@@ -228,7 +280,10 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     <FormItem>
                       <FormLabel>Vendor / Account</FormLabel>
                       <Combobox
-                        options={allPayees.map(payee => ({ value: payee.value, label: payee.label }))}
+                        options={allPayees.map((payee) => ({
+                          value: payee.value,
+                          label: payee.label,
+                        }))}
                         value={field.value}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
@@ -247,7 +302,10 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <Combobox
-                        options={categories.map(category => ({ value: category.name, label: category.name }))}
+                        options={categories.map((category) => ({
+                          value: category.name,
+                          label: category.name,
+                        }))}
                         value={field.value}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
@@ -267,7 +325,10 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     <FormItem>
                       <FormLabel>Sub-category</FormLabel>
                       <Combobox
-                        options={allSubCategories.map(sub => ({ value: sub, label: sub }))}
+                        options={allSubCategories.map((sub) => ({
+                          value: sub,
+                          label: sub,
+                        }))}
                         value={field.value || ""}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
@@ -292,7 +353,7 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                           step="0.01"
                           placeholder="0.00"
                           {...field}
-                          onChange={e => {
+                          onChange={(e) => {
                             // Let the string value pass through. Zod schema handles coercion.
                             // This allows typing "-" without it becoming NaN immediately.
                             field.onChange(e.target.value);
@@ -310,7 +371,16 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     render={({ field }) => (
                       <FormItem className="flex-grow">
                         <FormLabel>Frequency</FormLabel>
-                        <FormControl><Input type="number" min="1" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10))} /></FormControl>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value, 10))
+                            }
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -320,8 +390,15 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                     name="frequency_unit"
                     render={({ field }) => (
                       <FormItem>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
                           <SelectContent>
                             <SelectItem value="d">Days</SelectItem>
                             <SelectItem value="w">Weeks</SelectItem>
@@ -341,15 +418,26 @@ export const AddEditScheduledTransactionDialog: React.FC<AddEditScheduledTransac
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Remarks</FormLabel>
-                    <FormControl><Textarea placeholder="Optional notes" {...field} /></FormControl>
+                    <FormControl>
+                      <Textarea placeholder="Optional notes" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <DialogFooter className="pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSubmitting && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   Save
                 </Button>
               </DialogFooter>

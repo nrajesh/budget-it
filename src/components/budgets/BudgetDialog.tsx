@@ -17,7 +17,11 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Combobox } from "@/components/ui/combobox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Form,
   FormControl,
@@ -31,24 +35,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useEffect, useState } from "react";
 import { Budget, Category, SubCategory } from "../../types/budgets";
-import { useDataProvider } from '@/context/DataProviderContext';
+import { useDataProvider } from "@/context/DataProviderContext";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-const budgetSchema = z.object({
-  category_id: z.string().min(1, "Category is required."),
-  sub_category_id: z.string().nullable().optional(),
-  target_amount: z.coerce.number().positive("Amount must be a positive number."),
-  frequency: z.string().min(1, "Frequency is required."),
-  start_date: z.date({ required_error: "Start date is required." }),
-  end_date: z.date().optional(),
-}).refine(data => !data.end_date || data.end_date > data.start_date, {
-  message: "End date must be after start date.",
-  path: ["end_date"],
-});
+const budgetSchema = z
+  .object({
+    category_id: z.string().min(1, "Category is required."),
+    sub_category_id: z.string().nullable().optional(),
+    target_amount: z.coerce
+      .number()
+      .positive("Amount must be a positive number."),
+    frequency: z.string().min(1, "Frequency is required."),
+    start_date: z.date({ required_error: "Start date is required." }),
+    end_date: z.date().optional(),
+  })
+  .refine((data) => !data.end_date || data.end_date > data.start_date, {
+    message: "End date must be after start date.",
+    path: ["end_date"],
+  });
 
 type BudgetFormValues = z.infer<typeof budgetSchema>;
 
@@ -60,12 +68,19 @@ interface BudgetDialogProps {
   userId: string;
 }
 
-export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: BudgetDialogProps) {
+export function BudgetDialog({
+  isOpen,
+  onClose,
+  onSave,
+  budget,
+  userId,
+}: BudgetDialogProps) {
   const { selectedCurrency } = useCurrency();
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [defaultCurrency, setDefaultCurrency] = useState<string>(selectedCurrency);
+  const [defaultCurrency, setDefaultCurrency] =
+    useState<string>(selectedCurrency);
   const isEditMode = !!budget;
   const dataProvider = useDataProvider();
 
@@ -82,12 +97,10 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
   });
 
   const selectedCategoryId = form.watch("category_id");
-  const filteredSubCategories = subCategories.filter(
-    (sub) => {
-      const match = sub.category_id === selectedCategoryId;
-      return match;
-    }
-  );
+  const filteredSubCategories = subCategories.filter((sub) => {
+    const match = sub.category_id === selectedCategoryId;
+    return match;
+  });
 
   useEffect(() => {
     async function fetchUserData() {
@@ -134,14 +147,18 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
   }, [budget, form, selectedCurrency]);
 
   const onSubmit = async (values: BudgetFormValues) => {
-    const selectedCategory = categories.find(c => c.id === values.category_id);
+    const selectedCategory = categories.find(
+      (c) => c.id === values.category_id,
+    );
     // Find subcategory name if ID is present (though subCats are empty currently)
-    const subCatName = values.sub_category_id ? subCategories.find(s => s.id === values.sub_category_id)?.name : null;
+    const subCatName = values.sub_category_id
+      ? subCategories.find((s) => s.id === values.sub_category_id)?.name
+      : null;
 
     const budgetData: any = {
       user_id: userId,
       category_id: values.category_id,
-      category_name: selectedCategory?.name || '',
+      category_name: selectedCategory?.name || "",
       sub_category_id: values.sub_category_id || null,
       sub_category_name: subCatName,
       target_amount: values.target_amount,
@@ -159,7 +176,7 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
       }
 
       toast({
-        title: `Budget ${isEditMode ? 'updated' : 'created'}`,
+        title: `Budget ${isEditMode ? "updated" : "created"}`,
         description: "Your budget has been saved successfully.",
       });
       onSave();
@@ -177,7 +194,9 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit Budget" : "Create Budget"}</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? "Edit Budget" : "Create Budget"}
+          </DialogTitle>
           <DialogDescription>
             Set a spending target for a category within a specific period.
           </DialogDescription>
@@ -191,7 +210,9 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <Combobox
-                    options={categories.map((cat) => ({ value: cat.id, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))}
+                    options={categories
+                      .map((cat) => ({ value: cat.id, label: cat.name }))
+                      .sort((a, b) => a.label.localeCompare(b.label))}
                     value={field.value}
                     onChange={(val) => {
                       field.onChange(val);
@@ -212,20 +233,32 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
                 <FormItem>
                   <FormLabel>Sub-category (Optional)</FormLabel>
                   <Combobox
-                    options={filteredSubCategories.map((sub) => ({
-                      value: sub.id,
-                      label: sub.name || "Unknown"
-                    })).sort((a, b) => (a.label || "").localeCompare(b.label || ""))}
+                    options={filteredSubCategories
+                      .map((sub) => ({
+                        value: sub.id,
+                        label: sub.name || "Unknown",
+                      }))
+                      .sort((a, b) =>
+                        (a.label || "").localeCompare(b.label || ""),
+                      )}
                     value={field.value || ""}
                     onChange={(val) => field.onChange(val || null)}
                     placeholder={
                       selectedCategoryId
-                        ? (filteredSubCategories.length > 0 ? "Select a sub-category" : "No sub-categories found")
+                        ? filteredSubCategories.length > 0
+                          ? "Select a sub-category"
+                          : "No sub-categories found"
                         : "Select a category first"
                     }
                     searchPlaceholder="Search sub-categories..."
-                    emptyPlaceholder={selectedCategoryId ? "No sub-categories found" : "Select a category first"}
-                    disabled={!selectedCategoryId || filteredSubCategories.length === 0}
+                    emptyPlaceholder={
+                      selectedCategoryId
+                        ? "No sub-categories found"
+                        : "Select a category first"
+                    }
+                    disabled={
+                      !selectedCategoryId || filteredSubCategories.length === 0
+                    }
                   />
                   <FormMessage />
                 </FormItem>
@@ -242,7 +275,9 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
                       type="number"
                       placeholder="100.00"
                       {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value))
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -285,7 +320,7 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
                           variant={"outline"}
                           className={cn(
                             "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
                           {field.value ? (
@@ -323,7 +358,7 @@ export function BudgetDialog({ isOpen, onClose, onSave, budget, userId }: Budget
                           variant={"outline"}
                           className={cn(
                             "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
                           {field.value ? (

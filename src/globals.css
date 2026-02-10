@@ -183,7 +183,6 @@
 }
 
 @layer components {
-
   /* Default Budget Bar (Standard Theme uses Primary/Black) */
   .bg-budget-bar {
     background-color: hsl(var(--primary));

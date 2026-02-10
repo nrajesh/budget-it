@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { Transaction } from '@/data/finance-data';
-import { Payee } from '@/components/dialogs/AddEditPayeeDialog';
-import { calculateAccountStats } from '@/utils/accountUtils';
+import { describe, it, expect } from "vitest";
+import { Transaction } from "@/data/finance-data";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
+import { calculateAccountStats } from "@/utils/accountUtils";
 
 // Mock data structures
 interface AccountDetails {
   id: string;
   currency: string;
   starting_balance: number;
-  type: 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
+  type: "Checking" | "Savings" | "Credit Card" | "Investment" | "Other";
   credit_limit?: number;
 }
 
@@ -27,17 +27,17 @@ const generateData = (transactionCount: number, accountCount: number) => {
       is_account: true,
       created_at: new Date().toISOString(),
       account_id: id,
-      currency: 'USD',
+      currency: "USD",
       starting_balance: 1000,
-      remarks: '',
+      remarks: "",
       running_balance: 0,
       totalTransactions: 0,
     });
     accountDetails.push({
       id,
-      currency: 'USD',
+      currency: "USD",
       starting_balance: 1000,
-      type: 'Checking',
+      type: "Checking",
     });
   }
 
@@ -48,35 +48,41 @@ const generateData = (transactionCount: number, accountCount: number) => {
       id: `tx-${i}`,
       date: today.toISOString(),
       account: `Account ${accIndex}`,
-      currency: 'USD',
+      currency: "USD",
       vendor: `Vendor ${i % 100}`,
       amount: i % 2 === 0 ? 100 : -50,
-      category: 'Food',
+      category: "Food",
       created_at: today.toISOString(),
-      user_id: 'user-1',
+      user_id: "user-1",
     });
   }
 
   return { accounts, accountDetails, transactions };
 };
 
-describe('Context Performance Benchmark', () => {
+describe("Context Performance Benchmark", () => {
   const { accounts, accountDetails, transactions } = generateData(10000, 50);
-  const accountMap = new Map(accountDetails.map(a => [a.id, a]));
+  const accountMap = new Map(accountDetails.map((a) => [a.id, a]));
   const nameToAccountMap = new Map<string, any>();
-  accounts.forEach(v => {
-      nameToAccountMap.set(v.name.trim().toLowerCase(), accountMap.get(v.account_id!)!);
+  accounts.forEach((v) => {
+    nameToAccountMap.set(
+      v.name.trim().toLowerCase(),
+      accountMap.get(v.account_id!)!,
+    );
   });
 
   const runBaseline = async () => {
-     return await Promise.all(accounts.map(async v => {
-        let accountDetails = v.account_id ? accountMap.get(v.account_id) : undefined;
+    return await Promise.all(
+      accounts.map(async (v) => {
+        let accountDetails = v.account_id
+          ? accountMap.get(v.account_id)
+          : undefined;
         if (!accountDetails) {
           accountDetails = nameToAccountMap.get(v.name.trim().toLowerCase());
         }
 
         const startingBalance = accountDetails?.starting_balance || 0;
-        const currency = accountDetails?.currency || 'USD';
+        const currency = accountDetails?.currency || "USD";
         const type = accountDetails?.type;
         const creditLimit = accountDetails?.credit_limit;
 
@@ -85,14 +91,22 @@ describe('Context Performance Benchmark', () => {
         const todayStr = now.toISOString().substring(0, 10);
 
         // Simple balance calculation
-        const accountTransactions = transactions.filter(t =>
-          (t.account || '').trim().toLowerCase() === vNameNormalized &&
-          (t.date || '').substring(0, 10) <= todayStr
+        const accountTransactions = transactions.filter(
+          (t) =>
+            (t.account || "").trim().toLowerCase() === vNameNormalized &&
+            (t.date || "").substring(0, 10) <= todayStr,
         );
-        const totalTransactionAmount = accountTransactions.reduce((sum, t) => sum + t.amount, 0);
+        const totalTransactionAmount = accountTransactions.reduce(
+          (sum, t) => sum + t.amount,
+          0,
+        );
         const runningBalance = startingBalance + totalTransactionAmount;
 
-        const count = accountTransactions.length + transactions.filter(t => t.vendor === v.name && t.account !== v.name).length;
+        const count =
+          accountTransactions.length +
+          transactions.filter(
+            (t) => t.vendor === v.name && t.account !== v.name,
+          ).length;
 
         return {
           ...v,
@@ -103,20 +117,25 @@ describe('Context Performance Benchmark', () => {
           type: type,
           credit_limit: creditLimit,
         };
-      }));
+      }),
+    );
   };
 
   const runOptimizedActual = async () => {
-      const { balances, sourceCounts, vendorCounts } = calculateAccountStats(transactions);
+    const { balances, sourceCounts, vendorCounts } =
+      calculateAccountStats(transactions);
 
-      return await Promise.all(accounts.map(async v => {
-        let accountDetails = v.account_id ? accountMap.get(v.account_id) : undefined;
+    return await Promise.all(
+      accounts.map(async (v) => {
+        let accountDetails = v.account_id
+          ? accountMap.get(v.account_id)
+          : undefined;
         if (!accountDetails) {
           accountDetails = nameToAccountMap.get(v.name.trim().toLowerCase());
         }
 
         const startingBalance = accountDetails?.starting_balance || 0;
-        const currency = accountDetails?.currency || 'USD';
+        const currency = accountDetails?.currency || "USD";
         const type = accountDetails?.type;
         const creditLimit = accountDetails?.credit_limit;
 
@@ -138,20 +157,23 @@ describe('Context Performance Benchmark', () => {
           type: type,
           credit_limit: creditLimit,
         };
-      }));
+      }),
+    );
   };
 
-  it('should produce identical results', async () => {
+  it("should produce identical results", async () => {
     const baseline = await runBaseline();
     const optimized = await runOptimizedActual();
 
     expect(optimized.length).toBe(baseline.length);
     expect(optimized[0].running_balance).toBe(baseline[0].running_balance);
-    expect(optimized[0].total_transactions).toBe(baseline[0].total_transactions);
+    expect(optimized[0].total_transactions).toBe(
+      baseline[0].total_transactions,
+    );
     expect(optimized).toEqual(baseline);
   });
 
-  it('measures performance', async () => {
+  it("measures performance", async () => {
     const startBaseline = performance.now();
     await runBaseline();
     const endBaseline = performance.now();

@@ -1,36 +1,55 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { TrendingUp, TrendingDown, Scale } from 'lucide-react';
+import { TrendingUp, TrendingDown, Scale } from "lucide-react";
 
 interface NetWorthStatementProps {
   transactions: any[];
   accounts: any[];
 }
 
-const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, accounts }) => {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+const NetWorthStatement: React.FC<NetWorthStatementProps> = ({
+  transactions,
+  accounts,
+}) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
+    useCurrency();
 
   const { assets, liabilities, netWorth } = React.useMemo(() => {
     const accountBalances: Record<string, number> = {};
 
-    accounts.forEach(account => {
+    accounts.forEach((account) => {
       const startingBalance = account.starting_balance || 0;
       const accountCurrency = account.currency || selectedCurrency;
-      accountBalances[account.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
+      accountBalances[account.name] = convertBetweenCurrencies(
+        startingBalance,
+        accountCurrency,
+        selectedCurrency,
+      );
     });
 
-    transactions.forEach(transaction => {
-      const convertedAmount = convertBetweenCurrencies(transaction.amount, transaction.currency, selectedCurrency);
-      if (transaction.category !== 'Transfer') {
-        accountBalances[transaction.account] = (accountBalances[transaction.account] || 0) + convertedAmount;
+    transactions.forEach((transaction) => {
+      const convertedAmount = convertBetweenCurrencies(
+        transaction.amount,
+        transaction.currency,
+        selectedCurrency,
+      );
+      if (transaction.category !== "Transfer") {
+        accountBalances[transaction.account] =
+          (accountBalances[transaction.account] || 0) + convertedAmount;
       }
     });
 
     let totalAssets = 0;
     let totalLiabilities = 0;
 
-    Object.values(accountBalances).forEach(balance => {
+    Object.values(accountBalances).forEach((balance) => {
       if (balance >= 0) {
         totalAssets += balance;
       } else {
@@ -49,26 +68,36 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
     <Card>
       <CardHeader>
         <CardTitle>Net Worth Statement</CardTitle>
-        <CardDescription>A summary of your assets and liabilities.</CardDescription>
+        <CardDescription>
+          A summary of your assets and liabilities.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Assets
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">{formatCurrency(assets)}</div>
+              <div className="text-2xl font-bold text-green-500">
+                {formatCurrency(assets)}
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Liabilities</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Liabilities
+              </CardTitle>
               <TrendingDown className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">{formatCurrency(liabilities)}</div>
+              <div className="text-2xl font-bold text-red-500">
+                {formatCurrency(liabilities)}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -77,7 +106,9 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({ transactions, acc
               <Scale className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(netWorth)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(netWorth)}
+              </div>
             </CardContent>
           </Card>
         </div>

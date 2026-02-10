@@ -1,11 +1,19 @@
 import * as React from "react";
 import {
-  Card, CardContent, CardFooter, CardHeader, CardTitle
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { PlusCircle, Loader2, RotateCcw, Upload, Download } from "lucide-react";
 import LoadingOverlay from "@/components/feedback/LoadingOverlay";
@@ -73,15 +81,30 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   isEditing = () => false,
   isUpdating = false,
   // Destructure all management props
-  searchTerm, setSearchTerm, currentPage, setCurrentPage, itemsPerPage,
-  isDialogOpen, setIsDialogOpen, selectedEntity,
-  isConfirmOpen, setIsConfirmOpen,
+  searchTerm,
+  setSearchTerm,
+  currentPage,
+  setCurrentPage,
+  itemsPerPage,
+  isDialogOpen,
+  setIsDialogOpen,
+  selectedEntity,
+  isConfirmOpen,
+  setIsConfirmOpen,
   selectedRows,
-  isImporting, fileInputRef,
+  isImporting,
+  fileInputRef,
   isLoadingMutation,
-  handleAddClick, handleEditClick, handleDeleteClick, confirmDelete, handleBulkDeleteClick,
-  handleSelectAll, handleRowSelect,
-  handleImportClick, handleFileChange, handleExportClick,
+  handleAddClick,
+  handleEditClick,
+  handleDeleteClick,
+  confirmDelete,
+  handleBulkDeleteClick,
+  handleSelectAll,
+  handleRowSelect,
+  handleImportClick,
+  handleFileChange,
+  handleExportClick,
   refetch,
   extraActions,
   customFilter,
@@ -97,14 +120,15 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
 }) => {
   const [isDeduplicateOpen, setIsDeduplicateOpen] = React.useState(false);
   const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);
-  const [isBalanceReconcileOpen, setIsBalanceReconcileOpen] = React.useState(false);
+  const [isBalanceReconcileOpen, setIsBalanceReconcileOpen] =
+    React.useState(false);
 
   const filteredData = React.useMemo(() => {
     if (customFilter) {
       return customFilter(data, searchTerm);
     }
     return data.filter((item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [data, searchTerm, customFilter]);
 
@@ -113,7 +137,10 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   // If pagination is disabled, show all filtered data. Otherwise slice.
   const currentData = disablePagination
     ? filteredData
-    : filteredData.slice((currentPage - 1) * itemsPerPage, ((currentPage - 1) * itemsPerPage) + itemsPerPage);
+    : filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        (currentPage - 1) * itemsPerPage + itemsPerPage,
+      );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -122,23 +149,43 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
 
   return (
     <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <LoadingOverlay isLoading={isLoading || isImporting || isLoadingMutation} message={isImporting ? `Importing ${entityNamePlural}...` : `Loading ${entityNamePlural}...`} />
+      <LoadingOverlay
+        isLoading={isLoading || isImporting || isLoadingMutation}
+        message={
+          isImporting
+            ? `Importing ${entityNamePlural}...`
+            : `Loading ${entityNamePlural}...`
+        }
+      />
       <div className="flex flex-col md:flex-row items-center justify-between space-y-2 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
             {title}
           </h2>
-          {subtitle && <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">{subtitle}</p>}
+          {subtitle && (
+            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+              {subtitle}
+            </p>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           {numSelected > 0 && (
-            <Button variant="destructive" onClick={handleBulkDeleteClick} disabled={isLoadingMutation}>
-              {isLoadingMutation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button
+              variant="destructive"
+              onClick={handleBulkDeleteClick}
+              disabled={isLoadingMutation}
+            >
+              {isLoadingMutation && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Delete ({numSelected})
             </Button>
           )}
           {BalanceReconciliationDialogComponent && (
-            <Button variant="outline" onClick={() => setIsBalanceReconcileOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsBalanceReconcileOpen(true)}
+            >
               Reconcile Balance
             </Button>
           )}
@@ -148,35 +195,70 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             </Button>
           )}
           {DeduplicationDialogComponent && (
-            <Button variant="outline" onClick={() => setIsDeduplicateOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeduplicateOpen(true)}
+            >
               De-duplicate
             </Button>
           )}
           {extraActions}
-          <Button onClick={handleImportClick} variant="outline" disabled={isImporting}>
-            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+          <Button
+            onClick={handleImportClick}
+            variant="outline"
+            disabled={isImporting}
+          >
+            {isImporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
             Import CSV
           </Button>
           <Button onClick={() => handleExportClick(data)} variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button
+            onClick={handleAddClick}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
             <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
           </Button>
-          <Button variant="outline" size="icon" onClick={async () => await refetch?.()} disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={async () => await refetch?.()}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
             <span className="sr-only">Refresh</span>
           </Button>
         </div>
       </div>
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".csv" />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".csv"
+      />
       <Card className="bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800">
         <CardHeader>
-          <CardTitle className="text-slate-900 dark:text-slate-100">Manage Your {title}</CardTitle>
+          <CardTitle className="text-slate-900 dark:text-slate-100">
+            Manage Your {title}
+          </CardTitle>
           <div className="mt-4">
             <Input
-              placeholder={customFilter ? "Search by name, currency, e.g. 'negative', '> 1000'..." : "Search by name..."}
+              placeholder={
+                customFilter
+                  ? "Search by name, currency, e.g. 'negative', '> 1000'..."
+                  : "Search by name..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
@@ -190,7 +272,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             isLoading={isLoading}
             selectedRows={selectedRows}
             handleRowSelect={(id: string, checked: boolean) => {
-              if (id.includes(',')) {
+              if (id.includes(",")) {
                 handleSelectAll(checked, currentData);
               } else {
                 handleRowSelect(id, checked);
@@ -207,12 +289,24 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         {!disablePagination && (
           <CardFooter className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {numSelected > 0 ? `${numSelected} of ${filteredData.length} row(s) selected.` : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} ${entityNamePlural}`}
+              {numSelected > 0
+                ? `${numSelected} of ${filteredData.length} row(s) selected.`
+                : `Showing ${startIndex + 1} to ${Math.min(endIndex, filteredData.length)} of ${filteredData.length} ${entityNamePlural}`}
             </div>
             <Pagination>
               <PaginationContent>
-                <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1} /></PaginationItem>
-                <PaginationItem><PaginationNext onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} /></PaginationItem>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  />
+                </PaginationItem>
               </PaginationContent>
             </Pagination>
           </CardFooter>
@@ -243,7 +337,14 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           onClose={() => setIsBalanceReconcileOpen(false)}
         />
       )}
-      <ConfirmationDialog isOpen={isConfirmOpen} onOpenChange={setIsConfirmOpen} onConfirm={confirmDelete} title="Are you sure?" description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone." confirmText="Delete" />
+      <ConfirmationDialog
+        isOpen={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={confirmDelete}
+        title="Are you sure?"
+        description="This will permanently delete the selected item(s) and may affect related transactions. This action cannot be undone."
+        confirmText="Delete"
+      />
     </div>
   );
 };

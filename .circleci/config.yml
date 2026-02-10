@@ -1,61 +1,138 @@
 version: 2.1
 
-jobs:
-  lint-and-typecheck:
+# Reusable executor to avoid duplication
+executors:
+  node-executor:
     docker:
-      - image: cimg/node:20.11.1
+      - image: cimg/node:22.12
+    working_directory: ~/project
+
+# Reusable commands to DRY up your config
+commands:
+  setup-pnpm:
+    description: "Setup pnpm with caching"
     steps:
       - checkout
       - run:
-          name: Enable Corepack
-          command: sudo corepack enable
+          name: Upgrade and Enable Corepack
+          command: |
+            sudo npm install -g corepack@latest
+            sudo corepack enable
       - restore_cache:
-          name: Restore Package Cache
+          name: Restore pnpm Store Cache
           keys:
-            - v1-deps-{{ checksum "pnpm-lock.yaml" }}
-            - v1-deps-
+            - v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+            - v2-pnpm-store-
       - run:
           name: Install Dependencies
           command: pnpm install --frozen-lockfile
       - save_cache:
-          name: Save Package Cache
-          key: v1-deps-{{ checksum "pnpm-lock.yaml" }}
+          name: Save pnpm Store Cache
+          key: v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
           paths:
+            - ~/.local/share/pnpm/store
             - node_modules
+
+jobs:
+  lint-and-typecheck:
+    executor: node-executor
+    steps:
+      - setup-pnpm
       - run:
           name: Lint
           command: pnpm lint
       - run:
           name: Type Check
           command: pnpm exec tsc --noEmit
+      - run:
+          name: Format Check
+          command: pnpm format:check
+
+  test:
+    executor: node-executor
+    steps:
+      - setup-pnpm
+      - run:
+          name: Run Tests with Coverage
+          command: pnpm test:coverage
+          environment:
+            NODE_ENV: test
+      - store_artifacts:
+          path: coverage
+          destination: coverage-report
+      # Optional: Upload to Codecov
+      # - run:
+      #     name: Upload Coverage
+      #     command: npx codecov
 
   build:
-    docker:
-      - image: cimg/node:20.11.1
+    executor: node-executor
     steps:
-      - checkout
+      - setup-pnpm
       - run:
-          name: Enable Corepack
-          command: sudo corepack enable
-      - restore_cache:
-          name: Restore Package Cache
-          keys:
-            - v1-deps-{{ checksum "pnpm-lock.yaml" }}
-            - v1-deps-
-      - run:
-          name: Install Dependencies
-          command: pnpm install --frozen-lockfile
-      - run:
-          name: Build
+          name: Build Production Bundle
           command: pnpm build
+      - run:
+          name: Verify Build Output
+          command: |
+            ls -lh dist/
+            du -sh dist/
+            echo "Build size: $(du -sh dist/ | cut -f1)"
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+            - package.json
+            - pnpm-lock.yaml
       - store_artifacts:
           path: dist
           destination: build-artifacts
 
+  # Optional: Bundle size analysis (install vite-bundle-visualizer to enable)
+  analyze-bundle:
+    executor: node-executor
+    steps:
+      - attach_workspace:
+          at: .
+      - setup-pnpm
+      - run:
+          name: Analyze Bundle Size
+          command: |
+            pnpm exec vite-bundle-visualizer || echo "Install vite-bundle-visualizer to enable: pnpm add -D vite-bundle-visualizer"
+      - store_artifacts:
+          path: stats.html
+          destination: bundle-analysis
+
+  # Security audit
+  security-audit:
+    executor: node-executor
+    steps:
+      - setup-pnpm
+      - run:
+          name: Security Audit
+          command: |
+            pnpm audit --audit-level=moderate || echo "Security vulnerabilities found — review above output"
+
+
 workflows:
-  build_and_test:
+  build-test-deploy:
     jobs:
       - lint-and-typecheck
-      - build:
+      - security-audit:
+          filters:
+            branches:
+              only:
+                - main
+                - develop
+      - test:
           requires:
             - lint-and-typecheck
+      - build:
+          requires:
+            - test
+      - analyze-bundle:
+          requires:
+            - build
+          filters:
+            branches:
+              only: main

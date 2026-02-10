@@ -1,6 +1,22 @@
-import React from 'react';
-import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
-import { ResponsiveContainer, AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import React from "react";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardDescription,
+  ThemedCardHeader,
+  ThemedCardTitle,
+} from "@/components/ThemedCard";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -8,24 +24,35 @@ interface TrendForecastingChartProps {
   transactions: any[]; // This will now include future scheduled transactions
 }
 
-const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transactions }) => {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
+  transactions,
+}) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
+    useCurrency();
   const { isFinancialPulse } = useTheme();
 
   const chartData = React.useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999); // Consider today as historical
 
-    const historicalTransactions = transactions.filter(t => new Date(t.date) <= today);
-    const futureScheduledTransactions = transactions.filter(t => new Date(t.date) > today && t.is_scheduled_origin);
+    const historicalTransactions = transactions.filter(
+      (t) => new Date(t.date) <= today,
+    );
+    const futureScheduledTransactions = transactions.filter(
+      (t) => new Date(t.date) > today && t.is_scheduled_origin,
+    );
 
     // 1. Aggregate historical data by month
     const monthlyNet: { [key: string]: number } = {};
-    historicalTransactions.forEach(t => {
-      if (t.category !== 'Transfer') {
+    historicalTransactions.forEach((t) => {
+      if (t.category !== "Transfer") {
         const date = new Date(t.date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const convertedAmount = convertBetweenCurrencies(
+          t.amount,
+          t.currency,
+          selectedCurrency,
+        );
         monthlyNet[monthKey] = (monthlyNet[monthKey] || 0) + convertedAmount;
       }
     });
@@ -35,15 +62,21 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
 
     const historicalData = sortedMonths.map((monthKey, index) => ({
       index,
-      month: new Date(monthKey + '-02').toLocaleString('default', { month: 'short', year: '2-digit' }),
+      month: new Date(monthKey + "-02").toLocaleString("default", {
+        month: "short",
+        year: "2-digit",
+      }),
       actual: monthlyNet[monthKey],
     }));
 
     // 2. Linear Regression on historical data
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumX2 = 0;
     const n = historicalData.length;
 
-    historicalData.forEach(point => {
+    historicalData.forEach((point) => {
       sumX += point.index;
       sumY += point.actual;
       sumXY += point.index * point.actual;
@@ -55,11 +88,16 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
 
     // 3. Aggregate future scheduled transactions by month
     const futureMonthlyImpact: { [key: string]: number } = {};
-    futureScheduledTransactions.forEach(t => {
+    futureScheduledTransactions.forEach((t) => {
       const date = new Date(t.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-      futureMonthlyImpact[monthKey] = (futureMonthlyImpact[monthKey] || 0) + convertedAmount;
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const convertedAmount = convertBetweenCurrencies(
+        t.amount,
+        t.currency,
+        selectedCurrency,
+      );
+      futureMonthlyImpact[monthKey] =
+        (futureMonthlyImpact[monthKey] || 0) + convertedAmount;
     });
 
     // 4. Generate combined data for chart
@@ -70,26 +108,29 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
       actual: number | null;
       baselineForecast: number;
       finalForecast: number | null;
-    }[] = historicalData.map(point => ({
+    }[] = historicalData.map((point) => ({
       ...point,
       baselineForecast: slope * point.index + intercept,
       finalForecast: null,
     }));
 
-    const lastHistoricalMonth = new Date(sortedMonths[n - 1] + '-02');
+    const lastHistoricalMonth = new Date(sortedMonths[n - 1] + "-02");
 
     for (let i = 0; i < forecastMonths; i++) {
       const futureIndex = n + i;
       const futureDate = new Date(lastHistoricalMonth);
       futureDate.setMonth(futureDate.getMonth() + i + 1);
-      const futureMonthKey = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}`;
+      const futureMonthKey = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, "0")}`;
 
       const baseline = slope * futureIndex + intercept;
       const scheduledImpact = futureMonthlyImpact[futureMonthKey] || 0;
 
       combinedData.push({
         index: futureIndex,
-        month: futureDate.toLocaleString('default', { month: 'short', year: '2-digit' }),
+        month: futureDate.toLocaleString("default", {
+          month: "short",
+          year: "2-digit",
+        }),
         actual: null,
         baselineForecast: baseline,
         finalForecast: baseline + scheduledImpact,
@@ -104,7 +145,8 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
       <ThemedCardHeader>
         <ThemedCardTitle>Net Income Trend & Forecast</ThemedCardTitle>
         <ThemedCardDescription>
-          Historical net income with a 6-month forecast, including scheduled transactions.
+          Historical net income with a 6-month forecast, including scheduled
+          transactions.
         </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent>
@@ -116,40 +158,88 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({ transacti
                   <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="gradientForecast" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient
+                  id="gradientForecast"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
                   <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid vertical={false} stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"} />
+              <CartesianGrid
+                vertical={false}
+                stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
+              />
               <XAxis
                 dataKey="month"
-                tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-                stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+                tick={{
+                  fill: isFinancialPulse ? "#94a3b8" : "#666",
+                  fontSize: 12,
+                }}
+                stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
               />
               <YAxis
                 tickFormatter={(value) => formatCurrency(Number(value))}
-                tick={{ fill: isFinancialPulse ? '#94a3b8' : '#666', fontSize: 12 }}
-                stroke={isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb'}
+                tick={{
+                  fill: isFinancialPulse ? "#94a3b8" : "#666",
+                  fontSize: 12,
+                }}
+                stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [formatCurrency(value), name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1').trim()]}
+                formatter={(value: number, name: string) => [
+                  formatCurrency(value),
+                  name.charAt(0).toUpperCase() +
+                    name
+                      .slice(1)
+                      .replace(/([A-Z])/g, " $1")
+                      .trim(),
+                ]}
                 contentStyle={{
-                  backgroundColor: isFinancialPulse ? 'rgba(0,0,0,0.8)' : 'white',
-                  borderColor: isFinancialPulse ? 'rgba(255,255,255,0.1)' : '#e5e7eb',
-                  color: isFinancialPulse ? 'white' : 'black'
+                  backgroundColor: isFinancialPulse
+                    ? "rgba(0,0,0,0.8)"
+                    : "white",
+                  borderColor: isFinancialPulse
+                    ? "rgba(255,255,255,0.1)"
+                    : "#e5e7eb",
+                  color: isFinancialPulse ? "white" : "black",
                 }}
               />
               <Legend />
-              <Area type="monotone" dataKey="actual" stroke="#8884d8" fill="url(#gradientActual)" name="Actual Net Income" strokeWidth={2} />
-              <Line type="monotone" dataKey="baselineForecast" stroke="#cccccc" strokeDasharray="5 5" name="Baseline Trend" dot={false} />
-              <Area type="monotone" dataKey="finalForecast" stroke="#82ca9d" fill="url(#gradientForecast)" strokeWidth={2} name="Forecast with Scheduled" />
+              <Area
+                type="monotone"
+                dataKey="actual"
+                stroke="#8884d8"
+                fill="url(#gradientActual)"
+                name="Actual Net Income"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="baselineForecast"
+                stroke="#cccccc"
+                strokeDasharray="5 5"
+                name="Baseline Trend"
+                dot={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="finalForecast"
+                stroke="#82ca9d"
+                fill="url(#gradientForecast)"
+                strokeWidth={2}
+                name="Forecast with Scheduled"
+              />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-64 text-center">
             <p className="text-muted-foreground">
-              Not enough data to generate a forecast. At least two months of transactions are required.
+              Not enough data to generate a forecast. At least two months of
+              transactions are required.
             </p>
           </div>
         )}

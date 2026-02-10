@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Sector } from 'recharts';
+import React from "react";
+import { Sector } from "recharts";
 
 interface ActivePieShapeProps {
   cx: number;
@@ -19,11 +19,22 @@ interface ActivePieShapeProps {
 import { useTheme } from "next-themes";
 
 export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, formatCurrency, onCenterClick } = props;
+  const {
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+    payload,
+    formatCurrency,
+    onCenterClick,
+  } = props;
   const name = payload.name || payload.vendor_name || "Unknown";
   const amount = payload.total_amount || payload.amount || 0;
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+  const isDark = resolvedTheme === "dark";
 
   const textColorName = isDark ? "#94a3b8" : "#475569";
   const textColorAmount = isDark ? "#f8fafc" : "#0f172a";
@@ -31,10 +42,8 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
   const gradientEnd = isDark ? "#0f172a" : "#e2e8f0";
   const strokeColor = isDark ? "#334155" : "#cbd5e1";
 
-
-
   return (
-    <g style={{ cursor: 'pointer' }}>
+    <g style={{ cursor: "pointer" }}>
       <defs>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
@@ -47,7 +56,14 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        <radialGradient id="centerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+        <radialGradient
+          id="centerGradient"
+          cx="50%"
+          cy="50%"
+          r="50%"
+          fx="50%"
+          fy="50%"
+        >
           <stop offset="0%" stopColor={gradientStart} />
           <stop offset="100%" stopColor={gradientEnd} />
         </radialGradient>
@@ -80,7 +96,7 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
         y={cy - 20}
         textAnchor="middle"
         fill={textColorName}
-        style={{ fontSize: '14px', fontWeight: 600 }}
+        style={{ fontSize: "14px", fontWeight: 600 }}
       >
         {name}
       </text>
@@ -89,14 +105,20 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
         y={cy + 15}
         textAnchor="middle"
         fill={textColorAmount}
-        style={{ fontSize: '18px', fontWeight: 800 }}
+        style={{ fontSize: "18px", fontWeight: 800 }}
       >
         {formatCurrency(amount)}
       </text>
 
       {/* Center Button-like element */}
       {onCenterClick && (
-        <g onClick={(e) => { e.stopPropagation(); onCenterClick(); }} className="group">
+        <g
+          onClick={(e) => {
+            e.stopPropagation();
+            onCenterClick();
+          }}
+          className="group"
+        >
           <circle
             cx={cx}
             cy={cy}
@@ -111,7 +133,12 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
             y={cy + 40}
             textAnchor="middle"
             fill="#64748b"
-            style={{ fontSize: '10px', fontWeight: 700, pointerEvents: 'none', textTransform: 'uppercase' }}
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              pointerEvents: "none",
+              textTransform: "uppercase",
+            }}
           >
             Reset
           </text>

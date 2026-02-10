@@ -10,8 +10,8 @@ export interface Session {
     user_metadata?: {
       avatar_url?: string;
       full_name?: string;
-    }
-  }
+    };
+  };
 }
 
 export const useSession = () => {
@@ -20,9 +20,9 @@ export const useSession = () => {
       id: "local-user",
       email: "local@user.com",
       user_metadata: {
-        full_name: "Local User"
-      }
-    }
+        full_name: "Local User",
+      },
+    },
   });
 
   return session;

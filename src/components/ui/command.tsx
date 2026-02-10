@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface CommandProps extends React.ComponentPropsWithoutRef<typeof CommandPrimitive> { }
+export interface CommandProps extends React.ComponentPropsWithoutRef<
+  typeof CommandPrimitive
+> {}
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
@@ -25,7 +27,7 @@ const Command = React.forwardRef<
 Command.displayName = CommandPrimitive.displayName;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface CommandDialogProps extends DialogProps { }
+interface CommandDialogProps extends DialogProps {}
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (

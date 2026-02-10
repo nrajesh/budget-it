@@ -30,7 +30,11 @@ export const TransactionActions: React.FC<TransactionActionsProps> = ({
         </Button>
       )}
       <Button onClick={onImportClick} variant="outline" disabled={isImporting}>
-        {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+        {isImporting ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Upload className="mr-2 h-4 w-4" />
+        )}
         Import CSV
       </Button>
       <Button onClick={onExportClick} variant="outline">
