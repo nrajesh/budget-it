@@ -92,9 +92,22 @@ jobs:
   analyze-bundle:
     executor: node-executor
     steps:
+      - checkout
       - attach_workspace:
           at: .
-      - setup-pnpm
+      - run:
+          name: Upgrade and Enable Corepack
+          command: |
+            sudo npm install -g corepack@latest
+            sudo corepack enable
+      - restore_cache:
+          name: Restore pnpm Store Cache
+          keys:
+            - v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+            - v2-pnpm-store-
+      - run:
+          name: Install Dependencies
+          command: pnpm install --frozen-lockfile
       - run:
           name: Analyze Bundle Size
           command: |
