@@ -13,6 +13,7 @@ import {
   User,
   Bell,
   ChevronDown,
+  Lightbulb,
 } from "lucide-react"; // Importing icons
 
 const MobileNavContent = () => {
@@ -36,6 +37,12 @@ const MobileNavContent = () => {
             <Link to="/analytics" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
               <BarChart2 className="h-4 w-4" />
               Analytics
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link to="/insights" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+              <Lightbulb className="h-4 w-4" />
+              Insights
             </Link>
           </SheetClose>
           <SheetClose asChild>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from 'react';
+import React, { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useCallback, useMemo, useEffect } from 'react';
 import { DateRange } from "react-day-picker";
 import { endOfMonth, startOfMonth } from "date-fns";
 
@@ -35,6 +35,7 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Initial State Loaders
+    // Move loadState outside or keep it simple. Since it's only used in useState init, it's fine.
     const loadState = <T,>(key: string, defaultVal: T): T => {
         if (typeof window === 'undefined') return defaultVal;
         try {
@@ -71,8 +72,7 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     const [dateRange, setDateRangeState] = useState<DateRange | undefined>(loadDateRange);
 
-    // Wrapper to persist date range
-    const setDateRange = (range: DateRange | undefined) => {
+    const setDateRange = useCallback((range: DateRange | undefined) => {
         let newRange = range;
         if (!newRange) {
             newRange = {
@@ -84,64 +84,70 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         try {
             localStorage.setItem('filter_dateRange', JSON.stringify(newRange));
         } catch (e) { console.error(e); }
-    };
+    }, []);
 
     const [excludeTransfers, setExcludeTransfersState] = useState(() => loadState('filter_excludeTransfers', false));
-    const setExcludeTransfers = (val: boolean) => {
+    const setExcludeTransfers = useCallback((val: boolean) => {
         setExcludeTransfersState(val);
         localStorage.setItem('filter_excludeTransfers', JSON.stringify(val));
-    };
+    }, []);
 
     const [minAmount, setMinAmountState] = useState<number | undefined>(() => loadState('filter_minAmount', undefined));
-    const setMinAmount = (val: number | undefined) => {
+    const setMinAmount = useCallback((val: number | undefined) => {
         setMinAmountState(val);
         if (val === undefined) localStorage.removeItem('filter_minAmount');
         else localStorage.setItem('filter_minAmount', JSON.stringify(val));
-    };
+    }, []);
 
     const [maxAmount, setMaxAmountState] = useState<number | undefined>(() => loadState('filter_maxAmount', undefined));
-    const setMaxAmount = (val: number | undefined) => {
+    const setMaxAmount = useCallback((val: number | undefined) => {
         setMaxAmountState(val);
         if (val === undefined) localStorage.removeItem('filter_maxAmount');
         else localStorage.setItem('filter_maxAmount', JSON.stringify(val));
-    };
+    }, []);
 
-    const [limit, setLimit] = useState<number | undefined>(undefined); // Usually ephemeral?
+    const [limit, setLimit] = useState<number | undefined>(undefined);
     const [sortOrder, setSortOrder] = useState<'largest' | 'smallest' | undefined>(undefined);
-
-    const [rawSearchQuery, setRawSearchQueryState] = useState(() => loadState('filter_rawSearchQuery', ""));
-    const setRawSearchQuery = (val: string) => {
-        setRawSearchQueryState(val);
-        localStorage.setItem('filter_rawSearchQuery', JSON.stringify(val));
-    };
-
     const [transactionType, setTransactionType] = useState<'income' | 'expense' | undefined>(undefined);
 
-    // Effects to save simple states
-    React.useEffect(() => { localStorage.setItem('filter_searchTerm', JSON.stringify(searchTerm)); }, [searchTerm]);
-    React.useEffect(() => { localStorage.setItem('filter_selectedAccounts', JSON.stringify(selectedAccounts)); }, [selectedAccounts]);
-    React.useEffect(() => { localStorage.setItem('filter_selectedCategories', JSON.stringify(selectedCategories)); }, [selectedCategories]);
-    React.useEffect(() => { localStorage.setItem('filter_selectedSubCategories', JSON.stringify(selectedSubCategories)); }, [selectedSubCategories]);
-    React.useEffect(() => { localStorage.setItem('filter_selectedVendors', JSON.stringify(selectedVendors)); }, [selectedVendors]);
+    const [rawSearchQuery, setRawSearchQueryState] = useState(() => loadState('filter_rawSearchQuery', ""));
+    const setRawSearchQuery = useCallback((val: string) => {
+        setRawSearchQueryState(val);
+        localStorage.setItem('filter_rawSearchQuery', JSON.stringify(val));
+    }, []);
 
+
+    // Effects to save simple states
+    useEffect(() => { localStorage.setItem('filter_searchTerm', JSON.stringify(searchTerm)); }, [searchTerm]);
+    useEffect(() => { localStorage.setItem('filter_selectedAccounts', JSON.stringify(selectedAccounts)); }, [selectedAccounts]);
+    useEffect(() => { localStorage.setItem('filter_selectedCategories', JSON.stringify(selectedCategories)); }, [selectedCategories]);
+    useEffect(() => { localStorage.setItem('filter_selectedSubCategories', JSON.stringify(selectedSubCategories)); }, [selectedSubCategories]);
+    useEffect(() => { localStorage.setItem('filter_selectedVendors', JSON.stringify(selectedVendors)); }, [selectedVendors]);
+
+
+    const contextValue = useMemo(() => ({
+        searchTerm, setSearchTerm,
+        selectedAccounts, setSelectedAccounts,
+        selectedCategories, setSelectedCategories,
+        selectedSubCategories, setSelectedSubCategories,
+        selectedVendors, setSelectedVendors,
+        dateRange,
+        setDateRange,
+        excludeTransfers, setExcludeTransfers,
+        minAmount, setMinAmount,
+        maxAmount, setMaxAmount,
+        limit, setLimit,
+        sortOrder, setSortOrder,
+        rawSearchQuery, setRawSearchQuery,
+        transactionType, setTransactionType
+    }), [
+        searchTerm, selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors,
+        dateRange, excludeTransfers, minAmount, maxAmount, limit, sortOrder, rawSearchQuery, transactionType,
+        setDateRange, setExcludeTransfers, setMinAmount, setMaxAmount, setRawSearchQuery
+    ]);
 
     return (
-        <FilterContext.Provider value={{
-            searchTerm, setSearchTerm,
-            selectedAccounts, setSelectedAccounts,
-            selectedCategories, setSelectedCategories,
-            selectedSubCategories, setSelectedSubCategories,
-            selectedVendors, setSelectedVendors,
-            dateRange,
-            setDateRange,
-            excludeTransfers, setExcludeTransfers,
-            minAmount, setMinAmount,
-            maxAmount, setMaxAmount,
-            limit, setLimit,
-            sortOrder, setSortOrder,
-            rawSearchQuery, setRawSearchQuery,
-            transactionType, setTransactionType
-        }}>
+        <FilterContext.Provider value={contextValue}>
             {children}
         </FilterContext.Provider>
     );

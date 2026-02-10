@@ -5,7 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
+  TableHead, // Keep for non-sortable headers like Checkbox column
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/context-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTableSort } from "@/hooks/useTableSort";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 interface TransactionTableProps {
   transactions: any[];
@@ -216,29 +218,31 @@ const TransactionTable = ({
     return d;
   }, []);
 
+  // Use the sorting hook
+  const { sortedData, sortConfig, handleHeaderClick, handleHeaderRightClick } = useTableSort({
+    data: transactions,
+    initialSort: { key: 'date', direction: 'desc' } // Default sort by date descending seems appropriate for transactions
+  });
+
   // Selection Handlers
   const toggleSelectAll = useCallback(() => {
     setSelectedIds(prev => {
-      if (prev.size === transactions.length) {
+      if (prev.size === sortedData.length) {
         return new Set();
       } else {
-        return new Set(transactions.map(t => t.id));
+        return new Set(sortedData.map(t => t.id));
       }
     });
-  }, [transactions]);
+  }, [sortedData]);
 
   const toggleSelect = useCallback((id: string) => {
-    // Determine linked IDs first (stable logic, but depends on transactions array)
-    // We can't access `selectedIds` here without adding it to deps unless we use functional update.
-    // But we also need `transactions` to find the txn.
-
-    // Finding the transaction inside the callback ensures we use the latest 'transactions'
-    // without making the callback depend on 'selectedIds' value directly.
-    const txn = transactions.find(t => t.id === id);
+    // Determine linked IDs first (stable logic, but depends on sortedData array)
+    // Finding the transaction inside the callback ensures we use the latest 'sortedData'
+    const txn = sortedData.find(t => t.id === id);
     const idsToToggle = [id];
 
     if (txn?.transfer_id) {
-      transactions.forEach(t => {
+      sortedData.forEach(t => {
         if (t.transfer_id === txn.transfer_id && t.id !== id) {
           idsToToggle.push(t.id);
         }
@@ -260,11 +264,12 @@ const TransactionTable = ({
 
       return newSelected;
     });
-  }, [transactions]); // Stable as long as transactions array ref is stable (it is memoized in parent)
+  }, [sortedData]);
+
 
   // Bulk Actions
   const handleBulkDelete = () => {
-    const toDelete = transactions
+    const toDelete = sortedData
       .filter(t => selectedIds.has(t.id))
       .map(t => ({ id: t.id, transfer_id: t.transfer_id }));
 
@@ -273,7 +278,7 @@ const TransactionTable = ({
   };
 
   const handleBulkDuplicate = () => {
-    const toDuplicate = transactions.filter(t => selectedIds.has(t.id));
+    const toDuplicate = sortedData.filter(t => selectedIds.has(t.id));
     toDuplicate.forEach(t => {
       onAddTransaction({
         ...t,
@@ -293,7 +298,7 @@ const TransactionTable = ({
   };
 
   const handleBulkSchedule = () => {
-    const toSchedule = transactions.filter(t => selectedIds.has(t.id));
+    const toSchedule = sortedData.filter(t => selectedIds.has(t.id));
     if (onScheduleTransactions) {
       onScheduleTransactions(toSchedule, () => setSelectedIds(new Set()));
     }
@@ -345,28 +350,28 @@ const TransactionTable = ({
             <TableRow>
               <TableHead className="w-[40px]">
                 <Checkbox
-                  checked={selectedIds.size === transactions.length && transactions.length > 0}
+                  checked={selectedIds.size === sortedData.length && sortedData.length > 0}
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Category</TableHead>
-              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Sub-category</TableHead>
-              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Payee</TableHead>
-              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Account</TableHead>
-              <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">Notes</TableHead>
-              <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">Amount</TableHead>
+              <SortableHeader label="Date" sortKey="date" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} />
+              <SortableHeader label="Category" sortKey="category" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Sub-category" sortKey="sub_category" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Payee" sortKey="vendor" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Account" sortKey="account" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Notes" sortKey="remarks" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Amount" sortKey="amount" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-right text-slate-800 dark:text-slate-200 font-semibold" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.length === 0 ? (
+            {sortedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                   No transactions found.
                 </TableCell>
               </TableRow>
             ) : (
-              transactions.map((transaction) => (
+              sortedData.map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
