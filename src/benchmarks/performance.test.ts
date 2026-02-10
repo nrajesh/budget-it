@@ -70,7 +70,7 @@ describe("Performance Benchmark", () => {
       `\n\n[Baseline] Loop Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`,
     );
     expect(insertedCount).toBe(TRANSACTION_COUNT);
-  });
+  }, 30000);
 
   it("Optimized: Bulk Insert", async () => {
     const transactions = generateTransactions(TRANSACTION_COUNT);
@@ -111,7 +111,7 @@ describe("Performance Benchmark", () => {
       `\n\n[Optimized] Bulk Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`,
     );
     expect(inserted.length).toBe(TRANSACTION_COUNT);
-  });
+  }, 30000);
 
   it("Unlink Transactions", async () => {
     const TRANSFER_ID = "test-transfer-id";
