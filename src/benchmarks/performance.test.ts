@@ -1,17 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { LocalDataProvider } from '@/providers/LocalDataProvider';
-import { db } from '@/lib/dexieDB';
+import { describe, it, expect, beforeEach } from "vitest";
+import { LocalDataProvider } from "@/providers/LocalDataProvider";
+import { db } from "@/lib/dexieDB";
 
-
-describe('Performance Benchmark', () => {
+describe("Performance Benchmark", () => {
   const dataProvider = new LocalDataProvider();
   const TRANSACTION_COUNT = 1000;
-  const LEDGER_ID = 'perf-ledger';
+  const LEDGER_ID = "perf-ledger";
 
   beforeEach(async () => {
     await db.delete();
     await db.open();
-    await dataProvider.addLedger({ name: 'Perf Ledger', currency: 'USD' });
+    await dataProvider.addLedger({ name: "Perf Ledger", currency: "USD" });
   });
 
   const generateTransactions = (count: number) => {
@@ -19,8 +18,8 @@ describe('Performance Benchmark', () => {
       user_id: LEDGER_ID,
       date: new Date().toISOString(),
       amount: 10 + i,
-      currency: 'USD',
-      account: 'Checking',
+      currency: "USD",
+      account: "Checking",
       vendor: `Vendor ${i % 10}`,
       category: `Category ${i % 5}`,
       sub_category: `SubCategory ${i % 5}`,
@@ -28,7 +27,7 @@ describe('Performance Benchmark', () => {
     }));
   };
 
-  it('Baseline: Loop Insert', async () => {
+  it("Baseline: Loop Insert", async () => {
     const transactions = generateTransactions(TRANSACTION_COUNT);
 
     // Pre-create account/vendor/category to match the real scenario where they likely exist
@@ -36,14 +35,23 @@ describe('Performance Benchmark', () => {
     // In useTransactionCSV, we ensure they exist BEFORE the loop.
     // So to be accurate, we should ensure they exist here too.
 
-    await dataProvider.ensurePayeeExists('Checking', true, LEDGER_ID, { currency: 'USD' });
+    await dataProvider.ensurePayeeExists("Checking", true, LEDGER_ID, {
+      currency: "USD",
+    });
     for (let i = 0; i < 10; i++) {
       await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
     for (let i = 0; i < 5; i++) {
-      const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+      const catId = await dataProvider.ensureCategoryExists(
+        `Category ${i}`,
+        LEDGER_ID,
+      );
       if (catId) {
-        await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+        await dataProvider.ensureSubCategoryExists(
+          `SubCategory ${i}`,
+          catId,
+          LEDGER_ID,
+        );
       }
     }
 
@@ -58,11 +66,13 @@ describe('Performance Benchmark', () => {
     const end = performance.now();
     const duration = end - start;
 
-    console.log(`\n\n[Baseline] Loop Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`);
+    console.log(
+      `\n\n[Baseline] Loop Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`,
+    );
     expect(insertedCount).toBe(TRANSACTION_COUNT);
   });
 
-  it('Optimized: Bulk Insert', async () => {
+  it("Optimized: Bulk Insert", async () => {
     const transactions = generateTransactions(TRANSACTION_COUNT);
 
     // Even though bulk insert skips checks, we should ensure dependencies exist for data integrity,
@@ -70,14 +80,23 @@ describe('Performance Benchmark', () => {
     // This overhead is NOT part of the insertion function measurement, but it WAS part of the total time in the real app.
     // However, here we are measuring the insertion step specifically.
 
-    await dataProvider.ensurePayeeExists('Checking', true, LEDGER_ID, { currency: 'USD' });
+    await dataProvider.ensurePayeeExists("Checking", true, LEDGER_ID, {
+      currency: "USD",
+    });
     for (let i = 0; i < 10; i++) {
       await dataProvider.ensurePayeeExists(`Vendor ${i}`, false, LEDGER_ID);
     }
     for (let i = 0; i < 5; i++) {
-      const catId = await dataProvider.ensureCategoryExists(`Category ${i}`, LEDGER_ID);
+      const catId = await dataProvider.ensureCategoryExists(
+        `Category ${i}`,
+        LEDGER_ID,
+      );
       if (catId) {
-        await dataProvider.ensureSubCategoryExists(`SubCategory ${i}`, catId, LEDGER_ID);
+        await dataProvider.ensureSubCategoryExists(
+          `SubCategory ${i}`,
+          catId,
+          LEDGER_ID,
+        );
       }
     }
 
@@ -88,15 +107,17 @@ describe('Performance Benchmark', () => {
     const end = performance.now();
     const duration = end - start;
 
-    console.log(`\n\n[Optimized] Bulk Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`);
+    console.log(
+      `\n\n[Optimized] Bulk Insert ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`,
+    );
     expect(inserted.length).toBe(TRANSACTION_COUNT);
   });
 
-  it('Unlink Transactions', async () => {
-    const TRANSFER_ID = 'test-transfer-id';
-    const transactions = generateTransactions(TRANSACTION_COUNT).map(t => ({
+  it("Unlink Transactions", async () => {
+    const TRANSFER_ID = "test-transfer-id";
+    const transactions = generateTransactions(TRANSACTION_COUNT).map((t) => ({
       ...t,
-      transfer_id: TRANSFER_ID
+      transfer_id: TRANSFER_ID,
     }));
 
     await dataProvider.addMultipleTransactions(transactions);
@@ -106,9 +127,14 @@ describe('Performance Benchmark', () => {
     const end = performance.now();
     const duration = end - start;
 
-    console.log(`\n\n[Benchmark] Unlink Transactions ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`);
+    console.log(
+      `\n\n[Benchmark] Unlink Transactions ${TRANSACTION_COUNT} items: ${duration.toFixed(2)}ms\n\n`,
+    );
 
-    const unlinked = await db.transactions.where('transfer_id').equals(TRANSFER_ID).toArray();
+    const unlinked = await db.transactions
+      .where("transfer_id")
+      .equals(TRANSFER_ID)
+      .toArray();
     expect(unlinked.length).toBe(0);
 
     const all = await db.transactions.toArray();

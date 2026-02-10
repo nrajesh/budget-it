@@ -1,12 +1,15 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import React from "react";
+import { Loader2 } from "lucide-react";
 
 interface LoadingOverlayProps {
   isLoading: boolean;
   message?: string;
 }
 
-const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isLoading, message = "Loading..." }) => {
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
+  isLoading,
+  message = "Loading...",
+}) => {
   if (!isLoading) return null;
 
   return (

@@ -4,21 +4,38 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 // import { useUser } from "@/contexts/UserContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
-import { useDataProvider } from '@/context/DataProviderContext';
+import { useDataProvider } from "@/context/DataProviderContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
@@ -33,7 +50,13 @@ interface AddEditBudgetDialogProps {
   onSuccess?: () => void;
 }
 
-export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen, onOpenChange, budget, allBudgets, onSuccess }) => {
+export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
+  isOpen,
+  onOpenChange,
+  budget,
+  allBudgets,
+  onSuccess,
+}) => {
   const { activeLedger } = useLedger();
   const { categories, subCategories, accounts } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
@@ -42,50 +65,66 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const accountTypes = React.useMemo(() => {
-    const types = new Set(accounts.map(a => a.type || 'Other'));
+    const types = new Set(accounts.map((a) => a.type || "Other"));
     return Array.from(types).sort();
   }, [accounts]);
 
-  const formSchema = React.useMemo(() => z.object({
-    category_id: z.string().min(1, "Category is required"),
-    sub_category_id: z.string().nullable().optional(),
-    target_amount: z.coerce.number().positive("Target amount must be positive"),
-    currency: z.string().min(1, "Currency is required"),
-    start_date: z.string().min(1, "Start date is required"),
-    frequency_value: z.coerce.number().min(1, "Frequency value must be at least 1"),
-    frequency_unit: z.string().min(1, "Frequency unit is required"),
-    end_date: z.string().optional(),
-    is_active: z.boolean(),
-    account_scope: z.enum(['ALL', 'GROUP']),
-    account_scope_values: z.array(z.string()).optional(),
-  }).superRefine((data, ctx) => {
-    if (data.account_scope === 'GROUP' && (!data.account_scope_values || data.account_scope_values.length === 0)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Please select at least one account group.",
-        path: ["account_scope_values"],
-      });
-    }
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          category_id: z.string().min(1, "Category is required"),
+          sub_category_id: z.string().nullable().optional(),
+          target_amount: z.coerce
+            .number()
+            .positive("Target amount must be positive"),
+          currency: z.string().min(1, "Currency is required"),
+          start_date: z.string().min(1, "Start date is required"),
+          frequency_value: z.coerce
+            .number()
+            .min(1, "Frequency value must be at least 1"),
+          frequency_unit: z.string().min(1, "Frequency unit is required"),
+          end_date: z.string().optional(),
+          is_active: z.boolean(),
+          account_scope: z.enum(["ALL", "GROUP"]),
+          account_scope_values: z.array(z.string()).optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (
+            data.account_scope === "GROUP" &&
+            (!data.account_scope_values ||
+              data.account_scope_values.length === 0)
+          ) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Please select at least one account group.",
+              path: ["account_scope_values"],
+            });
+          }
 
-    if (!allBudgets) return;
-    // const frequency = `${data.frequency_value}${data.frequency_unit}`;
-    // const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
+          if (!allBudgets) return;
+          // const frequency = `${data.frequency_value}${data.frequency_unit}`;
+          // const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
 
-    // Strict duplicate check: One budget per Category/Sub-category pair
-    const isDuplicate = allBudgets.some(b =>
-      b.id !== budget?.id &&
-      b.category_id === data.category_id &&
-      b.sub_category_id === (data.sub_category_id || null)
-    );
+          // Strict duplicate check: One budget per Category/Sub-category pair
+          const isDuplicate = allBudgets.some(
+            (b) =>
+              b.id !== budget?.id &&
+              b.category_id === data.category_id &&
+              b.sub_category_id === (data.sub_category_id || null),
+          );
 
-    if (isDuplicate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "A budget for this category/sub-category already exists.",
-        path: ["category_id"],
-      });
-    }
-  }), [allBudgets, budget]);
+          if (isDuplicate) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message:
+                "A budget for this category/sub-category already exists.",
+              path: ["category_id"],
+            });
+          }
+        }),
+    [allBudgets, budget],
+  );
 
   type BudgetFormData = z.infer<typeof formSchema>;
 
@@ -95,9 +134,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
       is_active: true,
       currency: selectedCurrency,
       frequency_value: 1,
-      frequency_unit: 'm',
+      frequency_unit: "m",
       sub_category_id: null,
-      account_scope: 'ALL',
+      account_scope: "ALL",
       account_scope_values: [],
     },
   });
@@ -107,7 +146,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
 
   const filteredSubCategories = React.useMemo(() => {
     if (!selectedCategoryId) return [];
-    return subCategories.filter(sub => sub.category_id === selectedCategoryId);
+    return subCategories.filter(
+      (sub) => sub.category_id === selectedCategoryId,
+    );
   }, [selectedCategoryId, subCategories]);
 
   // Reset logic
@@ -115,13 +156,22 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     if (isOpen) {
       if (budget) {
         let frequencyVal = 1;
-        let frequencyUnit = 'm';
+        let frequencyUnit = "m";
 
         // Handle legacy frequencies
-        if (budget.frequency === 'Monthly') { frequencyVal = 1; frequencyUnit = 'm'; }
-        else if (budget.frequency === 'Quarterly') { frequencyVal = 3; frequencyUnit = 'm'; }
-        else if (budget.frequency === 'Yearly') { frequencyVal = 1; frequencyUnit = 'y'; }
-        else if (budget.frequency === 'One-time') { frequencyVal = 1; frequencyUnit = 'm'; } // Defaulting one-time to 1m for now or need better handling? One-time budgets usually don't recur. AddEditDialog assumes recurrence.
+        if (budget.frequency === "Monthly") {
+          frequencyVal = 1;
+          frequencyUnit = "m";
+        } else if (budget.frequency === "Quarterly") {
+          frequencyVal = 3;
+          frequencyUnit = "m";
+        } else if (budget.frequency === "Yearly") {
+          frequencyVal = 1;
+          frequencyUnit = "y";
+        } else if (budget.frequency === "One-time") {
+          frequencyVal = 1;
+          frequencyUnit = "m";
+        } // Defaulting one-time to 1m for now or need better handling? One-time budgets usually don't recur. AddEditDialog assumes recurrence.
         else {
           const frequencyMatch = budget.frequency.match(/^(\d+)([dwmy])$/);
           if (frequencyMatch) {
@@ -138,9 +188,11 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
           start_date: formatDateToYYYYMMDD(budget.start_date),
           frequency_value: frequencyVal,
           frequency_unit: frequencyUnit,
-          end_date: budget.end_date ? formatDateToYYYYMMDD(budget.end_date) : "",
+          end_date: budget.end_date
+            ? formatDateToYYYYMMDD(budget.end_date)
+            : "",
           is_active: budget.is_active,
-          account_scope: budget.account_scope || 'ALL',
+          account_scope: budget.account_scope || "ALL",
           account_scope_values: budget.account_scope_values || [],
         });
       } else {
@@ -151,10 +203,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
           currency: selectedCurrency,
           start_date: formatDateToYYYYMMDD(new Date()),
           frequency_value: 1,
-          frequency_unit: 'm',
+          frequency_unit: "m",
           end_date: "",
           is_active: true,
-          account_scope: 'ALL',
+          account_scope: "ALL",
           account_scope_values: [],
         });
       }
@@ -166,23 +218,30 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
     setIsSubmitting(true);
 
     const frequency = `${values.frequency_value}${values.frequency_unit}`;
-    const selectedCategory = categories.find(c => c.id === values.category_id);
-    const subCatName = values.sub_category_id ? subCategories.find(s => s.id === values.sub_category_id)?.name : null;
+    const selectedCategory = categories.find(
+      (c) => c.id === values.category_id,
+    );
+    const subCatName = values.sub_category_id
+      ? subCategories.find((s) => s.id === values.sub_category_id)?.name
+      : null;
 
     const dbPayload: any = {
       user_id: activeLedger.id,
       category_id: values.category_id,
-      category_name: selectedCategory?.name || '',
+      category_name: selectedCategory?.name || "",
       sub_category_id: values.sub_category_id || null,
       sub_category_name: subCatName,
       target_amount: values.target_amount,
       currency: values.currency,
       start_date: new Date(values.start_date).toISOString(),
       frequency: frequency as any,
-      end_date: values.end_date ? new Date(values.end_date).toISOString() : null,
+      end_date: values.end_date
+        ? new Date(values.end_date).toISOString()
+        : null,
       is_active: values.is_active,
       account_scope: values.account_scope,
-      account_scope_values: values.account_scope === 'GROUP' ? values.account_scope_values : null,
+      account_scope_values:
+        values.account_scope === "GROUP" ? values.account_scope_values : null,
     };
 
     try {
@@ -193,7 +252,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
         await dataProvider.addBudget(dbPayload);
         showSuccess("Budget created successfully!");
       }
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
       if (onSuccess) onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -205,10 +264,15 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{budget ? "Edit" : "Create"} Budget</DialogTitle>
-          <DialogDescription>Set a spending target for a category or sub-category.</DialogDescription>
+          <DialogDescription>
+            Set a spending target for a category or sub-category.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -219,7 +283,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <Combobox
-                    options={categories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.id, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))}
+                    options={categories
+                      .filter((c) => c.name !== "Transfer")
+                      .map((cat) => ({ value: cat.id, label: cat.name }))
+                      .sort((a, b) => a.label.localeCompare(b.label))}
                     value={field.value}
                     onChange={(val) => {
                       field.onChange(val);
@@ -241,15 +308,32 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 <FormItem>
                   <FormLabel>Sub-category (Optional)</FormLabel>
                   <Combobox
-                    options={filteredSubCategories.map(sub => ({ value: sub.id, label: sub.name })).sort((a, b) => a.label.localeCompare(b.label))}
+                    options={filteredSubCategories
+                      .map((sub) => ({ value: sub.id, label: sub.name }))
+                      .sort((a, b) => a.label.localeCompare(b.label))}
                     value={field.value || ""}
                     onChange={(val) => field.onChange(val || null)}
-                    placeholder={selectedCategoryId ? (filteredSubCategories.length > 0 ? "Select a sub-category" : "No sub-categories found") : "Select a category first"}
+                    placeholder={
+                      selectedCategoryId
+                        ? filteredSubCategories.length > 0
+                          ? "Select a sub-category"
+                          : "No sub-categories found"
+                        : "Select a category first"
+                    }
                     searchPlaceholder="Search sub-categories..."
-                    emptyPlaceholder={selectedCategoryId ? "No sub-categories found" : "Select a category first"}
-                    disabled={!selectedCategoryId || filteredSubCategories.length === 0}
+                    emptyPlaceholder={
+                      selectedCategoryId
+                        ? "No sub-categories found"
+                        : "Select a category first"
+                    }
+                    disabled={
+                      !selectedCategoryId || filteredSubCategories.length === 0
+                    }
                   />
-                  <FormDescription>Select a sub-category to target specifically, or leave empty for the whole category.</FormDescription>
+                  <FormDescription>
+                    Select a sub-category to target specifically, or leave empty
+                    for the whole category.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -291,14 +375,16 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
               )}
             />
 
-            {form.watch("account_scope") === 'GROUP' && (
+            {form.watch("account_scope") === "GROUP" && (
               <FormField
                 control={form.control}
                 name="account_scope_values"
                 render={() => (
                   <FormItem>
                     <div className="mb-4">
-                      <FormLabel className="text-base">Select Account Groups</FormLabel>
+                      <FormLabel className="text-base">
+                        Select Account Groups
+                      </FormLabel>
                       <FormDescription>
                         Select the account groups this budget applies to.
                       </FormDescription>
@@ -320,12 +406,15 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                                     checked={field.value?.includes(type)}
                                     onCheckedChange={(checked) => {
                                       return checked
-                                        ? field.onChange([...(field.value || []), type])
+                                        ? field.onChange([
+                                            ...(field.value || []),
+                                            type,
+                                          ])
                                         : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== type
-                                          )
-                                        )
+                                            field.value?.filter(
+                                              (value) => value !== type,
+                                            ),
+                                          );
                                     }}
                                   />
                                 </FormControl>
@@ -333,7 +422,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                                   {type}
                                 </FormLabel>
                               </FormItem>
-                            )
+                            );
                           }}
                         />
                       ))}
@@ -351,7 +440,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Target Amount</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -363,9 +454,17 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                   <FormItem>
                     <FormLabel>Currency</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
-                        {availableCurrencies.map(c => <SelectItem key={c.code} value={c.code}>{c.code}</SelectItem>)}
+                        {availableCurrencies.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            {c.code}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -380,7 +479,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Start Date</FormLabel>
-                    <FormControl><Input type="date" {...field} /></FormControl>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -391,7 +492,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>End Date (Optional)</FormLabel>
-                    <FormControl><Input type="date" {...field} value={field.value || ''} /></FormControl>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value || ""} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -404,7 +507,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 render={({ field }) => (
                   <FormItem className="flex-grow">
                     <FormLabel>Frequency</FormLabel>
-                    <FormControl><Input type="number" min="1" {...field} /></FormControl>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -415,7 +520,11 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
                 render={({ field }) => (
                   <FormItem>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
                         <SelectItem value="d">Days</SelectItem>
                         <SelectItem value="w">Weeks</SelectItem>
@@ -433,17 +542,26 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({ isOpen
               name="is_active"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Active</FormLabel>
-                    <FormDescription>Uncheck to pause budget monitoring.</FormDescription>
+                    <FormDescription>
+                      Uncheck to pause budget monitoring.
+                    </FormDescription>
                   </div>
                 </FormItem>
               )}
             />
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Save
               </Button>
             </DialogFooter>

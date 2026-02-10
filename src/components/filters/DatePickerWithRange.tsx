@@ -8,7 +8,11 @@ import { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined;
@@ -29,8 +33,8 @@ export function DatePickerWithRange({
             variant={"outline"}
             // Removed fixed w-[300px] to allow parent className to control width
             className={cn(
-              "justify-start text-left font-normal", 
-              !date && "text-muted-foreground"
+              "justify-start text-left font-normal",
+              !date && "text-muted-foreground",
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />

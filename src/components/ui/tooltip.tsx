@@ -9,7 +9,10 @@ const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger> & { className?: string; asChild?: boolean }
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger> & {
+    className?: string;
+    asChild?: boolean;
+  }
 >(({ className, ...props }, ref) => (
   <TooltipPrimitive.Trigger ref={ref} {...({ className, ...props } as any)} />
 ));

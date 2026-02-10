@@ -1,6 +1,12 @@
-import React from 'react';
-import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
-import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
+import React from "react";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardDescription,
+  ThemedCardHeader,
+  ThemedCardTitle,
+} from "@/components/ThemedCard";
+import { ResponsiveContainer, Sankey, Tooltip } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface SankeyChartProps {
@@ -8,12 +14,19 @@ interface SankeyChartProps {
   accounts: any[];
 }
 
-const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => {
-  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } = useCurrency();
+const SankeyChart: React.FC<SankeyChartProps> = ({
+  transactions,
+  accounts,
+}) => {
+  const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
+    useCurrency();
 
   const { sankeyData, chartHeight } = React.useMemo(() => {
     const nodes: { name: string }[] = [];
-    const linkMap = new Map<string, { source: number; target: number; value: number }>();
+    const linkMap = new Map<
+      string,
+      { source: number; target: number; value: number }
+    >();
     const nodeMap = new Map<string, number>();
 
     const addNode = (name: string) => {
@@ -26,11 +39,11 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     // Define nodes
     const incomeCategories = new Set<string>();
     const expenseCategories = new Set<string>();
-    const accountNames = new Set(accounts.map(a => a.name));
+    const accountNames = new Set(accounts.map((a) => a.name));
     let hasTransfers = false;
 
-    transactions.forEach(t => {
-      if (t.category === 'Transfer') {
+    transactions.forEach((t) => {
+      if (t.category === "Transfer") {
         hasTransfers = true;
       } else if (t.amount > 0) {
         incomeCategories.add(t.category);
@@ -39,27 +52,31 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
       }
     });
 
-    incomeCategories.forEach(name => addNode(`Income: ${name}`));
-    accountNames.forEach(name => addNode(`Account: ${name}`));
-    expenseCategories.forEach(name => addNode(`Expense: ${name}`));
+    incomeCategories.forEach((name) => addNode(`Income: ${name}`));
+    accountNames.forEach((name) => addNode(`Account: ${name}`));
+    expenseCategories.forEach((name) => addNode(`Expense: ${name}`));
     if (hasTransfers) {
-      addNode('Transfer Out');
-      addNode('Transfer In');
+      addNode("Transfer Out");
+      addNode("Transfer In");
     }
 
     // Define links
 
-    transactions.forEach(t => {
-      const convertedAmount = Math.abs(convertBetweenCurrencies(t.amount, t.currency, selectedCurrency));
-      let sourceNode = '';
-      let targetNode = '';
+    transactions.forEach((t) => {
+      const convertedAmount = Math.abs(
+        convertBetweenCurrencies(t.amount, t.currency, selectedCurrency),
+      );
+      let sourceNode = "";
+      let targetNode = "";
 
-      if (t.category === 'Transfer') {
-        if (t.amount < 0) { // Debit - money leaving an account
+      if (t.category === "Transfer") {
+        if (t.amount < 0) {
+          // Debit - money leaving an account
           sourceNode = `Account: ${t.account}`;
-          targetNode = 'Transfer Out';
-        } else { // Credit - money entering an account
-          sourceNode = 'Transfer In';
+          targetNode = "Transfer Out";
+        } else {
+          // Credit - money entering an account
+          sourceNode = "Transfer In";
           targetNode = `Account: ${t.account}`;
         }
       } else if (t.amount > 0) {
@@ -83,7 +100,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
           linkMap.set(linkKey, {
             source: sourceIndex,
             target: targetIndex,
-            value: convertedAmount
+            value: convertedAmount,
           });
         }
       }
@@ -93,14 +110,14 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
     const links = Array.from(linkMap.values());
 
     // Filter out links with zero value
-    const filteredLinks = links.filter(link => link.value > 0);
+    const filteredLinks = links.filter((link) => link.value > 0);
 
     // Calculate dynamic height based on the number of nodes to prevent excessive white space
     const dynamicHeight = Math.max(150, nodes.length * 40);
 
     return {
       sankeyData: { nodes, links: filteredLinks },
-      chartHeight: dynamicHeight
+      chartHeight: dynamicHeight,
     };
   }, [transactions, accounts, selectedCurrency, convertBetweenCurrencies]);
 
@@ -109,7 +126,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
       <ThemedCardHeader>
         <ThemedCardTitle>Financial Flow (Sankey Chart)</ThemedCardTitle>
         <ThemedCardDescription>
-          Visualizes the flow of money from income sources through accounts to expense categories.
+          Visualizes the flow of money from income sources through accounts to
+          expense categories.
         </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent>
@@ -124,7 +142,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
                 top: 5,
                 bottom: 5,
               }}
-              link={{ stroke: '#777' }}
+              link={{ stroke: "#777" }}
             >
               <Tooltip formatter={(value: any) => formatCurrency(value)} />
             </Sankey>
@@ -132,7 +150,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({ transactions, accounts }) => 
         ) : (
           <div className="flex items-center justify-center h-64 text-center">
             <p className="text-muted-foreground">
-              Not enough data to display the Sankey chart. Please add more transactions.
+              Not enough data to display the Sankey chart. Please add more
+              transactions.
             </p>
           </div>
         )}

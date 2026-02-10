@@ -95,11 +95,21 @@ export type Budget = {
   end_date?: string | null;
   is_active?: boolean;
   created_at?: string;
-  account_scope?: 'ALL' | 'GROUP';
+  account_scope?: "ALL" | "GROUP";
   account_scope_values?: string[] | null;
 };
 
 // Base categories for seeding and initial demo data generation.
 // The actual list in the app will be fetched from the database.
-export const baseCategories = ["Groceries", "Utilities", "Transport", "Entertainment", "Salary", "Shopping", "Health", "Dining Out", "Transfer"];
+export const baseCategories = [
+  "Groceries",
+  "Utilities",
+  "Transport",
+  "Entertainment",
+  "Salary",
+  "Shopping",
+  "Health",
+  "Dining Out",
+  "Transfer",
+];
 export const vendors = Array.from({ length: 15 }, (_, i) => `Vendor ${i + 1}`);

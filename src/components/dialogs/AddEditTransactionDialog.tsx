@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -31,7 +31,10 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecurrenceUpdateDialog } from "./RecurrenceUpdateDialog";
-import { useTransactionFormLogic, AddEditTransactionFormValues } from "./hooks/useTransactionFormLogic";
+import {
+  useTransactionFormLogic,
+  AddEditTransactionFormValues,
+} from "./hooks/useTransactionFormLogic";
 
 interface AddEditTransactionDialogProps {
   isOpen: boolean;
@@ -46,11 +49,24 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   onSuccess,
   transactionToEdit,
 }) => {
-  const { addTransaction, updateTransaction, updateScheduledTransaction, scheduledTransactions, categories: allCategories, vendors, isLoadingAccounts, isLoadingVendors, isLoadingCategories, allSubCategories, accountCurrencyMap } = useTransactions();
+  const {
+    addTransaction,
+    updateTransaction,
+    updateScheduledTransaction,
+    scheduledTransactions,
+    categories: allCategories,
+    vendors,
+    isLoadingAccounts,
+    isLoadingVendors,
+    isLoadingCategories,
+    allSubCategories,
+    accountCurrencyMap,
+  } = useTransactions();
   const { currencySymbols, formatCurrency } = useCurrency();
 
   const [recurrenceDialogOpen, setRecurrenceDialogOpen] = React.useState(false);
-  const [pendingValues, setPendingValues] = React.useState<AddEditTransactionFormValues | null>(null);
+  const [pendingValues, setPendingValues] =
+    React.useState<AddEditTransactionFormValues | null>(null);
 
   // Use the custom hook for form logic
   const {
@@ -69,8 +85,14 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   const vendorValue = form.watch("vendor");
   const recurrenceFrequency = form.watch("recurrenceFrequency");
 
-  const handleTransactionSave = async (values: AddEditTransactionFormValues, updateFuture: boolean = false) => {
-    const finalAmount = transactionType === 'expense' ? -Math.abs(values.amount) : Math.abs(values.amount);
+  const handleTransactionSave = async (
+    values: AddEditTransactionFormValues,
+    updateFuture: boolean = false,
+  ) => {
+    const finalAmount =
+      transactionType === "expense"
+        ? -Math.abs(values.amount)
+        : Math.abs(values.amount);
 
     const transactionData = {
       ...transactionToEdit,
@@ -92,7 +114,9 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
 
       if (updateFuture && transactionToEdit.recurrence_id) {
         // Find original schedule to keep its ID and Date
-        const originalSchedule = scheduledTransactions.find(s => s.id === transactionToEdit.recurrence_id);
+        const originalSchedule = scheduledTransactions.find(
+          (s) => s.id === transactionToEdit.recurrence_id,
+        );
         if (originalSchedule) {
           await updateScheduledTransaction({
             ...originalSchedule,
@@ -107,7 +131,6 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
           });
         }
       }
-
     } else {
       await addTransaction(transactionData);
     }
@@ -127,28 +150,64 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     }
   };
 
-  const allVendors = React.useMemo(() => vendors.map(p => p.name), [vendors]);
-  const baseAccountOptions = React.useMemo(() => allAccounts.map(acc => ({ value: acc, label: acc })), [allAccounts]);
-  const baseVendorOptions = React.useMemo(() => allVendors.map(v => ({ value: v, label: v })), [allVendors]);
+  const allVendors = React.useMemo(() => vendors.map((p) => p.name), [vendors]);
+  const baseAccountOptions = React.useMemo(
+    () => allAccounts.map((acc) => ({ value: acc, label: acc })),
+    [allAccounts],
+  );
+  const baseVendorOptions = React.useMemo(
+    () => allVendors.map((v) => ({ value: v, label: v })),
+    [allVendors],
+  );
 
-  const filteredAccountOptions = React.useMemo(() => baseAccountOptions.map(option => ({
-    ...option,
-    disabled: option.value === vendorValue && allAccounts.includes(vendorValue),
-  })), [baseAccountOptions, vendorValue, allAccounts]);
+  const filteredAccountOptions = React.useMemo(
+    () =>
+      baseAccountOptions.map((option) => ({
+        ...option,
+        disabled:
+          option.value === vendorValue && allAccounts.includes(vendorValue),
+      })),
+    [baseAccountOptions, vendorValue, allAccounts],
+  );
 
-  const combinedBaseVendorOptions = React.useMemo(() => [...baseAccountOptions, ...baseVendorOptions].sort((a, b) => a.label.localeCompare(b.label)), [baseAccountOptions, baseVendorOptions]);
+  const combinedBaseVendorOptions = React.useMemo(
+    () =>
+      [...baseAccountOptions, ...baseVendorOptions].sort((a, b) =>
+        a.label.localeCompare(b.label),
+      ),
+    [baseAccountOptions, baseVendorOptions],
+  );
 
-  const filteredCombinedVendorOptions = React.useMemo(() => combinedBaseVendorOptions.map(option => ({
-    ...option,
-    disabled: option.value === accountValue,
-  })), [combinedBaseVendorOptions, accountValue]);
+  const filteredCombinedVendorOptions = React.useMemo(
+    () =>
+      combinedBaseVendorOptions.map((option) => ({
+        ...option,
+        disabled: option.value === accountValue,
+      })),
+    [combinedBaseVendorOptions, accountValue],
+  );
 
-  const categoryOptions = React.useMemo(() => allCategories.filter(c => c.name !== 'Transfer').map(cat => ({ value: cat.name, label: cat.name })), [allCategories]);
-  const subCategoryOptions = React.useMemo(() => allSubCategories.map(sub => ({ value: sub, label: sub })), [allSubCategories]);
+  const categoryOptions = React.useMemo(
+    () =>
+      allCategories
+        .filter((c) => c.name !== "Transfer")
+        .map((cat) => ({ value: cat.name, label: cat.name })),
+    [allCategories],
+  );
+  const subCategoryOptions = React.useMemo(
+    () => allSubCategories.map((sub) => ({ value: sub, label: sub })),
+    [allSubCategories],
+  );
 
-  const showReceivingValueField = isTransfer && accountValue && vendorValue && destinationAccountCurrency && (accountCurrencyMap.get(accountValue) !== destinationAccountCurrency);
+  const showReceivingValueField =
+    isTransfer &&
+    accountValue &&
+    vendorValue &&
+    destinationAccountCurrency &&
+    accountCurrencyMap.get(accountValue) !== destinationAccountCurrency;
 
-  const isFormLoading = isLoadingAccounts || isLoadingVendors || isLoadingCategories;
+  const isFormLoading =
+    isLoadingAccounts || isLoadingVendors || isLoadingCategories;
   const isEditMode = !!transactionToEdit;
 
   React.useEffect(() => {
@@ -163,9 +222,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isEditMode ? "Edit Transaction" : "Add New Transaction"}</DialogTitle>
+            <DialogTitle>
+              {isEditMode ? "Edit Transaction" : "Add New Transaction"}
+            </DialogTitle>
             <DialogDescription>
-              {isEditMode ? "Modify the details of this transaction." : "Quickly add a new transaction to your records."}
+              {isEditMode
+                ? "Modify the details of this transaction."
+                : "Quickly add a new transaction to your records."}
             </DialogDescription>
           </DialogHeader>
           {isFormLoading ? (
@@ -174,12 +237,26 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.error("Form Validation Errors:", errors))} className="grid grid-cols-2 gap-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit, (errors) =>
+                  console.error("Form Validation Errors:", errors),
+                )}
+                className="grid grid-cols-2 gap-4"
+              >
                 <div className="col-span-2 flex justify-center mb-4">
-                  <Tabs value={transactionType} onValueChange={(v) => !isTransfer && setTransactionType(v as 'expense' | 'income')} className="w-[400px]">
+                  <Tabs
+                    value={transactionType}
+                    onValueChange={(v) =>
+                      !isTransfer &&
+                      setTransactionType(v as "expense" | "income")
+                    }
+                    className="w-[400px]"
+                  >
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="expense">Expense</TabsTrigger>
-                      <TabsTrigger value="income" disabled={isTransfer}>Income</TabsTrigger>
+                      <TabsTrigger value="income" disabled={isTransfer}>
+                        Income
+                      </TabsTrigger>
                     </TabsList>
                   </Tabs>
                 </div>
@@ -285,7 +362,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                           {accountCurrencySymbol}
                         </span>
                         <FormControl>
-                          <Input type="number" step="0.01" {...field} placeholder="0.00" className="pl-8" />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...field}
+                            placeholder="0.00"
+                            className="pl-8"
+                          />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -302,7 +385,9 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                         <FormLabel>Amount (Receiving)</FormLabel>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
-                            {currencySymbols[destinationAccountCurrency || 'USD'] || destinationAccountCurrency}
+                            {currencySymbols[
+                              destinationAccountCurrency || "USD"
+                            ] || destinationAccountCurrency}
                           </span>
                           <FormControl>
                             <Input
@@ -310,14 +395,27 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                               step="0.01"
                               {...field}
                               value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => field.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                              placeholder={autoCalculatedReceivingAmount.toFixed(2)}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? 0
+                                    : parseFloat(e.target.value),
+                                )
+                              }
+                              placeholder={autoCalculatedReceivingAmount.toFixed(
+                                2,
+                              )}
                               className="pl-8"
                             />
                           </FormControl>
                         </div>
                         <FormDescription>
-                          This is the amount received in the destination account's currency. Auto-calculated: {formatCurrency(autoCalculatedReceivingAmount, destinationAccountCurrency || 'USD')}
+                          This is the amount received in the destination
+                          account's currency. Auto-calculated:{" "}
+                          {formatCurrency(
+                            autoCalculatedReceivingAmount,
+                            destinationAccountCurrency || "USD",
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -346,7 +444,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Recurrence Frequency</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select recurrence frequency" />
@@ -369,7 +470,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   )}
                 />
 
-                {recurrenceFrequency && recurrenceFrequency !== 'None' && (
+                {recurrenceFrequency && recurrenceFrequency !== "None" && (
                   <FormField
                     control={form.control}
                     name="recurrenceEndDate"
@@ -380,7 +481,8 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                           <Input type="date" {...field} />
                         </FormControl>
                         <FormDescription>
-                          The date after which this transaction will no longer recur.
+                          The date after which this transaction will no longer
+                          recur.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -389,7 +491,9 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                 )}
 
                 <DialogFooter className="col-span-2">
-                  <Button type="submit">{isEditMode ? "Save Changes" : "Add Transaction"}</Button>
+                  <Button type="submit">
+                    {isEditMode ? "Save Changes" : "Add Transaction"}
+                  </Button>
                 </DialogFooter>
               </form>
             </Form>
@@ -404,7 +508,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         count={1}
         onConfirm={(mode) => {
           if (pendingValues) {
-            handleTransactionSave(pendingValues, mode === 'future');
+            handleTransactionSave(pendingValues, mode === "future");
           }
         }}
       />

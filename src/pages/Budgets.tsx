@@ -41,25 +41,29 @@ export default function BudgetsPage() {
   const userId = activeLedger?.id || null;
 
   // Contexts for real-time calculation
-  const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } = useTransactions();
+  const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } =
+    useTransactions();
   const { convertBetweenCurrencies } = useCurrency();
 
-  const fetchBudgets = useCallback(async (currentUserId: string) => {
-    setIsLoading(true);
-    try {
-      // We still fetch budgets to get the configuration, but we might ignore the returned 'spent_amount'
-      // in favor of client-side calculation to match Alerts logic.
-      const data = await dataProvider.getBudgetsWithSpending(currentUserId);
-      setBudgets(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error fetching budgets",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-    setIsLoading(false);
-  }, [dataProvider, toast]);
+  const fetchBudgets = useCallback(
+    async (currentUserId: string) => {
+      setIsLoading(true);
+      try {
+        // We still fetch budgets to get the configuration, but we might ignore the returned 'spent_amount'
+        // in favor of client-side calculation to match Alerts logic.
+        const data = await dataProvider.getBudgetsWithSpending(currentUserId);
+        setBudgets(data || []);
+      } catch (error: any) {
+        toast({
+          title: "Error fetching budgets",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      setIsLoading(false);
+    },
+    [dataProvider, toast],
+  );
 
   useEffect(() => {
     if (userId) {
@@ -73,14 +77,14 @@ export default function BudgetsPage() {
   const processedBudgets = useMemo(() => {
     // effectiveBudgets defined above, need to move it up or reference here?
     // Let's rely on 'budgets' state for this memo, but then filter 'processedBudgets'.
-    return budgets.map(budget => {
+    return budgets.map((budget) => {
       const spent = calculateBudgetSpent(
         budget,
         transactions,
         accounts as any,
         vendors,
         convertBetweenCurrencies,
-        budget.currency // Calculate spent in the budget's currency
+        budget.currency, // Calculate spent in the budget's currency
       );
       return { ...budget, spent_amount: spent };
     });
@@ -90,24 +94,24 @@ export default function BudgetsPage() {
     let base = processedBudgets;
     // Apply hidden filter
     if (hiddenBudgetIds.size > 0) {
-      base = base.filter(b => !hiddenBudgetIds.has(b.id));
+      base = base.filter((b) => !hiddenBudgetIds.has(b.id));
     }
 
     if (!searchTerm) {
       return base;
     }
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    return base.filter(budget =>
-      budget.category_name.toLowerCase().includes(lowerCaseSearchTerm)
+    return base.filter((budget) =>
+      budget.category_name.toLowerCase().includes(lowerCaseSearchTerm),
     );
   }, [processedBudgets, searchTerm, hiddenBudgetIds]);
 
   const activeBudgets = useMemo(() => {
-    return filteredBudgets.filter(b => b.is_active !== false);
+    return filteredBudgets.filter((b) => b.is_active !== false);
   }, [filteredBudgets]);
 
   const inactiveBudgets = useMemo(() => {
-    return filteredBudgets.filter(b => b.is_active === false);
+    return filteredBudgets.filter((b) => b.is_active === false);
   }, [filteredBudgets]);
 
   const handleOpenDialog = (budget: Budget | null = null) => {
@@ -131,8 +135,6 @@ export default function BudgetsPage() {
     setIsConfirmingDelete(true);
   };
 
-
-
   const confirmDelete = async () => {
     if (!budgetToDeleteId) return;
 
@@ -141,7 +143,7 @@ export default function BudgetsPage() {
       // Toast is handled by context now
       // handleSave(); // Not strictly needed if local state is just for initial load, but effectiveBudgets handles UI.
       // However, fetchBudgets creates 'budgets' state.
-      // If we don't update 'budgets' state, effectiveBudgets filters it. 
+      // If we don't update 'budgets' state, effectiveBudgets filters it.
       // But if we reload, it's gone.
       // So simple delete is fine.
     } catch (error: any) {
@@ -163,14 +165,19 @@ export default function BudgetsPage() {
           <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
             Budgets
           </h1>
-          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Track your spending limits and goals</p>
+          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+            Track your spending limits and goals
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setIsSmartBudgetOpen(true)}>
             <Wand2 className="mr-2 h-4 w-4" />
             Smart Create
           </Button>
-          <Button onClick={() => handleOpenDialog()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button
+            onClick={() => handleOpenDialog()}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
             <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
           </Button>
         </div>
@@ -200,7 +207,9 @@ export default function BudgetsPage() {
 
           {inactiveBudgets.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4 text-muted-foreground">Inactive Budgets</h2>
+              <h2 className="text-xl font-semibold mb-4 text-muted-foreground">
+                Inactive Budgets
+              </h2>
               <BudgetPaginationWrapper
                 budgets={inactiveBudgets}
                 isLoading={isLoading}
@@ -231,7 +240,10 @@ export default function BudgetsPage() {
         onSave={handleSave}
       />
 
-      <AlertDialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+      <AlertDialog
+        open={isConfirmingDelete}
+        onOpenChange={setIsConfirmingDelete}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
@@ -241,7 +253,10 @@ export default function BudgetsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete Budget
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -53,7 +53,7 @@ export function Combobox({
         <div
           className={cn(
             "group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
           )}
         >
           <div className="flex flex-wrap gap-1">
@@ -68,7 +68,7 @@ export function Combobox({
                   if (shouldStop) {
                     e.stopPropagation();
                   }
-                  // If we don't stop propagation, the event bubbles up. 
+                  // If we don't stop propagation, the event bubbles up.
                   // onKeyDown callback is called below if provided.
                 }
 
@@ -118,7 +118,7 @@ export function Combobox({
                     disabled={option.disabled}
                     className={cn(
                       "cursor-pointer flex items-center justify-between",
-                      option.disabled && "opacity-50 cursor-not-allowed"
+                      option.disabled && "opacity-50 cursor-not-allowed",
                     )}
                   >
                     <span>{option.label}</span>
@@ -126,29 +126,36 @@ export function Combobox({
                   </CommandItem>
                 ))}
 
-                {onCreate && inputValue.trim() !== "" && !options.some(opt => opt.label.toLowerCase() === inputValue.toLowerCase()) && (
-                  <CommandItem
-                    key="create-new-option"
-                    value={inputValue}
-                    onSelect={() => {
-                      onCreate(inputValue);
-                      setInputValue(inputValue);
-                      setOpen(false);
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    className="cursor-pointer font-medium text-primary"
-                  >
-                    Create "{inputValue}"
-                  </CommandItem>
-                )}
+                {onCreate &&
+                  inputValue.trim() !== "" &&
+                  !options.some(
+                    (opt) =>
+                      opt.label.toLowerCase() === inputValue.toLowerCase(),
+                  ) && (
+                    <CommandItem
+                      key="create-new-option"
+                      value={inputValue}
+                      onSelect={() => {
+                        onCreate(inputValue);
+                        setInputValue(inputValue);
+                        setOpen(false);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="cursor-pointer font-medium text-primary"
+                    >
+                      Create "{inputValue}"
+                    </CommandItem>
+                  )}
 
                 {options.length > 0 && (
                   // If items are filtered out, cmdk shows nothing.
                   // We need an Empty component that shows when no matches.
-                  <div className="hidden last:block py-6 text-center text-sm">{emptyPlaceholder}</div>
+                  <div className="hidden last:block py-6 text-center text-sm">
+                    {emptyPlaceholder}
+                  </div>
                 )}
               </CommandGroup>
             </div>

@@ -24,7 +24,7 @@ interface UseTransactionDataProps {
   minAmount?: number;
   maxAmount?: number;
   limit?: number;
-  sortOrder?: 'largest' | 'smallest';
+  sortOrder?: "largest" | "smallest";
 }
 
 export const useTransactionData = ({
@@ -49,26 +49,37 @@ export const useTransactionData = ({
     const projectionHorizon = new Date();
     projectionHorizon.setFullYear(projectionHorizon.getFullYear() + 1); // 1 year projection
 
-    const projectedTransactions = projectScheduledTransactions(scheduledTransactions, new Date(), projectionHorizon);
+    const projectedTransactions = projectScheduledTransactions(
+      scheduledTransactions,
+      new Date(),
+      projectionHorizon,
+    );
 
     // Dedup: Filter out projected transactions that have a matching REAL transaction
     // Match criteria: Same Day, Same Amount, Same Vendor (or Account if transfer)
-    const validProjected = projectedTransactions.filter(p => {
-      const pDate = new Date(p.date).toISOString().split('T')[0];
-      const pVendor = (p.vendor || '').toLowerCase().trim();
+    const validProjected = projectedTransactions.filter((p) => {
+      const pDate = new Date(p.date).toISOString().split("T")[0];
+      const pVendor = (p.vendor || "").toLowerCase().trim();
       const pAmount = p.amount;
 
       // Check if ANY real transaction matches
-      const hasMatch = transactions.some(t => {
-        const tDate = new Date(t.date).toISOString().split('T')[0];
-        const tVendor = (t.vendor || '').toLowerCase().trim();
-        return tDate === pDate && Math.abs(t.amount - pAmount) < 0.01 && tVendor === pVendor;
+      const hasMatch = transactions.some((t) => {
+        const tDate = new Date(t.date).toISOString().split("T")[0];
+        const tVendor = (t.vendor || "").toLowerCase().trim();
+        return (
+          tDate === pDate &&
+          Math.abs(t.amount - pAmount) < 0.01 &&
+          tVendor === pVendor
+        );
       });
 
       return !hasMatch;
     });
 
-    return [...transactions, ...validProjected].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...transactions, ...validProjected].sort(
+      (a: any, b: any) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }, [transactions, scheduledTransactions]);
 
   const filteredTransactions = React.useMemo(() => {
@@ -78,12 +89,22 @@ export const useTransactionData = ({
       filtered = filterTransactions(filtered, searchTerm);
     }
 
-    if (selectedAccounts.length > 0 && selectedAccounts.length !== availableAccountOptions.length) {
-      filtered = filtered.filter((t) => selectedAccounts.includes(slugify(t.account)));
+    if (
+      selectedAccounts.length > 0 &&
+      selectedAccounts.length !== availableAccountOptions.length
+    ) {
+      filtered = filtered.filter((t) =>
+        selectedAccounts.includes(slugify(t.account)),
+      );
     }
 
-    if (selectedCategories.length > 0 && selectedCategories.length !== availableCategoryOptions.length) {
-      filtered = filtered.filter((t) => selectedCategories.includes(slugify(t.category)));
+    if (
+      selectedCategories.length > 0 &&
+      selectedCategories.length !== availableCategoryOptions.length
+    ) {
+      filtered = filtered.filter((t) =>
+        selectedCategories.includes(slugify(t.category)),
+      );
     }
 
     if (selectedSubCategories.length > 0) {
@@ -94,8 +115,13 @@ export const useTransactionData = ({
       });
     }
 
-    if (selectedVendors.length > 0 && selectedVendors.length !== availableVendorOptions.length) {
-      filtered = filtered.filter((t) => selectedVendors.includes(slugify(t.vendor)));
+    if (
+      selectedVendors.length > 0 &&
+      selectedVendors.length !== availableVendorOptions.length
+    ) {
+      filtered = filtered.filter((t) =>
+        selectedVendors.includes(slugify(t.vendor)),
+      );
     }
 
     if (dateRange?.from) {
@@ -110,23 +136,23 @@ export const useTransactionData = ({
 
     if (excludeTransfers) {
       filtered = filtered.filter((t) => {
-        const isTransfer = t.category?.toLowerCase() === 'transfer';
-        const isBlank = !t.category || t.category.trim() === '';
+        const isTransfer = t.category?.toLowerCase() === "transfer";
+        const isBlank = !t.category || t.category.trim() === "";
         return !isTransfer && !isBlank;
       });
     }
 
     if (minAmount !== undefined) {
-      filtered = filtered.filter(t => Math.abs(t.amount) >= minAmount);
+      filtered = filtered.filter((t) => Math.abs(t.amount) >= minAmount);
     }
     if (maxAmount !== undefined) {
-      filtered = filtered.filter(t => Math.abs(t.amount) <= maxAmount);
+      filtered = filtered.filter((t) => Math.abs(t.amount) <= maxAmount);
     }
 
     // Sorting
-    if (sortOrder === 'largest') {
+    if (sortOrder === "largest") {
       filtered.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
-    } else if (sortOrder === 'smallest') {
+    } else if (sortOrder === "smallest") {
       filtered.sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
     }
     // Default sort is date desc (already applied in combinedTransactions), but if filtered, order is preserved.
@@ -153,7 +179,7 @@ export const useTransactionData = ({
     minAmount,
     maxAmount,
     limit,
-    sortOrder
+    sortOrder,
   ]);
 
   return {

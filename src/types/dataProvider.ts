@@ -29,10 +29,10 @@ export interface Budget {
   currency: string;
   start_date: string;
   end_date: string | null;
-  frequency: 'Monthly' | 'Quarterly' | 'Yearly' | 'One-time';
+  frequency: "Monthly" | "Quarterly" | "Yearly" | "One-time";
   is_active?: boolean;
   created_at?: string;
-  account_scope?: 'ALL' | 'GROUP';
+  account_scope?: "ALL" | "GROUP";
   account_scope_values?: string[] | null;
 }
 
@@ -44,7 +44,12 @@ export interface Vendor {
   account_id?: string | null;
 }
 
-export type AccountType = 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
+export type AccountType =
+  | "Checking"
+  | "Savings"
+  | "Credit Card"
+  | "Investment"
+  | "Other";
 
 export interface Account {
   id: string;
@@ -75,13 +80,13 @@ export interface SubCategory {
 export interface ScheduledTransaction {
   id: string;
   user_id: string;
-  account: string;  // account name
-  vendor: string;   // vendor/payee name
+  account: string; // account name
+  vendor: string; // vendor/payee name
   category: string;
   sub_category?: string | null;
   amount: number;
   currency: string;
-  date: string;     // Next scheduled date
+  date: string; // Next scheduled date
   frequency: string; // 'Daily' | 'Weekly' ... OR '1d', '2w', '3m', '1y'
   end_date?: string | null;
 
@@ -91,7 +96,6 @@ export interface ScheduledTransaction {
   ignored_dates?: string[]; // Array of ISO date strings to skip
   transfer_id?: string | null;
 }
-
 
 export interface Ledger {
   id: string;
@@ -107,14 +111,20 @@ export interface DataProvider {
   // Ledgers
   // Ledgers
   getLedgers(): Promise<Ledger[]>;
-  addLedger(ledger: Omit<Ledger, 'id' | 'created_at' | 'last_accessed'>): Promise<Ledger>;
+  addLedger(
+    ledger: Omit<Ledger, "id" | "created_at" | "last_accessed">,
+  ): Promise<Ledger>;
   updateLedger(ledger: Ledger): Promise<void>;
   deleteLedger(id: string): Promise<void>;
 
   // Transactions
   getTransactions(userId: string): Promise<Transaction[]>;
-  addTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>): Promise<Transaction>;
-  addMultipleTransactions(transactions: Omit<Transaction, 'id' | 'created_at'>[]): Promise<Transaction[]>;
+  addTransaction(
+    transaction: Omit<Transaction, "id" | "created_at">,
+  ): Promise<Transaction>;
+  addMultipleTransactions(
+    transactions: Omit<Transaction, "id" | "created_at">[],
+  ): Promise<Transaction[]>;
   updateTransaction(transaction: Transaction): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
   deleteMultipleTransactions(ids: string[]): Promise<void>;
@@ -125,32 +135,57 @@ export interface DataProvider {
 
   // Scheduled Transactions
   getScheduledTransactions(userId: string): Promise<ScheduledTransaction[]>;
-  addScheduledTransaction(transaction: Omit<ScheduledTransaction, 'id' | 'created_at'>): Promise<ScheduledTransaction>;
+  addScheduledTransaction(
+    transaction: Omit<ScheduledTransaction, "id" | "created_at">,
+  ): Promise<ScheduledTransaction>;
   updateScheduledTransaction(transaction: ScheduledTransaction): Promise<void>;
   deleteScheduledTransaction(id: string): Promise<void>;
   deleteMultipleScheduledTransactions(ids: string[]): Promise<void>;
 
   // Payees/Vendors/Accounts
-  ensurePayeeExists(name: string, isAccount: boolean, userId: string, options?: { currency?: string; startingBalance?: number; remarks?: string, type?: Account['type'], creditLimit?: number }): Promise<string | null>;
+  ensurePayeeExists(
+    name: string,
+    isAccount: boolean,
+    userId: string,
+    options?: {
+      currency?: string;
+      startingBalance?: number;
+      remarks?: string;
+      type?: Account["type"];
+      creditLimit?: number;
+    },
+  ): Promise<string | null>;
   checkIfPayeeIsAccount(name: string, userId: string): Promise<boolean>;
   getAccountCurrency(accountName: string, userId: string): Promise<string>;
   getAllVendors(userId: string): Promise<Vendor[]>;
   getVendorByName(name: string, userId: string): Promise<Vendor | undefined>;
-  mergePayees(targetName: string, sourceNames: string[], userId: string): Promise<void>;
+  mergePayees(
+    targetName: string,
+    sourceNames: string[],
+    userId: string,
+  ): Promise<void>;
   deletePayee(id: string): Promise<void>;
   getAllAccounts(userId: string): Promise<Account[]>;
 
   // Categories
   ensureCategoryExists(name: string, userId: string): Promise<string | null>;
-  ensureSubCategoryExists(name: string, categoryId: string, userId: string): Promise<string | null>;
+  ensureSubCategoryExists(
+    name: string,
+    categoryId: string,
+    userId: string,
+  ): Promise<string | null>;
   getUserCategories(userId: string): Promise<Category[]>;
   getSubCategories(userId: string): Promise<SubCategory[]>;
-  mergeCategories(targetName: string, sourceNames: string[], userId: string): Promise<void>;
+  mergeCategories(
+    targetName: string,
+    sourceNames: string[],
+    userId: string,
+  ): Promise<void>;
   deleteCategory(id: string): Promise<void>;
 
   // Budgets
   getBudgetsWithSpending(userId: string): Promise<Budget[]>;
-  addBudget(budget: Omit<Budget, 'id' | 'spent_amount'>): Promise<void>;
+  addBudget(budget: Omit<Budget, "id" | "spent_amount">): Promise<void>;
   updateBudget(budget: Budget): Promise<void>;
   deleteBudget(id: string): Promise<void>;
 

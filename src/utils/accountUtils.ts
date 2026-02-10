@@ -1,4 +1,4 @@
-import { Transaction } from '@/data/finance-data';
+import { Transaction } from "@/data/finance-data";
 
 export const calculateAccountStats = (transactions: Transaction[]) => {
   const now = new Date();
@@ -9,10 +9,10 @@ export const calculateAccountStats = (transactions: Transaction[]) => {
   const vendorCounts = new Map<string, number>(); // Key: Raw Vendor Name
 
   for (const t of transactions) {
-    const tDate = (t.date || '').substring(0, 10);
-    const tAccountRaw = t.account || '';
+    const tDate = (t.date || "").substring(0, 10);
+    const tAccountRaw = t.account || "";
     const tAccount = tAccountRaw.trim().toLowerCase();
-    const tVendor = t.vendor || '';
+    const tVendor = t.vendor || "";
 
     // 1. Balance Calculation (only if date <= today)
     if (tDate <= todayStr) {

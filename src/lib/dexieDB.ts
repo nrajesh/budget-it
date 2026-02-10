@@ -1,12 +1,19 @@
-import Dexie, { Table } from 'dexie';
-import { Transaction, Budget, Vendor, Category, ScheduledTransaction, Account, SubCategory } from '@/types/dataProvider';
+import Dexie, { Table } from "dexie";
+import {
+  Transaction,
+  Budget,
+  Vendor,
+  Category,
+  ScheduledTransaction,
+  Account,
+  SubCategory,
+} from "@/types/dataProvider";
 
 // Extend the interfaces to include Dexie-specific keys (optional, but good for TS)
 // We reuse the DataProvider interfaces which already have 'id'.
 
 // Interfaces removed; imported from types/dataProvider
 // Extended interfaces can be defined here if strictly Dexie specific, but we use shared ones.
-
 
 export interface Ledger {
   id: string;
@@ -33,7 +40,7 @@ export interface BackupConfig {
   // but if the app reloads, we need the password again.
   // Requirement says: "checkbox... enable password field".
   // If we want auto-backups to run *without* user typing password every time, we typically need to store the key.
-  // For this local-first app, we can store the encryption password (or derived key) in IDB, perhaps obfuscated, 
+  // For this local-first app, we can store the encryption password (or derived key) in IDB, perhaps obfuscated,
   // acknowledging the security tradeoff for convenience, or request it on session start.
   // Given "User desires an encrypted backup", we should probably store the key if we want it to run in background.
   // Let's store a flag for now, and we'll handle key management in the component.
@@ -51,43 +58,44 @@ export class FinanceDatabase extends Dexie {
   backup_configs!: Table<BackupConfig>;
 
   constructor() {
-    super('FinanceTrackerDB');
+    super("FinanceTrackerDB");
 
     // Schema definition
     // Note: ++id is not used because we use UUIDs (strings) for compatibility
     this.version(7).stores({
-      transactions: 'id, user_id, date, account, vendor, category, transfer_id, recurrence_id',
-      scheduled_transactions: 'id, user_id, date, account, vendor',
-      budgets: 'id, user_id, category_name',
-      vendors: 'id, [user_id+name], name, is_account, account_id, user_id', // Added user_id to indexes
-      accounts: 'id, user_id, type', // Added user_id
-      categories: 'id, [user_id+name], user_id, name',
-      sub_categories: 'id, user_id, category_id, name',
-      ledgers: 'id, name, last_accessed',
-      backup_configs: 'id, isActive, nextBackup' // Added for scheduled backups
+      transactions:
+        "id, user_id, date, account, vendor, category, transfer_id, recurrence_id",
+      scheduled_transactions: "id, user_id, date, account, vendor",
+      budgets: "id, user_id, category_name",
+      vendors: "id, [user_id+name], name, is_account, account_id, user_id", // Added user_id to indexes
+      accounts: "id, user_id, type", // Added user_id
+      categories: "id, [user_id+name], user_id, name",
+      sub_categories: "id, user_id, category_id, name",
+      ledgers: "id, name, last_accessed",
+      backup_configs: "id, isActive, nextBackup", // Added for scheduled backups
     });
   }
 }
-
 
 // Singleton pattern to prevent multiple instances during HMR
 const globalForDb = globalThis as unknown as {
   financeTrackerDb: FinanceDatabase | undefined;
 };
 
-
 export const db = globalForDb.financeTrackerDb ?? new FinanceDatabase();
 
 // Add listeners for debugging blocking issues
-db.on('blocked', () => {
-  console.error('[Dexie] Database operation BLOCKED. You may have another tab open.');
+db.on("blocked", () => {
+  console.error(
+    "[Dexie] Database operation BLOCKED. You may have another tab open.",
+  );
 });
 
-db.on('versionchange', () => {
-  console.warn('[Dexie] Database version change detected. Closing connection to allow upgrade.');
+db.on("versionchange", () => {
+  console.warn(
+    "[Dexie] Database version change detected. Closing connection to allow upgrade.",
+  );
   db.close();
 });
 
-if (process.env.NODE_ENV !== 'production') globalForDb.financeTrackerDb = db;
-
-
+if (process.env.NODE_ENV !== "production") globalForDb.financeTrackerDb = db;

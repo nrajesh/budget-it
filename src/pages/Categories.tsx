@@ -5,7 +5,7 @@ import { Category } from "@/data/finance-data";
 import { ColumnDefinition } from "@/components/management/EntityTable";
 import EntityManagementPage from "@/components/management/EntityManagementPage";
 import { Input } from "@/components/ui/input";
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
 import CategoryDeduplicationDialog from "@/components/management/CategoryDeduplicationDialog";
 
@@ -17,13 +17,22 @@ const CategoriesPage = () => {
   const { invalidateAllData, transactions } = useTransactions();
   const managementProps = useCategoryManagement();
 
-  const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = React.useState<
+    string | null
+  >(null);
   const [editedName, setEditedName] = React.useState<string>("");
-  const [managingSubCategory, setManagingSubCategory] = React.useState<Category | null>(null);
+  const [managingSubCategory, setManagingSubCategory] =
+    React.useState<Category | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const updateCategoryNameMutation = useMutation({
-    mutationFn: async ({ categoryId, newName }: { categoryId: string; newName: string }) => {
+    mutationFn: async ({
+      categoryId,
+      newName,
+    }: {
+      categoryId: string;
+      newName: string;
+    }) => {
       // Since DataProvider doesn't have updateCategory yet, we should add it or use dexie directly if allowed?
       // Ideally we assume DataProvider interface will be updated.
       // For now, let's look at `db` usage if we want to bypass strictly for this migration step, OR add it to interface.
@@ -50,7 +59,7 @@ const CategoriesPage = () => {
       // No, that's unsafe.
 
       // Let's import `db` from `@/lib/dexieDB` here. It's a pragmatic solution for "Steroids".
-      const { db } = await import('@/lib/dexieDB');
+      const { db } = await import("@/lib/dexieDB");
       await db.categories.update(categoryId, { name: newName.trim() });
     },
     onSuccess: async () => {
@@ -58,7 +67,8 @@ const CategoriesPage = () => {
       await invalidateAllData();
       setEditingCategoryId(null);
     },
-    onError: (error: any) => showError(`Failed to update category name: ${error.message}`),
+    onError: (error: any) =>
+      showError(`Failed to update category name: ${error.message}`),
   });
 
   const startEditing = (category: { id: string; name: string }) => {
@@ -72,15 +82,18 @@ const CategoriesPage = () => {
       setEditingCategoryId(null);
       return;
     }
-    updateCategoryNameMutation.mutate({ categoryId, newName: editedName.trim() });
+    updateCategoryNameMutation.mutate({
+      categoryId,
+      newName: editedName.trim(),
+    });
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') event.currentTarget.blur();
-    else if (event.key === 'Escape') setEditingCategoryId(null);
+    if (event.key === "Enter") event.currentTarget.blur();
+    else if (event.key === "Escape") setEditingCategoryId(null);
   };
 
-  // Pre-calculate sub-category counts to avoid running this per row render if it becomes expensive, 
+  // Pre-calculate sub-category counts to avoid running this per row render if it becomes expensive,
   // though for decent list sizes useMemo in cellRenderer or here is fine.
   // Actually, let's just do it in the cellRenderer for simplicity as long as N is small.
   // Better: create a map.
@@ -88,14 +101,15 @@ const CategoriesPage = () => {
     const counts: Record<string, number> = {};
     const subCategoriesMap: Record<string, Set<string>> = {};
 
-    transactions.forEach(t => {
+    transactions.forEach((t) => {
       if (t.sub_category && t.category) {
-        if (!subCategoriesMap[t.category]) subCategoriesMap[t.category] = new Set();
+        if (!subCategoriesMap[t.category])
+          subCategoriesMap[t.category] = new Set();
         subCategoriesMap[t.category].add(t.sub_category);
       }
     });
 
-    Object.keys(subCategoriesMap).forEach(cat => {
+    Object.keys(subCategoriesMap).forEach((cat) => {
       counts[cat] = subCategoriesMap[cat].size;
     });
     return { counts, subCategoriesMap };
@@ -104,9 +118,13 @@ const CategoriesPage = () => {
   const customFilter = (data: Category[], searchTerm: string) => {
     if (!searchTerm) return data;
     const lowerTerm = searchTerm.toLowerCase();
-    return data.filter(category => {
+    return data.filter((category) => {
       const nameMatch = category.name.toLowerCase().includes(lowerTerm);
-      const subMatch = subCategoriesMap[category.name] && Array.from(subCategoriesMap[category.name]).some(sub => sub.toLowerCase().includes(lowerTerm));
+      const subMatch =
+        subCategoriesMap[category.name] &&
+        Array.from(subCategoriesMap[category.name]).some((sub) =>
+          sub.toLowerCase().includes(lowerTerm),
+        );
       return nameMatch || subMatch;
     });
   };
@@ -127,7 +145,10 @@ const CategoriesPage = () => {
             className="h-8"
           />
         ) : (
-          <div onClick={() => managementProps.handleCategoryNameClick(item.name)} className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium">
+          <div
+            onClick={() => managementProps.handleCategoryNameClick(item.name)}
+            className="cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 font-medium"
+          >
             {item.name}
           </div>
         ),
@@ -141,7 +162,9 @@ const CategoriesPage = () => {
         let matchedSubs: string[] = [];
 
         if (searchTerm && subCategoriesMap[item.name]) {
-          matchedSubs = Array.from(subCategoriesMap[item.name]).filter(sub => sub.toLowerCase().includes(searchTerm.toLowerCase()));
+          matchedSubs = Array.from(subCategoriesMap[item.name]).filter((sub) =>
+            sub.toLowerCase().includes(searchTerm.toLowerCase()),
+          );
         }
 
         return (
@@ -152,15 +175,20 @@ const CategoriesPage = () => {
               setManagingSubCategory(item);
             }}
           >
-            <div>{count} {count === 1 ? 'sub-category' : 'sub-categories'}</div>
+            <div>
+              {count} {count === 1 ? "sub-category" : "sub-categories"}
+            </div>
             {matchedSubs.length > 0 && (
               <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                Matches: {matchedSubs.slice(0, 3).join(", ")}{matchedSubs.length > 3 ? ` +${matchedSubs.length - 3} more` : ''}
+                Matches: {matchedSubs.slice(0, 3).join(", ")}
+                {matchedSubs.length > 3
+                  ? ` +${matchedSubs.length - 3} more`
+                  : ""}
               </div>
             )}
           </div>
         );
-      }
+      },
     },
     {
       header: "Transactions",
@@ -173,7 +201,7 @@ const CategoriesPage = () => {
           {item.totalTransactions || 0}
         </span>
       ),
-    }
+    },
   ];
 
   return (
@@ -186,15 +214,17 @@ const CategoriesPage = () => {
         data={managementProps.categories}
         isLoading={managementProps.isLoadingCategories}
         columns={columns}
-        isDeletable={(item) => item.name !== 'Others'}
+        isDeletable={(item) => item.name !== "Others"}
         customEditHandler={startEditing}
-        isEditing={id => editingCategoryId === id}
+        isEditing={(id) => editingCategoryId === id}
         isUpdating={updateCategoryNameMutation.isPending}
         {...managementProps}
         selectedEntity={managementProps.selectedEntity}
         refetch={managementProps.refetchCategories}
         DeduplicationDialogComponent={CategoryDeduplicationDialog}
-        CleanupDialogComponent={(props: any) => <CleanupEntitiesDialog {...props} entityType="category" />}
+        CleanupDialogComponent={(props: any) => (
+          <CleanupEntitiesDialog {...props} entityType="category" />
+        )}
         customFilter={customFilter}
       />
       <ManageSubCategoriesDialog

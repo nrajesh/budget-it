@@ -1,5 +1,4 @@
-
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from "vitest";
 
 // Mock types
 interface Transaction {
@@ -11,18 +10,23 @@ interface Transaction {
 
 // function signature interfaces omitted since they are mock types
 
-
 // Generate dummy transactions
-const generateTransactions = (count: number, categoryCount: number): Transaction[] => {
+const generateTransactions = (
+  count: number,
+  categoryCount: number,
+): Transaction[] => {
   const txs: Transaction[] = [];
-  const categories = Array.from({ length: categoryCount }, (_, i) => `Category ${i}`);
+  const categories = Array.from(
+    { length: categoryCount },
+    (_, i) => `Category ${i}`,
+  );
 
   for (let i = 0; i < count; i++) {
     const catIndex = Math.floor(Math.random() * categoryCount);
     txs.push({
       id: `tx-${i}`,
       category: categories[catIndex],
-      sub_category: i % 2 === 0 ? `Sub ${categories[catIndex]}` : undefined
+      sub_category: i % 2 === 0 ? `Sub ${categories[catIndex]}` : undefined,
     });
   }
   return txs;
@@ -32,23 +36,25 @@ const generateTransactions = (count: number, categoryCount: number): Transaction
 const createMockDataProvider = () => {
   return {
     ensureCategoryExists: vi.fn(async (name: string, _userId: string) => {
-      await new Promise(resolve => setTimeout(resolve, 0)); // minimal async delay
+      await new Promise((resolve) => setTimeout(resolve, 0)); // minimal async delay
       return `cat-id-${name}`;
     }),
-    ensureSubCategoryExists: vi.fn(async (name: string, _catId: string, _userId: string) => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-      return `sub-id-${name}`;
-    })
+    ensureSubCategoryExists: vi.fn(
+      async (name: string, _catId: string, _userId: string) => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return `sub-id-${name}`;
+      },
+    ),
   };
 };
 
-describe('Entity Sync Benchmark', () => {
+describe("Entity Sync Benchmark", () => {
   const TRANSACTION_COUNT = 5000;
   const CATEGORY_COUNT = 20;
   const transactions = generateTransactions(TRANSACTION_COUNT, CATEGORY_COUNT);
-  const userId = 'user-123';
+  const userId = "user-123";
 
-  it('measures N+1 approach vs Optimized approach', async () => {
+  it("measures N+1 approach vs Optimized approach", async () => {
     // --- N+1 Approach ---
     const providerN1 = createMockDataProvider();
     const startN1 = performance.now();
@@ -57,7 +63,11 @@ describe('Entity Sync Benchmark', () => {
       if (t.category) {
         const catId = await providerN1.ensureCategoryExists(t.category, userId);
         if (catId && t.sub_category) {
-          await providerN1.ensureSubCategoryExists(t.sub_category, catId, userId);
+          await providerN1.ensureSubCategoryExists(
+            t.sub_category,
+            catId,
+            userId,
+          );
         }
       }
     }
@@ -65,8 +75,9 @@ describe('Entity Sync Benchmark', () => {
     const endN1 = performance.now();
     const timeN1 = endN1 - startN1;
     console.log(`N+1 Approach Time: ${timeN1.toFixed(2)}ms`);
-    console.log(`Calls: ensureCategoryExists=${providerN1.ensureCategoryExists.mock.calls.length}, ensureSubCategoryExists=${providerN1.ensureSubCategoryExists.mock.calls.length}`);
-
+    console.log(
+      `Calls: ensureCategoryExists=${providerN1.ensureCategoryExists.mock.calls.length}, ensureSubCategoryExists=${providerN1.ensureSubCategoryExists.mock.calls.length}`,
+    );
 
     // --- Optimized Approach ---
     const providerOpt = createMockDataProvider();
@@ -109,11 +120,14 @@ describe('Entity Sync Benchmark', () => {
     const endOpt = performance.now();
     const timeOpt = endOpt - startOpt;
     console.log(`Optimized Approach Time: ${timeOpt.toFixed(2)}ms`);
-    console.log(`Calls: ensureCategoryExists=${providerOpt.ensureCategoryExists.mock.calls.length}, ensureSubCategoryExists=${providerOpt.ensureSubCategoryExists.mock.calls.length}`);
+    console.log(
+      `Calls: ensureCategoryExists=${providerOpt.ensureCategoryExists.mock.calls.length}, ensureSubCategoryExists=${providerOpt.ensureSubCategoryExists.mock.calls.length}`,
+    );
 
     // Assertions
     expect(timeOpt).toBeLessThan(timeN1);
-    expect(providerOpt.ensureCategoryExists.mock.calls.length).toBeLessThanOrEqual(CATEGORY_COUNT);
-
+    expect(
+      providerOpt.ensureCategoryExists.mock.calls.length,
+    ).toBeLessThanOrEqual(CATEGORY_COUNT);
   }, 30000); // 30s timeout
 });

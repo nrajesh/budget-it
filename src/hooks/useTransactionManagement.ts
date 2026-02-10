@@ -10,23 +10,30 @@ import { useTransactionUI } from "@/hooks/transactions/useTransactionUI";
 import { slugify } from "@/lib/utils";
 
 export const useTransactionManagement = () => {
-  const { transactions: allTransactions, accountCurrencyMap } = useTransactions(); // Get refetchTransactions
+  const { transactions: allTransactions, accountCurrencyMap } =
+    useTransactions(); // Get refetchTransactions
   const { formatCurrency } = useCurrency();
 
   // Calculate available options from transactions
   const availableAccountOptions = React.useMemo(() => {
-    const accounts = Array.from(new Set(allTransactions.map(t => t.account))).filter(Boolean);
-    return accounts.map(a => ({ value: slugify(a), label: a }));
+    const accounts = Array.from(
+      new Set(allTransactions.map((t) => t.account)),
+    ).filter(Boolean);
+    return accounts.map((a) => ({ value: slugify(a), label: a }));
   }, [allTransactions]);
 
   const availableCategoryOptions = React.useMemo(() => {
-    const categories = Array.from(new Set(allTransactions.map(t => t.category))).filter(Boolean);
-    return categories.map(c => ({ value: slugify(c), label: c }));
+    const categories = Array.from(
+      new Set(allTransactions.map((t) => t.category)),
+    ).filter(Boolean);
+    return categories.map((c) => ({ value: slugify(c), label: c }));
   }, [allTransactions]);
 
   const availableVendorOptions = React.useMemo(() => {
-    const vendors = Array.from(new Set(allTransactions.map(t => t.vendor))).filter(Boolean);
-    return vendors.map(v => ({ value: slugify(v), label: v }));
+    const vendors = Array.from(
+      new Set(allTransactions.map((t) => t.vendor)),
+    ).filter(Boolean);
+    return vendors.map((v) => ({ value: slugify(v), label: v }));
   }, [allTransactions]);
 
   // 1. Filters
@@ -99,7 +106,7 @@ export const useTransactionManagement = () => {
   // Combined reset handler
   const handleResetFilters = React.useCallback(() => {
     resetFilterStates(); // Call the filter-specific reset
-    clearSelection();    // Clear transaction selections
+    clearSelection(); // Clear transaction selections
   }, [resetFilterStates, clearSelection]);
 
   return {

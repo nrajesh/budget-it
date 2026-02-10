@@ -25,28 +25,42 @@ const MobileNavContent = () => {
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Dashboards</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">
+          Dashboards
+        </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
-            <Link to="/dashboard" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/analytics" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/analytics"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <BarChart2 className="h-4 w-4" />
               Analytics
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/insights" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/insights"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Lightbulb className="h-4 w-4" />
               Insights
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/transactions" className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary bg-muted">
+            <Link
+              to="/transactions"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary bg-muted"
+            >
               <Users className="h-4 w-4" />
               Transactions
             </Link>
@@ -55,22 +69,33 @@ const MobileNavContent = () => {
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Management</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">
+          Management
+        </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
-            <Link to="/accounts" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/accounts"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Wallet className="h-4 w-4" />
               Accounts
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/categories" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/categories"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Tag className="h-4 w-4" />
               Categories
             </Link>
           </SheetClose>
           <SheetClose asChild>
-            <Link to="/vendors" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/vendors"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Building className="h-4 w-4" />
               Vendors
             </Link>
@@ -82,7 +107,10 @@ const MobileNavContent = () => {
         <h3 className="text-sm font-semibold text-muted-foreground">Setup</h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
-            <Link to="/scheduled" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/scheduled"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Calendar className="h-4 w-4" />
               Scheduled
             </Link>
@@ -96,7 +124,10 @@ const MobileNavContent = () => {
             <ChevronDown className="h-4 w-4" />
           </div>
           <SheetClose asChild>
-            <Link to="/budgets" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/budgets"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <PiggyBank className="h-4 w-4" />
               Budgets
             </Link>
@@ -116,7 +147,10 @@ const MobileNavContent = () => {
             <ChevronDown className="h-4 w-4" />
           </div>
           <SheetClose asChild>
-            <Link to="/notifications" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+            <Link
+              to="/notifications"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
               <Bell className="h-4 w-4" />
               Notifications
             </Link>

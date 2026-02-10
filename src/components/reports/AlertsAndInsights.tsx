@@ -1,13 +1,25 @@
-import React from 'react';
-import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle } from "@/components/ThemedCard";
-import { AlertTriangle, BarChart2, ShoppingCart, Banknote, Calendar } from 'lucide-react';
+import React from "react";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardDescription,
+  ThemedCardHeader,
+  ThemedCardTitle,
+} from "@/components/ThemedCard";
+import {
+  AlertTriangle,
+  BarChart2,
+  ShoppingCart,
+  Banknote,
+  Calendar,
+} from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { differenceInDays } from 'date-fns';
-import { Budget } from '@/data/finance-data';
+import { differenceInDays } from "date-fns";
+import { Budget } from "@/data/finance-data";
 import { useNavigate } from "react-router-dom";
 
-import { calculateBudgetSpent } from '@/utils/budgetUtils';
-import { useTransactions } from '@/contexts/TransactionsContext';
+import { calculateBudgetSpent } from "@/utils/budgetUtils";
+import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface AlertsAndInsightsProps {
   historicalTransactions: any[];
@@ -16,24 +28,29 @@ interface AlertsAndInsightsProps {
   budgets: Budget[];
 }
 
-const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransactions, futureTransactions, accounts, budgets }) => {
+const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
+  historicalTransactions,
+  futureTransactions,
+  accounts,
+  budgets,
+}) => {
   const { convertBetweenCurrencies, selectedCurrency } = useCurrency();
   const { vendors } = useTransactions();
   const navigate = useNavigate();
 
   const handleAccountClick = (accountName: string) => {
-    navigate('/transactions', { state: { filterAccount: accountName } });
+    navigate("/transactions", { state: { filterAccount: accountName } });
   };
 
   const handleVendorClick = (vendorName: string) => {
-    const isAccount = accounts.some(acc => acc.name === vendorName);
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: vendorName } });
+    const isAccount = accounts.some((acc) => acc.name === vendorName);
+    const filterKey = isAccount ? "filterAccount" : "filterVendor";
+    navigate("/transactions", { state: { [filterKey]: vendorName } });
   };
 
   const handleCategoryClick = (categoryName: string) => {
-    if (categoryName === 'Transfer') return;
-    navigate('/transactions', { state: { filterCategory: categoryName } });
+    if (categoryName === "Transfer") return;
+    navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
   // 1. Calculate Low Balance Alerts
@@ -49,25 +66,39 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     if (accounts.length === 0) return [];
 
     const currentBalances: Record<string, number> = {};
-    accounts.forEach(acc => {
+    accounts.forEach((acc) => {
       const startingBalance = acc.starting_balance || 0;
-      const accountCurrency = acc.currency || 'USD';
-      currentBalances[acc.name] = convertBetweenCurrencies(startingBalance, accountCurrency, selectedCurrency);
+      const accountCurrency = acc.currency || "USD";
+      currentBalances[acc.name] = convertBetweenCurrencies(
+        startingBalance,
+        accountCurrency,
+        selectedCurrency,
+      );
     });
 
-    historicalTransactions.forEach(t => {
-      const convertedAmount = convertBetweenCurrencies(t.amount, t.currency, selectedCurrency);
-      currentBalances[t.account] = (currentBalances[t.account] || 0) + convertedAmount;
+    historicalTransactions.forEach((t) => {
+      const convertedAmount = convertBetweenCurrencies(
+        t.amount,
+        t.currency,
+        selectedCurrency,
+      );
+      currentBalances[t.account] =
+        (currentBalances[t.account] || 0) + convertedAmount;
     });
 
-    const sortedFutureTx = [...futureTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedFutureTx = [...futureTransactions].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
     const projectedBalances = { ...currentBalances };
     const negativeDateMap: Record<string, Date> = {};
 
     // Check if currently negative (or exceeding limit)
-    Object.keys(currentBalances).forEach(accountName => {
-      const account = accounts.find(a => a.name === accountName);
-      const threshold = (account?.type === 'Credit Card' && account.credit_limit) ? -account.credit_limit : 0;
+    Object.keys(currentBalances).forEach((accountName) => {
+      const account = accounts.find((a) => a.name === accountName);
+      const threshold =
+        account?.type === "Credit Card" && account.credit_limit
+          ? -account.credit_limit
+          : 0;
 
       if (currentBalances[accountName] < threshold) {
         negativeDateMap[accountName] = new Date(); // Already breached
@@ -75,43 +106,68 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     });
 
     for (const tx of sortedFutureTx) {
-      const convertedAmount = convertBetweenCurrencies(tx.amount, tx.currency, selectedCurrency);
-      projectedBalances[tx.account] = (projectedBalances[tx.account] || 0) + convertedAmount;
+      const convertedAmount = convertBetweenCurrencies(
+        tx.amount,
+        tx.currency,
+        selectedCurrency,
+      );
+      projectedBalances[tx.account] =
+        (projectedBalances[tx.account] || 0) + convertedAmount;
 
-      const account = accounts.find(a => a.name === tx.account);
-      const threshold = (account?.type === 'Credit Card' && account.credit_limit) ? -account.credit_limit : 0;
+      const account = accounts.find((a) => a.name === tx.account);
+      const threshold =
+        account?.type === "Credit Card" && account.credit_limit
+          ? -account.credit_limit
+          : 0;
 
-      if (projectedBalances[tx.account] < threshold && !negativeDateMap[tx.account]) {
+      if (
+        projectedBalances[tx.account] < threshold &&
+        !negativeDateMap[tx.account]
+      ) {
         negativeDateMap[tx.account] = new Date(tx.date);
       }
     }
 
-    Object.keys(negativeDateMap).forEach(accountName => {
-      const daysUntilNegative = differenceInDays(negativeDateMap[accountName], new Date());
-      const account = accounts.find(a => a.name === accountName);
-      const isCreditCard = account?.type === 'Credit Card' && account.credit_limit;
+    Object.keys(negativeDateMap).forEach((accountName) => {
+      const daysUntilNegative = differenceInDays(
+        negativeDateMap[accountName],
+        new Date(),
+      );
+      const account = accounts.find((a) => a.name === accountName);
+      const isCreditCard =
+        account?.type === "Credit Card" && account.credit_limit;
 
       alerts.push({
         accountName,
         daysUntilNegative: daysUntilNegative >= 0 ? daysUntilNegative : 0,
         finalBalance: projectedBalances[accountName],
         isCreditLimitBreach: !!isCreditCard,
-        threshold: isCreditCard ? -account!.credit_limit! : 0
+        threshold: isCreditCard ? -account!.credit_limit! : 0,
       });
     });
 
     return alerts;
-  }, [historicalTransactions, futureTransactions, accounts, selectedCurrency, convertBetweenCurrencies]);
+  }, [
+    historicalTransactions,
+    futureTransactions,
+    accounts,
+    selectedCurrency,
+    convertBetweenCurrencies,
+  ]);
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
-    const alerts: { categoryName: string; percentage: number; }[] = [];
+    const alerts: { categoryName: string; percentage: number }[] = [];
 
     // Filter budgets to active ones
-    const activeBudgets = budgets.filter(b => b.is_active !== false);
+    const activeBudgets = budgets.filter((b) => b.is_active !== false);
 
-    activeBudgets.forEach(budget => {
-      const targetAmount = convertBetweenCurrencies(budget.target_amount, budget.currency, selectedCurrency);
+    activeBudgets.forEach((budget) => {
+      const targetAmount = convertBetweenCurrencies(
+        budget.target_amount,
+        budget.currency,
+        selectedCurrency,
+      );
 
       // Calculate spent in selected currency
       const spentInSelectedCurrency = calculateBudgetSpent(
@@ -120,10 +176,11 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
         accounts,
         vendors,
         convertBetweenCurrencies,
-        selectedCurrency
+        selectedCurrency,
       );
 
-      const percentage = targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
+      const percentage =
+        targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
 
       if (percentage >= 90) {
         alerts.push({
@@ -134,7 +191,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     });
 
     return alerts.sort((a, b) => b.percentage - a.percentage);
-  }, [historicalTransactions, budgets, selectedCurrency, convertBetweenCurrencies, accounts, vendors]); // Added vendors
+  }, [
+    historicalTransactions,
+    budgets,
+    selectedCurrency,
+    convertBetweenCurrencies,
+    accounts,
+    vendors,
+  ]); // Added vendors
 
   // 3. Calculate Key Insights from historical data
   const keyInsights = React.useMemo(() => {
@@ -142,19 +206,23 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
     const expenseVendorCounts: Record<string, number> = {};
     const accountActivityCounts: Record<string, number> = {};
 
-    historicalTransactions.forEach(t => {
-      if (t.category !== 'Transfer') {
-        accountActivityCounts[t.account] = (accountActivityCounts[t.account] || 0) + 1;
+    historicalTransactions.forEach((t) => {
+      if (t.category !== "Transfer") {
+        accountActivityCounts[t.account] =
+          (accountActivityCounts[t.account] || 0) + 1;
       }
-      if (t.amount < 0 && t.category !== 'Transfer') {
-        expenseCategoryCounts[t.category] = (expenseCategoryCounts[t.category] || 0) + 1;
-        expenseVendorCounts[t.vendor] = (expenseVendorCounts[t.vendor] || 0) + 1;
+      if (t.amount < 0 && t.category !== "Transfer") {
+        expenseCategoryCounts[t.category] =
+          (expenseCategoryCounts[t.category] || 0) + 1;
+        expenseVendorCounts[t.vendor] =
+          (expenseVendorCounts[t.vendor] || 0) + 1;
       }
     });
 
-    const getTopThree = (counts: Record<string, number>) => Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3);
+    const getTopThree = (counts: Record<string, number>) =>
+      Object.entries(counts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
 
     return {
       topCategories: getTopThree(expenseCategoryCounts),
@@ -168,7 +236,8 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
       <ThemedCardHeader>
         <ThemedCardTitle>Alerts and Insights</ThemedCardTitle>
         <ThemedCardDescription>
-          Automated analysis of your financial data based on the selected filters.
+          Automated analysis of your financial data based on the selected
+          filters.
         </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent className="grid gap-6 md:grid-cols-2">
@@ -178,24 +247,48 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
             Financial Alerts
           </h3>
           {lowBalanceAlerts.length === 0 && budgetOverrunAlerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No financial alerts to show. Great job!</p>
+            <p className="text-sm text-muted-foreground">
+              No financial alerts to show. Great job!
+            </p>
           ) : (
             <>
               {lowBalanceAlerts.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-sm mb-2">Low Balance Warnings:</h4>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Low Balance Warnings:
+                  </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {lowBalanceAlerts.map((alert: any, index: number) => (
                       <li key={`${alert.accountName}-${index}`}>
-                        <span onClick={() => handleAccountClick(alert.accountName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.accountName}</span>{' '}
+                        <span
+                          onClick={() => handleAccountClick(alert.accountName)}
+                          className="font-semibold cursor-pointer hover:text-primary hover:underline"
+                        >
+                          {alert.accountName}
+                        </span>{" "}
                         {alert.daysUntilNegative === 0 ? (
                           <>
-                            {alert.isCreditLimitBreach ? 'has exceeded its credit limit' : 'now has a negative balance'}.
+                            {alert.isCreditLimitBreach
+                              ? "has exceeded its credit limit"
+                              : "now has a negative balance"}
+                            .
                           </>
                         ) : (
                           <>
-                            is projected <Calendar className="h-3 w-3 inline text-muted-foreground mr-1" aria-label="Based on scheduled transactions" /> to {alert.isCreditLimitBreach ? 'exceed its credit limit' : 'have a negative balance'} in{' '}
-                            <span className="font-bold text-destructive">{alert.daysUntilNegative} days</span>.
+                            is projected{" "}
+                            <Calendar
+                              className="h-3 w-3 inline text-muted-foreground mr-1"
+                              aria-label="Based on scheduled transactions"
+                            />{" "}
+                            to{" "}
+                            {alert.isCreditLimitBreach
+                              ? "exceed its credit limit"
+                              : "have a negative balance"}{" "}
+                            in{" "}
+                            <span className="font-bold text-destructive">
+                              {alert.daysUntilNegative} days
+                            </span>
+                            .
                           </>
                         )}
                       </li>
@@ -205,12 +298,27 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
               )}
               {budgetOverrunAlerts.length > 0 && (
                 <div className="mt-4">
-                  <h4 className="font-semibold text-sm mb-2">Budget Overrun Warnings:</h4>
+                  <h4 className="font-semibold text-sm mb-2">
+                    Budget Overrun Warnings:
+                  </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {budgetOverrunAlerts.map((alert, index) => (
                       <li key={`${alert.categoryName}-${index}`}>
-                        <span onClick={() => handleCategoryClick(alert.categoryName)} className="font-semibold cursor-pointer hover:text-primary hover:underline">{alert.categoryName}</span> budget is at{' '}
-                        <span className={`font-bold ${alert.percentage >= 100 ? 'text-destructive' : 'text-amber-500'}`}>{alert.percentage}%</span> of its monthly limit.
+                        <span
+                          onClick={() =>
+                            handleCategoryClick(alert.categoryName)
+                          }
+                          className="font-semibold cursor-pointer hover:text-primary hover:underline"
+                        >
+                          {alert.categoryName}
+                        </span>{" "}
+                        budget is at{" "}
+                        <span
+                          className={`font-bold ${alert.percentage >= 100 ? "text-destructive" : "text-amber-500"}`}
+                        >
+                          {alert.percentage}%
+                        </span>{" "}
+                        of its monthly limit.
                       </li>
                     ))}
                   </ul>
@@ -231,12 +339,21 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                   <p className="text-muted-foreground">
                     {keyInsights.topCategories.map(([name], index) => (
                       <React.Fragment key={name}>
-                        <span onClick={() => handleCategoryClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
-                        {index < keyInsights.topCategories.length - 1 ? ', ' : ''}
+                        <span
+                          onClick={() => handleCategoryClick(name)}
+                          className="cursor-pointer hover:text-primary hover:underline"
+                        >
+                          {name}
+                        </span>
+                        {index < keyInsights.topCategories.length - 1
+                          ? ", "
+                          : ""}
                       </React.Fragment>
                     ))}
                   </p>
-                ) : <p className="text-muted-foreground">No spending data.</p>}
+                ) : (
+                  <p className="text-muted-foreground">No spending data.</p>
+                )}
               </div>
             </div>
             <div className="flex items-start">
@@ -247,12 +364,19 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                   <p className="text-muted-foreground">
                     {keyInsights.topVendors.map(([name], index) => (
                       <React.Fragment key={name}>
-                        <span onClick={() => handleVendorClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
-                        {index < keyInsights.topVendors.length - 1 ? ', ' : ''}
+                        <span
+                          onClick={() => handleVendorClick(name)}
+                          className="cursor-pointer hover:text-primary hover:underline"
+                        >
+                          {name}
+                        </span>
+                        {index < keyInsights.topVendors.length - 1 ? ", " : ""}
                       </React.Fragment>
                     ))}
                   </p>
-                ) : <p className="text-muted-foreground">No spending data.</p>}
+                ) : (
+                  <p className="text-muted-foreground">No spending data.</p>
+                )}
               </div>
             </div>
             <div className="flex items-start">
@@ -263,12 +387,19 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({ historicalTransac
                   <p className="text-muted-foreground">
                     {keyInsights.topAccounts.map(([name], index) => (
                       <React.Fragment key={name}>
-                        <span onClick={() => handleAccountClick(name)} className="cursor-pointer hover:text-primary hover:underline">{name}</span>
-                        {index < keyInsights.topAccounts.length - 1 ? ', ' : ''}
+                        <span
+                          onClick={() => handleAccountClick(name)}
+                          className="cursor-pointer hover:text-primary hover:underline"
+                        >
+                          {name}
+                        </span>
+                        {index < keyInsights.topAccounts.length - 1 ? ", " : ""}
                       </React.Fragment>
                     ))}
                   </p>
-                ) : <p className="text-muted-foreground">No transaction data.</p>}
+                ) : (
+                  <p className="text-muted-foreground">No transaction data.</p>
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
-import { createContext, useContext, ReactNode, useState } from 'react';
-import { DataProvider } from '@/types/dataProvider';
-import { LocalDataProvider } from '@/providers/LocalDataProvider';
+import { createContext, useContext, ReactNode, useState } from "react";
+import { DataProvider } from "@/types/dataProvider";
+import { LocalDataProvider } from "@/providers/LocalDataProvider";
 
 const DataProviderContext = createContext<DataProvider | null>(null);
 
@@ -19,7 +19,9 @@ export const DataProviderProvider = ({ children }: { children: ReactNode }) => {
 export const useDataProvider = () => {
   const context = useContext(DataProviderContext);
   if (!context) {
-    throw new Error("useDataProvider must be used within a DataProviderProvider");
+    throw new Error(
+      "useDataProvider must be used within a DataProviderProvider",
+    );
   }
   return context;
 };

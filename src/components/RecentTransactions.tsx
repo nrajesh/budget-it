@@ -1,6 +1,20 @@
 import * as React from "react";
-import { ThemedCard, ThemedCardContent, ThemedCardDescription, ThemedCardHeader, ThemedCardTitle, ThemedCardFooter } from "@/components/ThemedCard";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardDescription,
+  ThemedCardHeader,
+  ThemedCardTitle,
+  ThemedCardFooter,
+} from "@/components/ThemedCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import {
   Pagination,
@@ -20,26 +34,33 @@ interface RecentTransactionsProps {
   selectedCategories: string[];
 }
 
-export function RecentTransactions({ transactions, selectedCategories }: RecentTransactionsProps) {
-  const { transactions: allTransactions, accountCurrencyMap, accounts } = useTransactions();
+export function RecentTransactions({
+  transactions,
+  selectedCategories,
+}: RecentTransactionsProps) {
+  const {
+    transactions: allTransactions,
+    accountCurrencyMap,
+    accounts,
+  } = useTransactions();
   const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = React.useState(1);
   const transactionsPerPage = 10;
 
   const handleAccountClick = (accountName: string) => {
-    navigate('/transactions', { state: { filterAccount: accountName } });
+    navigate("/transactions", { state: { filterAccount: accountName } });
   };
 
   const handleVendorClick = (vendorName: string) => {
     const isAccount = accountCurrencyMap.has(vendorName);
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: vendorName } });
+    const filterKey = isAccount ? "filterAccount" : "filterVendor";
+    navigate("/transactions", { state: { [filterKey]: vendorName } });
   };
 
   const handleCategoryClick = (categoryName: string) => {
-    if (categoryName === 'Transfer') return;
-    navigate('/transactions', { state: { filterCategory: categoryName } });
+    if (categoryName === "Transfer") return;
+    navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
   /*
@@ -53,7 +74,8 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
       const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateDiff !== 0) return dateDiff;
 
-      const createdDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      const createdDiff =
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (createdDiff !== 0) return createdDiff;
 
       return b.id.localeCompare(a.id);
@@ -62,8 +84,8 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
     // 2. Sort ALL transactions Descending (Master Display Order)
     // We merge global transactions with the passed 'transactions' prop.
     const combinedTransactions = (() => {
-      const seenIds = new Set(allTransactions.map(t => t.id));
-      const uniqueExtras = transactions.filter(t => !seenIds.has(t.id));
+      const seenIds = new Set(allTransactions.map((t) => t.id));
+      const uniqueExtras = transactions.filter((t) => !seenIds.has(t.id));
       return [...allTransactions, ...uniqueExtras];
     })();
 
@@ -77,16 +99,20 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
     const accountRunningBalances = new Map<string, number>();
 
     // Initialize with starting balances
-    accounts.forEach(acc => {
+    accounts.forEach((acc) => {
       if (acc.name) {
         // console.log(`[BalanceCalc] Initializing ${acc.name} with ${acc.starting_balance}`);
-        accountRunningBalances.set(acc.name.trim().toLowerCase(), acc.starting_balance || 0);
+        accountRunningBalances.set(
+          acc.name.trim().toLowerCase(),
+          acc.starting_balance || 0,
+        );
       }
     });
 
-    allSortedAsc.forEach(t => {
+    allSortedAsc.forEach((t) => {
       const normalizedAccountName = t.account.trim().toLowerCase();
-      const currentBalance = accountRunningBalances.get(normalizedAccountName) || 0;
+      const currentBalance =
+        accountRunningBalances.get(normalizedAccountName) || 0;
       // We assume transaction amount is already in the account's currency
       const newBalance = currentBalance + t.amount;
 
@@ -106,7 +132,7 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
     // 4. Attach balances to the VIEW transactions and ensure they are sorted by Master Sort
     // This guarantees visual consistency with the calculation
     return transactions
-      .map(t => ({
+      .map((t) => ({
         ...t,
         runningBalance: balanceMap.get(t.id) ?? 0,
       }))
@@ -119,14 +145,21 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
       // If no categories are selected, show all transactions
       return transactionsWithCorrectBalance;
     }
-    return transactionsWithCorrectBalance.filter(t => selectedCategories.includes(slugify(t.category)));
+    return transactionsWithCorrectBalance.filter((t) =>
+      selectedCategories.includes(slugify(t.category)),
+    );
   }, [transactionsWithCorrectBalance, selectedCategories]);
 
   const indexOfLastTransaction = currentPage * transactionsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
-  const currentTransactions = displayTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const currentTransactions = displayTransactions.slice(
+    indexOfFirstTransaction,
+    indexOfLastTransaction,
+  );
 
-  const totalPages = Math.ceil(displayTransactions.length / transactionsPerPage);
+  const totalPages = Math.ceil(
+    displayTransactions.length / transactionsPerPage,
+  );
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -139,29 +172,44 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
     <ThemedCard>
       <ThemedCardHeader>
         <ThemedCardTitle>Recent Transactions</ThemedCardTitle>
-        <ThemedCardDescription>Your most recent transactions, filtered by selected accounts and categories.</ThemedCardDescription>
+        <ThemedCardDescription>
+          Your most recent transactions, filtered by selected accounts and
+          categories.
+        </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent>
         <div className="overflow-x-auto">
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead><TableHead>Vendor / Account</TableHead><TableHead>Category</TableHead><TableHead>Sub-category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Balance</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Vendor / Account</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Sub-category</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {currentTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-4 text-muted-foreground"
+                  >
                     No transactions found for the selected filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 currentTransactions.map((transaction) => {
-                  const currentAccountCurrency = accountCurrencyMap.get(transaction.account) || transaction.currency;
+                  const currentAccountCurrency =
+                    accountCurrencyMap.get(transaction.account) ||
+                    transaction.currency;
                   return (
                     <TableRow key={transaction.id}>
-                      <TableCell>{formatDateToDDMMYYYY(transaction.date)}</TableCell>
+                      <TableCell>
+                        {formatDateToDDMMYYYY(transaction.date)}
+                      </TableCell>
                       <TableCell>
                         <button
                           onClick={() => handleVendorClick(transaction.vendor)}
@@ -171,7 +219,9 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                           {transaction.vendor}
                         </button>
                         <button
-                          onClick={() => handleAccountClick(transaction.account)}
+                          onClick={() =>
+                            handleAccountClick(transaction.account)
+                          }
                           className="text-sm text-muted-foreground cursor-pointer hover:text-primary hover:underline bg-transparent border-0 p-0 text-left block"
                           aria-label={`Filter by account ${transaction.account}`}
                         >
@@ -179,12 +229,19 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                         </button>
                       </TableCell>
                       <TableCell>
-                        {transaction.category === 'Transfer' ? (
-                          <Badge variant="outline">{transaction.category}</Badge>
+                        {transaction.category === "Transfer" ? (
+                          <Badge variant="outline">
+                            {transaction.category}
+                          </Badge>
                         ) : (
                           <button
-                            onClick={() => handleCategoryClick(transaction.category)}
-                            className={cn(badgeVariants({ variant: "outline" }), "cursor-pointer hover:border-primary bg-transparent")}
+                            onClick={() =>
+                              handleCategoryClick(transaction.category)
+                            }
+                            className={cn(
+                              badgeVariants({ variant: "outline" }),
+                              "cursor-pointer hover:border-primary bg-transparent",
+                            )}
                             aria-label={`Filter by category ${transaction.category}`}
                           >
                             {transaction.category}
@@ -192,13 +249,25 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
                         )}
                       </TableCell>
                       <TableCell>
-                        {transaction.sub_category && <Badge variant="secondary" className="text-xs">{transaction.sub_category}</Badge>}
+                        {transaction.sub_category && (
+                          <Badge variant="secondary" className="text-xs">
+                            {transaction.sub_category}
+                          </Badge>
+                        )}
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(transaction.amount, currentAccountCurrency)}
+                      <TableCell
+                        className={`text-right font-medium ${transaction.amount > 0 ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {formatCurrency(
+                          transaction.amount,
+                          currentAccountCurrency,
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(transaction.runningBalance, currentAccountCurrency)}
+                        {formatCurrency(
+                          transaction.runningBalance,
+                          currentAccountCurrency,
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -214,13 +283,21 @@ export function RecentTransactions({ transactions, selectedCategories }: RecentT
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={currentPage === 1 ? undefined : () => paginate(currentPage - 1)}
+                  onClick={
+                    currentPage === 1
+                      ? undefined
+                      : () => paginate(currentPage - 1)
+                  }
                   disabled={currentPage === 1}
                 />
               </PaginationItem>
               <PaginationItem>
                 <PaginationNext
-                  onClick={currentPage === totalPages ? undefined : () => paginate(currentPage + 1)}
+                  onClick={
+                    currentPage === totalPages
+                      ? undefined
+                      : () => paginate(currentPage + 1)
+                  }
                   disabled={currentPage === totalPages}
                 />
               </PaginationItem>

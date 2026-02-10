@@ -6,7 +6,7 @@ import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
 import { TransactionsProvider } from "./contexts/TransactionsContext";
 import { UserProvider } from "./contexts/UserContext";
 import LoadingSpinner from "@/components/feedback/LoadingSpinner";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
 import { FilterProvider } from "./contexts/FilterContext";
@@ -22,7 +22,9 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const Accounts = lazy(() => import("@/pages/Accounts"));
 const Vendors = lazy(() => import("@/pages/Vendors"));
 const Categories = lazy(() => import("@/pages/Categories"));
-const ScheduledTransactions = lazy(() => import("@/pages/ScheduledTransactions"));
+const ScheduledTransactions = lazy(
+  () => import("@/pages/ScheduledTransactions"),
+);
 const Budgets = lazy(() => import("@/pages/Budgets"));
 const EssentialReports = lazy(() => import("@/pages/reports/EssentialReports"));
 const AdvancedReports = lazy(() => import("@/pages/reports/AdvancedReports"));
@@ -44,24 +46,44 @@ function App() {
               <UserProvider>
                 <TransactionsProvider>
                   <BackupManager />
-                  <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <Router
+                    future={{
+                      v7_startTransition: true,
+                      v7_relativeSplatPath: true,
+                    }}
+                  >
                     <Suspense fallback={<LoadingSpinner />}>
                       <Routes>
                         <Route path="/ledgers" element={<LedgerEntryPage />} />
                         <Route path="/" element={<Layout />}>
                           <Route index element={<Index />} />
-                          <Route path="/transactions" element={<Transactions />} />
+                          <Route
+                            path="/transactions"
+                            element={<Transactions />}
+                          />
                           <Route path="/vendors" element={<Vendors />} />
                           <Route path="/accounts" element={<Accounts />} />
                           <Route path="/categories" element={<Categories />} />
-                          <Route path="/scheduled" element={<ScheduledTransactions />} />
+                          <Route
+                            path="/scheduled"
+                            element={<ScheduledTransactions />}
+                          />
                           <Route path="/budgets" element={<Budgets />} />
                           <Route path="/analytics" element={<Analytics />} />
-                          <Route path="/reports/essential" element={<EssentialReports />} />
-                          <Route path="/reports/advanced" element={<AdvancedReports />} />
+                          <Route
+                            path="/reports/essential"
+                            element={<EssentialReports />}
+                          />
+                          <Route
+                            path="/reports/advanced"
+                            element={<AdvancedReports />}
+                          />
                           <Route path="/insights" element={<Insights />} />
                           <Route path="/settings" element={<SettingsPage />} />
-                          <Route path="/data-management" element={<DataManagementPage />} />
+                          <Route
+                            path="/data-management"
+                            element={<DataManagementPage />}
+                          />
                           <Route path="*" element={<NotFound />} />
                         </Route>
                       </Routes>

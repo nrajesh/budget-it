@@ -1,5 +1,12 @@
 import * as React from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +22,27 @@ interface BudgetsTableProps {
   onDelete: (budget: Budget) => void;
 }
 
-export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onDelete }) => {
+export const BudgetsTable: React.FC<BudgetsTableProps> = ({
+  budgets,
+  onEdit,
+  onDelete,
+}) => {
   const { formatCurrency, convertBetweenCurrencies } = useCurrency();
   const { transactions, categories, subCategories } = useTransactions();
 
   const budgetProgress = React.useMemo(() => {
-    const progressMap = new Map<string, { actual: number; percentage: number }>();
-    budgets.forEach(budget => {
+    const progressMap = new Map<
+      string,
+      { actual: number; percentage: number }
+    >();
+    budgets.forEach((budget) => {
       const now = new Date();
       const startDate = new Date(budget.start_date);
-      if (!budget.is_active || now < startDate || (budget.end_date && now > new Date(budget.end_date))) {
+      if (
+        !budget.is_active ||
+        now < startDate ||
+        (budget.end_date && now > new Date(budget.end_date))
+      ) {
         progressMap.set(budget.id, { actual: 0, percentage: 0 });
         return;
       }
@@ -33,16 +51,19 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      const category = categories.find(c => c.id === budget.category_id);
+      const category = categories.find((c) => c.id === budget.category_id);
       const categoryName = category?.name || budget.category_name;
 
-      const subCategory = budget.sub_category_id ? subCategories.find(s => s.id === budget.sub_category_id) : null;
+      const subCategory = budget.sub_category_id
+        ? subCategories.find((s) => s.id === budget.sub_category_id)
+        : null;
       const subCategoryName = subCategory?.name || budget.sub_category_name;
 
       const actualSpending = transactions
-        .filter(t => {
+        .filter((t) => {
           const isCategoryMatch = t.category === categoryName;
-          const isDateMatch = new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd;
+          const isDateMatch =
+            new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd;
           const isAmountMatch = t.amount < 0;
 
           if (!isCategoryMatch || !isDateMatch || !isAmountMatch) return false;
@@ -57,7 +78,11 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
           return true;
         })
         .reduce((sum, t) => {
-          const convertedAmount = convertBetweenCurrencies(Math.abs(t.amount), t.currency, budget.currency);
+          const convertedAmount = convertBetweenCurrencies(
+            Math.abs(t.amount),
+            t.currency,
+            budget.currency,
+          );
           return sum + convertedAmount;
         }, 0);
 
@@ -65,7 +90,13 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
       progressMap.set(budget.id, { actual: actualSpending, percentage });
     });
     return progressMap;
-  }, [budgets, transactions, convertBetweenCurrencies, categories, subCategories]);
+  }, [
+    budgets,
+    transactions,
+    convertBetweenCurrencies,
+    categories,
+    subCategories,
+  ]);
 
   return (
     <div className="border rounded-md overflow-x-auto">
@@ -83,14 +114,26 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
         </TableHeader>
         <TableBody>
           {budgets.length === 0 ? (
-            <TableRow><TableCell colSpan={7} className="text-center py-4 text-muted-foreground">No budgets found.</TableCell></TableRow>
+            <TableRow>
+              <TableCell
+                colSpan={7}
+                className="text-center py-4 text-muted-foreground"
+              >
+                No budgets found.
+              </TableCell>
+            </TableRow>
           ) : (
             budgets.map((budget) => {
-              const progress = budgetProgress.get(budget.id) || { actual: 0, percentage: 0 };
-              const progressColor = progress.percentage > 100 ? "bg-destructive" : "bg-primary";
+              const progress = budgetProgress.get(budget.id) || {
+                actual: 0,
+                percentage: 0,
+              };
+              const progressColor =
+                progress.percentage > 100 ? "bg-destructive" : "bg-primary";
 
               const subCategoryName = budget.sub_category_id
-                ? subCategories.find(s => s.id === budget.sub_category_id)?.name
+                ? subCategories.find((s) => s.id === budget.sub_category_id)
+                    ?.name
                 : budget.sub_category_name;
 
               return (
@@ -98,22 +141,54 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({ budgets, onEdit, onD
                   <TableCell className="font-medium">
                     <div>{budget.category_name}</div>
                     {subCategoryName && (
-                      <div className="text-xs text-muted-foreground mt-0.5">↳ {subCategoryName}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        ↳ {subCategoryName}
+                      </div>
                     )}
                   </TableCell>
-                  <TableCell>{formatCurrency(budget.target_amount, budget.currency)}</TableCell>
+                  <TableCell>
+                    {formatCurrency(budget.target_amount, budget.currency)}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span>{formatCurrency(progress.actual, budget.currency)} ({Math.round(progress.percentage)}%)</span>
-                      <Progress value={Math.min(progress.percentage, 100)} className="h-2" indicatorClassName={progressColor} />
+                      <span>
+                        {formatCurrency(progress.actual, budget.currency)} (
+                        {Math.round(progress.percentage)}%)
+                      </span>
+                      <Progress
+                        value={Math.min(progress.percentage, 100)}
+                        className="h-2"
+                        indicatorClassName={progressColor}
+                      />
                     </div>
                   </TableCell>
                   <TableCell>{budget.frequency}</TableCell>
-                  <TableCell>{formatDateToDDMMYYYY(budget.start_date)} - {budget.end_date ? formatDateToDDMMYYYY(budget.end_date) : 'Ongoing'}</TableCell>
-                  <TableCell><Badge variant={budget.is_active ? "default" : "outline"}>{budget.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                  <TableCell>
+                    {formatDateToDDMMYYYY(budget.start_date)} -{" "}
+                    {budget.end_date
+                      ? formatDateToDDMMYYYY(budget.end_date)
+                      : "Ongoing"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={budget.is_active ? "default" : "outline"}>
+                      {budget.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(budget)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => onDelete(budget)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onEdit(budget)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDelete(budget)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               );

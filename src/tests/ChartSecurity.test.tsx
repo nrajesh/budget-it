@@ -13,7 +13,7 @@ describe("ChartStyle", () => {
     };
 
     const { container } = render(
-      <ChartStyle id="test-chart" config={config} />
+      <ChartStyle id="test-chart" config={config} />,
     );
 
     const styleTag = container.querySelector("style");

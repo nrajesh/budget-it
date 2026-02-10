@@ -27,8 +27,8 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useLedger } from "@/contexts/LedgerContext";
-import { useDataProvider } from '@/context/DataProviderContext';
-import { db } from '@/lib/dexieDB';
+import { useDataProvider } from "@/context/DataProviderContext";
+import { db } from "@/lib/dexieDB";
 
 export type Payee = {
   id: string;
@@ -41,7 +41,7 @@ export type Payee = {
   remarks: string | null;
   running_balance: number | null;
   totalTransactions?: number;
-  type?: 'Checking' | 'Savings' | 'Credit Card' | 'Investment' | 'Other';
+  type?: "Checking" | "Savings" | "Credit Card" | "Investment" | "Other";
   credit_limit?: number;
 };
 
@@ -51,7 +51,9 @@ const formSchema = z.object({
   currency: z.string().optional(),
   starting_balance: z.coerce.number().optional(),
   remarks: z.string().optional(),
-  type: z.enum(['Checking', 'Savings', 'Credit Card', 'Investment', 'Other']).optional(),
+  type: z
+    .enum(["Checking", "Savings", "Credit Card", "Investment", "Other"])
+    .optional(),
   credit_limit: z.coerce.number().optional(),
 });
 
@@ -122,12 +124,24 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
           await db.vendors.update(payee.id, { name: values.name });
 
           // Propagate name change to transactions
-          await db.transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
-          await db.transactions.where('account').equals(payee.name).modify({ account: values.name });
+          await db.transactions
+            .where("vendor")
+            .equals(payee.name)
+            .modify({ vendor: values.name });
+          await db.transactions
+            .where("account")
+            .equals(payee.name)
+            .modify({ account: values.name });
 
           // Propagate name change to scheduled transactions
-          await db.scheduled_transactions.where('vendor').equals(payee.name).modify({ vendor: values.name });
-          await db.scheduled_transactions.where('account').equals(payee.name).modify({ account: values.name });
+          await db.scheduled_transactions
+            .where("vendor")
+            .equals(payee.name)
+            .modify({ vendor: values.name });
+          await db.scheduled_transactions
+            .where("account")
+            .equals(payee.name)
+            .modify({ account: values.name });
         }
 
         // Always propagate currency to transactions and scheduled transactions
@@ -135,8 +149,14 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
         if (payee.is_account) {
           const newCurrency = values.currency || "EUR";
           // Using values.name because if name changed, it was updated above.
-          await db.transactions.where('account').equals(values.name).modify({ currency: newCurrency });
-          await db.scheduled_transactions.where('account').equals(values.name).modify({ currency: newCurrency });
+          await db.transactions
+            .where("account")
+            .equals(values.name)
+            .modify({ currency: newCurrency });
+          await db.scheduled_transactions
+            .where("account")
+            .equals(values.name)
+            .modify({ currency: newCurrency });
         }
 
         if (payee.is_account && payee.account_id) {
@@ -148,16 +168,25 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
             credit_limit: values.credit_limit,
           });
         }
-        showSuccess(`${payee.is_account ? "Account" : "Payee"} updated successfully!`);
+        showSuccess(
+          `${payee.is_account ? "Account" : "Payee"} updated successfully!`,
+        );
       } else {
-        await dataProvider.ensurePayeeExists(values.name, values.is_account, activeLedger?.id || 'local-user', {
-          currency: values.currency,
-          startingBalance: values.starting_balance,
-          remarks: values.remarks,
-          type: values.type,
-          creditLimit: values.credit_limit,
-        });
-        showSuccess(`${values.is_account ? "Account" : "Payee"} added successfully!`);
+        await dataProvider.ensurePayeeExists(
+          values.name,
+          values.is_account,
+          activeLedger?.id || "local-user",
+          {
+            currency: values.currency,
+            startingBalance: values.starting_balance,
+            remarks: values.remarks,
+            type: values.type,
+            creditLimit: values.credit_limit,
+          },
+        );
+        showSuccess(
+          `${values.is_account ? "Account" : "Payee"} added successfully!`,
+        );
       }
       onSuccess();
       await invalidateAllData();
@@ -171,7 +200,9 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{payee ? "Edit" : "Add"} {isAccountOnly ? "Account" : "Payee"}</DialogTitle>
+          <DialogTitle>
+            {payee ? "Edit" : "Add"} {isAccountOnly ? "Account" : "Payee"}
+          </DialogTitle>
           <DialogDescription>
             {payee
               ? `Update the details of the ${isAccountOnly ? "account" : "payee"}.`
@@ -187,7 +218,10 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., SuperMart, Salary, etc." {...field} />
+                    <Input
+                      placeholder="e.g., SuperMart, Salary, etc."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -222,7 +256,9 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
                       <Combobox
-                        options={availableCurrencies.map(c => ({ value: c.code, label: c.code })).sort((a, b) => a.label.localeCompare(b.label))}
+                        options={availableCurrencies
+                          .map((c) => ({ value: c.code, label: c.code }))
+                          .sort((a, b) => a.label.localeCompare(b.label))}
                         value={field.value || "EUR"}
                         onChange={field.onChange}
                         placeholder="Select currency"
@@ -245,7 +281,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={field.value}
                           onChange={field.onChange}
-                        // disabled={!!payee} // Allow changing account type
+                          // disabled={!!payee} // Allow changing account type
                         >
                           <option value="Checking">Checking</option>
                           <option value="Savings">Savings</option>
@@ -259,7 +295,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                   )}
                 />
 
-                {accountType === 'Credit Card' && (
+                {accountType === "Credit Card" && (
                   <FormField
                     control={form.control}
                     name="credit_limit"
@@ -267,9 +303,17 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                       <FormItem>
                         <FormLabel>Credit Limit</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="e.g. 5000" {...field} value={field.value ?? ''} />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="e.g. 5000"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
                         </FormControl>
-                        <p className="text-xs text-muted-foreground">Sets an alert threshold for negative balance.</p>
+                        <p className="text-xs text-muted-foreground">
+                          Sets an alert threshold for negative balance.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -296,7 +340,10 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                     <FormItem>
                       <FormLabel>Remarks</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Optional notes about the account" {...field} />
+                        <Textarea
+                          placeholder="Optional notes about the account"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

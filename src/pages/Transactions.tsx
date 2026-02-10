@@ -14,7 +14,6 @@ import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilter
 // import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 
-
 import { slugify } from "@/lib/utils";
 import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
 import { projectScheduledTransactions } from "@/utils/forecasting";
@@ -74,7 +73,12 @@ const Transactions = () => {
         dateRange?: { from: string | Date; to: string | Date };
       };
 
-      if (state.filterCategory || state.filterSubCategory || state.filterVendor || state.filterAccount) {
+      if (
+        state.filterCategory ||
+        state.filterSubCategory ||
+        state.filterVendor ||
+        state.filterAccount
+      ) {
         if (state.filterCategory) {
           setSelectedCategories([slugify(state.filterCategory)]);
           setSelectedVendors([]);
@@ -110,9 +114,16 @@ const Transactions = () => {
         });
       }
 
-      window.history.replaceState({}, document.title)
+      window.history.replaceState({}, document.title);
     }
-  }, [location.state, setSelectedAccounts, setSelectedCategories, setSelectedSubCategories, setSelectedVendors, setDateRange]);
+  }, [
+    location.state,
+    setSelectedAccounts,
+    setSelectedCategories,
+    setSelectedSubCategories,
+    setSelectedVendors,
+    setDateRange,
+  ]);
 
   const dataProvider = useDataProvider();
 
@@ -120,13 +131,13 @@ const Transactions = () => {
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
 
   const [isScheduledDialogOpen, setIsScheduledDialogOpen] = useState(false);
-  const [scheduledTransactionToEdit, setScheduledTransactionToEdit] = useState<any>(null);
-  const [selectedTransactionForSchedule, setSelectedTransactionForSchedule] = useState<any>(null);
+  const [scheduledTransactionToEdit, setScheduledTransactionToEdit] =
+    useState<any>(null);
+  const [selectedTransactionForSchedule, setSelectedTransactionForSchedule] =
+    useState<any>(null);
 
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
-
-
 
   const { toast } = useToast();
 
@@ -144,12 +155,16 @@ const Transactions = () => {
         end = addMonths(today, 6);
       }
 
-      projected = projectScheduledTransactions(scheduledTransactions, start, end);
+      projected = projectScheduledTransactions(
+        scheduledTransactions,
+        start,
+        end,
+      );
     }
 
     const combinedTransactions = [...allTransactions, ...projected];
 
-    let result = combinedTransactions.filter(t => {
+    let result = combinedTransactions.filter((t) => {
       if (dateRange?.from) {
         const tDate = new Date(t.date);
         if (tDate < dateRange.from) return false;
@@ -160,15 +175,34 @@ const Transactions = () => {
         }
       }
 
-      if (selectedAccounts.length > 0 && !selectedAccounts.includes(slugify(t.account))) return false;
-      if (selectedCategories.length > 0 && !selectedCategories.includes(slugify(t.category))) return false;
-      if (selectedSubCategories.length > 0 && !selectedSubCategories.includes(slugify(t.sub_category || ''))) return false;
-      if (selectedVendors.length > 0 && !selectedVendors.includes(slugify(t.vendor))) return false;
+      if (
+        selectedAccounts.length > 0 &&
+        !selectedAccounts.includes(slugify(t.account))
+      )
+        return false;
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(slugify(t.category))
+      )
+        return false;
+      if (
+        selectedSubCategories.length > 0 &&
+        !selectedSubCategories.includes(slugify(t.sub_category || ""))
+      )
+        return false;
+      if (
+        selectedVendors.length > 0 &&
+        !selectedVendors.includes(slugify(t.vendor))
+      )
+        return false;
 
-      if (excludeTransfers && (t.category === 'Transfer' || !!t.transfer_id)) return false;
+      if (excludeTransfers && (t.category === "Transfer" || !!t.transfer_id))
+        return false;
 
-      if (minAmount !== undefined && Math.abs(t.amount) < minAmount) return false;
-      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount) return false;
+      if (minAmount !== undefined && Math.abs(t.amount) < minAmount)
+        return false;
+      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount)
+        return false;
 
       if (searchTerm) {
         const lower = searchTerm.toLowerCase();
@@ -181,21 +215,23 @@ const Transactions = () => {
         );
       }
 
-      if (transactionType === 'expense') {
+      if (transactionType === "expense") {
         if (t.amount > 0) return false;
-      } else if (transactionType === 'income') {
+      } else if (transactionType === "income") {
         if (t.amount < 0) return false;
       }
 
       return true;
     });
 
-    if (sortOrder === 'largest') {
+    if (sortOrder === "largest") {
       result.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
-    } else if (sortOrder === 'smallest') {
+    } else if (sortOrder === "smallest") {
       result.sort((a, b) => Math.abs(a.amount) - Math.abs(b.amount));
     } else {
-      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      result.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
     }
 
     if (limit) {
@@ -203,15 +239,38 @@ const Transactions = () => {
     }
 
     return result;
-  }, [allTransactions, scheduledTransactions, selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors, dateRange, excludeTransfers, minAmount, maxAmount, searchTerm, limit, sortOrder, transactionType]);
+  }, [
+    allTransactions,
+    scheduledTransactions,
+    selectedAccounts,
+    selectedCategories,
+    selectedSubCategories,
+    selectedVendors,
+    dateRange,
+    excludeTransfers,
+    minAmount,
+    maxAmount,
+    searchTerm,
+    limit,
+    sortOrder,
+    transactionType,
+  ]);
 
-  const handleDeleteTransactionsWrapper = async (items: { id: string, transfer_id?: string, is_projected?: boolean, recurrence_id?: string, date?: string }[]) => {
+  const handleDeleteTransactionsWrapper = async (
+    items: {
+      id: string;
+      transfer_id?: string;
+      is_projected?: boolean;
+      recurrence_id?: string;
+      date?: string;
+    }[],
+  ) => {
     // Simplified Logic: Directly delete without prompting.
     // Real transactions are deleted. Projected transactions are 'skipped'.
-    const extendedItems = items.map(i => {
+    const extendedItems = items.map((i) => {
       // Find full object to carry extra metadata if needed (like recurrence_id for projected items)
       // Actually, filteredTransactions should have it.
-      const full = filteredTransactions.find(t => t.id === i.id);
+      const full = filteredTransactions.find((t) => t.id === i.id);
       return full ? { ...i, ...full } : i;
     });
 
@@ -219,13 +278,18 @@ const Transactions = () => {
   };
   // Removed handleConfirmDelete and related dialogs.
 
-  const handleScheduleTransactions = (selectedTransactions: any[], clearSelection: () => void) => {
+  const handleScheduleTransactions = (
+    selectedTransactions: any[],
+    clearSelection: () => void,
+  ) => {
     if (selectedTransactions.length === 0) return;
 
     const transaction = selectedTransactions[0];
 
     if (selectedTransactions.length === 1 && transaction.recurrence_id) {
-      const existingSchedule = scheduledTransactions.find(s => s.id === transaction.recurrence_id);
+      const existingSchedule = scheduledTransactions.find(
+        (s) => s.id === transaction.recurrence_id,
+      );
       if (existingSchedule) {
         setScheduledTransactionToEdit(existingSchedule);
         setSelectedTransactionForSchedule(null);
@@ -233,16 +297,20 @@ const Transactions = () => {
         clearSelection();
         return;
       } else {
-        toast({ title: "Schedule Not Found", description: "The original schedule seems to have been deleted.", variant: "destructive" });
+        toast({
+          title: "Schedule Not Found",
+          description: "The original schedule seems to have been deleted.",
+          variant: "destructive",
+        });
       }
     }
 
     setScheduledTransactionToEdit(null);
     setSelectedTransactionForSchedule({
       ...transaction,
-      frequency: 'Monthly',
+      frequency: "Monthly",
       id: undefined,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
     });
     setIsScheduledDialogOpen(true);
     clearSelection();
@@ -260,7 +328,7 @@ const Transactions = () => {
     "Frequency",
     "End Date",
     "Transfer ID",
-    "Account Type"
+    "Account Type",
   ];
 
   const {
@@ -271,7 +339,7 @@ const Transactions = () => {
     mappingDialogState,
     setMappingDialogState,
     handleMappingConfirm,
-    handleDetectTransfers
+    handleDetectTransfers,
   } = useTransactionPageActions(filteredTransactions);
 
   const handleCleanupDuplicates = async () => {
@@ -279,13 +347,23 @@ const Transactions = () => {
     try {
       const count = await cleanUpDuplicates();
       if (count > 0) {
-        toast({ title: "Cleanup Complete", description: `Removed ${count} duplicate transactions.` });
+        toast({
+          title: "Cleanup Complete",
+          description: `Removed ${count} duplicate transactions.`,
+        });
         invalidateAllData();
       } else {
-        toast({ title: "No Duplicates", description: "No duplicate transactions were found." });
+        toast({
+          title: "No Duplicates",
+          description: "No duplicate transactions were found.",
+        });
       }
     } catch (_error) {
-      toast({ title: "Cleanup Failed", description: "An error occurred while removing duplicates.", variant: "destructive" });
+      toast({
+        title: "Cleanup Failed",
+        description: "An error occurred while removing duplicates.",
+        variant: "destructive",
+      });
     } finally {
       setIsCleaningUp(false);
       setIsCleanupConfirmOpen(false);
@@ -299,7 +377,10 @@ const Transactions = () => {
           onImportClick={handleImportClick}
           onExportClick={handleExport}
           onDetectTransfers={handleDetectTransfers}
-          onAddTransaction={() => { setEditingTransaction(null); setIsDialogOpen(true); }}
+          onAddTransaction={() => {
+            setEditingTransaction(null);
+            setIsDialogOpen(true);
+          }}
           onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
@@ -317,15 +398,23 @@ const Transactions = () => {
           onAddTransaction={addTransaction}
           onScheduleTransactions={handleScheduleTransactions}
           onUnlinkTransaction={async (transferId) => {
-            const confirm = window.confirm("Are you sure you want to unlink these transactions?");
+            const confirm = window.confirm(
+              "Are you sure you want to unlink these transactions?",
+            );
             if (confirm) {
               await unlinkTransaction(transferId);
-              toast({ title: "Transactions Unlinked", description: "The transfer link has been removed." });
+              toast({
+                title: "Transactions Unlinked",
+                description: "The transfer link has been removed.",
+              });
             }
           }}
           onLinkTransactions={async (id1, id2) => {
             await linkTransactions(id1, id2);
-            toast({ title: "Transactions Linked", description: "The transactions have been paired as a transfer." });
+            toast({
+              title: "Transactions Linked",
+              description: "The transactions have been paired as a transfer.",
+            });
           }}
           onRowDoubleClick={(transaction) => {
             setEditingTransaction(transaction);
@@ -343,7 +432,7 @@ const Transactions = () => {
           if (accountName && selectedAccounts.length > 0) {
             const slugifiedAccount = slugify(accountName);
             if (!selectedAccounts.includes(slugifiedAccount)) {
-              setSelectedAccounts(prev => {
+              setSelectedAccounts((prev) => {
                 if (prev.includes(slugifiedAccount)) return prev;
                 return [...prev, slugifiedAccount];
               });
@@ -362,45 +451,68 @@ const Transactions = () => {
       <AddEditScheduledTransactionDialog
         isOpen={isScheduledDialogOpen}
         onOpenChange={setIsScheduledDialogOpen}
-        transaction={scheduledTransactionToEdit || selectedTransactionForSchedule}
+        transaction={
+          scheduledTransactionToEdit || selectedTransactionForSchedule
+        }
         onSubmit={async (values) => {
           try {
             const isEdit = !!scheduledTransactionToEdit?.id;
             const payload = {
               ...values,
-              user_id: activeLedger?.id || 'local-user',
+              user_id: activeLedger?.id || "local-user",
             };
 
             if (isEdit) {
-              await dataProvider.updateScheduledTransaction({ ...scheduledTransactionToEdit, ...payload });
-              toast({ title: "Schedule Updated", description: "The recurring transaction has been updated." });
+              await dataProvider.updateScheduledTransaction({
+                ...scheduledTransactionToEdit,
+                ...payload,
+              });
+              toast({
+                title: "Schedule Updated",
+                description: "The recurring transaction has been updated.",
+              });
             } else {
               await dataProvider.addScheduledTransaction(payload);
-              toast({ title: "Schedule Created", description: "A new recurring transaction has been scheduled." });
+              toast({
+                title: "Schedule Created",
+                description: "A new recurring transaction has been scheduled.",
+              });
             }
             setIsScheduledDialogOpen(false);
             invalidateAllData();
           } catch (e) {
             console.error(e);
-            toast({ title: "Error", description: "Failed to save schedule.", variant: "destructive" });
+            toast({
+              title: "Error",
+              description: "Failed to save schedule.",
+              variant: "destructive",
+            });
           }
         }}
         isSubmitting={false}
         isLoading={false}
         accounts={accounts || []}
         categories={categories || []}
-        allSubCategories={subCategories?.map(s => s.name) || []}
+        allSubCategories={subCategories?.map((s) => s.name) || []}
         allPayees={[
-          ...(accounts || []).map(a => ({ value: a.name, label: a.name, isAccount: true })),
-          ...(vendors || []).map(v => ({ value: v.name, label: v.name, isAccount: false }))
+          ...(accounts || []).map((a) => ({
+            value: a.name,
+            label: a.name,
+            isAccount: true,
+          })),
+          ...(vendors || []).map((v) => ({
+            value: v.name,
+            label: v.name,
+            isAccount: false,
+          })),
         ]}
       />
 
-
-
       <CSVMappingDialog
         isOpen={mappingDialogState.isOpen}
-        onClose={() => setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }))}
+        onClose={() =>
+          setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }))
+        }
         file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}
         onConfirm={handleMappingConfirm}

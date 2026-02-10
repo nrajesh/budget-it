@@ -1,11 +1,16 @@
 import * as React from "react";
 import { Transaction } from "@/data/finance-data";
 
-export const useTransactionPagination = (filteredTransactions: Transaction[]) => {
+export const useTransactionPagination = (
+  filteredTransactions: Transaction[],
+) => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [itemsPerPage, setItemsPerPage] = React.useState(10);
 
-  const totalPages = React.useMemo(() => Math.ceil(filteredTransactions.length / itemsPerPage), [filteredTransactions.length, itemsPerPage]);
+  const totalPages = React.useMemo(
+    () => Math.ceil(filteredTransactions.length / itemsPerPage),
+    [filteredTransactions.length, itemsPerPage],
+  );
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentTransactions = filteredTransactions.slice(startIndex, endIndex);

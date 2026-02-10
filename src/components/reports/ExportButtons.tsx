@@ -1,7 +1,6 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { FileText, FileSpreadsheet, FileJson } from 'lucide-react';
-
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { FileText, FileSpreadsheet, FileJson } from "lucide-react";
 
 interface ExportButtonsProps {
   onPdfExport: () => void;
@@ -9,7 +8,11 @@ interface ExportButtonsProps {
   onCsvExport: () => void;
 }
 
-const ExportButtons: React.FC<ExportButtonsProps> = ({ onPdfExport, onExcelExport, onCsvExport }) => {
+const ExportButtons: React.FC<ExportButtonsProps> = ({
+  onPdfExport,
+  onExcelExport,
+  onCsvExport,
+}) => {
   return (
     <div className="flex items-center space-x-2">
       <Button variant="outline" onClick={onPdfExport}>

@@ -59,59 +59,100 @@ export const EntityTable = <T extends { id: string; name: string }>({
           <TableRow>
             <TableHead className="w-[50px]">
               <Checkbox
-                checked={data.length > 0 && selectedRows.length === data.filter(item => isDeletable(item)).length}
+                checked={
+                  data.length > 0 &&
+                  selectedRows.length ===
+                    data.filter((item) => isDeletable(item)).length
+                }
                 onCheckedChange={(checked) => {
-                  const selectableIds = data.filter(item => isDeletable(item)).map(item => item.id);
+                  const selectableIds = data
+                    .filter((item) => isDeletable(item))
+                    .map((item) => item.id);
                   if (selectableIds.length > 0) {
-                    handleRowSelect(selectableIds.join(','), !!checked);
+                    handleRowSelect(selectableIds.join(","), !!checked);
                   }
                 }}
                 aria-label="Select all"
               />
             </TableHead>
             {columns.map((col) => (
-              <TableHead key={String(col.header)} className={`text-slate-800 dark:text-slate-200 font-semibold ${col.className || ''}`}>{col.header}</TableHead>
+              <TableHead
+                key={String(col.header)}
+                className={`text-slate-800 dark:text-slate-200 font-semibold ${col.className || ""}`}
+              >
+                {col.header}
+              </TableHead>
             ))}
-            <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">Actions</TableHead>
+            <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">
+              Actions
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <TableRow><TableCell colSpan={columns.length + 2} className="text-center">Loading...</TableCell></TableRow>
+            <TableRow>
+              <TableCell colSpan={columns.length + 2} className="text-center">
+                Loading...
+              </TableCell>
+            </TableRow>
           ) : data.length === 0 ? (
-            <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-4 text-muted-foreground">No items found.</TableCell></TableRow>
+            <TableRow>
+              <TableCell
+                colSpan={columns.length + 2}
+                className="text-center py-4 text-muted-foreground"
+              >
+                No items found.
+              </TableCell>
+            </TableRow>
           ) : (
             data.map((item, index) => {
               const previousItem = data[index - 1];
-              const isNewGroup = groupBy && (!previousItem || String(item[groupBy]) !== String(previousItem[groupBy]));
+              const isNewGroup =
+                groupBy &&
+                (!previousItem ||
+                  String(item[groupBy]) !== String(previousItem[groupBy]));
 
               return (
                 <React.Fragment key={item.id}>
                   {isNewGroup && (
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableCell colSpan={columns.length + 2} className="font-semibold py-2 text-slate-900 dark:text-slate-100">
+                      <TableCell
+                        colSpan={columns.length + 2}
+                        className="font-semibold py-2 text-slate-900 dark:text-slate-100"
+                      >
                         {String(item[groupBy] || "Uncategorized")}
                       </TableCell>
                     </TableRow>
                   )}
                   <ContextMenu>
                     <ContextMenuTrigger asChild>
-                      <TableRow data-state={selectedRows.includes(item.id) && "selected"}>
+                      <TableRow
+                        data-state={
+                          selectedRows.includes(item.id) && "selected"
+                        }
+                      >
                         <TableCell>
                           <Checkbox
                             checked={selectedRows.includes(item.id)}
-                            onCheckedChange={(checked) => handleRowSelect(item.id, Boolean(checked))}
+                            onCheckedChange={(checked) =>
+                              handleRowSelect(item.id, Boolean(checked))
+                            }
                             aria-label="Select row"
                             disabled={!isDeletable(item)}
                           />
                         </TableCell>
                         {columns.map((col) => (
-                          <TableCell key={String(col.header)} className={`text-slate-700 dark:text-slate-300 ${col.className || ''}`}>
+                          <TableCell
+                            key={String(col.header)}
+                            className={`text-slate-700 dark:text-slate-300 ${col.className || ""}`}
+                          >
                             {col.cellRenderer
                               ? col.cellRenderer(item)
-                              : typeof col.accessor === 'function'
+                              : typeof col.accessor === "function"
                                 ? col.accessor(item)
-                                : (item[col.accessor as keyof T] as React.ReactNode) || "-"}
+                                : (item[
+                                    col.accessor as keyof T
+                                  ] as React.ReactNode) || "-"}
                           </TableCell>
                         ))}
                         <TableCell className="text-right">
@@ -119,10 +160,20 @@ export const EntityTable = <T extends { id: string; name: string }>({
                             <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
                           ) : (
                             <>
-                              <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditClick(item)}
+                                disabled={!isDeletable(item)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteClick(item)}
+                                disabled={!isDeletable(item)}
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </>
@@ -131,14 +182,31 @@ export const EntityTable = <T extends { id: string; name: string }>({
                       </TableRow>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
-                      <ContextMenuItem inset onClick={() => handleRowSelect(item.id, !selectedRows.includes(item.id))}>
+                      <ContextMenuItem
+                        inset
+                        onClick={() =>
+                          handleRowSelect(
+                            item.id,
+                            !selectedRows.includes(item.id),
+                          )
+                        }
+                      >
                         {selectedRows.includes(item.id) ? "Deselect" : "Select"}
                       </ContextMenuItem>
                       <ContextMenuSeparator />
-                      <ContextMenuItem inset onClick={() => handleEditClick(item)} disabled={!isDeletable(item)}>
+                      <ContextMenuItem
+                        inset
+                        onClick={() => handleEditClick(item)}
+                        disabled={!isDeletable(item)}
+                      >
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </ContextMenuItem>
-                      <ContextMenuItem inset className="text-red-600" onClick={() => handleDeleteClick(item)} disabled={!isDeletable(item)}>
+                      <ContextMenuItem
+                        inset
+                        className="text-red-600"
+                        onClick={() => handleDeleteClick(item)}
+                        disabled={!isDeletable(item)}
+                      >
                         <Trash2 className="h-4 w-4 mr-2" /> Delete
                       </ContextMenuItem>
                     </ContextMenuContent>

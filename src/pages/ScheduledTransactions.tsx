@@ -40,11 +40,12 @@ const ScheduledTransactionsPage = () => {
     selectedSubCategories,
     selectedVendors,
     minAmount,
-    maxAmount
+    maxAmount,
   } = filterState;
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [editingTransaction, setEditingTransaction] = React.useState<ScheduledTransaction | null>(null);
+  const [editingTransaction, setEditingTransaction] =
+    React.useState<ScheduledTransaction | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSmartSchedulerOpen, setIsSmartSchedulerOpen] = React.useState(false);
 
@@ -62,7 +63,7 @@ const ScheduledTransactionsPage = () => {
     // If we have no transactions yet, return empty
     if (!scheduledTransactions || scheduledTransactions.length === 0) return [];
 
-    const result = scheduledTransactions.filter(t => {
+    const result = scheduledTransactions.filter((t) => {
       // Direct ID Match (if passed via URL)
       if (targetId) {
         return t.id === targetId;
@@ -84,14 +85,32 @@ const ScheduledTransactionsPage = () => {
         }
       }
 
-      if (selectedAccounts.length > 0 && !selectedAccounts.includes(slugify(t.account))) return false;
-      if (selectedCategories.length > 0 && !selectedCategories.includes(slugify(t.category))) return false;
-      if (selectedSubCategories.length > 0 && !selectedSubCategories.includes(slugify(t.sub_category || ''))) return false;
-      if (selectedVendors.length > 0 && !selectedVendors.includes(slugify(t.vendor))) return false;
+      if (
+        selectedAccounts.length > 0 &&
+        !selectedAccounts.includes(slugify(t.account))
+      )
+        return false;
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(slugify(t.category))
+      )
+        return false;
+      if (
+        selectedSubCategories.length > 0 &&
+        !selectedSubCategories.includes(slugify(t.sub_category || ""))
+      )
+        return false;
+      if (
+        selectedVendors.length > 0 &&
+        !selectedVendors.includes(slugify(t.vendor))
+      )
+        return false;
 
       // Amount
-      if (minAmount !== undefined && Math.abs(t.amount) < minAmount) return false;
-      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount) return false;
+      if (minAmount !== undefined && Math.abs(t.amount) < minAmount)
+        return false;
+      if (maxAmount !== undefined && Math.abs(t.amount) > maxAmount)
+        return false;
 
       // Search Term (Generic)
       if (searchTerm) {
@@ -108,11 +127,23 @@ const ScheduledTransactionsPage = () => {
     });
 
     // Sorting
-    result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    result.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
     return result;
-  }, [scheduledTransactions, dateRange, selectedAccounts, selectedCategories, selectedSubCategories, selectedVendors, minAmount, maxAmount, searchTerm, targetId]);
-
+  }, [
+    scheduledTransactions,
+    dateRange,
+    selectedAccounts,
+    selectedCategories,
+    selectedSubCategories,
+    selectedVendors,
+    minAmount,
+    maxAmount,
+    searchTerm,
+    targetId,
+  ]);
 
   // --- Actions ---
 
@@ -147,11 +178,11 @@ const ScheduledTransactionsPage = () => {
 
   const calculateNextDate = (currentDate: Date, frequency: string): Date => {
     const d = new Date(currentDate);
-    if (frequency === 'Weekly') return addWeeks(d, 1);
-    if (frequency === 'Monthly') return addMonths(d, 1);
-    if (frequency === 'Yearly') return addYears(d, 1);
+    if (frequency === "Weekly") return addWeeks(d, 1);
+    if (frequency === "Monthly") return addMonths(d, 1);
+    if (frequency === "Yearly") return addYears(d, 1);
     // Daily?
-    if (frequency === 'Daily') {
+    if (frequency === "Daily") {
       const next = new Date(d);
       next.setDate(next.getDate() + 1);
       return next;
@@ -173,7 +204,7 @@ const ScheduledTransactionsPage = () => {
         remarks: st.remarks || "Processed from schedule",
         is_scheduled_origin: true,
         user_id: st.user_id,
-        // recurrence_id: st.id 
+        // recurrence_id: st.id
       };
 
       await addTransaction(transactionPayload);
@@ -183,11 +214,10 @@ const ScheduledTransactionsPage = () => {
 
       await updateScheduledTransaction({
         ...st,
-        date: nextDate.toISOString()
+        date: nextDate.toISOString(),
       });
 
       toast.success("Transaction processed and schedule advanced!");
-
     } catch (e) {
       console.error("Process Today Error", e);
       toast.error("Failed to process transaction.");
@@ -199,13 +229,13 @@ const ScheduledTransactionsPage = () => {
     try {
       const transactionData = {
         ...values,
-        frequency: `${values.frequency_value}${values.frequency_unit}`
+        frequency: `${values.frequency_value}${values.frequency_unit}`,
       };
       delete transactionData.frequency_value;
       delete transactionData.frequency_unit;
 
-      const accountObj = accounts.find(a => a.name === values.account);
-      const currency = accountObj?.currency || 'USD';
+      const accountObj = accounts.find((a) => a.name === values.account);
+      const currency = accountObj?.currency || "USD";
       // Ensure ID is present for local optimistic updates if needed, though dataProvider usually adds it.
       // But let's let backend handle.
       const payload = { ...transactionData, currency };
@@ -234,13 +264,23 @@ const ScheduledTransactionsPage = () => {
             <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
               Scheduled Transactions
             </h1>
-            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">Manage recurring payments & subscriptions</p>
+            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+              Manage recurring payments & subscriptions
+            </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button onClick={handleSmartSchedule} variant="outline" className="border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950">
-              <Sparkles className="mr-2 h-4 w-4 text-indigo-500" /> Auto-Schedule
+            <Button
+              onClick={handleSmartSchedule}
+              variant="outline"
+              className="border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />{" "}
+              Auto-Schedule
             </Button>
-            <Button onClick={handleAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button
+              onClick={handleAdd}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
               <Plus className="mr-2 h-4 w-4" /> Add Scheduled
             </Button>
           </div>
@@ -275,8 +315,16 @@ const ScheduledTransactionsPage = () => {
         isSubmitting={isSubmitting}
         accounts={accounts}
         allPayees={[
-          ...vendors.map(v => ({ value: v.name, label: v.name, isAccount: false })),
-          ...accounts.map(a => ({ value: a.name, label: a.name, isAccount: true }))
+          ...vendors.map((v) => ({
+            value: v.name,
+            label: v.name,
+            isAccount: false,
+          })),
+          ...accounts.map((a) => ({
+            value: a.name,
+            label: a.name,
+            isAccount: true,
+          })),
         ].sort((a, b) => a.label.localeCompare(b.label))}
         categories={categories}
         allSubCategories={allSubCategories}

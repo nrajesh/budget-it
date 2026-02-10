@@ -17,12 +17,15 @@ export const usePayeeManagement = (isAccount: boolean) => {
     entityName,
     entityNamePlural,
     queryKey: [entityNamePlural],
-    deleteRpcFn: 'delete_payees_batch',
-    batchUpsertRpcFn: isAccount ? 'batch_upsert_accounts' : 'batch_upsert_vendors',
-    batchUpsertPayloadKey: isAccount ? 'p_accounts' : 'p_names',
-    isDeletable: (item) => item.name !== 'Others',
+    deleteRpcFn: "delete_payees_batch",
+    batchUpsertRpcFn: isAccount
+      ? "batch_upsert_accounts"
+      : "batch_upsert_vendors",
+    batchUpsertPayloadKey: isAccount ? "p_accounts" : "p_names",
+    isDeletable: (item) => item.name !== "Others",
     onSuccess: invalidateAllData,
-    customDeleteHandler: (ids) => deleteEntity(isAccount ? 'account' : 'vendor', ids),
+    customDeleteHandler: (ids) =>
+      deleteEntity(isAccount ? "account" : "vendor", ids),
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,22 +39,38 @@ export const usePayeeManagement = (isAccount: boolean) => {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const requiredHeaders = isAccount ? ["Account Name", "Currency", "Starting Balance", "Remarks"] : ["Vendor Name"];
-        const hasAllHeaders = requiredHeaders.every(h => results.meta.fields?.includes(h));
+        const requiredHeaders = isAccount
+          ? ["Account Name", "Currency", "Starting Balance", "Remarks"]
+          : ["Vendor Name"];
+        const hasAllHeaders = requiredHeaders.every((h) =>
+          results.meta.fields?.includes(h),
+        );
 
         if (!hasAllHeaders) {
-          showError(`CSV is missing required headers: ${requiredHeaders.join(", ")}`);
+          showError(
+            `CSV is missing required headers: ${requiredHeaders.join(", ")}`,
+          );
           setIsImporting(false);
           return;
         }
 
-        const dataToUpsert = results.data.map((row: any) => isAccount
-          ? { name: row["Account Name"], currency: row["Currency"], starting_balance: parseFloat(row["Starting Balance"]) || 0, remarks: row["Remarks"] }
-          : { name: row["Vendor Name"] }
-        ).filter(item => item.name);
+        const dataToUpsert = results.data
+          .map((row: any) =>
+            isAccount
+              ? {
+                  name: row["Account Name"],
+                  currency: row["Currency"],
+                  starting_balance: parseFloat(row["Starting Balance"]) || 0,
+                  remarks: row["Remarks"],
+                }
+              : { name: row["Vendor Name"] },
+          )
+          .filter((item) => item.name);
 
         if (dataToUpsert.length === 0) {
-          showError(`No valid ${entityName.toLowerCase()} data found in the CSV file.`);
+          showError(
+            `No valid ${entityName.toLowerCase()} data found in the CSV file.`,
+          );
           setIsImporting(false);
           return;
         }
@@ -69,12 +88,18 @@ export const usePayeeManagement = (isAccount: boolean) => {
       showError(`No ${entityNamePlural} to export.`);
       return;
     }
-    const dataToExport = payees.map(p => isAccount
-      ? { "Account Name": p.name, "Currency": p.currency, "Starting Balance": p.starting_balance, "Remarks": p.remarks }
-      : { "Vendor Name": p.name }
+    const dataToExport = payees.map((p) =>
+      isAccount
+        ? {
+            "Account Name": p.name,
+            Currency: p.currency,
+            "Starting Balance": p.starting_balance,
+            Remarks: p.remarks,
+          }
+        : { "Vendor Name": p.name },
     );
     const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.setAttribute("href", URL.createObjectURL(blob));
     link.setAttribute("download", `${entityNamePlural}_export.csv`);
@@ -84,8 +109,8 @@ export const usePayeeManagement = (isAccount: boolean) => {
   };
 
   const handlePayeeNameClick = (payeeName: string) => {
-    const filterKey = isAccount ? 'filterAccount' : 'filterVendor';
-    navigate('/transactions', { state: { [filterKey]: payeeName } });
+    const filterKey = isAccount ? "filterAccount" : "filterVendor";
+    navigate("/transactions", { state: { [filterKey]: payeeName } });
   };
 
   return {
