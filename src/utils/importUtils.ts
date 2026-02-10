@@ -1,29 +1,53 @@
 import { parse } from "date-fns";
 
+// Pre-allocate format arrays to avoid reallocation on every function call
+const dmyFormats = [
+    'd/M/yyyy', 'dd/MM/yyyy', 'd-M-yyyy', 'dd-MM-yyyy', 'd.M.yyyy', 'dd.MM.yyyy',
+    'dd/M/yyyy', 'd/MM/yyyy', // Mixed padding
+];
+
+const mdyFormats = [
+    'M/d/yyyy', 'MM/dd/yyyy', 'M-d-yyyy', 'MM-dd-yyyy', 'M.d.yyyy', 'MM.dd.yyyy',
+    'MM/d/yyyy', 'M/dd/yyyy', // Mixed padding
+];
+
+const ymdFormats = [
+    'yyyy-M-d', 'yyyy-MM-dd', 'yyyy/M/d', 'yyyy/MM/dd', 'yyyy.M.d', 'yyyy.MM.dd'
+];
+
+const autoFormats = [
+    'yyyy-MM-dd', 'yyyy/MM/dd',
+    'd/M/yyyy', 'M/d/yyyy', // Ambiguous ones are risk, usually prefer local or consistent.
+    // If auto, we really rely on date-fns/js parsing or list.
+    'd-M-yyyy', 'd.M.yyyy'
+];
+
+/**
+ * Helper to try parsing a list of formats.
+ */
+function tryFormats(dateString: string, formats: string[]): string | null {
+    for (const fmt of formats) {
+        const parsed = parse(dateString, fmt, new Date());
+        if (!isNaN(parsed.getTime())) {
+            // Sanity check: year should be reasonable (e.g., within +/- 100 years) or > 1900
+            if (parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+                // Set to noon to avoid timezone shifts when converting to UTC
+                parsed.setHours(12, 0, 0, 0);
+                return parsed.toISOString();
+            }
+        }
+    }
+    return null;
+}
+
 export function parseRobustDate(dateString: string, dateFormatPre?: string): string | null {
     if (!dateString) return null;
     dateString = dateString.trim();
 
-    // Helper to try parsing a list of formats
-    const tryFormats = (formats: string[]) => {
-        for (const fmt of formats) {
-            const parsed = parse(dateString, fmt, new Date());
-            if (!isNaN(parsed.getTime())) {
-                // Sanity check: year should be reasonable (e.g., within +/- 100 years) or > 1900
-                if (parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
-                    // Set to noon to avoid timezone shifts when converting to UTC
-                    parsed.setHours(12, 0, 0, 0);
-                    return parsed.toISOString();
-                }
-            }
-        }
-        return null;
-    };
-
     // If explicit format provided
     if (dateFormatPre && dateFormatPre !== 'auto') {
         // 1. Try strict match first
-        const strictMatch = tryFormats([dateFormatPre]);
+        const strictMatch = tryFormats(dateString, [dateFormatPre]);
         if (strictMatch) return strictMatch;
 
         // 2. Identify intent and try fallbacks
@@ -32,32 +56,17 @@ export function parseRobustDate(dateString: string, dateFormatPre?: string): str
         const isMDY = dateFormatPre.startsWith('M') || dateFormatPre.startsWith('m');
         const isYMD = dateFormatPre.startsWith('y') || dateFormatPre.startsWith('Y');
 
-        // Common components
-        const dmyFormats = [
-            'd/M/yyyy', 'dd/MM/yyyy', 'd-M-yyyy', 'dd-MM-yyyy', 'd.M.yyyy', 'dd.MM.yyyy',
-            'dd/M/yyyy', 'd/MM/yyyy', // Mixed padding
-        ];
-        const mdyFormats = [
-            'M/d/yyyy', 'MM/dd/yyyy', 'M-d-yyyy', 'MM-dd-yyyy', 'M.d.yyyy', 'MM.dd.yyyy',
-            'MM/d/yyyy', 'M/dd/yyyy', // Mixed padding
-        ];
-        const ymdFormats = [
-            'yyyy-M-d', 'yyyy-MM-dd', 'yyyy/M/d', 'yyyy/MM/dd', 'yyyy.M.d', 'yyyy.MM.dd'
-        ];
-
         let fallbacks: string[] = [];
         if (isDMY) fallbacks = dmyFormats;
         else if (isMDY) fallbacks = mdyFormats;
         else if (isYMD) fallbacks = ymdFormats;
 
-        const fallbackMatch = tryFormats(fallbacks);
-        if (fallbackMatch) return fallbackMatch;
+        if (fallbacks.length > 0) {
+            const fallbackMatch = tryFormats(dateString, fallbacks);
+            if (fallbackMatch) return fallbackMatch;
+        }
 
         console.warn(`Failed to parse date '${dateString}' with format '${dateFormatPre}' and fallbacks.`);
-        // Fallthrough to heuristic? Or strict fail?
-        // If user explicitly said "DMY", we probably shouldn't try "MDY" heuristic as it's dangerous (1/2 vs 2/1).
-        // But we might want to try "YYYY-MM-DD" as it's unambiguous usually?
-        // Let's return null to indicate failure for the chosen strict preference.
         return null;
     }
 
@@ -71,12 +80,7 @@ export function parseRobustDate(dateString: string, dateFormatPre?: string): str
     }
 
     // Try common ones
-    return tryFormats([
-        'yyyy-MM-dd', 'yyyy/MM/dd',
-        'd/M/yyyy', 'M/d/yyyy', // Ambiguous ones are risk, usually prefer local or consistent.
-        // If auto, we really rely on date-fns/js parsing or list.
-        'd-M-yyyy', 'd.M.yyyy'
-    ]);
+    return tryFormats(dateString, autoFormats);
 }
 
 export function parseRobustAmount(amountString: string, decimalSeparator?: '.' | ','): number {
