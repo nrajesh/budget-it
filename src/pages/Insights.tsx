@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Edit, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { Lightbulb, TrendingUp, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Edit, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { AddEditBudgetDialog } from "@/components/budgets/AddEditBudgetDialog";

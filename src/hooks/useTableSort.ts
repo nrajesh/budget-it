@@ -57,13 +57,13 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
         });
     };
 
-    const handleHeaderRightClick = (e: React.MouseEvent, key: keyof T | string) => {
+    const handleHeaderRightClick = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent default context menu
         setSortConfig(null);
     };
 
     // Long press for touch devices
-    const handleHeaderLongPress = (key: keyof T | string) => {
+    const handleHeaderLongPress = () => {
         setSortConfig(null);
     };
 

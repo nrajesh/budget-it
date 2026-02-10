@@ -354,13 +354,13 @@ const TransactionTable = ({
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
-              <SortableHeader label="Date" sortKey="date" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} />
-              <SortableHeader label="Category" sortKey="category" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
-              <SortableHeader label="Sub-category" sortKey="sub_category" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
-              <SortableHeader label="Payee" sortKey="vendor" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
-              <SortableHeader label="Account" sortKey="account" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
-              <SortableHeader label="Notes" sortKey="remarks" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
-              <SortableHeader label="Amount" sortKey="amount" sortConfig={sortConfig} onSort={handleHeaderClick} onReset={handleHeaderRightClick} className="text-right text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Date" sortKey="date" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} />
+              <SortableHeader label="Category" sortKey="category" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Sub-category" sortKey="sub_category" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Payee" sortKey="vendor" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Account" sortKey="account" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Notes" sortKey="remarks" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-slate-800 dark:text-slate-200 font-semibold" />
+              <SortableHeader label="Amount" sortKey="amount" sortConfig={sortConfig} onSort={handleHeaderClick} onSortReset={handleHeaderRightClick} className="text-right text-slate-800 dark:text-slate-200 font-semibold" />
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { TableHead } from "@/components/ui/table";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ interface SortableHeaderProps<T> extends React.ComponentProps<typeof TableHead> 
     sortKey: string | keyof T;
     sortConfig: SortConfig<T> | null;
     onSort: (key: string | keyof T) => void;
-    onReset: (e: React.MouseEvent, key: string | keyof T) => void;
+    onSortReset: (e: React.MouseEvent, key: string | keyof T) => void;
     className?: string;
     children?: React.ReactNode;
 }
@@ -20,7 +20,7 @@ export function SortableHeader<T>({
     sortKey,
     sortConfig,
     onSort,
-    onReset,
+    onSortReset,
     className,
     children,
     ...props
@@ -32,7 +32,7 @@ export function SortableHeader<T>({
     const handleMouseDown = () => {
         longPressTimer.current = setTimeout(() => {
             // Mock event for reset
-            onReset({ preventDefault: () => { } } as React.MouseEvent, sortKey);
+            onSortReset({ preventDefault: () => { } } as React.MouseEvent, sortKey);
         }, 500); // 500ms for long press
     };
 
@@ -58,7 +58,7 @@ export function SortableHeader<T>({
                 className
             )}
             onClick={() => onSort(sortKey)}
-            onContextMenu={(e) => onReset(e, sortKey)}
+            onContextMenu={(e) => onSortReset(e, sortKey)}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
