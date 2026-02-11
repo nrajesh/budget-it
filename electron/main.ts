@@ -50,6 +50,12 @@ app.whenReady().then(() => {
 
     ipcMain.handle('write-backup-file', async (_event, folder: string, filename: string, content: string) => {
         try {
+            // SECURITY: Prevent path traversal
+            if (path.basename(filename) !== filename || filename === '..' || filename === '.') {
+                console.error("Security alert: Attempted path traversal in filename", filename);
+                throw new Error("Invalid filename: Path traversal detected");
+            }
+
             // Ensure directory exists
             if (!fs.existsSync(folder)) {
                 fs.mkdirSync(folder, { recursive: true });
