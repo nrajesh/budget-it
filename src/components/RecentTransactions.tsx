@@ -77,11 +77,6 @@ export function RecentTransactions({
     navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
-  /*
-   * Calculate running balances per account in their native currency.
-   * We iterate through ALL transactions chronologically to build the correct historical state.
-   */
-
   // Optimization: Memoize the set of existing IDs to avoid re-creation on every render
   const seenIds = React.useMemo(() => {
     return new Set(allTransactions.map((t) => t.id));
@@ -94,8 +89,13 @@ export function RecentTransactions({
     return extras.length > 0 ? extras : EMPTY_EXTRAS;
   }, [transactions, seenIds]);
 
-  // Optimization: Calculate balances ONLY when the underlying data (global state + extras) changes.
-  // This is the expensive part (O(N)), now decoupled from simple view filtering (O(M)).
+  /*
+   * Calculate running balances per account in their native currency.
+   * We iterate through ALL transactions chronologically to build the correct historical state.
+   *
+   * Optimization: Calculate balances ONLY when the underlying data (global state + extras) changes.
+   * This is the expensive part (O(N)), now decoupled from simple view filtering (O(M)).
+   */
   const balanceMap = React.useMemo(() => {
     // 2. Sort ALL transactions Descending (Master Display Order)
     // We merge global transactions with the passed 'transactions' prop.
