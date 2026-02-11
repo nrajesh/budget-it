@@ -10,6 +10,11 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, endOfDay, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -148,16 +153,37 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
-        <Button variant="outline" size="icon" onClick={() => onEdit(budget)}>
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={() => onDelete(budget.id)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onEdit(budget)}
+              aria-label="Edit budget"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Edit Budget</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => onDelete(budget.id)}
+              aria-label="Delete budget"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Delete Budget</p>
+          </TooltipContent>
+        </Tooltip>
       </CardFooter>
     </Card>
   );
