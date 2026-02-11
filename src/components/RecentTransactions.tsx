@@ -29,6 +29,20 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { slugify, formatDateToDDMMYYYY, cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
+// Define sort function outside component to ensure stability
+const sortDesc = (a: Transaction, b: Transaction) => {
+  const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+  if (dateDiff !== 0) return dateDiff;
+
+  const createdDiff =
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  if (createdDiff !== 0) return createdDiff;
+
+  return b.id.localeCompare(a.id);
+};
+
+const EMPTY_EXTRAS: Transaction[] = [];
+
 interface RecentTransactionsProps {
   transactions: Transaction[]; // These are transactions filtered by account
   selectedCategories: string[];
@@ -63,45 +77,42 @@ export function RecentTransactions({
     navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
+  // Optimization: Memoize the set of existing IDs to avoid re-creation on every render
+  const seenIds = React.useMemo(() => {
+    return new Set(allTransactions.map((t) => t.id));
+  }, [allTransactions]);
+
+  // Optimization: Only identify "extra" transactions (e.g. projected) when the input changes.
+  // We return a STABLE empty array if no extras are found, to prevent the expensive balance calculation from running.
+  const uniqueExtras = React.useMemo(() => {
+    const extras = transactions.filter((t) => !seenIds.has(t.id));
+    return extras.length > 0 ? extras : EMPTY_EXTRAS;
+  }, [transactions, seenIds]);
+
   /*
    * Calculate running balances per account in their native currency.
    * We iterate through ALL transactions chronologically to build the correct historical state.
+   *
+   * Optimization: Calculate balances ONLY when the underlying data (global state + extras) changes.
+   * This is the expensive part (O(N)), now decoupled from simple view filtering (O(M)).
    */
-  const transactionsWithCorrectBalance = React.useMemo(() => {
-    // 1. Define the Master Sort Comparator (Descending / Newest First)
-    // This is the SINGLE source of truth for display order
-    const sortDesc = (a: Transaction, b: Transaction) => {
-      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dateDiff !== 0) return dateDiff;
-
-      const createdDiff =
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (createdDiff !== 0) return createdDiff;
-
-      return b.id.localeCompare(a.id);
-    };
-
+  const balanceMap = React.useMemo(() => {
     // 2. Sort ALL transactions Descending (Master Display Order)
     // We merge global transactions with the passed 'transactions' prop.
-    const combinedTransactions = (() => {
-      const seenIds = new Set(allTransactions.map((t) => t.id));
-      const uniqueExtras = transactions.filter((t) => !seenIds.has(t.id));
-      return [...allTransactions, ...uniqueExtras];
-    })();
+    const combinedTransactions = [...allTransactions, ...uniqueExtras];
 
-    const allSortedDesc = [...combinedTransactions].sort(sortDesc);
+    const allSortedDesc = combinedTransactions.sort(sortDesc);
 
     // 3. Calculate balances by processing Oldest -> Newest (Reverse of Master Display)
     // This ensures calculation perfectly opposes the display order
     const allSortedAsc = [...allSortedDesc].reverse();
 
-    const balanceMap = new Map<string, number>();
+    const map = new Map<string, number>();
     const accountRunningBalances = new Map<string, number>();
 
     // Initialize with starting balances
     accounts.forEach((acc) => {
       if (acc.name) {
-        // console.log(`[BalanceCalc] Initializing ${acc.name} with ${acc.starting_balance}`);
         accountRunningBalances.set(
           acc.name.trim().toLowerCase(),
           acc.starting_balance || 0,
@@ -117,27 +128,21 @@ export function RecentTransactions({
       const newBalance = currentBalance + t.amount;
 
       accountRunningBalances.set(normalizedAccountName, newBalance);
-      balanceMap.set(t.id, newBalance);
+      map.set(t.id, newBalance);
     });
 
-    // Debug: Log top 3 transactions and their balances
-    // console.log("[BalanceCalc] Top 3 Sorted Transactions:", allSortedDesc.slice(0, 3).map(t => ({
-    //   id: t.id,
-    //   date: t.date,
-    //   created_at: t.created_at,
-    //   amount: t.amount,
-    //   bal: balanceMap.get(t.id)
-    // })));
+    return map;
+  }, [allTransactions, uniqueExtras, accounts]);
 
-    // 4. Attach balances to the VIEW transactions and ensure they are sorted by Master Sort
-    // This guarantees visual consistency with the calculation
+  // Cheap: Attach balances to the view
+  const transactionsWithCorrectBalance = React.useMemo(() => {
     return transactions
       .map((t) => ({
         ...t,
         runningBalance: balanceMap.get(t.id) ?? 0,
       }))
       .sort(sortDesc);
-  }, [allTransactions, transactions, accounts]);
+  }, [transactions, balanceMap]);
 
   // Filter transactions for display based on selected categories
   const displayTransactions = React.useMemo(() => {
