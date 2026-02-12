@@ -33,8 +33,8 @@ export const saveFile = async (
       return true;
     }
     throw new Error("File System Access API not supported");
-  } catch (err: any) {
-    if (err.name === "AbortError") {
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") {
       throw new Error("Save cancelled by user");
     }
 
@@ -96,8 +96,9 @@ export const processImport = async (
       await dataProvider.importData(parsed);
       return { type: "success" };
     }
-  } catch (e: any) {
-    return { type: "error", message: e.message || "Invalid file format" };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Invalid file format";
+    return { type: "error", message };
   }
 };
 
@@ -114,7 +115,8 @@ export const processEncryptedImport = async (
     const data = JSON.parse(decryptedParams);
     await dataProvider.importData(data);
     return { type: "success" };
-  } catch (e: any) {
-    return { type: "error", message: e.message || "Decryption failed" };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Decryption failed";
+    return { type: "error", message };
   }
 };

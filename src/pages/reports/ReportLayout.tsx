@@ -17,15 +17,18 @@ import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { saveFile } from "@/utils/backupUtils";
 
+import { Transaction } from "@/types/dataProvider";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
+
 interface ReportLayoutProps {
   title: string;
   description: React.ReactNode;
   children: (props: {
-    historicalFilteredTransactions: any[];
-    combinedFilteredTransactions: any[];
-    futureFilteredTransactions: any[];
-    allTransactions: any[];
-    accounts: any[];
+    historicalFilteredTransactions: Transaction[];
+    combinedFilteredTransactions: Transaction[];
+    futureFilteredTransactions: Transaction[];
+    allTransactions: Transaction[];
+    accounts: Payee[];
     budgets: Budget[];
   }) => React.ReactNode;
 }
@@ -45,7 +48,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
 
   const availableAccountOptions = React.useMemo(
     () =>
-      accounts.map((acc: any) => ({
+      accounts.map((acc) => ({
         value: slugify(acc.name),
         label: acc.name,
       })),
@@ -53,19 +56,19 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
   );
 
   const availableVendorOptions = React.useMemo(
-    () => vendors.map((v: any) => ({ value: slugify(v.name), label: v.name })),
+    () => vendors.map((v) => ({ value: slugify(v.name), label: v.name })),
     [vendors],
   );
 
   const availableCategoryOptions = React.useMemo(
     () =>
-      categories.map((c: any) => ({ value: slugify(c.name), label: c.name })),
+      categories.map((c) => ({ value: slugify(c.name), label: c.name })),
     [categories],
   );
 
   const accountNameMap = React.useMemo(() => {
     const map = new Map<string, string>();
-    accounts.forEach((acc: any) => {
+    accounts.forEach((acc) => {
       map.set(slugify(acc.name), acc.name);
     });
     return map;
@@ -75,7 +78,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
 
   const effectiveAccounts = React.useMemo(() => {
     if (filterProps.selectedAccounts.length === 0) return accounts;
-    return accounts.filter((a: any) =>
+    return accounts.filter((a) =>
       filterProps.selectedAccounts.includes(slugify(a.name)),
     );
   }, [accounts, filterProps.selectedAccounts]);
@@ -284,16 +287,16 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
                 }
               },
             });
-            yPos = (doc as any).lastAutoTable.finalY + 10;
+            yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
           }
         }
       }
 
       doc.save(`${title.replace(/\s+/g, "_")}_Report.pdf`);
       showSuccess("PDF export completed successfully.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("PDF Export failed:", error);
-      showError(`PDF Export failed: ${error.message}`);
+      showError(`PDF Export failed: ${(error as Error).message}`);
     }
   };
 

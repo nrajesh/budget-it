@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, DashboardStyle } from "@/contexts/ThemeContext";
 import { showSuccess } from "@/utils/toast";
 
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
@@ -64,8 +64,10 @@ const SettingsPage = () => {
     }
   };
 
+  // ...
+
   const handleDashboardStyleChange = (value: string) => {
-    setDashboardStyle(value as any);
+    setDashboardStyle(value as DashboardStyle);
     showSuccess(`Dashboard style set to ${value}.`);
   };
 

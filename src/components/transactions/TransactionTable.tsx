@@ -39,18 +39,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Transaction } from "@/types/dataProvider";
 
 interface TransactionTableProps {
-  transactions: any[];
+  transactions: Transaction[];
   loading: boolean;
   onRefresh: () => void;
   onDeleteTransactions: (
     transactions: { id: string; transfer_id?: string }[],
   ) => void;
-  onAddTransaction: (transaction: any) => void;
-  onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
+  onAddTransaction: (transaction: Omit<Transaction, "id" | "created_at">) => void;
+  onRowDoubleClick?: (
+    transaction: Transaction,
+    event: React.MouseEvent,
+  ) => void;
   onScheduleTransactions?: (
-    transactions: any[],
+    transactions: Transaction[],
     clearSelection: () => void,
   ) => void;
   onUnlinkTransaction?: (transferId: string) => void;
@@ -75,14 +79,17 @@ const TransactionRow = React.memo(
     navigate,
     toast,
   }: {
-    transaction: any;
+    transaction: Transaction;
     isSelected: boolean;
     onToggleSelect: (id: string) => void;
-    onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
+    onRowDoubleClick?: (
+      transaction: Transaction,
+      event: React.MouseEvent,
+    ) => void;
     onUnlinkTransaction?: (transferId: string) => void;
-    onAddTransaction: (transaction: any) => void;
+    onAddTransaction: (transaction: Omit<Transaction, "id" | "created_at">) => void;
     onScheduleTransactions?: (
-      transactions: any[],
+      transactions: Transaction[],
       clearSelection: () => void,
     ) => void;
     onDeleteTransactions: (
@@ -91,8 +98,8 @@ const TransactionRow = React.memo(
     accountCurrencyMap?: Map<string, string>;
     selectedCurrency: string;
     today: Date;
-    navigate: any;
-    toast: any;
+    navigate: any; // useNavigate return type is hard to import? It's `NavigateFunction`.
+    toast: any; // `useToast` return type.
   }) => {
     const isFuture = useMemo(() => {
       const txnDate = new Date(transaction.date);
@@ -100,11 +107,11 @@ const TransactionRow = React.memo(
       return txnDate > today;
     }, [transaction.date, today]);
 
-    const renderCell = (field: string, value: any) => {
+    const renderCell = (field: string, value: unknown) => {
       return (
         <span className="cursor-pointer">
           {field === "amount"
-            ? value.toLocaleString(undefined, {
+            ? (value as number).toLocaleString(undefined, {
               style: "currency",
               currency:
                 accountCurrencyMap?.get(transaction.account) ||
@@ -112,8 +119,8 @@ const TransactionRow = React.memo(
                 selectedCurrency,
             })
             : field === "date"
-              ? new Date(value).toLocaleDateString()
-              : value || "-"}
+              ? new Date(value as string).toLocaleDateString()
+              : (value as React.ReactNode) || "-"}
         </span>
       );
     };
@@ -145,7 +152,7 @@ const TransactionRow = React.memo(
                     title="Unlink Transfer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onUnlinkTransaction)
+                      if (onUnlinkTransaction && transaction.transfer_id)
                         onUnlinkTransaction(transaction.transfer_id);
                     }}
                   >
@@ -194,7 +201,7 @@ const TransactionRow = React.memo(
             </TableCell>
             <TableCell
               className="max-w-[200px] truncate text-slate-600 dark:text-slate-400"
-              title={transaction.remarks}
+              title={transaction.remarks || ""}
             >
               {renderCell("remarks", transaction.remarks)}
             </TableCell>
@@ -235,19 +242,19 @@ const TransactionRow = React.memo(
           </ContextMenuItem>
           <ContextMenuItem
             inset
-            onClick={() =>
+            onClick={() => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { id, created_at, ...rest } = transaction;
               onAddTransaction({
-                ...transaction,
-                id: undefined,
-                created_at: undefined,
+                ...rest,
                 remarks: transaction.remarks + " (Copy)",
                 recurrence_id: undefined,
                 is_scheduled_origin: undefined,
                 is_projected: undefined,
-                frequency: undefined,
+                recurrence_frequency: undefined,
                 recurrence_end_date: undefined,
-              })
-            }
+              });
+            }}
           >
             <Copy className="h-4 w-4 mr-2" /> Duplicate
           </ContextMenuItem>
@@ -366,7 +373,7 @@ const TransactionTable = ({
   const handleBulkDelete = () => {
     const toDelete = sortedData
       .filter((t) => selectedIds.has(t.id))
-      .map((t) => ({ id: t.id, transfer_id: t.transfer_id }));
+      .map((t) => ({ id: t.id, transfer_id: t.transfer_id || undefined }));
 
     onDeleteTransactions(toDelete);
     setSelectedIds(new Set());
@@ -375,17 +382,15 @@ const TransactionTable = ({
   const handleBulkDuplicate = () => {
     const toDuplicate = sortedData.filter((t) => selectedIds.has(t.id));
     toDuplicate.forEach((t) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, created_at, ...rest } = t;
       onAddTransaction({
-        ...t,
-        id: undefined,
-        created_at: undefined,
+        ...rest,
         date: new Date().toISOString(),
         remarks: `${t.remarks} (Copy)`,
         recurrence_id: undefined,
         is_scheduled_origin: undefined,
         is_projected: undefined,
-        frequency: undefined,
-        recurrence_end_date: undefined,
       });
     });
     setSelectedIds(new Set());

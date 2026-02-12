@@ -62,8 +62,20 @@ const DEMO_BUDGETS: {
     { amount: 10000, frequency: "Monthly", budget_scope: "account", budget_scope_name: "__ACCOUNT_1__", is_goal: true, goal_context: "__ACCOUNT_1__" },
   ];
 
+interface DemoScheduledTransaction {
+  accountType: string;
+  vendor: string;
+  category: string;
+  sub_category?: string;
+  amount: number;
+  frequency: string;
+  remarks: string;
+  isTransfer?: boolean;
+  next_date_offset?: number;
+}
+
 // Template for scheduled transactions for HOME budget
-const HOME_SCHEDULED_TRANSACTIONS = [
+const HOME_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking",
     vendor: "Landlord",
@@ -131,7 +143,7 @@ const HOME_SCHEDULED_TRANSACTIONS = [
 ];
 
 // Template for CHILD budget
-const CHILD_SCHEDULED_TRANSACTIONS = [
+const CHILD_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking", // Allowance account
     vendor: "Spotify",
@@ -189,7 +201,7 @@ const CHILD_SCHEDULED_TRANSACTIONS = [
 ];
 
 // Template for OFFSHORE budget
-const OFFSHORE_SCHEDULED_TRANSACTIONS = [
+const OFFSHORE_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking", // Foreign Checking
     vendor: "Property Management",
@@ -382,7 +394,7 @@ export const generateDiverseDemoData = async (
   let currentLedgerIndex = 0;
 
   for (const ledgerItem of createdLedgers) {
-    const ledger = ledgerItem as Ledger & { config: any };
+    const ledger = ledgerItem as Ledger & { config: typeof ledgersToCreate[0] };
     const lId = ledger.id;
     const config = ledger.config;
 
@@ -566,7 +578,7 @@ export const generateDiverseDemoData = async (
     const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(
       (c) => c !== "Transfer",
     );
-    const transactionsBatch: Partial<Transaction>[] = []; // Explicit type to prevent 'never' inference
+    const transactionsBatch: Omit<Transaction, "id" | "created_at">[] = [];
     const vendorsToEnsure = new Set<string>();
 
     // Generate phase (in-memory)
@@ -691,16 +703,8 @@ export const generateDiverseDemoData = async (
 
     // DataProvider might not have addMultipleTransactions interface fully typed in all contexts,
     // but LocalDataProvider has it. Cast if necessary or assume DataProvider interface has it.
-    if ("addMultipleTransactions" in dataProvider) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (dataProvider as any).addMultipleTransactions(transactionsBatch);
-    } else {
-      // Fallback (Should not happen with LocalDataProvider)
-      for (const tx of transactionsBatch) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (dataProvider as any).addTransaction(tx);
-      }
-    }
+    // DataProvider interface guarantees addMultipleTransactions
+    await dataProvider.addMultipleTransactions(transactionsBatch);
 
     currentLedgerIndex++;
   }

@@ -48,8 +48,8 @@ export const useCategoryManagement = () => {
       showSuccess("Category added successfully!");
       await refetchCategories();
     },
-    onError: (error: any) =>
-      showError(`Failed to add category: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to add category: ${(error as Error).message}`),
   });
 
   const batchUpsertCategoriesMutation = useMutation({
@@ -67,7 +67,8 @@ export const useCategoryManagement = () => {
       if (managementProps.fileInputRef.current)
         managementProps.fileInputRef.current.value = "";
     },
-    onError: (error: any) => showError(`Import failed: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Import failed: ${(error as Error).message}`),
     onSettled: () => managementProps.setIsImporting(false),
   });
 
@@ -90,8 +91,8 @@ export const useCategoryManagement = () => {
       showSuccess("Sub-category added successfully!");
       await invalidateAllData();
     },
-    onError: (error: any) =>
-      showError(`Failed to add sub-category: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to add sub-category: ${(error as Error).message}`),
   });
 
   const renameSubCategoryMutation = useMutation({
@@ -121,8 +122,8 @@ export const useCategoryManagement = () => {
       showSuccess("Sub-category renamed successfully!");
       await invalidateAllData();
     },
-    onError: (error: any) =>
-      showError(`Failed to rename sub-category: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to rename sub-category: ${(error as Error).message}`),
   });
 
   const deleteSubCategoryMutation = useMutation({
@@ -150,8 +151,8 @@ export const useCategoryManagement = () => {
       showSuccess("Sub-category deleted successfully!");
       await invalidateAllData();
     },
-    onError: (error: any) =>
-      showError(`Failed to delete sub-category: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to delete sub-category: ${(error as Error).message}`),
   });
 
   const handleAddClick = () => {
@@ -180,7 +181,8 @@ export const useCategoryManagement = () => {
         const categoryNames = new Set<string>();
         const subCategoryMap = new Map<string, string[]>(); // Category -> SubCategories[]
 
-        results.data.forEach((row: any) => {
+        const parsedData = results.data as Record<string, string | undefined>[];
+        parsedData.forEach((row) => {
           const catName = row["Category Name"]?.trim();
           if (catName) {
             categoryNames.add(catName);
@@ -241,14 +243,14 @@ export const useCategoryManagement = () => {
             showSuccess(`Imported ${subCatCount} sub-categories.`);
             await invalidateAllData(); // Refresh everything
           }
-        } catch (e: any) {
-          showError(`Partial import error: ${e.message}`);
+        } catch (e: unknown) {
+          showError(`Partial import error: ${(e as Error).message}`);
         } finally {
           managementProps.setIsImporting(false);
         }
       },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
+      error: (error: unknown) => {
+        showError(`CSV parsing error: ${(error as Error).message}`);
         managementProps.setIsImporting(false);
       },
     });

@@ -37,6 +37,21 @@ import {
   format,
 } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { Account } from "@/types/dataProvider";
+
+interface TrendItem {
+  entity: string;
+  type: "Vendor" | "Account";
+  metric: "Frequency" | "Spending";
+  currentValue: number;
+  prevValue: number;
+  diff: number;
+  absDiff: number;
+  percentVal: number;
+  direction: "increasing" | "decreasing";
+  message: string;
+  currency?: string;
+}
 
 export default function Insights() {
   const { transactions, accounts, vendors } = useTransactions();
@@ -77,14 +92,23 @@ export default function Insights() {
 
   // Budget Insights Logic
   const insights = useMemo(() => {
-    if (!budgets.length) return [];
+    // Adapt Payees to Accounts
+    const adaptedAccounts = accounts.map((a) => ({
+      ...a,
+      currency: a.currency || "USD",
+      type: (a.type || "Other") as any, // Cast to avoid complex union matching if strict
+      starting_balance: a.starting_balance || 0,
+      user_id: "",
+      remarks: a.remarks || "",
+      created_at: a.created_at || new Date().toISOString(),
+    })) as unknown as Account[];
 
     return budgets
       .map((budget) => {
         const spent = calculateBudgetSpent(
           budget,
           transactions,
-          accounts as any,
+          adaptedAccounts,
           vendors,
           convertBetweenCurrencies,
           budget.currency,
@@ -185,7 +209,10 @@ export default function Insights() {
         }),
     );
 
-    const analyzeEntity = (entityName: string, type: "Vendor" | "Account") => {
+    const analyzeEntity = (
+      entityName: string,
+      type: "Vendor" | "Account",
+    ): TrendItem | null => {
       const currentTxs = currentMonthTxs.filter(
         (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
       );
@@ -290,7 +317,7 @@ export default function Insights() {
     // 1. Abs(% Change) DESC
     // 2. Abs(Value Change) DESC
     // 3. Alphabetical ASC
-    const sortFn = (a: any, b: any) => {
+    const sortFn = (a: TrendItem, b: TrendItem) => {
       const pA = Math.abs(a.percentVal);
       const pB = Math.abs(b.percentVal);
 
@@ -321,7 +348,7 @@ export default function Insights() {
     };
   }, [transactions, accounts, vendors, formatCurrency]);
 
-  const handleTrendClick = (trend: any) => {
+  const handleTrendClick = (trend: TrendItem) => {
     const now = new Date();
     const range = {
       from: startOfMonth(now),
@@ -350,7 +377,7 @@ export default function Insights() {
     );
   }
 
-  const renderTrendItem = (trend: any) => (
+  const renderTrendItem = (trend: TrendItem) => (
     <div
       key={trend.entity}
       onClick={() => handleTrendClick(trend)}

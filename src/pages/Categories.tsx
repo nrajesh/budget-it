@@ -67,8 +67,8 @@ const CategoriesPage = () => {
       await invalidateAllData();
       setEditingCategoryId(null);
     },
-    onError: (error: any) =>
-      showError(`Failed to update category name: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to update category name: ${(error as Error).message}`),
   });
 
   const startEditing = (category: { id: string; name: string }) => {
@@ -222,7 +222,7 @@ const CategoriesPage = () => {
         selectedEntity={managementProps.selectedEntity}
         refetch={managementProps.refetchCategories}
         DeduplicationDialogComponent={CategoryDeduplicationDialog}
-        CleanupDialogComponent={(props: any) => (
+        CleanupDialogComponent={(props) => (
           <CleanupEntitiesDialog {...props} entityType="category" />
         )}
         customFilter={customFilter}

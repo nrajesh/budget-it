@@ -1,4 +1,4 @@
-import { ScheduledTransaction } from "@/types/dataProvider";
+import { ScheduledTransaction, Transaction } from "@/types/dataProvider";
 import {
   addDays,
   addWeeks,
@@ -33,9 +33,9 @@ export function projectScheduledTransactions(
   scheduledTransactions: ScheduledTransaction[],
   startDate: Date,
   endDate: Date,
-): any[] {
-  // We return any[] that matches Transaction shape but with extra flags if needed
-  const projected: any[] = [];
+): Transaction[] {
+  // We return Transaction[] that matches Transaction shape but with extra flags if needed
+  const projected: Transaction[] = [];
   const windowStart = startOfDay(startDate);
   const windowEnd = endOfDay(endDate);
 
@@ -107,6 +107,7 @@ export function projectScheduledTransactions(
           is_projected: true, // Flag for UI/Logic to distinguish
           recurrence_id: st.id,
           transfer_id: st.transfer_id,
+          created_at: currentDate.toISOString(),
         });
       }
 

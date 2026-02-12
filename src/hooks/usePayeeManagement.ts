@@ -59,13 +59,14 @@ export const usePayeeManagement = (isAccount: boolean) => {
           return;
         }
 
-        const dataToUpsert = results.data
-          .map((row: any) =>
+        const parsedData = results.data as Record<string, string | undefined>[];
+        const dataToUpsert = parsedData
+          .map((row) =>
             isAccount
               ? {
                 name: row["Account Name"],
                 currency: row["Currency"],
-                starting_balance: parseFloat(row["Starting Balance"]) || 0,
+                starting_balance: parseFloat(row["Starting Balance"] || "0") || 0,
                 remarks: row["Remarks"],
               }
               : { name: row["Vendor Name"] },
@@ -81,8 +82,8 @@ export const usePayeeManagement = (isAccount: boolean) => {
         }
         managementProps.batchUpsertMutation.mutate(dataToUpsert);
       },
-      error: (error: any) => {
-        showError(`CSV parsing error: ${error.message}`);
+      error: (error: unknown) => {
+        showError(`CSV parsing error: ${(error as Error).message}`);
         setIsImporting(false);
       },
     });

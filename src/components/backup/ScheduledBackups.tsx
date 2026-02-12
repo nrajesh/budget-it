@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { parseFrequency, formatFrequency } from "@/utils/frequencyParser";
 import { showSuccess, showError } from "@/utils/toast";
-import { db, BackupConfig } from "@/lib/dexieDB"; // Direct DB access for now, or via Context? Direct is fine for this specific feature.
+import { db } from "@/lib/dexieDB";
+import { BackupConfig } from "@/types/dataProvider";
 
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";

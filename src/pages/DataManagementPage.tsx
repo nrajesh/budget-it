@@ -60,9 +60,10 @@ const DataManagementPage = () => {
       } else {
         showSuccess("Export file download started.");
       }
-    } catch (e: any) {
-      if (e.message !== "Save cancelled by user") {
-        showError(`Export failed: ${e.message}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      if (error.message !== "Save cancelled by user") {
+        showError(`Export failed: ${error.message}`);
       }
     }
   };
@@ -83,9 +84,10 @@ const DataManagementPage = () => {
       if (success) {
         showSuccess("Encrypted file saved successfully!");
       }
-    } catch (e: any) {
-      if (e.message !== "Save cancelled by user") {
-        showError(`Encryption failed: ${e.message}`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      if (error.message !== "Save cancelled by user") {
+        showError(`Encryption failed: ${error.message}`);
       }
     }
   };
@@ -155,8 +157,8 @@ const DataManagementPage = () => {
       showSuccess("All application data has been reset.");
 
       navigate("/ledgers");
-    } catch (error: any) {
-      showError(`Failed to reset data: ${error.message}`);
+    } catch (error: unknown) {
+      showError(`Reset failed: ${(error as Error).message}`);
     } finally {
       setIsResetConfirmOpen(false);
     }

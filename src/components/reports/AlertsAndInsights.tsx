@@ -176,7 +176,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
 
       // Calculate spent in selected currency
       const spentInSelectedCurrency = calculateBudgetSpent(
-        budget as any, // Cast to any to avoid type mismatch with DataProvider Budget vs finance-data Budget
+        budget as unknown as import("@/types/dataProvider").Budget, // Cast to avoid type mismatch
         historicalTransactions,
         accounts as unknown as import("@/types/dataProvider").Account[],
         vendors as unknown as import("@/types/dataProvider").Vendor[],
@@ -188,10 +188,11 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
         targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
 
       if (percentage >= 90) {
-        const scope = (budget as any).budget_scope || "category";
-        const displayName = scope !== "category" && (budget as any).budget_scope_name
-          ? (budget as any).budget_scope_name
-          : budget.category_name!;
+        const scope = budget.budget_scope || "category";
+        const displayName =
+          scope !== "category" && budget.budget_scope_name
+            ? budget.budget_scope_name
+            : budget.category_name!;
         alerts.push({
           displayName,
           percentage: Math.round(percentage),

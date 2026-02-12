@@ -81,8 +81,8 @@ export function calculateBudgetSpent(
   }
 
   // 2. Filter Transactions
-  const budgetScopeType = (budget as any).budget_scope || "category";
-  const budgetScopeName = ((budget as any).budget_scope_name || "").trim().toLowerCase();
+  const budgetScopeType = budget.budget_scope || "category";
+  const budgetScopeName = (budget.budget_scope_name || "").trim().toLowerCase();
 
   const relevantTransactions = transactions.filter((t) => {
     // Date Check logic

@@ -46,8 +46,8 @@ export function calculateGoalProgress(
     // For now, let's assume raw amounts if no converter is passed.
     // Ideally useGoalProgress should accept a converter, but let's stick to matching logic first.
 
-    const budgetScopeType = (budget as any).budget_scope || "category";
-    const budgetScopeName = ((budget as any).budget_scope_name || "").trim().toLowerCase();
+    const budgetScopeType = budget.budget_scope || "category";
+    const budgetScopeName = (budget.budget_scope_name || "").trim().toLowerCase();
 
     // Account Scope Setup
     let allowedAccountTypes: Set<string> | null = null;

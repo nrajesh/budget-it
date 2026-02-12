@@ -9,6 +9,8 @@ import {
   endOfYear,
   subYears,
 } from "date-fns";
+import { Transaction } from "@/types/dataProvider";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 
 export interface SearchFilters {
   dateRange?: { from: Date; to: Date };
@@ -230,7 +232,10 @@ export const parseSearchQuery = (query: string): SearchFilters => {
   return filters;
 };
 
-export const filterTransactions = (transactions: any[], query: string) => {
+export const filterTransactions = (
+  transactions: Transaction[],
+  query: string,
+) => {
   if (!query || query.trim() === "") return transactions;
 
   const filters = parseSearchQuery(query);
@@ -269,7 +274,7 @@ export const filterTransactions = (transactions: any[], query: string) => {
   });
 };
 
-export const filterAccounts = (accounts: any[], query: string) => {
+export const filterAccounts = (accounts: Payee[], query: string) => {
   if (!query || query.trim() === "") return accounts;
 
   const filters = parseSearchQuery(query);
@@ -285,14 +290,16 @@ export const filterAccounts = (accounts: any[], query: string) => {
 
     if (filters.maxAmount !== undefined) {
       if (filters.maxAmount === 0 && query.toLowerCase().includes("negative")) {
-        if (acc.running_balance >= 0) match = false;
+        if ((acc.running_balance || 0) >= 0) match = false;
       } else {
-        if (Math.abs(acc.running_balance) >= filters.maxAmount) match = false;
+        if (Math.abs(acc.running_balance || 0) >= filters.maxAmount)
+          match = false;
       }
     }
 
     if (filters.minAmount !== undefined) {
-      if (Math.abs(acc.running_balance) <= filters.minAmount) match = false;
+      if (Math.abs(acc.running_balance || 0) <= filters.minAmount)
+        match = false;
     }
 
     // Text Check

@@ -5,6 +5,8 @@ import { DateRange } from "react-day-picker";
 import { filterTransactions } from "@/utils/nlp-search";
 import { projectScheduledTransactions } from "@/utils/forecasting";
 
+import { Transaction } from "@/types/dataProvider";
+
 interface Option {
   value: string;
   label: string;
@@ -77,7 +79,7 @@ export const useTransactionData = ({
     });
 
     return [...transactions, ...validProjected].sort(
-      (a: any, b: any) =>
+      (a: Transaction, b: Transaction) =>
         new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
   }, [transactions, scheduledTransactions]);
