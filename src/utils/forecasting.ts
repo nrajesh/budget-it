@@ -56,9 +56,14 @@ export function projectScheduledTransactions(
     let intervalUnit = "m";
 
     if (
-      ["Daily", "Weekly", "Bi-Weekly", "Monthly", "Quarterly", "Yearly"].includes(
-        st.frequency,
-      )
+      [
+        "Daily",
+        "Weekly",
+        "Bi-Weekly",
+        "Monthly",
+        "Quarterly",
+        "Yearly",
+      ].includes(st.frequency)
     ) {
       switch (st.frequency) {
         case "Daily":

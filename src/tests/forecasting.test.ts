@@ -24,7 +24,7 @@ describe("projectScheduledTransactions", () => {
     const result = projectScheduledTransactions(
       [baseTransaction],
       startDate,
-      endDate
+      endDate,
     );
 
     expect(result).toHaveLength(3);
@@ -41,7 +41,7 @@ describe("projectScheduledTransactions", () => {
     const result = projectScheduledTransactions(
       [transaction],
       startDate,
-      endDate
+      endDate,
     );
 
     // 2024-01-01, 2024-01-15, 2024-01-29
@@ -53,8 +53,8 @@ describe("projectScheduledTransactions", () => {
 
   it("should respect recurrence end date", () => {
     const transaction = {
-        ...baseTransaction,
-        end_date: "2024-02-15T00:00:00.000Z"
+      ...baseTransaction,
+      end_date: "2024-02-15T00:00:00.000Z",
     };
     const startDate = new Date("2024-01-01");
     const endDate = new Date("2024-04-01");
@@ -62,7 +62,7 @@ describe("projectScheduledTransactions", () => {
     const result = projectScheduledTransactions(
       [transaction],
       startDate,
-      endDate
+      endDate,
     );
 
     // 2024-01-01, 2024-02-01. 2024-03-01 is after end_date.
@@ -79,13 +79,13 @@ describe("projectScheduledTransactions", () => {
     const result = projectScheduledTransactions(
       [transaction],
       startDate,
-      endDate
+      endDate,
     );
 
     expect(result).toHaveLength(5);
   });
 
-   it("should handle 'Weekly' frequency", () => {
+  it("should handle 'Weekly' frequency", () => {
     const transaction = { ...baseTransaction, frequency: "Weekly" };
     const startDate = new Date("2024-01-01"); // Monday
     const endDate = new Date("2024-01-15");
@@ -93,7 +93,7 @@ describe("projectScheduledTransactions", () => {
     const result = projectScheduledTransactions(
       [transaction],
       startDate,
-      endDate
+      endDate,
     );
 
     // 01-01, 01-08, 01-15
