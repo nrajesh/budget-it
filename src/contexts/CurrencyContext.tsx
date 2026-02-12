@@ -56,9 +56,9 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const parsedOldCustom = oldCustom ? JSON.parse(oldCustom) : [];
 
     // Map default const to state shape if needed (they match)
-    const defaults = availableCurrencies.map(c => ({
+    const defaults = availableCurrencies.map((c) => ({
       ...c,
-      symbol: currencySymbols[c.code] || c.code
+      symbol: currencySymbols[c.code] || c.code,
     }));
 
     return [...defaults, ...parsedOldCustom];

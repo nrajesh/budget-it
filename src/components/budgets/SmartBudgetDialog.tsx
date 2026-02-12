@@ -193,7 +193,10 @@ export function SmartBudgetDialog({
           );
         }
 
-        const newBudget: Omit<import("@/types/dataProvider").Budget, "id" | "spent_amount"> = {
+        const newBudget: Omit<
+          import("@/types/dataProvider").Budget,
+          "id" | "spent_amount"
+        > = {
           user_id: userId,
           category_id: catId,
           category_name: item.category,
@@ -218,7 +221,8 @@ export function SmartBudgetDialog({
       onClose();
     } catch (error: unknown) {
       console.error(error);
-      const message = error instanceof Error ? error.message : "Something went wrong.";
+      const message =
+        error instanceof Error ? error.message : "Something went wrong.";
       toast({
         title: "Error creating budgets",
         description: message,

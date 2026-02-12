@@ -195,10 +195,10 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
                 formatter={(value: number, name: string) => [
                   formatCurrency(value),
                   name.charAt(0).toUpperCase() +
-                  name
-                    .slice(1)
-                    .replace(/([A-Z])/g, " $1")
-                    .trim(),
+                    name
+                      .slice(1)
+                      .replace(/([A-Z])/g, " $1")
+                      .trim(),
                 ]}
                 contentStyle={{
                   backgroundColor: isFinancialPulse

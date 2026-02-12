@@ -71,7 +71,11 @@ export const StackedCategoryChart = ({
     // 2. Convert to Array and Sort by Total Spend
     const chartData = Array.from(categoryMap.entries()).map(
       ([category, subMap]) => {
-        const entry: { category: string; total: number;[key: string]: string | number } = {
+        const entry: {
+          category: string;
+          total: number;
+          [key: string]: string | number;
+        } = {
           category,
           total: 0,
         };

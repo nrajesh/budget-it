@@ -64,11 +64,12 @@ export const usePayeeManagement = (isAccount: boolean) => {
           .map((row) =>
             isAccount
               ? {
-                name: row["Account Name"],
-                currency: row["Currency"],
-                starting_balance: parseFloat(row["Starting Balance"] || "0") || 0,
-                remarks: row["Remarks"],
-              }
+                  name: row["Account Name"],
+                  currency: row["Currency"],
+                  starting_balance:
+                    parseFloat(row["Starting Balance"] || "0") || 0,
+                  remarks: row["Remarks"],
+                }
               : { name: row["Vendor Name"] },
           )
           .filter((item) => item.name);

@@ -130,9 +130,8 @@ const Transactions = () => {
   const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<
-    Transaction | null
-  >(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
 
   const [isScheduledDialogOpen, setIsScheduledDialogOpen] = useState(false);
   const [scheduledTransactionToEdit, setScheduledTransactionToEdit] =
@@ -277,11 +276,11 @@ const Transactions = () => {
       const full = filteredTransactions.find((t) => t.id === i.id);
       return full
         ? {
-          ...i,
-          ...full,
-          transfer_id: full.transfer_id || undefined,
-          recurrence_id: full.recurrence_id || undefined,
-        }
+            ...i,
+            ...full,
+            transfer_id: full.transfer_id || undefined,
+            recurrence_id: full.recurrence_id || undefined,
+          }
         : i;
     });
 

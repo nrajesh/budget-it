@@ -11,7 +11,13 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Target,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, endOfDay, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -39,9 +45,10 @@ export function BudgetCard({
 
   // Scope-aware display name
   const budgetScope = budget.budget_scope || "category";
-  const displayName = budgetScope !== "category" && budget.budget_scope_name
-    ? budget.budget_scope_name
-    : budget.category_name;
+  const displayName =
+    budgetScope !== "category" && budget.budget_scope_name
+      ? budget.budget_scope_name
+      : budget.category_name;
 
   const handleTitleClick = () => {
     // 1. Determine Date Range
@@ -124,7 +131,10 @@ export function BudgetCard({
   const percentage = Math.min(100, rawPercentage);
   const remaining = budget.target_amount - budget.spent_amount;
 
-  const formattedStartDate = format(new Date(budget.start_date), "MMM dd, yyyy");
+  const formattedStartDate = format(
+    new Date(budget.start_date),
+    "MMM dd, yyyy",
+  );
   const formattedEndDate = budget.end_date
     ? format(new Date(budget.end_date), "MMM dd, yyyy")
     : "Ongoing";
@@ -142,10 +152,18 @@ export function BudgetCard({
           className="flex items-baseline gap-2 cursor-pointer hover:underline hover:text-primary transition-colors text-slate-900 dark:text-slate-50"
           onClick={handleTitleClick}
         >
-          {budgetScope === "account" && <Wallet className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
-          {budgetScope === "vendor" && <Store className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
-          {budgetScope === "sub_category" && <Layers className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
-          {budgetScope === "category" && !budget.sub_category_name && <Tag className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {budgetScope === "account" && (
+            <Wallet className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          )}
+          {budgetScope === "vendor" && (
+            <Store className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          )}
+          {budgetScope === "sub_category" && (
+            <Layers className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          )}
+          {budgetScope === "category" && !budget.sub_category_name && (
+            <Tag className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
+          )}
           {displayName}
           {budgetScope === "category" && budget.sub_category_name && (
             <span className="text-xl font-normal text-slate-500 dark:text-slate-400">
@@ -233,7 +251,10 @@ function GoalCard({
     monthlyContribution,
   } = goalProgress;
 
-  const formattedStartDate = format(new Date(budget.start_date), "MMM dd, yyyy");
+  const formattedStartDate = format(
+    new Date(budget.start_date),
+    "MMM dd, yyyy",
+  );
   const formattedTargetDate = budget.target_date
     ? format(new Date(budget.target_date), "MMM dd, yyyy")
     : "End of month";
@@ -247,21 +268,24 @@ function GoalCard({
             onClick={onTitleClick}
           >
             <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            {(budget.budget_scope || "category") !== "category" && budget.budget_scope_name
+            {(budget.budget_scope || "category") !== "category" &&
+            budget.budget_scope_name
               ? budget.budget_scope_name
               : budget.category_name}
-            {(budget.budget_scope || "category") === "category" && budget.sub_category_name && (
-              <span className="text-lg font-normal text-emerald-600/70 dark:text-emerald-400/70">
-                {">"} {budget.sub_category_name}
-              </span>
-            )}
+            {(budget.budget_scope || "category") === "category" &&
+              budget.sub_category_name && (
+                <span className="text-lg font-normal text-emerald-600/70 dark:text-emerald-400/70">
+                  {">"} {budget.sub_category_name}
+                </span>
+              )}
           </CardTitle>
           {/* On-track / Off-track badge */}
           <div
-            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${isOnTrack
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-              }`}
+            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
+              isOnTrack
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+            }`}
           >
             {isOnTrack ? (
               <>
@@ -281,9 +305,7 @@ function GoalCard({
           {budget.goal_context && (
             <>
               <br />
-              <span className="text-xs">
-                Context: {budget.goal_context}
-              </span>
+              <span className="text-xs">Context: {budget.goal_context}</span>
             </>
           )}
         </CardDescription>

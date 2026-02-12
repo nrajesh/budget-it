@@ -49,11 +49,7 @@ import {
 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
 import { useLedger } from "@/contexts/LedgerContext";
-import {
-  differenceInCalendarDays,
-  endOfMonth,
-  parseISO,
-} from "date-fns";
+import { differenceInCalendarDays, endOfMonth, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -124,8 +120,6 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
     [categories],
   );
 
-
-
   const formSchema = React.useMemo(
     () =>
       z
@@ -135,9 +129,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           budget_scope_name: z.string().nullable().optional(),
           category_id: z.string().optional(),
           sub_category_id: z.string().nullable().optional(),
-          target_amount: z.coerce
-            .number()
-            .positive("Amount must be positive"),
+          target_amount: z.coerce.number().positive("Amount must be positive"),
           currency: z.string().min(1, "Currency is required"),
           start_date: z.string().min(1, "Start date is required"),
           frequency_value: z.coerce.number().min(1),
@@ -206,7 +198,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
               message: `A budget for this ${data.budget_scope} already exists.`,
-              path: data.budget_scope === "category" ? ["category_id"] : ["budget_scope_name"],
+              path:
+                data.budget_scope === "category"
+                  ? ["category_id"]
+                  : ["budget_scope_name"],
             });
           }
         }),
@@ -273,7 +268,6 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
 
   // Options for goal context dropdown
 
-
   const filteredSubCategories = React.useMemo(() => {
     if (!selectedCategoryId) return [];
     return subCategories.filter(
@@ -308,10 +302,11 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           }
         }
 
-
-
         form.reset({
-          budget_scope: (budget.budget_scope === "sub_category" ? "category" : budget.budget_scope) || "category",
+          budget_scope:
+            (budget.budget_scope === "sub_category"
+              ? "category"
+              : budget.budget_scope) || "category",
           budget_scope_name: budget.budget_scope_name || null,
           category_id: budget.category_id || "",
           sub_category_id: budget.sub_category_id,
@@ -351,7 +346,16 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
         });
       }
     }
-  }, [isOpen, budget, form, selectedCurrency, accounts, categories, subCategories, vendors]);
+  }, [
+    isOpen,
+    budget,
+    form,
+    selectedCurrency,
+    accounts,
+    categories,
+    subCategories,
+    vendors,
+  ]);
 
   const onSubmit = async (values: BudgetFormData) => {
     if (!activeLedger) return;
@@ -393,7 +397,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       user_id: activeLedger.id,
       category_id: categoryId,
       category_name: categoryName,
-      sub_category_id: values.budget_scope === "category" ? (values.sub_category_id || null) : null,
+      sub_category_id:
+        values.budget_scope === "category"
+          ? values.sub_category_id || null
+          : null,
       sub_category_name: values.budget_scope === "category" ? subCatName : null,
       target_amount: values.target_amount,
       currency: values.currency,
@@ -406,8 +413,14 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           : null,
       is_active: values.is_active,
 
-      account_scope: values.account_scope_values && values.account_scope_values.length > 0 ? "GROUP" : "ALL",
-      account_scope_values: values.account_scope_values && values.account_scope_values.length > 0 ? values.account_scope_values : null,
+      account_scope:
+        values.account_scope_values && values.account_scope_values.length > 0
+          ? "GROUP"
+          : "ALL",
+      account_scope_values:
+        values.account_scope_values && values.account_scope_values.length > 0
+          ? values.account_scope_values
+          : null,
       is_goal: values.is_goal,
       target_date: resolvedTargetDate,
       monthly_contribution:
@@ -416,7 +429,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           : null,
 
       budget_scope: values.budget_scope,
-      budget_scope_name: values.budget_scope !== "category" ? values.budget_scope_name || null : null,
+      budget_scope_name:
+        values.budget_scope !== "category"
+          ? values.budget_scope_name || null
+          : null,
     };
 
     try {
@@ -541,7 +557,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
 
             {/* ── Track Transactions Towards ── */}
             <div className={`rounded-lg border p-3 space-y-3 ${sectionBg}`}>
-              <h4 className={`text-xs font-semibold uppercase tracking-wider ${sectionHeaderColor}`}>
+              <h4
+                className={`text-xs font-semibold uppercase tracking-wider ${sectionHeaderColor}`}
+              >
                 Track Transactions Towards
               </h4>
 
@@ -630,7 +648,10 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                         <FormItem>
                           <Combobox
                             options={filteredSubCategories
-                              .map((sub) => ({ value: sub.id, label: sub.name }))
+                              .map((sub) => ({
+                                value: sub.id,
+                                label: sub.name,
+                              }))
                               .sort((a, b) => a.label.localeCompare(b.label))}
                             value={field.value || ""}
                             onChange={(val) => field.onChange(val || null)}
@@ -859,7 +880,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
               )}
 
             {/* Monthly contribution callout for non-category goals */}
-            {isGoal && budgetScope !== "category" &&
+            {isGoal &&
+              budgetScope !== "category" &&
               computedMonthlyContribution !== null &&
               computedMonthlyContribution > 0 && (
                 <div className="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10 p-3">
@@ -899,7 +921,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                             "w-full justify-between",
                             !field.value || field.value.length === 0
                               ? "text-muted-foreground font-normal"
-                              : ""
+                              : "",
                           )}
                         >
                           {field.value && field.value.length > 0 ? (
@@ -912,7 +934,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     const newValue = field.value?.filter(
-                                      (v) => v !== val
+                                      (v) => v !== val,
                                     );
                                     field.onChange(newValue);
                                   }}
@@ -943,7 +965,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                                   let newValue;
                                   if (field.value?.includes(type)) {
                                     newValue = field.value.filter(
-                                      (v) => v !== type
+                                      (v) => v !== type,
                                     );
                                   } else {
                                     newValue = [...(field.value || []), type];
@@ -956,7 +978,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                                     "mr-2 h-4 w-4",
                                     field.value?.includes(type)
                                       ? "opacity-100"
-                                      : "opacity-0"
+                                      : "opacity-0",
                                   )}
                                 />
                                 {type}

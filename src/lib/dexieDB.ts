@@ -26,8 +26,6 @@ export interface Ledger {
   last_accessed: string;
 }
 
-
-
 export class FinanceDatabase extends Dexie {
   transactions!: Table<Transaction>;
   scheduled_transactions!: Table<ScheduledTransaction>;

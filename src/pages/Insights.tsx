@@ -181,172 +181,173 @@ export default function Insights() {
   };
 
   // Trend Analysis Logic
-  const { topAccountTrends, topVendorTrends, currentMonthName, prevMonthName } = useMemo(() => {
-    const now = new Date();
-    const currentMonthStart = startOfMonth(now);
-    const currentMonthEnd = endOfMonth(now);
-    const prevMonthStart = startOfMonth(subMonths(now, 1));
-    const prevMonthEnd = endOfMonth(subMonths(now, 1));
+  const { topAccountTrends, topVendorTrends, currentMonthName, prevMonthName } =
+    useMemo(() => {
+      const now = new Date();
+      const currentMonthStart = startOfMonth(now);
+      const currentMonthEnd = endOfMonth(now);
+      const prevMonthStart = startOfMonth(subMonths(now, 1));
+      const prevMonthEnd = endOfMonth(subMonths(now, 1));
 
-    const currentMonthName = format(now, "MMMM");
-    const prevMonthName = format(subMonths(now, 1), "MMMM");
+      const currentMonthName = format(now, "MMMM");
+      const prevMonthName = format(subMonths(now, 1), "MMMM");
 
-    const currentMonthTxs = transactions.filter(
-      (t) =>
-        !t.is_scheduled_origin &&
-        isWithinInterval(new Date(t.date), {
-          start: currentMonthStart,
-          end: currentMonthEnd,
-        }),
-    );
-
-    const prevMonthTxs = transactions.filter(
-      (t) =>
-        !t.is_scheduled_origin &&
-        isWithinInterval(new Date(t.date), {
-          start: prevMonthStart,
-          end: prevMonthEnd,
-        }),
-    );
-
-    const analyzeEntity = (
-      entityName: string,
-      type: "Vendor" | "Account",
-    ): TrendItem | null => {
-      const currentTxs = currentMonthTxs.filter(
-        (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
+      const currentMonthTxs = transactions.filter(
+        (t) =>
+          !t.is_scheduled_origin &&
+          isWithinInterval(new Date(t.date), {
+            start: currentMonthStart,
+            end: currentMonthEnd,
+          }),
       );
 
-      const prevTxs = prevMonthTxs.filter(
-        (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
+      const prevMonthTxs = transactions.filter(
+        (t) =>
+          !t.is_scheduled_origin &&
+          isWithinInterval(new Date(t.date), {
+            start: prevMonthStart,
+            end: prevMonthEnd,
+          }),
       );
 
-      // Only consider if there is activity in at least one month
-      if (currentTxs.length === 0 && prevTxs.length === 0) return null;
-
-      if (type === "Account") {
-        const currentCount = currentTxs.length;
-        const prevCount = prevTxs.length;
-        const diff = currentCount - prevCount;
-
-        if (Math.abs(diff) < 2) return null; // Ignore tiny variance
-
-        const percentVal =
-          prevCount > 0
-            ? (diff / prevCount) * 100
-            : currentCount > 0
-              ? Infinity
-              : 0;
-        const direction = diff > 0 ? "increasing" : "decreasing";
-
-        return {
-          entity: entityName,
-          type,
-          metric: "Frequency",
-          currentValue: currentCount,
-          prevValue: prevCount,
-          diff,
-          absDiff: Math.abs(diff),
-          percentVal,
-          direction,
-          message: `${currentCount} vs ${prevCount} last month`,
-        };
-      } else {
-        // Vendor Amount Analysis
-        const currentAmount = currentTxs.reduce(
-          (sum, t) => sum + Math.abs(t.amount),
-          0,
+      const analyzeEntity = (
+        entityName: string,
+        type: "Vendor" | "Account",
+      ): TrendItem | null => {
+        const currentTxs = currentMonthTxs.filter(
+          (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
         );
-        const prevAmount = prevTxs.reduce(
-          (sum, t) => sum + Math.abs(t.amount),
-          0,
+
+        const prevTxs = prevMonthTxs.filter(
+          (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
         );
-        const diff = currentAmount - prevAmount;
 
-        if (Math.abs(diff) < 10) return null; // Ignore < 10 currency unit diff
+        // Only consider if there is activity in at least one month
+        if (currentTxs.length === 0 && prevTxs.length === 0) return null;
 
-        const percentVal =
-          prevAmount > 0
-            ? (diff / prevAmount) * 100
-            : currentAmount > 0
-              ? Infinity
-              : 0;
-        const direction = diff > 0 ? "increasing" : "decreasing";
-        const currency =
-          currentTxs[0]?.currency || prevTxs[0]?.currency || "USD";
+        if (type === "Account") {
+          const currentCount = currentTxs.length;
+          const prevCount = prevTxs.length;
+          const diff = currentCount - prevCount;
 
-        return {
-          entity: entityName,
-          type,
-          metric: "Spending",
-          currentValue: currentAmount,
-          prevValue: prevAmount,
-          diff,
-          absDiff: Math.abs(diff),
-          percentVal,
-          direction,
-          currency,
-          message: `${formatCurrency(currentAmount, currency)} vs ${formatCurrency(prevAmount, currency)} last month`,
-        };
+          if (Math.abs(diff) < 2) return null; // Ignore tiny variance
+
+          const percentVal =
+            prevCount > 0
+              ? (diff / prevCount) * 100
+              : currentCount > 0
+                ? Infinity
+                : 0;
+          const direction = diff > 0 ? "increasing" : "decreasing";
+
+          return {
+            entity: entityName,
+            type,
+            metric: "Frequency",
+            currentValue: currentCount,
+            prevValue: prevCount,
+            diff,
+            absDiff: Math.abs(diff),
+            percentVal,
+            direction,
+            message: `${currentCount} vs ${prevCount} last month`,
+          };
+        } else {
+          // Vendor Amount Analysis
+          const currentAmount = currentTxs.reduce(
+            (sum, t) => sum + Math.abs(t.amount),
+            0,
+          );
+          const prevAmount = prevTxs.reduce(
+            (sum, t) => sum + Math.abs(t.amount),
+            0,
+          );
+          const diff = currentAmount - prevAmount;
+
+          if (Math.abs(diff) < 10) return null; // Ignore < 10 currency unit diff
+
+          const percentVal =
+            prevAmount > 0
+              ? (diff / prevAmount) * 100
+              : currentAmount > 0
+                ? Infinity
+                : 0;
+          const direction = diff > 0 ? "increasing" : "decreasing";
+          const currency =
+            currentTxs[0]?.currency || prevTxs[0]?.currency || "USD";
+
+          return {
+            entity: entityName,
+            type,
+            metric: "Spending",
+            currentValue: currentAmount,
+            prevValue: prevAmount,
+            diff,
+            absDiff: Math.abs(diff),
+            percentVal,
+            direction,
+            currency,
+            message: `${formatCurrency(currentAmount, currency)} vs ${formatCurrency(prevAmount, currency)} last month`,
+          };
+        }
+      };
+
+      const interestingEntities = new Set<string>();
+      [...currentMonthTxs, ...prevMonthTxs].forEach((t) => {
+        if (t.vendor) interestingEntities.add(t.vendor);
+        if (t.account) interestingEntities.add(t.account);
+      });
+
+      const accountAnalyses = [];
+      const vendorAnalyses = [];
+
+      for (const entity of interestingEntities) {
+        const isAccount = accounts.some((a) => a.name === entity);
+        const isVendor = vendors.some((v) => v.name === entity);
+
+        if (isAccount) {
+          const analysis = analyzeEntity(entity, "Account");
+          if (analysis) accountAnalyses.push(analysis);
+        } else if (isVendor || !isAccount) {
+          const analysis = analyzeEntity(entity, "Vendor");
+          if (analysis) vendorAnalyses.push(analysis);
+        }
       }
-    };
 
-    const interestingEntities = new Set<string>();
-    [...currentMonthTxs, ...prevMonthTxs].forEach((t) => {
-      if (t.vendor) interestingEntities.add(t.vendor);
-      if (t.account) interestingEntities.add(t.account);
-    });
+      // Sorting Logic:
+      // 1. Abs(% Change) DESC
+      // 2. Abs(Value Change) DESC
+      // 3. Alphabetical ASC
+      const sortFn = (a: TrendItem, b: TrendItem) => {
+        const pA = Math.abs(a.percentVal);
+        const pB = Math.abs(b.percentVal);
 
-    const accountAnalyses = [];
-    const vendorAnalyses = [];
+        // Handle Infinity (New items) usually treated as highest change
+        if (pA === Infinity && pB === Infinity) return b.absDiff - a.absDiff;
+        if (pA === Infinity) return -1;
+        if (pB === Infinity) return 1;
 
-    for (const entity of interestingEntities) {
-      const isAccount = accounts.some((a) => a.name === entity);
-      const isVendor = vendors.some((v) => v.name === entity);
+        if (Math.abs(pA - pB) > 1) {
+          // 1% tolerance for "same percentage"
+          return pB - pA;
+        }
 
-      if (isAccount) {
-        const analysis = analyzeEntity(entity, "Account");
-        if (analysis) accountAnalyses.push(analysis);
-      } else if (isVendor || !isAccount) {
-        const analysis = analyzeEntity(entity, "Vendor");
-        if (analysis) vendorAnalyses.push(analysis);
-      }
-    }
+        // Clash on percentage, verify actual number difference difference
+        if (Math.abs(b.absDiff - a.absDiff) > 0.01) {
+          return b.absDiff - a.absDiff;
+        }
 
-    // Sorting Logic:
-    // 1. Abs(% Change) DESC
-    // 2. Abs(Value Change) DESC
-    // 3. Alphabetical ASC
-    const sortFn = (a: TrendItem, b: TrendItem) => {
-      const pA = Math.abs(a.percentVal);
-      const pB = Math.abs(b.percentVal);
+        // Alphabetical
+        return a.entity.localeCompare(b.entity);
+      };
 
-      // Handle Infinity (New items) usually treated as highest change
-      if (pA === Infinity && pB === Infinity) return b.absDiff - a.absDiff;
-      if (pA === Infinity) return -1;
-      if (pB === Infinity) return 1;
-
-      if (Math.abs(pA - pB) > 1) {
-        // 1% tolerance for "same percentage"
-        return pB - pA;
-      }
-
-      // Clash on percentage, verify actual number difference difference
-      if (Math.abs(b.absDiff - a.absDiff) > 0.01) {
-        return b.absDiff - a.absDiff;
-      }
-
-      // Alphabetical
-      return a.entity.localeCompare(b.entity);
-    };
-
-    return {
-      topAccountTrends: accountAnalyses.sort(sortFn).slice(0, 5),
-      topVendorTrends: vendorAnalyses.sort(sortFn).slice(0, 5),
-      currentMonthName,
-      prevMonthName,
-    };
-  }, [transactions, accounts, vendors, formatCurrency]);
+      return {
+        topAccountTrends: accountAnalyses.sort(sortFn).slice(0, 5),
+        topVendorTrends: vendorAnalyses.sort(sortFn).slice(0, 5),
+        currentMonthName,
+        prevMonthName,
+      };
+    }, [transactions, accounts, vendors, formatCurrency]);
 
   const handleTrendClick = (trend: TrendItem) => {
     const now = new Date();
@@ -595,7 +596,11 @@ export default function Insights() {
               <div className="flex flex-col">
                 <h2 className="text-xl font-semibold">Top Account Activity</h2>
                 <span className="text-xs text-muted-foreground">
-                  Comparing {topAccountTrends.length > 0 ? currentMonthName || "Current" : "Current"} vs {prevMonthName || "Previous"} Month
+                  Comparing{" "}
+                  {topAccountTrends.length > 0
+                    ? currentMonthName || "Current"
+                    : "Current"}{" "}
+                  vs {prevMonthName || "Previous"} Month
                 </span>
               </div>
             </div>
@@ -617,7 +622,11 @@ export default function Insights() {
               <div className="flex flex-col">
                 <h2 className="text-xl font-semibold">Top Vendor Spending</h2>
                 <span className="text-xs text-muted-foreground">
-                  Comparing {topAccountTrends.length > 0 ? currentMonthName || "Current" : "Current"} vs {prevMonthName || "Previous"} Month
+                  Comparing{" "}
+                  {topAccountTrends.length > 0
+                    ? currentMonthName || "Current"
+                    : "Current"}{" "}
+                  vs {prevMonthName || "Previous"} Month
                 </span>
               </div>
             </div>

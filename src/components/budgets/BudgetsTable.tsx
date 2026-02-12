@@ -8,14 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Edit,
-  Trash2,
-  Wallet,
-  Store,
-  Layers,
-  Tag,
-} from "lucide-react";
+import { Edit, Trash2, Wallet, Store, Layers, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -150,7 +143,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
 
               const subCategoryName = budget.sub_category_id
                 ? subCategories.find((s) => s.id === budget.sub_category_id)
-                  ?.name
+                    ?.name
                 : budget.sub_category_name;
 
               return (
@@ -161,8 +154,12 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                         return (
                           <div className="flex items-center gap-2">
                             <Wallet className="h-4 w-4 text-slate-400" />
-                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
-                            <span className="text-xs text-slate-500">(Account)</span>
+                            <span className="font-medium text-slate-100">
+                              {budget.budget_scope_name}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              (Account)
+                            </span>
                           </div>
                         );
                       }
@@ -170,8 +167,12 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                         return (
                           <div className="flex items-center gap-2">
                             <Store className="h-4 w-4 text-slate-400" />
-                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
-                            <span className="text-xs text-slate-500">(Vendor)</span>
+                            <span className="font-medium text-slate-100">
+                              {budget.budget_scope_name}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              (Vendor)
+                            </span>
                           </div>
                         );
                       }
@@ -179,8 +180,12 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                         return (
                           <div className="flex items-center gap-2">
                             <Layers className="h-4 w-4 text-slate-400" />
-                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
-                            <span className="text-xs text-slate-500">(Sub-cat)</span>
+                            <span className="font-medium text-slate-100">
+                              {budget.budget_scope_name}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              (Sub-cat)
+                            </span>
                           </div>
                         );
                       }
@@ -188,9 +193,13 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                       return (
                         <div className="flex items-center gap-2">
                           <Tag className="h-4 w-4 text-slate-400" />
-                          <span className="font-medium text-slate-100">{budget.category_name}</span>
+                          <span className="font-medium text-slate-100">
+                            {budget.category_name}
+                          </span>
                           {subCategoryName && (
-                            <span className="text-xs text-slate-500">({subCategoryName})</span>
+                            <span className="text-xs text-slate-500">
+                              ({subCategoryName})
+                            </span>
                           )}
                         </div>
                       );

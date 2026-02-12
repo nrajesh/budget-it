@@ -157,7 +157,8 @@ export const CurrencyConversionDialog: React.FC<
               >
                 Frankfurter API
               </a>{" "}
-              (ECB data). No tracking or API key involved. Cryptocurrencies are check manually.
+              (ECB data). No tracking or API key involved. Cryptocurrencies are
+              check manually.
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -189,7 +190,9 @@ export const CurrencyConversionDialog: React.FC<
                       onValueChange={(val) => {
                         setCustomCode(val.toUpperCase());
                         // If typing something new, reset name unless matched
-                        const match = apiCurrencies.find(c => c.code === val.toUpperCase());
+                        const match = apiCurrencies.find(
+                          (c) => c.code === val.toUpperCase(),
+                        );
                         if (match) {
                           setCustomName(match.name);
                         } else {
@@ -212,8 +215,8 @@ export const CurrencyConversionDialog: React.FC<
                               // Ensure code is set (it might be empty if they just clicked without typing? No, value is controlled)
                               // Wait, CommandInput value is internal to Command usually unless controlled?
                               // I'm controlling it partially via customCode but CommandInput might be tricky.
-                              // Actually, let's just use the `search` prop from CommandState if needed, 
-                              // but here we can just assume `customCode` captured the input? 
+                              // Actually, let's just use the `search` prop from CommandState if needed,
+                              // but here we can just assume `customCode` captured the input?
                               // No, CommandInput `value` prop is filter value.
                               // Let's rely on the user having typed something.
                               // If `customCode` has value, use it.
@@ -226,10 +229,11 @@ export const CurrencyConversionDialog: React.FC<
                       </CommandEmpty>
                       <CommandGroup heading="Available via API">
                         {apiCurrencies
-                          .filter((c) =>
-                            !availableCurrencies.some(
-                              (ac) => ac.code === c.code,
-                            ),
+                          .filter(
+                            (c) =>
+                              !availableCurrencies.some(
+                                (ac) => ac.code === c.code,
+                              ),
                           )
                           .slice(0, 50)
                           .map((currency) => (
@@ -252,8 +256,12 @@ export const CurrencyConversionDialog: React.FC<
                                     : "opacity-0",
                                 )}
                               />
-                              <span className="font-mono w-12">{currency.code}</span>
-                              <span className="text-muted-foreground">{currency.name}</span>
+                              <span className="font-mono w-12">
+                                {currency.code}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {currency.name}
+                              </span>
                             </CommandItem>
                           ))}
                       </CommandGroup>
@@ -267,7 +275,9 @@ export const CurrencyConversionDialog: React.FC<
             {customCode && (
               <div className="grid grid-cols-12 gap-2 items-end animate-in fade-in slide-in-from-top-2">
                 <div className="col-span-4">
-                  <Label htmlFor="add-name" className="text-xs">Name</Label>
+                  <Label htmlFor="add-name" className="text-xs">
+                    Name
+                  </Label>
                   <Input
                     id="add-name"
                     value={customName}
@@ -277,7 +287,9 @@ export const CurrencyConversionDialog: React.FC<
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="add-symbol" className="text-xs">Symbol</Label>
+                  <Label htmlFor="add-symbol" className="text-xs">
+                    Symbol
+                  </Label>
                   <Input
                     id="add-symbol"
                     value={customSymbol}
@@ -287,7 +299,9 @@ export const CurrencyConversionDialog: React.FC<
                   />
                 </div>
                 <div className="col-span-4">
-                  <Label htmlFor="add-rate" className="text-xs">1 {selectedCurrency} =</Label>
+                  <Label htmlFor="add-rate" className="text-xs">
+                    1 {selectedCurrency} =
+                  </Label>
                   <Input
                     id="add-rate"
                     type="number"
@@ -298,7 +312,13 @@ export const CurrencyConversionDialog: React.FC<
                   />
                 </div>
                 <div className="col-span-2">
-                  <Button size="sm" onClick={handleAddCustom} className="w-full h-8">Add</Button>
+                  <Button
+                    size="sm"
+                    onClick={handleAddCustom}
+                    className="w-full h-8"
+                  >
+                    Add
+                  </Button>
                 </div>
               </div>
             )}
@@ -394,4 +414,3 @@ export const CurrencyConversionDialog: React.FC<
     </Dialog>
   );
 };
-

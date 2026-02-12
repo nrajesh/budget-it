@@ -48,7 +48,9 @@ interface TransactionTableProps {
   onDeleteTransactions: (
     transactions: { id: string; transfer_id?: string }[],
   ) => void;
-  onAddTransaction: (transaction: Omit<Transaction, "id" | "created_at">) => void;
+  onAddTransaction: (
+    transaction: Omit<Transaction, "id" | "created_at">,
+  ) => void;
   onRowDoubleClick?: (
     transaction: Transaction,
     event: React.MouseEvent,
@@ -87,7 +89,9 @@ const TransactionRow = React.memo(
       event: React.MouseEvent,
     ) => void;
     onUnlinkTransaction?: (transferId: string) => void;
-    onAddTransaction: (transaction: Omit<Transaction, "id" | "created_at">) => void;
+    onAddTransaction: (
+      transaction: Omit<Transaction, "id" | "created_at">,
+    ) => void;
     onScheduleTransactions?: (
       transactions: Transaction[],
       clearSelection: () => void,
@@ -112,12 +116,12 @@ const TransactionRow = React.memo(
         <span className="cursor-pointer">
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
-              style: "currency",
-              currency:
-                accountCurrencyMap?.get(transaction.account) ||
-                transaction.currency ||
-                selectedCurrency,
-            })
+                style: "currency",
+                currency:
+                  accountCurrencyMap?.get(transaction.account) ||
+                  transaction.currency ||
+                  selectedCurrency,
+              })
             : field === "date"
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
@@ -234,7 +238,7 @@ const TransactionRow = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => { })
+              onScheduleTransactions([transaction], () => {})
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}
@@ -606,9 +610,7 @@ const TransactionTable = ({
               </PaginationItem>
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((p) => Math.max(1, p - 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 />
               </PaginationItem>

@@ -104,7 +104,9 @@ const MobileNavContent = () => {
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Configure</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">
+          Configure
+        </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
             <Link

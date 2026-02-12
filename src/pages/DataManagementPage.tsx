@@ -8,7 +8,14 @@ import {
 } from "@/components/ThemedCard";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { FileJson, FileLock, Upload, AlertCircle, RotateCcw, DatabaseZap } from "lucide-react";
+import {
+  FileJson,
+  FileLock,
+  Upload,
+  AlertCircle,
+  RotateCcw,
+  DatabaseZap,
+} from "lucide-react";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -37,7 +44,8 @@ const DataManagementPage = () => {
   const [isImportPasswordOpen, setIsImportPasswordOpen] = React.useState(false);
   // Reset / Demo Data State
   const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
-  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = React.useState(false);
+  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] =
+    React.useState(false);
 
   const [tempImportFile, setTempImportFile] = React.useState<string | null>(
     null,

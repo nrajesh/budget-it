@@ -90,10 +90,11 @@ export const useTransactionPageActions = (
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mappingDialogState, setMappingDialogState] = useState<MappingDialogState>({
-    isOpen: false,
-    file: null,
-  });
+  const [mappingDialogState, setMappingDialogState] =
+    useState<MappingDialogState>({
+      isOpen: false,
+      file: null,
+    });
 
   // --- Export Logic ---
   const handleExport = () => {

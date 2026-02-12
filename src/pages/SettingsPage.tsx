@@ -71,8 +71,6 @@ const SettingsPage = () => {
     showSuccess(`Dashboard style set to ${value}.`);
   };
 
-
-
   // Data Management Logic moved to DataManagementPage
 
   return (
@@ -136,7 +134,6 @@ const SettingsPage = () => {
                 ))}
               </SelectContent>
             </Select>
-
           </ThemedCardContent>
         </ThemedCard>
 
@@ -190,7 +187,6 @@ const SettingsPage = () => {
             </div>
           </ThemedCardContent>
         </ThemedCard>
-
       </div>
 
       <ManageLedgerDialog

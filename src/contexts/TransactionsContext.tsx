@@ -295,10 +295,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-      | "DELETE_TRANSACTION"
-      | "DELETE_SCHEDULE"
-      | "DELETE_BUDGET"
-      | "DELETE_ENTITY";
+        | "DELETE_TRANSACTION"
+        | "DELETE_SCHEDULE"
+        | "DELETE_BUDGET"
+        | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -1422,12 +1422,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  }, [
-    dataProvider,
-    refreshLedgers,
-    dataProvider,
-    queryClient,
-  ]);
+  }, [dataProvider, refreshLedgers, dataProvider, queryClient]);
 
   const processScheduledTransactions = React.useCallback(async () => {
     if (

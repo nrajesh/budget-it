@@ -87,7 +87,10 @@ function App() {
                             element={<DataManagementPage />}
                           />
                           <Route path="/backup" element={<BackupPage />} />
-                          <Route path="/currencies" element={<CurrenciesPage />} />
+                          <Route
+                            path="/currencies"
+                            element={<CurrenciesPage />}
+                          />
                           <Route path="*" element={<NotFound />} />
                         </Route>
                       </Routes>

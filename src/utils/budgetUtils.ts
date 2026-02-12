@@ -98,12 +98,14 @@ export function calculateBudgetSpent(
 
     // Scope-based matching
     if (budgetScopeType === "account") {
-      if ((t.account || "").trim().toLowerCase() !== budgetScopeName) return false;
+      if ((t.account || "").trim().toLowerCase() !== budgetScopeName)
+        return false;
     } else if (budgetScopeType === "vendor") {
-      if ((t.vendor || "").trim().toLowerCase() !== budgetScopeName) return false;
-
+      if ((t.vendor || "").trim().toLowerCase() !== budgetScopeName)
+        return false;
     } else if (budgetScopeType === "sub_category") {
-      if ((t.sub_category || "").trim().toLowerCase() !== budgetScopeName) return false;
+      if ((t.sub_category || "").trim().toLowerCase() !== budgetScopeName)
+        return false;
     } else {
       // Category Check
       if (
@@ -117,7 +119,7 @@ export function calculateBudgetSpent(
         budget.sub_category_name &&
         (!t.sub_category ||
           t.sub_category.trim().toLowerCase() !==
-          budget.sub_category_name.trim().toLowerCase())
+            budget.sub_category_name.trim().toLowerCase())
       )
         return false;
     }

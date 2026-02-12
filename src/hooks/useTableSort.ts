@@ -28,7 +28,11 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
         if (typeof path === "string" && path.includes(".")) {
           return path
             .split(".")
-            .reduce((obj: unknown, k) => (obj ? (obj as Record<string, unknown>)[k] : null), item);
+            .reduce(
+              (obj: unknown, k) =>
+                obj ? (obj as Record<string, unknown>)[k] : null,
+              item,
+            );
         }
         return item[path as keyof T];
       };

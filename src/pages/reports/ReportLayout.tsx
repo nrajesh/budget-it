@@ -61,8 +61,7 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
   );
 
   const availableCategoryOptions = React.useMemo(
-    () =>
-      categories.map((c) => ({ value: slugify(c.name), label: c.name })),
+    () => categories.map((c) => ({ value: slugify(c.name), label: c.name })),
     [categories],
   );
 
@@ -287,7 +286,9 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
                 }
               },
             });
-            yPos = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+            yPos =
+              (doc as unknown as { lastAutoTable: { finalY: number } })
+                .lastAutoTable.finalY + 10;
           }
         }
       }

@@ -822,7 +822,9 @@ export class LocalDataProvider implements DataProvider {
     let parsedActiveCurrencies = [];
     try {
       const activeCurrencies = localStorage.getItem("active_currencies");
-      parsedActiveCurrencies = activeCurrencies ? JSON.parse(activeCurrencies) : [];
+      parsedActiveCurrencies = activeCurrencies
+        ? JSON.parse(activeCurrencies)
+        : [];
     } catch (e) {
       console.error("Failed to parse active_currencies", e);
     }
@@ -857,11 +859,15 @@ export class LocalDataProvider implements DataProvider {
 
   async importData(data: unknown, userId?: string): Promise<void> {
     const importData = data as Record<string, any>;
-    if (!importData || !importData.transactions) throw new Error("Invalid data format");
+    if (!importData || !importData.transactions)
+      throw new Error("Invalid data format");
 
     // Helper to map ledger_id back to user_id (for internal DB compatibility)
     // If incoming data has user_id, keep it (legacy backup). If ledger_id, map it.
-    const mapToUserId = (items: Record<string, unknown>[], overrideUserId?: string) =>
+    const mapToUserId = (
+      items: Record<string, unknown>[],
+      overrideUserId?: string,
+    ) =>
       items.map((item) => {
         const typedItem = item as Record<string, any>;
         // If we are importing into a specific scope (overrideUserId), we FORCE that ID.
@@ -904,7 +910,8 @@ export class LocalDataProvider implements DataProvider {
             userId,
           ) as Transaction[];
           const scheduled = mapToUserId(
-            (importData.scheduled_transactions as Record<string, unknown>[]) || [],
+            (importData.scheduled_transactions as Record<string, unknown>[]) ||
+              [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(

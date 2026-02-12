@@ -55,7 +55,9 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
   };
 
   const handleSubCategoryClick = (subCategoryName: string) => {
-    navigate("/transactions", { state: { filterSubCategory: subCategoryName } });
+    navigate("/transactions", {
+      state: { filterSubCategory: subCategoryName },
+    });
   };
 
   // 1. Calculate Low Balance Alerts
@@ -162,7 +164,8 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
-    const alerts: { displayName: string; percentage: number; scope: string }[] = [];
+    const alerts: { displayName: string; percentage: number; scope: string }[] =
+      [];
 
     // Filter budgets to active ones
     const activeBudgets = budgets.filter((b) => b.is_active !== false);
