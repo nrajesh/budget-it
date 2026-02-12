@@ -45,7 +45,11 @@ export const SearchFilterBar = () => {
 
   const handleConversationalUpdate = (update: Partial<ParsedFilterState>) => {
     // Apply updates
-    if (update.dateRange !== undefined) setDateRange(update.dateRange);
+    if (update.isAllTime) {
+      setDateRange(undefined);
+    } else if (update.dateRange !== undefined) {
+      setDateRange(update.dateRange);
+    }
 
     if (update.selectedCategories) {
       // Merge unique
@@ -100,6 +104,11 @@ export const SearchFilterBar = () => {
 
     // Search Term (Generic)
     if (update.searchTerm !== undefined) {
+      const lower = update.searchTerm.toLowerCase();
+      // If "all time" is requested, explicitly clear the date range filter in the context
+      if (lower.includes("all time")) {
+        setDateRange(undefined);
+      }
       setSearchTerm(update.searchTerm);
       setRawSearchQuery(update.searchTerm); // Update raw query to match? Or generic search doesn't assume raw query history?
     }

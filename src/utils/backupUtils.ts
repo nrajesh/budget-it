@@ -20,7 +20,10 @@ export const saveFile = async (
         types: [
           {
             description: description,
-            accept: { "application/json": [".json", ".lock"] },
+            accept: {
+              "application/json": [".json", ".lock"],
+              "text/csv": [".csv"],
+            },
           },
         ],
       });
@@ -37,12 +40,30 @@ export const saveFile = async (
 
     // Fallback to classic download
     const element = document.createElement("a");
-    const file = new Blob([content], { type: "application/json" });
-    element.href = URL.createObjectURL(file);
+
+    // Use application/octet-stream to force download in stubborn browsers (like Safari)
+    // instead of opening the JSON in a tab.
+    const mimeType = filename.endsWith(".csv")
+      ? "text/csv;charset=utf-8"
+      : "application/octet-stream";
+
+    const BOM = filename.endsWith(".csv") ? "\uFEFF" : "";
+    const file = new Blob([BOM + content], { type: mimeType });
+    const url = URL.createObjectURL(file);
+
+    element.href = url;
     element.download = filename;
+    element.style.display = "none";
     document.body.appendChild(element);
+
     element.click();
-    document.body.removeChild(element);
+
+    // Cleanup with a small delay to ensure the click is registered
+    setTimeout(() => {
+      document.body.removeChild(element);
+      URL.revokeObjectURL(url);
+    }, 100);
+
     return false; // Indicates fallback was used
   }
 };

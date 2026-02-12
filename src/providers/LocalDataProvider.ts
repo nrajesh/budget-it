@@ -678,6 +678,7 @@ export class LocalDataProvider implements DataProvider {
       id: uuidv4(),
       spent_amount: 0, // Initial
       is_active: budget.is_active ?? true,
+      is_goal: budget.is_goal ?? false,
       created_at: budget.created_at || new Date().toISOString(),
     });
   }
@@ -816,6 +817,23 @@ export class LocalDataProvider implements DataProvider {
       return rest;
     });
 
+    // Active Currencies from LocalStorage (Unified)
+    let parsedActiveCurrencies = [];
+    try {
+      const activeCurrencies = localStorage.getItem("active_currencies");
+      parsedActiveCurrencies = activeCurrencies ? JSON.parse(activeCurrencies) : [];
+    } catch (e) {
+      console.error("Failed to parse active_currencies", e);
+    }
+
+    let parsedExchangeRates = {};
+    try {
+      const rates = localStorage.getItem("currency_exchange_rates");
+      parsedExchangeRates = rates ? JSON.parse(rates) : {};
+    } catch (e) {
+      console.error("Failed to parse currency_exchange_rates", e);
+    }
+
     const data = {
       transactions: mapToLedgerId(await db.transactions.toArray()),
       scheduled_transactions: mapToLedgerId(
@@ -828,6 +846,8 @@ export class LocalDataProvider implements DataProvider {
       sub_categories: mapToLedgerId(await db.sub_categories.toArray()),
       ledgers: await db.ledgers.toArray(),
       backup_configs: cleanBackupConfigs,
+      active_currencies: parsedActiveCurrencies, // Export unified list
+      currency_exchange_rates: parsedExchangeRates, // Export rates
       version: 2,
       exportedAt: new Date().toISOString(),
     };
@@ -934,6 +954,53 @@ export class LocalDataProvider implements DataProvider {
             await db.categories.bulkAdd(mapToUserId(data.categories));
           if (data.sub_categories)
             await db.sub_categories.bulkAdd(mapToUserId(data.sub_categories));
+
+          // Import Active Currencies (Unified)
+          if (data.active_currencies && Array.isArray(data.active_currencies)) {
+            try {
+              // We overwrite or merge? User likely wants the exported state.
+              // Since currencies are global pref, let's merge or just set.
+              // Verify validity?
+              localStorage.setItem("active_currencies", JSON.stringify(data.active_currencies));
+            } catch (e) {
+              console.error("Failed to import active currencies", e);
+            }
+          } else if (data.custom_currencies && Array.isArray(data.custom_currencies)) {
+            // Legacy Migration: Merge custom into current defaults or active
+            try {
+              // Check if we need to do anything with existing active? 
+              // The logic below just sets custom_currencies for fallback.
+              // So we don't need to read active here really, unless we wanted to merge manually.
+              // But we decided to let Context handle it.
+
+              // If no active list (first load/fresh), defaults would be loaded by Context. 
+              // But here we are in Provider. 
+              // We should probably just save to `custom_currencies` to let Context migration handle it?
+              // OR better: construct the full list here.
+              // Context migration logic: if `active` missing, load `default` + `custom`.
+              // So if we save `custom_currencies`, Context will pick it up if `active` is missing.
+              // BUT if `active` exists (e.g. user has some state), we should merge.
+
+              // Let's just save to `custom_currencies` as fallback if `active_currencies` is missing in export.
+              // The Context will handle merging it into active on mount.
+              localStorage.setItem("custom_currencies", JSON.stringify(data.custom_currencies));
+            } catch (e) {
+              console.error("Failed to import legacy custom currencies", e);
+            }
+          }
+          // Import Exchange Rates
+          if (data.currency_exchange_rates) {
+            try {
+              // Merge with existing? Or overwrite? 
+              // Overwrite seems safer for restore, but merge might be better if user has recent updates.
+              // Let's merge: overwrite provided keys, keep others.
+              const existingRates = JSON.parse(localStorage.getItem("currency_exchange_rates") || "{}");
+              const newRates = { ...existingRates, ...data.currency_exchange_rates };
+              localStorage.setItem("currency_exchange_rates", JSON.stringify(newRates));
+            } catch (e) {
+              console.error("Failed to import exchange rates", e);
+            }
+          }
         }
       },
     );

@@ -208,6 +208,7 @@ const LedgerEntryPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
+          <img src="/logo.png" alt="Budget It!" className="h-20 w-20 mx-auto" />
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
             Budget It!
           </h1>
@@ -330,9 +331,8 @@ const LedgerEntryPage = () => {
           })}
 
           <ThemedCard
-            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${
-              ledgers.length === 0 ? "max-w-md w-full" : ""
-            }`}
+            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${ledgers.length === 0 ? "max-w-md w-full" : ""
+              }`}
             onClick={() => setIsCreateOpen(true)}
           >
             <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">

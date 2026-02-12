@@ -106,6 +106,11 @@ export default function BudgetsPage() {
     );
   }, [processedBudgets, searchTerm, hiddenBudgetIds]);
 
+  // Separate spending budgets from goal budgets for summary calculations
+  const spendingBudgets = useMemo(() => {
+    return filteredBudgets.filter((b) => !b.is_goal);
+  }, [filteredBudgets]);
+
   const activeBudgets = useMemo(() => {
     return filteredBudgets.filter((b) => b.is_active !== false);
   }, [filteredBudgets]);
@@ -193,7 +198,7 @@ export default function BudgetsPage() {
           />
         </div>
 
-        <BudgetSummary budgets={filteredBudgets} isLoading={isLoading} />
+        <BudgetSummary budgets={spendingBudgets} isLoading={isLoading} />
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
@@ -203,6 +208,7 @@ export default function BudgetsPage() {
             isLoading={isLoading}
             onEdit={handleOpenDialog}
             onDelete={handleDeleteClick}
+            transactions={transactions}
           />
 
           {inactiveBudgets.length > 0 && (
@@ -215,6 +221,7 @@ export default function BudgetsPage() {
                 isLoading={isLoading}
                 onEdit={handleOpenDialog}
                 onDelete={handleDeleteClick}
+                transactions={transactions}
               />
             </div>
           )}

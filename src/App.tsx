@@ -32,6 +32,8 @@ const Insights = lazy(() => import("@/pages/Insights"));
 const LedgerEntryPage = lazy(() => import("@/pages/LedgerEntryPage"));
 import { LedgerProvider } from "./contexts/LedgerContext";
 const DataManagementPage = lazy(() => import("@/pages/DataManagementPage"));
+const BackupPage = lazy(() => import("@/pages/BackupPage"));
+const CurrenciesPage = lazy(() => import("@/pages/CurrenciesPage"));
 import BackupManager from "@/components/backup/BackupManager";
 
 // ... existing imports
@@ -84,6 +86,8 @@ function App() {
                             path="/data-management"
                             element={<DataManagementPage />}
                           />
+                          <Route path="/backup" element={<BackupPage />} />
+                          <Route path="/currencies" element={<CurrenciesPage />} />
                           <Route path="*" element={<NotFound />} />
                         </Route>
                       </Routes>

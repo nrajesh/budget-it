@@ -34,6 +34,7 @@ import {
   subMonths,
   endOfMonth,
   isWithinInterval,
+  format,
 } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
@@ -155,12 +156,15 @@ export default function Insights() {
   };
 
   // Trend Analysis Logic
-  const { topAccountTrends, topVendorTrends } = useMemo(() => {
+  const { topAccountTrends, topVendorTrends, currentMonthName, prevMonthName } = useMemo(() => {
     const now = new Date();
     const currentMonthStart = startOfMonth(now);
     const currentMonthEnd = endOfMonth(now);
     const prevMonthStart = startOfMonth(subMonths(now, 1));
     const prevMonthEnd = endOfMonth(subMonths(now, 1));
+
+    const currentMonthName = format(now, "MMMM");
+    const prevMonthName = format(subMonths(now, 1), "MMMM");
 
     const currentMonthTxs = transactions.filter(
       (t) =>
@@ -311,6 +315,8 @@ export default function Insights() {
     return {
       topAccountTrends: accountAnalyses.sort(sortFn).slice(0, 5),
       topVendorTrends: vendorAnalyses.sort(sortFn).slice(0, 5),
+      currentMonthName,
+      prevMonthName,
     };
   }, [transactions, accounts, vendors, formatCurrency]);
 
@@ -417,7 +423,7 @@ export default function Insights() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
         <p className="text-muted-foreground mt-2">
-          AI-powered analysis of your spending trends vs. planned budgets.
+          Analysis of your spending trends vs. planned budgets.
         </p>
       </div>
 
@@ -558,7 +564,12 @@ export default function Insights() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-blue-500" />
-              <h2 className="text-xl font-semibold">Top Account Activity</h2>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-semibold">Top Account Activity</h2>
+                <span className="text-xs text-muted-foreground">
+                  Comparing {topAccountTrends.length > 0 ? currentMonthName || "Current" : "Current"} vs {prevMonthName || "Previous"} Month
+                </span>
+              </div>
             </div>
             {topAccountTrends.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
@@ -575,7 +586,12 @@ export default function Insights() {
           <div className="space-y-4 mt-8 md:mt-0">
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
-              <h2 className="text-xl font-semibold">Top Vendor Spending</h2>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-semibold">Top Vendor Spending</h2>
+                <span className="text-xs text-muted-foreground">
+                  Comparing {topAccountTrends.length > 0 ? currentMonthName || "Current" : "Current"} vs {prevMonthName || "Previous"} Month
+                </span>
+              </div>
             </div>
             {topVendorTrends.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">

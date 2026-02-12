@@ -53,6 +53,10 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
     navigate("/transactions", { state: { filterCategory: categoryName } });
   };
 
+  const handleSubCategoryClick = (subCategoryName: string) => {
+    navigate("/transactions", { state: { filterSubCategory: subCategoryName } });
+  };
+
   // 1. Calculate Low Balance Alerts
   const lowBalanceAlerts = React.useMemo(() => {
     const alerts: {
@@ -157,7 +161,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
-    const alerts: { categoryName: string; percentage: number }[] = [];
+    const alerts: { displayName: string; percentage: number; scope: string }[] = [];
 
     // Filter budgets to active ones
     const activeBudgets = budgets.filter((b) => b.is_active !== false);
@@ -183,9 +187,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
         targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
 
       if (percentage >= 90) {
+        const scope = (budget as any).budget_scope || "category";
+        const displayName = scope !== "category" && (budget as any).budget_scope_name
+          ? (budget as any).budget_scope_name
+          : budget.category_name!;
         alerts.push({
-          categoryName: budget.category_name!,
+          displayName,
           percentage: Math.round(percentage),
+          scope,
         });
       }
     });
@@ -303,14 +312,22 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
                   </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {budgetOverrunAlerts.map((alert, index) => (
-                      <li key={`${alert.categoryName}-${index}`}>
+                      <li key={`${alert.displayName}-${index}`}>
                         <span
-                          onClick={() =>
-                            handleCategoryClick(alert.categoryName)
-                          }
+                          onClick={() => {
+                            if (alert.scope === "account") {
+                              handleAccountClick(alert.displayName);
+                            } else if (alert.scope === "vendor") {
+                              handleVendorClick(alert.displayName);
+                            } else if (alert.scope === "sub_category") {
+                              handleSubCategoryClick(alert.displayName);
+                            } else {
+                              handleCategoryClick(alert.displayName);
+                            }
+                          }}
                           className="font-semibold cursor-pointer hover:text-primary hover:underline"
                         >
-                          {alert.categoryName}
+                          {alert.displayName}
                         </span>{" "}
                         budget is at{" "}
                         <span

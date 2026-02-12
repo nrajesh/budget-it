@@ -25,7 +25,9 @@ export const parseSearchQuery = (query: string): SearchFilters => {
   // Check for keywords
   const today = new Date();
 
-  if (lowerQuery.includes("last week")) {
+  if (lowerQuery.includes("all time")) {
+    filters.dateRange = undefined;
+  } else if (lowerQuery.includes("last week")) {
     const lastWeekStart = startOfWeek(subWeeks(today, 1));
     const lastWeekEnd = endOfWeek(subWeeks(today, 1));
     filters.dateRange = { from: lastWeekStart, to: lastWeekEnd };
@@ -161,6 +163,7 @@ export const parseSearchQuery = (query: string): SearchFilters => {
 
   // Remove known date keywords
   [
+    "all time",
     "last week",
     "this week",
     "last month",

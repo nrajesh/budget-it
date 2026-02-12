@@ -25,4 +25,26 @@ describe("parseSearchQuery", () => {
     expect(result.dateRange?.from).toEqual(expectedStart);
     expect(result.dateRange?.to).toEqual(expectedEnd);
   });
+  it('should treat "all time" as no date filter', () => {
+    const query = "groceries all time";
+    const result = parseSearchQuery(query);
+
+    // Should not have a date range
+    expect(result.dateRange).toBeUndefined();
+
+    // Should have text "groceries"
+    expect(result.text).toContain("groceries");
+
+    // Should NOT have "all" or "time" in text
+    expect(result.text).not.toContain("all");
+    expect(result.text).not.toContain("time");
+  });
+
+  it('should treat independent "all time" as no date filter', () => {
+    const query = "all time";
+    const result = parseSearchQuery(query);
+
+    expect(result.dateRange).toBeUndefined();
+    expect(result.text).toEqual([]);
+  });
 });

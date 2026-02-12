@@ -10,11 +10,13 @@ import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { db } from "@/lib/dexieDB";
 import { slugify } from "@/lib/utils";
+import { saveFile } from "@/utils/backupUtils";
 
 export const useCategoryManagement = () => {
   const { activeLedger } = useLedger();
   const {
     categories,
+    subCategories,
     isLoadingCategories,
     refetchCategories,
     invalidateAllData,
@@ -167,22 +169,83 @@ export const useCategoryManagement = () => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: async (results) => {
         const hasHeader = results.meta.fields?.includes("Category Name");
         if (!hasHeader) {
           showError(`CSV is missing required header: "Category Name"`);
           managementProps.setIsImporting(false);
           return;
         }
-        const categoryNames = results.data
-          .map((row: any) => row["Category Name"])
-          .filter(Boolean);
-        if (categoryNames.length === 0) {
+
+        const categoryNames = new Set<string>();
+        const subCategoryMap = new Map<string, string[]>(); // Category -> SubCategories[]
+
+        results.data.forEach((row: any) => {
+          const catName = row["Category Name"]?.trim();
+          if (catName) {
+            categoryNames.add(catName);
+            const subName = row["Sub Category Name"]?.trim();
+            if (subName) {
+              const current = subCategoryMap.get(catName) || [];
+              current.push(subName);
+              subCategoryMap.set(catName, current);
+            }
+          }
+        });
+
+        if (categoryNames.size === 0) {
           showError("No valid category names found in the CSV file.");
           managementProps.setIsImporting(false);
           return;
         }
-        batchUpsertCategoriesMutation.mutate(categoryNames);
+
+        try {
+          // 1. Create Categories
+          await batchUpsertCategoriesMutation.mutateAsync(
+            Array.from(categoryNames),
+          );
+
+          // 2. Create Sub-Categories
+          // We need IDs of created categories.
+          // Since dataProvider.ensureCategoryExists returns ID, we can do it one by one or fetch all categories again.
+          // Fetching all categories is safer/easier since we just refreshed in batchUpsert.
+          // But batchUpsert is async. We should wait.
+          // batchUpsertCategoriesMutation.mutateAsync ALREADY waits for refetchCategories() in onSuccess.
+          // Wait, query invalidation might be async.
+          // Let's rely on dataProvider.ensureCategoryExists within a loop here to get IDs properly.
+
+          // Actually, let's just use dataProvider directly here for sub-cats to be sure.
+          // batchUpsertCategoriesMutation already called ensuredCategoryExists.
+          // So now we just need to get the IDs.
+
+          const allCats = await dataProvider.getUserCategories(activeLedger.id);
+          const catMap = new Map<string, string>();
+          allCats.forEach((c) => catMap.set(c.name, c.id));
+
+          let subCatCount = 0;
+          for (const [catName, subNames] of subCategoryMap.entries()) {
+            const catId = catMap.get(catName);
+            if (catId) {
+              for (const subName of subNames) {
+                await dataProvider.ensureSubCategoryExists(
+                  subName,
+                  catId,
+                  activeLedger.id,
+                );
+                subCatCount++;
+              }
+            }
+          }
+
+          if (subCatCount > 0) {
+            showSuccess(`Imported ${subCatCount} sub-categories.`);
+            await invalidateAllData(); // Refresh everything
+          }
+        } catch (e: any) {
+          showError(`Partial import error: ${e.message}`);
+        } finally {
+          managementProps.setIsImporting(false);
+        }
       },
       error: (error: any) => {
         showError(`CSV parsing error: ${error.message}`);
@@ -196,20 +259,33 @@ export const useCategoryManagement = () => {
       showError("No categories to export.");
       return;
     }
-    const dataToExport = categories.map((cat) => ({
-      "Category Name": cat.name,
-    }));
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
+
+    const headers = ["Category Name", "Sub Category Name"];
+    const csvContent = [
+      headers.join(","),
+      ...categories.flatMap((cat) => {
+        // If category has sub-categories, create a row for each
+        const catSubs = subCategories.filter((s) => s.category_id === cat.id);
+        if (catSubs.length > 0) {
+          return catSubs.map((sub) =>
+            [
+              `"${cat.name.replace(/"/g, '""')}"`,
+              `"${sub.name.replace(/"/g, '""')}"`,
+            ].join(","),
+          );
+        }
+        // If no sub-categories, just export category
+        return [[`"${cat.name.replace(/"/g, '""')}"`, ""].join(",")];
+      }),
+    ].join("\n");
+
+    const BOM = "\uFEFF";
+    const csvString = BOM + csvContent;
     const fileName = activeLedger
       ? `${slugify(activeLedger.name)}_categories_export.csv`
       : "categories_export.csv";
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    saveFile(fileName, csvString, "Categories Export");
   };
 
   const handleCategoryNameClick = (categoryName: string) => {

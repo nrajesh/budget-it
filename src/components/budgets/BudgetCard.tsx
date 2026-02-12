@@ -1,4 +1,6 @@
 import { Budget } from "../../types/budgets";
+import { Transaction } from "@/data/finance-data";
+import { Wallet, Store, Tag, Layers } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,39 +11,37 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Edit, Trash2, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, endOfDay, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useGoalProgress } from "@/hooks/useGoalProgress";
 
 interface BudgetCardProps {
   budget: Budget;
   onEdit: (budget: Budget) => void;
   onDelete: (budgetId: string) => void;
+  transactions?: Transaction[];
 }
 
-export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
-  const rawPercentage =
-    budget.target_amount > 0
-      ? (budget.spent_amount / budget.target_amount) * 100
-      : 0;
-  const isOverBudget = rawPercentage > 100;
-  const percentage = Math.min(100, rawPercentage);
-  const remaining = budget.target_amount - budget.spent_amount;
-
-  const startDate = format(new Date(budget.start_date), "MMM dd, yyyy");
-  const endDate = budget.end_date
-    ? format(new Date(budget.end_date), "MMM dd, yyyy")
-    : "Ongoing";
-
+export function BudgetCard({
+  budget,
+  onEdit,
+  onDelete,
+  transactions = [],
+}: BudgetCardProps) {
   const { accounts } = useTransactions();
   const navigate = useNavigate();
+
+  // Goal progress (only computed when is_goal)
+  const goalProgress = useGoalProgress(budget as any, transactions, accounts);
+
+  // Scope-aware display name
+  const budgetScope = budget.budget_scope || "category";
+  const displayName = budgetScope !== "category" && budget.budget_scope_name
+    ? budget.budget_scope_name
+    : budget.category_name;
 
   const handleTitleClick = () => {
     // 1. Determine Date Range
@@ -80,18 +80,54 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         .map((a) => a.name);
     }
 
-    navigate("/transactions", {
-      state: {
-        filterCategory: budget.category_name,
-        filterSubCategory: budget.sub_category_name,
-        filterDateRange: {
-          from: startDate.toISOString(),
-          to: endDate.toISOString(),
-        },
-        filterAccounts: filterAccounts,
+    const navState: Record<string, any> = {
+      dateRange: {
+        from: startDate.toISOString(),
+        to: endDate.toISOString(),
       },
-    });
+      filterAccounts: filterAccounts,
+    };
+
+    if (budgetScope === "account") {
+      navState.filterAccount = budget.budget_scope_name || displayName;
+    } else if (budgetScope === "vendor") {
+      navState.filterVendor = budget.budget_scope_name || displayName;
+    } else if (budgetScope === "sub_category") {
+      navState.filterSubCategory = budget.budget_scope_name || displayName;
+    } else {
+      navState.filterCategory = budget.category_name;
+      navState.filterSubCategory = budget.sub_category_name;
+    }
+
+    navigate("/transactions", { state: navState });
   };
+
+  // Render Goal Card
+  if (budget.is_goal) {
+    return (
+      <GoalCard
+        budget={budget}
+        goalProgress={goalProgress}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onTitleClick={handleTitleClick}
+      />
+    );
+  }
+
+  // Render standard Spending Budget Card
+  const rawPercentage =
+    budget.target_amount > 0
+      ? (budget.spent_amount / budget.target_amount) * 100
+      : 0;
+  const isOverBudget = rawPercentage > 100;
+  const percentage = Math.min(100, rawPercentage);
+  const remaining = budget.target_amount - budget.spent_amount;
+
+  const formattedStartDate = format(new Date(budget.start_date), "MMM dd, yyyy");
+  const formattedEndDate = budget.end_date
+    ? format(new Date(budget.end_date), "MMM dd, yyyy")
+    : "Ongoing";
 
   return (
     <Card
@@ -106,8 +142,12 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           className="flex items-baseline gap-2 cursor-pointer hover:underline hover:text-primary transition-colors text-slate-900 dark:text-slate-50"
           onClick={handleTitleClick}
         >
-          {budget.category_name}
-          {budget.sub_category_name && (
+          {budgetScope === "account" && <Wallet className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {budgetScope === "vendor" && <Store className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {(budgetScope as any) === "sub_category" && <Layers className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {(budgetScope as any) === "category" && !budget.sub_category_name && <Tag className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {displayName}
+          {budgetScope === "category" && budget.sub_category_name && (
             <span className="text-xl font-normal text-slate-500 dark:text-slate-400">
               {">"} {budget.sub_category_name}
             </span>
@@ -116,7 +156,7 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         <CardDescription className="text-slate-600 dark:text-slate-400">
           {budget.frequency}
           <br />
-          {startDate} - {endDate}
+          {formattedStartDate} - {formattedEndDate}
           <br />
           <span className="text-xs text-slate-500 dark:text-slate-500">
             Scope:{" "}
@@ -153,37 +193,169 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => onEdit(budget)}
-              aria-label="Edit budget"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Edit Budget</p>
-          </TooltipContent>
-        </Tooltip>
+        <Button variant="outline" size="icon" onClick={() => onEdit(budget)}>
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="destructive"
+          size="icon"
+          onClick={() => onDelete(budget.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="destructive"
-              size="icon"
-              onClick={() => onDelete(budget.id)}
-              aria-label="Delete budget"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Delete Budget</p>
-          </TooltipContent>
-        </Tooltip>
+// ─── Goal Card Sub-component ─────────────────────────────────────
+
+interface GoalCardProps {
+  budget: Budget;
+  goalProgress: ReturnType<typeof useGoalProgress>;
+  onEdit: (budget: Budget) => void;
+  onDelete: (budgetId: string) => void;
+  onTitleClick: () => void;
+}
+
+function GoalCard({
+  budget,
+  goalProgress,
+  onEdit,
+  onDelete,
+  onTitleClick,
+}: GoalCardProps) {
+  const {
+    accumulatedAmount,
+    progressPercentage,
+    expectedProgress,
+    isOnTrack,
+    monthlyContribution,
+  } = goalProgress;
+
+  const formattedStartDate = format(new Date(budget.start_date), "MMM dd, yyyy");
+  const formattedTargetDate = budget.target_date
+    ? format(new Date(budget.target_date), "MMM dd, yyyy")
+    : "End of month";
+
+  return (
+    <Card className="border-emerald-300 dark:border-emerald-700 shadow-lg bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-cyan-50/30 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/10">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle
+            className="flex items-center gap-2 cursor-pointer hover:underline hover:text-emerald-600 transition-colors text-emerald-900 dark:text-emerald-100"
+            onClick={onTitleClick}
+          >
+            <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            {(budget.budget_scope || "category") !== "category" && budget.budget_scope_name
+              ? budget.budget_scope_name
+              : budget.category_name}
+            {(budget.budget_scope || "category") === "category" && budget.sub_category_name && (
+              <span className="text-lg font-normal text-emerald-600/70 dark:text-emerald-400/70">
+                {">"} {budget.sub_category_name}
+              </span>
+            )}
+          </CardTitle>
+          {/* On-track / Off-track badge */}
+          <div
+            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${isOnTrack
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+              }`}
+          >
+            {isOnTrack ? (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                On track
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="h-3 w-3" />
+                Off track
+              </>
+            )}
+          </div>
+        </div>
+        <CardDescription className="text-emerald-700/60 dark:text-emerald-400/60">
+          🎯 Goal • {formattedStartDate} → {formattedTargetDate}
+          {budget.goal_context && (
+            <>
+              <br />
+              <span className="text-xs">
+                Context: {budget.goal_context}
+              </span>
+            </>
+          )}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-between text-sm font-medium text-emerald-800 dark:text-emerald-200">
+          <span>
+            Saved: {formatCurrency(accumulatedAmount, budget.currency)}
+          </span>
+          <span>
+            Target: {formatCurrency(budget.target_amount, budget.currency)}
+          </span>
+        </div>
+
+        {/* Progress bar with pacing marker */}
+        <div className="relative">
+          <Progress
+            value={progressPercentage}
+            className="bg-emerald-200/50 dark:bg-emerald-900/50 h-4"
+            indicatorClassName="bg-gradient-to-r from-emerald-500 to-teal-500"
+          />
+          {/* Pacing marker – vertical line showing expected progress */}
+          <div
+            className="absolute top-0 h-full w-0.5 bg-slate-800 dark:bg-white rounded-full opacity-70 transition-all duration-500"
+            style={{ left: `${Math.min(expectedProgress, 100)}%` }}
+            title={`Expected: ${expectedProgress.toFixed(0)}%`}
+          >
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+              {expectedProgress.toFixed(0)}%
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-emerald-700 dark:text-emerald-300 font-semibold">
+            {progressPercentage.toFixed(1)}% complete
+          </span>
+          {monthlyContribution !== null && monthlyContribution > 0 && (
+            <span className="text-emerald-600/70 dark:text-emerald-400/70 text-xs">
+              ~{formatCurrency(monthlyContribution, budget.currency)}/mo needed
+            </span>
+          )}
+        </div>
+
+        {/* Off track warning */}
+        {!isOnTrack && (
+          <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            <span>
+              You&apos;re behind schedule. Expected{" "}
+              {expectedProgress.toFixed(0)}% but at{" "}
+              {progressPercentage.toFixed(0)}%.
+            </span>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-end space-x-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+          onClick={() => onEdit(budget)}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="destructive"
+          size="icon"
+          onClick={() => onDelete(budget.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </CardFooter>
     </Card>
   );

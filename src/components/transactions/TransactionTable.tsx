@@ -23,6 +23,22 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTableSort } from "@/hooks/useTableSort";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationFirst,
+  PaginationLast,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface TransactionTableProps {
   transactions: any[];
@@ -89,12 +105,12 @@ const TransactionRow = React.memo(
         <span className="cursor-pointer">
           {field === "amount"
             ? value.toLocaleString(undefined, {
-                style: "currency",
-                currency:
-                  accountCurrencyMap?.get(transaction.account) ||
-                  transaction.currency ||
-                  selectedCurrency,
-              })
+              style: "currency",
+              currency:
+                accountCurrencyMap?.get(transaction.account) ||
+                transaction.currency ||
+                selectedCurrency,
+            })
             : field === "date"
               ? new Date(value).toLocaleDateString()
               : value || "-"}
@@ -211,7 +227,7 @@ const TransactionRow = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => {})
+              onScheduleTransactions([transaction], () => { })
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}
@@ -273,28 +289,50 @@ const TransactionTable = ({
     return d;
   }, []);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset pagination when data length changes (e.g. filters applied)
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [transactions.length]);
+
   // Use the sorting hook
   const { sortedData, sortConfig, handleHeaderClick, handleHeaderRightClick } =
     useTableSort({
       data: transactions,
-      initialSort: { key: "date", direction: "desc" }, // Default sort by date descending seems appropriate for transactions
+      initialSort: { key: "date", direction: "desc" },
     });
 
-  // Selection Handlers
+  // Calculate Pagination
+  const totalItems = sortedData.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const offset = (currentPage - 1) * pageSize;
+  const paginatedData = useMemo(
+    () => sortedData.slice(offset, offset + pageSize),
+    [sortedData, offset, pageSize],
+  );
+
+  // Selection Handlers (Updated for Pagination)
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
-      if (prev.size === sortedData.length) {
-        return new Set();
+      const currentIds = paginatedData.map((t) => t.id);
+      const allSelected = currentIds.every((id) => prev.has(id));
+
+      const newSet = new Set(prev);
+      if (allSelected) {
+        currentIds.forEach((id) => newSet.delete(id));
       } else {
-        return new Set(sortedData.map((t) => t.id));
+        currentIds.forEach((id) => newSet.add(id));
       }
+      return newSet;
     });
-  }, [sortedData]);
+  }, [paginatedData]);
 
   const toggleSelect = useCallback(
     (id: string) => {
-      // Determine linked IDs first (stable logic, but depends on sortedData array)
-      // Finding the transaction inside the callback ensures we use the latest 'sortedData'
+      // Determine linked IDs first
       const txn = sortedData.find((t) => t.id === id);
       const idsToToggle = [id];
 
@@ -308,7 +346,6 @@ const TransactionTable = ({
 
       setSelectedIds((prev) => {
         const newSelected = new Set(prev);
-        // Determine if we are selecting or deselecting based on the PRIMARY id
         const isSelected = prev.has(id);
 
         idsToToggle.forEach((targetId) => {
@@ -375,11 +412,16 @@ const TransactionTable = ({
     );
   }
 
+  // Helper to check if all current page items are selected
+  const allCurrentPageSelected =
+    paginatedData.length > 0 &&
+    paginatedData.every((t) => selectedIds.has(t.id));
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {/* Bulk Toolbar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2">
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2 sticky top-0 z-10 backdrop-blur-sm">
           <span className="text-sm font-medium px-2">
             {selectedIds.size} selected
           </span>
@@ -425,10 +467,7 @@ const TransactionTable = ({
             <TableRow>
               <TableHead className="w-[40px]">
                 <Checkbox
-                  checked={
-                    selectedIds.size === sortedData.length &&
-                    sortedData.length > 0
-                  }
+                  checked={allCurrentPageSelected}
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
@@ -500,7 +539,7 @@ const TransactionTable = ({
                 </TableCell>
               </TableRow>
             ) : (
-              sortedData.map((transaction) => (
+              paginatedData.map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
@@ -522,6 +561,73 @@ const TransactionTable = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Footer */}
+      {totalItems > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
+            <span>Rows per page</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setCurrentPage(1); // Reset to first page when changing size
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={pageSize.toString()} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 50, 100].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="h-4 w-px bg-border mx-2" />
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+
+          <Pagination className="justify-end w-auto order-1 sm:order-2">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationFirst
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    setCurrentPage((p) => Math.max(1, p - 1))
+                  }
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+
+              {/* Simple Page Indicator / Jumper could go here, but focusing on Nav controls for now */}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLast
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 };

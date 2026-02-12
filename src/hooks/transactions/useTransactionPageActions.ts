@@ -8,6 +8,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
 import { Transaction, AccountType, Ledger } from "@/types/dataProvider";
+import { saveFile } from "@/utils/backupUtils";
 
 export interface ImportConfig {
   importMode?: "replace" | "append";
@@ -222,14 +223,10 @@ export const useTransactionPageActions = (
     }
 
     const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const BOM = "\uFEFF";
+    const csvString = BOM + csv;
+
+    saveFile(fileName, csvString, "Budget It Transactions");
   };
 
   // --- Import Logic ---

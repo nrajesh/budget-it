@@ -5,9 +5,14 @@ import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import Papa from "papaparse";
 import { showError } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
+import { saveFile } from "@/utils/backupUtils";
+
+import { useLedger } from "@/contexts/LedgerContext";
+import { slugify } from "@/lib/utils";
 
 export const usePayeeManagement = (isAccount: boolean) => {
   const { invalidateAllData, deleteEntity } = useTransactions();
+  const { activeLedger } = useLedger();
   const navigate = useNavigate();
 
   const entityName = isAccount ? "Account" : "Vendor";
@@ -58,11 +63,11 @@ export const usePayeeManagement = (isAccount: boolean) => {
           .map((row: any) =>
             isAccount
               ? {
-                  name: row["Account Name"],
-                  currency: row["Currency"],
-                  starting_balance: parseFloat(row["Starting Balance"]) || 0,
-                  remarks: row["Remarks"],
-                }
+                name: row["Account Name"],
+                currency: row["Currency"],
+                starting_balance: parseFloat(row["Starting Balance"]) || 0,
+                remarks: row["Remarks"],
+              }
               : { name: row["Vendor Name"] },
           )
           .filter((item) => item.name);
@@ -88,24 +93,42 @@ export const usePayeeManagement = (isAccount: boolean) => {
       showError(`No ${entityNamePlural} to export.`);
       return;
     }
-    const dataToExport = payees.map((p) =>
-      isAccount
-        ? {
-            "Account Name": p.name,
-            Currency: p.currency,
-            "Starting Balance": p.starting_balance,
-            Remarks: p.remarks,
-          }
-        : { "Vendor Name": p.name },
-    );
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.setAttribute("href", URL.createObjectURL(blob));
-    link.setAttribute("download", `${entityNamePlural}_export.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    let csvContent = "";
+    if (isAccount) {
+      const headers = [
+        "Account Name",
+        "Currency",
+        "Starting Balance",
+        "Remarks",
+      ];
+      csvContent = [
+        headers.join(","),
+        ...payees.map((p) =>
+          [
+            `"${p.name.replace(/"/g, '""')}"`,
+            p.currency || "USD",
+            p.starting_balance || 0,
+            `"${(p.remarks || "").replace(/"/g, '""')}"`,
+          ].join(","),
+        ),
+      ].join("\n");
+    } else {
+      const headers = ["Vendor Name"];
+      csvContent = [
+        headers.join(","),
+        ...payees.map((p) => [`"${p.name.replace(/"/g, '""')}"`].join(",")),
+      ].join("\n");
+    }
+
+    // Add BOM for Excel compatibility
+    const BOM = "\uFEFF";
+    const csvString = BOM + csvContent;
+    const fileName = activeLedger
+      ? `${slugify(activeLedger.name)}_${entityNamePlural}_export.csv`
+      : `${entityNamePlural}_export.csv`;
+
+    saveFile(fileName, csvString, `${entityName} Export`);
   };
 
   const handlePayeeNameClick = (payeeName: string) => {
@@ -118,6 +141,6 @@ export const usePayeeManagement = (isAccount: boolean) => {
     handleFileChange,
     handleExportClick,
     handlePayeeNameClick,
-    selectedPayee: managementProps.selectedEntity, // Alias for clarity
+    selectedPayee: managementProps.selectedEntity,
   };
 };

@@ -15,6 +15,7 @@ import { slugify } from "@/lib/utils";
 import { useDataProvider } from "@/context/DataProviderContext";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
+import { saveFile } from "@/utils/backupUtils";
 
 interface ReportLayoutProps {
   title: string;
@@ -298,8 +299,50 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
 
   const handleExcelExport = () =>
     showSuccess("Excel export is not yet implemented.");
-  const handleCsvExport = () =>
-    showSuccess("CSV export is not yet implemented.");
+  const handleCsvExport = () => {
+    if (combinedFilteredTransactions.length === 0) {
+      showError("No transactions to export.");
+      return;
+    }
+
+    const headers = [
+      "Date",
+      "Account",
+      "Vendor",
+      "Category",
+      "Sub Category",
+      "Amount",
+      "Currency",
+      "Remarks",
+    ];
+
+    const csvContent = [
+      headers.join(","),
+      ...combinedFilteredTransactions.map((t) =>
+        [
+          format(new Date(t.date), "yyyy-MM-dd"),
+          `"${(accountNameMap.get(slugify(t.account)) || t.account).replace(/"/g, '""')}"`,
+          `"${t.vendor.replace(/"/g, '""')}"`,
+          `"${t.category.replace(/"/g, '""')}"`,
+          `"${(t.sub_category || "").replace(/"/g, '""')}"`,
+          t.amount,
+          t.currency,
+          `"${(t.remarks || "").replace(/"/g, '""')}"`,
+        ].join(","),
+      ),
+    ].join("\n");
+
+    const BOM = "\uFEFF";
+    const csvString = [BOM + csvContent].join("");
+    const ledgerName = activeLedger ? slugify(activeLedger.name) : "report";
+    const fileName = `${ledgerName}_${title.replace(/\s+/g, "_")}_Export.csv`;
+
+    saveFile(fileName, csvString, "Budget It Report Export").then((success) => {
+      if (success) {
+        showSuccess("CSV export completed successfully.");
+      }
+    });
+  };
 
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">

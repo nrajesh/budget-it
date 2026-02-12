@@ -9,39 +9,58 @@ export interface ProgressCallback {
   (progress: { stage: string; progress: number; totalStages: number }): void;
 }
 
-const DEMO_BUDGETS = [
-  { category: "Groceries", amount: 800, frequency: "Monthly" },
-  { category: "Dining Out", sub: "Coffee", amount: 120, frequency: "Monthly" },
-  { category: "Entertainment", amount: 200, frequency: "Monthly" },
-  { category: "Transport", sub: "Fuel", amount: 250, frequency: "Monthly" },
-  { category: "Shopping", amount: 300, frequency: "Monthly" },
-  { category: "Pets", amount: 100, frequency: "Monthly" },
-  { category: "Personal Care", amount: 150, frequency: "Monthly" },
-  { category: "Education", amount: 500, frequency: "Yearly" },
-  { category: "Utilities", amount: 400, frequency: "Monthly" },
-  { category: "Health", amount: 300, frequency: "Monthly" },
-  {
-    category: "Dining Out",
-    sub: "Restaurants",
-    amount: 400,
-    frequency: "Monthly",
-  },
-  { category: "Home Services", amount: 200, frequency: "Monthly" },
-  {
-    category: "Transport",
-    sub: "Public Transport",
-    amount: 100,
-    frequency: "Monthly",
-  },
-  {
-    category: "Shopping",
-    sub: "Electronics",
-    amount: 1000,
-    frequency: "Yearly",
-  },
-  { category: "Shopping", sub: "Clothing", amount: 200, frequency: "Monthly" },
-  { category: "Housing", sub: "Rent", amount: 1500, frequency: "Monthly" },
-];
+const DEMO_BUDGETS: {
+  category?: string;
+  sub?: string;
+  amount: number;
+  frequency: string;
+  budget_scope?: "category" | "account" | "vendor";
+  budget_scope_name?: string;
+  is_goal?: boolean;
+  goal_context?: string;
+}[] = [
+    // Category-level spending budgets
+    { category: "Groceries", amount: 800, frequency: "Monthly" },
+    { category: "Dining Out", sub: "Coffee", amount: 120, frequency: "Monthly" },
+    { category: "Entertainment", amount: 200, frequency: "Monthly" },
+    { category: "Transport", sub: "Fuel", amount: 250, frequency: "Monthly" },
+    { category: "Shopping", amount: 300, frequency: "Monthly" },
+    { category: "Pets", amount: 100, frequency: "Monthly" },
+    { category: "Personal Care", amount: 150, frequency: "Monthly" },
+    { category: "Education", amount: 500, frequency: "Yearly" },
+    { category: "Utilities", amount: 400, frequency: "Monthly" },
+    { category: "Health", amount: 300, frequency: "Monthly" },
+    {
+      category: "Dining Out",
+      sub: "Restaurants",
+      amount: 400,
+      frequency: "Monthly",
+    },
+    { category: "Home Services", amount: 200, frequency: "Monthly" },
+    {
+      category: "Transport",
+      sub: "Public Transport",
+      amount: 100,
+      frequency: "Monthly",
+    },
+    {
+      category: "Shopping",
+      sub: "Electronics",
+      amount: 1000,
+      frequency: "Yearly",
+    },
+    { category: "Shopping", sub: "Clothing", amount: 200, frequency: "Monthly" },
+    { category: "Housing", sub: "Rent", amount: 1500, frequency: "Monthly" },
+    // Account-level spending budgets
+    { amount: 2000, frequency: "Monthly", budget_scope: "account", budget_scope_name: "__ACCOUNT_0__" },
+    { amount: 500, frequency: "Monthly", budget_scope: "account", budget_scope_name: "__ACCOUNT_1__" },
+    // Vendor-level spending budgets
+    { amount: 50, frequency: "Monthly", budget_scope: "vendor", budget_scope_name: "Netflix" },
+    { amount: 200, frequency: "Monthly", budget_scope: "vendor", budget_scope_name: "Employer" },
+    // Savings goals
+    { category: "Groceries", amount: 5000, frequency: "Monthly", is_goal: true, goal_context: "Groceries" },
+    { amount: 10000, frequency: "Monthly", budget_scope: "account", budget_scope_name: "__ACCOUNT_1__", is_goal: true, goal_context: "__ACCOUNT_1__" },
+  ];
 
 // Template for scheduled transactions for HOME budget
 const HOME_SCHEDULED_TRANSACTIONS = [
@@ -415,25 +434,53 @@ export const generateDiverseDemoData = async (
     }
 
     // --- Create Budgets ---
-    // --- Create Budgets ---
-    // const budgetCategories = ... (unused)
-    const shuffledBudgets = DEMO_BUDGETS.sort(() => 0.5 - Math.random());
+    const shuffledBudgets = [...DEMO_BUDGETS].sort(() => 0.5 - Math.random());
     const selectedBudgets = shuffledBudgets.slice(0, config.budgetCount);
 
     for (const budget of selectedBudgets) {
-      const catId = categoryMap.get(budget.category);
-      if (!catId) continue;
+      const scope = budget.budget_scope || "category";
+
+      // Resolve __ACCOUNT_N__ placeholders to real account names
+      let resolvedScopeName = budget.budget_scope_name || "";
+      let resolvedGoalContext = budget.goal_context || "";
+      const placeholderMatch = resolvedScopeName.match(/^__ACCOUNT_(\d+)__$/);
+      if (placeholderMatch) {
+        const idx = parseInt(placeholderMatch[1], 10);
+        resolvedScopeName = createdAccountNames[idx % createdAccountNames.length] || createdAccountNames[0];
+      }
+      const goalPlaceholderMatch = resolvedGoalContext.match(/^__ACCOUNT_(\d+)__$/);
+      if (goalPlaceholderMatch) {
+        const idx = parseInt(goalPlaceholderMatch[1], 10);
+        resolvedGoalContext = createdAccountNames[idx % createdAccountNames.length] || createdAccountNames[0];
+      }
+
+      // For category-scoped budgets, resolve category ID
+      let catId = "";
+      if (scope === "category") {
+        catId = categoryMap.get(budget.category || "") || "";
+        if (!catId) continue; // Skip if category doesn't exist
+      }
+
+      // Target date for goals: 6 months from now
+      const targetDate = budget.is_goal
+        ? new Date(new Date().getFullYear(), new Date().getMonth() + 6, 1).toISOString()
+        : null;
 
       await dataProvider.addBudget({
         user_id: lId,
         category_id: catId,
-        category_name: budget.category,
+        category_name: scope === "category" ? (budget.category || "") : resolvedScopeName,
         target_amount: budget.amount,
         currency: config.currency,
-        start_date: new Date(new Date().getFullYear(), 0, 1).toISOString(), // Start of year
+        start_date: new Date(new Date().getFullYear(), 0, 1).toISOString(),
         end_date: null,
         frequency: budget.frequency as Budget["frequency"],
         sub_category_name: budget.sub,
+        budget_scope: scope,
+        budget_scope_name: scope !== "category" ? resolvedScopeName : undefined,
+        is_goal: budget.is_goal || false,
+        target_date: targetDate,
+        goal_context: budget.is_goal ? resolvedGoalContext : undefined,
       });
     }
 
@@ -539,16 +586,16 @@ export const generateDiverseDemoData = async (
       if (isTransfer && createdAccountNames.length > 1 && !isIncomeOverride) {
         const acc1 =
           createdAccountNames[
-            Math.floor(Math.random() * createdAccountNames.length)
+          Math.floor(Math.random() * createdAccountNames.length)
           ];
         let acc2 =
           createdAccountNames[
-            Math.floor(Math.random() * createdAccountNames.length)
+          Math.floor(Math.random() * createdAccountNames.length)
           ];
         while (acc2 === acc1) {
           acc2 =
             createdAccountNames[
-              Math.floor(Math.random() * createdAccountNames.length)
+            Math.floor(Math.random() * createdAccountNames.length)
             ];
         }
         const amount = Math.floor(Math.random() * 500) + 10;
@@ -593,7 +640,7 @@ export const generateDiverseDemoData = async (
       const vendor = getRandomVendor(cat, sub || "");
       const account =
         createdAccountNames[
-          Math.floor(Math.random() * createdAccountNames.length)
+        Math.floor(Math.random() * createdAccountNames.length)
         ];
       const currency = accountMap.get(account) || config.currency;
 

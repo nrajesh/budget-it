@@ -8,7 +8,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Wallet,
+  Store,
+  Layers,
+  Tag,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -51,6 +58,9 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+      const scope = (budget as any).budget_scope || "category";
+      const scopeName = ((budget as any).budget_scope_name || "").trim().toLowerCase();
+
       const category = categories.find((c) => c.id === budget.category_id);
       const categoryName = category?.name || budget.category_name;
 
@@ -61,21 +71,28 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
 
       const actualSpending = transactions
         .filter((t) => {
-          const isCategoryMatch = t.category === categoryName;
           const isDateMatch =
             new Date(t.date) >= periodStart && new Date(t.date) <= periodEnd;
           const isAmountMatch = t.amount < 0;
 
-          if (!isCategoryMatch || !isDateMatch || !isAmountMatch) return false;
+          if (!isDateMatch || !isAmountMatch) return false;
 
-          // If budget has a sub-category, transaction MUST match it
-          if (budget.sub_category_id) {
-            // If we can't resolve the name, we can't match, so return false to be safe
-            if (!subCategoryName) return false;
-            return t.sub_category === subCategoryName;
+          // Scope-based matching
+          if (scope === "account") {
+            return (t.account || "").trim().toLowerCase() === scopeName;
+          } else if (scope === "vendor") {
+            return (t.vendor || "").trim().toLowerCase() === scopeName;
+          } else {
+            const isCategoryMatch = t.category === categoryName;
+            if (!isCategoryMatch) return false;
+
+            // If budget has a sub-category, transaction MUST match it
+            if (budget.sub_category_id) {
+              if (!subCategoryName) return false;
+              return t.sub_category === subCategoryName;
+            }
+            return true;
           }
-
-          return true;
         })
         .reduce((sum, t) => {
           const convertedAmount = convertBetweenCurrencies(
@@ -103,7 +120,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Category</TableHead>
+            <TableHead>Tracking</TableHead>
             <TableHead>Target</TableHead>
             <TableHead>Progress</TableHead>
             <TableHead>Frequency</TableHead>
@@ -133,18 +150,51 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
 
               const subCategoryName = budget.sub_category_id
                 ? subCategories.find((s) => s.id === budget.sub_category_id)
-                    ?.name
+                  ?.name
                 : budget.sub_category_name;
 
               return (
                 <TableRow key={budget.id}>
                   <TableCell className="font-medium">
-                    <div>{budget.category_name}</div>
-                    {subCategoryName && (
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        ↳ {subCategoryName}
-                      </div>
-                    )}
+                    {(() => {
+                      if ((budget as any).budget_scope === "account") {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Wallet className="h-4 w-4 text-slate-400" />
+                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
+                            <span className="text-xs text-slate-500">(Account)</span>
+                          </div>
+                        );
+                      }
+                      if ((budget as any).budget_scope === "vendor") {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Store className="h-4 w-4 text-slate-400" />
+                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
+                            <span className="text-xs text-slate-500">(Vendor)</span>
+                          </div>
+                        );
+                      }
+                      if ((budget as any).budget_scope === "sub_category") {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Layers className="h-4 w-4 text-slate-400" />
+                            <span className="font-medium text-slate-100">{budget.budget_scope_name}</span>
+                            <span className="text-xs text-slate-500">(Sub-cat)</span>
+                          </div>
+                        );
+                      }
+                      // Default case for category or if scope is not defined/recognized
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-slate-400" />
+                          <span className="font-medium text-slate-100">{budget.category_name}</span>
+                          {subCategoryName && (
+                            <span className="text-xs text-slate-500">({subCategoryName})</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {formatCurrency(budget.target_amount, budget.currency)}
