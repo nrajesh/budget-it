@@ -20,6 +20,15 @@ import {
  * @param endDate End of the projection window
  * @returns Array of virtual Transaction objects with is_projected: true
  */
+const FREQUENCY_MAP: Record<string, { value: number; unit: string }> = {
+  Daily: { value: 1, unit: "d" },
+  Weekly: { value: 1, unit: "w" },
+  "Bi-Weekly": { value: 2, unit: "w" },
+  Monthly: { value: 1, unit: "m" },
+  Quarterly: { value: 3, unit: "m" },
+  Yearly: { value: 1, unit: "y" },
+};
+
 export function projectScheduledTransactions(
   scheduledTransactions: ScheduledTransaction[],
   startDate: Date,
@@ -55,38 +64,11 @@ export function projectScheduledTransactions(
     let intervalValue = 1;
     let intervalUnit = "m";
 
-    if (
-      [
-        "Daily",
-        "Weekly",
-        "Bi-Weekly",
-        "Monthly",
-        "Quarterly",
-        "Yearly",
-      ].includes(st.frequency)
-    ) {
-      switch (st.frequency) {
-        case "Daily":
-          intervalUnit = "d";
-          break;
-        case "Weekly":
-          intervalUnit = "w";
-          break;
-        case "Bi-Weekly":
-          intervalUnit = "w";
-          intervalValue = 2;
-          break;
-        case "Monthly":
-          intervalUnit = "m";
-          break;
-        case "Quarterly":
-          intervalUnit = "m";
-          intervalValue = 3;
-          break;
-        case "Yearly":
-          intervalUnit = "y";
-          break;
-      }
+    const mapped = FREQUENCY_MAP[st.frequency];
+
+    if (mapped) {
+      intervalValue = mapped.value;
+      intervalUnit = mapped.unit;
     } else {
       // Parse "1d", "2w" etc.
       const match = st.frequency.match(/^(\d+)([dwmy])$/);
