@@ -18,6 +18,8 @@ import { slugify } from "@/lib/utils";
 import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
 import { projectScheduledTransactions } from "@/utils/forecasting";
 import { addMonths } from "date-fns";
+import { Transaction } from "@/data/finance-data";
+import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 
@@ -128,13 +130,14 @@ const Transactions = () => {
   const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
 
   const [isScheduledDialogOpen, setIsScheduledDialogOpen] = useState(false);
   const [scheduledTransactionToEdit, setScheduledTransactionToEdit] =
-    useState<any>(null);
+    useState<ScheduledTransaction | null>(null);
   const [selectedTransactionForSchedule, setSelectedTransactionForSchedule] =
-    useState<any>(null);
+    useState<ScheduledTransaction | null>(null);
 
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
@@ -142,7 +145,7 @@ const Transactions = () => {
   const { toast } = useToast();
 
   const filteredTransactions = React.useMemo(() => {
-    let projected: any[] = [];
+    let projected: Transaction[] = [];
     if (scheduledTransactions.length > 0) {
       const today = new Date();
       const start = new Date(today);
@@ -271,7 +274,14 @@ const Transactions = () => {
       // Find full object to carry extra metadata if needed (like recurrence_id for projected items)
       // Actually, filteredTransactions should have it.
       const full = filteredTransactions.find((t) => t.id === i.id);
-      return full ? { ...i, ...full } : i;
+      return full
+        ? {
+            ...i,
+            ...full,
+            transfer_id: full.transfer_id || undefined,
+            recurrence_id: full.recurrence_id || undefined,
+          }
+        : i;
     });
 
     await deleteMultipleTransactions(extendedItems);
@@ -279,7 +289,7 @@ const Transactions = () => {
   // Removed handleConfirmDelete and related dialogs.
 
   const handleScheduleTransactions = (
-    selectedTransactions: any[],
+    selectedTransactions: Transaction[],
     clearSelection: () => void,
   ) => {
     if (selectedTransactions.length === 0) return;
@@ -309,9 +319,9 @@ const Transactions = () => {
     setSelectedTransactionForSchedule({
       ...transaction,
       frequency: "Monthly",
-      id: undefined,
+      id: "",
       date: new Date().toISOString(),
-    });
+    } as unknown as ScheduledTransaction);
     setIsScheduledDialogOpen(true);
     clearSelection();
   };
@@ -511,7 +521,7 @@ const Transactions = () => {
       <CSVMappingDialog
         isOpen={mappingDialogState.isOpen}
         onClose={() =>
-          setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }))
+          setMappingDialogState((prev) => ({ ...prev, isOpen: false }))
         }
         file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}

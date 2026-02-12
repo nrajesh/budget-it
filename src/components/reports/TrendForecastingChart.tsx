@@ -20,8 +20,10 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
+import { Transaction } from "@/data/finance-data";
+
 interface TrendForecastingChartProps {
-  transactions: any[]; // This will now include future scheduled transactions
+  transactions: Transaction[]; // This will now include future scheduled transactions
 }
 
 const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({

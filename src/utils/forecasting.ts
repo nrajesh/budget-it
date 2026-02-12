@@ -1,4 +1,4 @@
-import { ScheduledTransaction } from "@/types/dataProvider";
+import { ScheduledTransaction, Transaction } from "@/types/dataProvider";
 import {
   addDays,
   addWeeks,
@@ -20,13 +20,22 @@ import {
  * @param endDate End of the projection window
  * @returns Array of virtual Transaction objects with is_projected: true
  */
+const FREQUENCY_MAP: Record<string, { value: number; unit: string }> = {
+  Daily: { value: 1, unit: "d" },
+  Weekly: { value: 1, unit: "w" },
+  "Bi-Weekly": { value: 2, unit: "w" },
+  Monthly: { value: 1, unit: "m" },
+  Quarterly: { value: 3, unit: "m" },
+  Yearly: { value: 1, unit: "y" },
+};
+
 export function projectScheduledTransactions(
   scheduledTransactions: ScheduledTransaction[],
   startDate: Date,
   endDate: Date,
-): any[] {
-  // We return any[] that matches Transaction shape but with extra flags if needed
-  const projected: any[] = [];
+): Transaction[] {
+  // We return Transaction[] that matches Transaction shape but with extra flags if needed
+  const projected: Transaction[] = [];
   const windowStart = startOfDay(startDate);
   const windowEnd = endOfDay(endDate);
 
@@ -50,6 +59,24 @@ export function projectScheduledTransactions(
     // Loop limit safety (e.g. 500 instances max per transaction to prevent infinite loops)
     let iterations = 0;
     const MAX_ITERATIONS = 365 * 5; // 5 years of daily
+
+    // Pre-calculate frequency interval to avoid parsing in the loop
+    let intervalValue = 1;
+    let intervalUnit = "m";
+
+    const mapped = FREQUENCY_MAP[st.frequency];
+
+    if (mapped) {
+      intervalValue = mapped.value;
+      intervalUnit = mapped.unit;
+    } else {
+      // Parse "1d", "2w" etc.
+      const match = st.frequency.match(/^(\d+)([dwmy])$/);
+      if (match) {
+        intervalValue = parseInt(match[1], 10);
+        intervalUnit = match[2];
+      }
+    }
 
     while (
       isBefore(currentDate, windowEnd) ||
@@ -80,48 +107,11 @@ export function projectScheduledTransactions(
           is_projected: true, // Flag for UI/Logic to distinguish
           recurrence_id: st.id,
           transfer_id: st.transfer_id,
+          created_at: currentDate.toISOString(),
         });
       }
 
       // Advance Date
-      // Advance Date
-      // Support legacy "Daily", "Weekly", "Monthly", "Yearly"
-      // And new format "1d", "2w", "3m", "1y"
-      let intervalValue = 1;
-      let intervalUnit = "m";
-
-      if (["Daily", "Weekly", "Monthly", "Yearly"].includes(st.frequency)) {
-        switch (st.frequency) {
-          case "Daily":
-            intervalUnit = "d";
-            break;
-          case "Weekly":
-            intervalUnit = "w";
-            break;
-          case "Bi-Weekly":
-            intervalUnit = "w";
-            intervalValue = 2;
-            break;
-          case "Monthly":
-            intervalUnit = "m";
-            break;
-          case "Quarterly":
-            intervalUnit = "m";
-            intervalValue = 3;
-            break;
-          case "Yearly":
-            intervalUnit = "y";
-            break;
-        }
-      } else {
-        // Parse "1d", "2w" etc.
-        const match = st.frequency.match(/^(\d+)([dwmy])$/);
-        if (match) {
-          intervalValue = parseInt(match[1], 10);
-          intervalUnit = match[2];
-        }
-      }
-
       switch (intervalUnit) {
         case "d":
           currentDate = addDays(currentDate, intervalValue);

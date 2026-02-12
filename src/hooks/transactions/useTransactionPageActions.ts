@@ -8,11 +8,17 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
 import { Transaction, AccountType, Ledger } from "@/types/dataProvider";
+import { saveFile } from "@/utils/backupUtils";
 
 export interface ImportConfig {
   importMode?: "replace" | "append";
   decimalSeparator?: "." | ",";
   dateFormat?: string;
+}
+
+export interface MappingDialogState {
+  isOpen: boolean;
+  file: File | null;
 }
 
 export interface ExportRow {
@@ -31,7 +37,7 @@ export interface ExportRow {
 
 // Loose interface for raw CSV rows since headers can vary
 export interface ImportRow {
-  [key: string]: string | undefined;
+  [key: string]: unknown;
   Date?: string;
   date?: string;
   Account?: string;
@@ -84,13 +90,11 @@ export const useTransactionPageActions = (
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [mappingDialogState, setMappingDialogState] = useState<{
-    isOpen: boolean;
-    file: File | null;
-  }>({
-    isOpen: false,
-    file: null,
-  });
+  const [mappingDialogState, setMappingDialogState] =
+    useState<MappingDialogState>({
+      isOpen: false,
+      file: null,
+    });
 
   // --- Export Logic ---
   const handleExport = () => {
@@ -222,14 +226,10 @@ export const useTransactionPageActions = (
     }
 
     const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const BOM = "\uFEFF";
+    const csvString = BOM + csv;
+
+    saveFile(fileName, csvString, "Budget It Transactions");
   };
 
   // --- Import Logic ---
@@ -473,7 +473,7 @@ export const useTransactionPageActions = (
             ""
           ).trim(),
           currency: (row.Currency || row.currency || "USD").trim(),
-          recurrence_frequency: (row.Frequency || row.frequency || null) as any, // TODO: validate Frequency
+          recurrence_frequency: row.Frequency || row.frequency || null, // TODO: validate Frequency
           recurrence_end_date:
             parseRobustDate(
               row["End Date"] || row["end date"] || "",
@@ -530,7 +530,7 @@ export const useTransactionPageActions = (
           }
         }
         // Log removed
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("Insert failed at some point", e);
       }
 
@@ -575,18 +575,21 @@ export const useTransactionPageActions = (
         progress: 100,
         totalStages: 4,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setOperationProgress(null);
       toast({
         title: "Error importing transactions",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive",
       });
     }
   };
 
-  const handleMappingConfirm = (data: ImportRow[], config: ImportConfig) => {
-    processImport(data, config);
+  const handleMappingConfirm = (
+    data: Record<string, unknown>[],
+    config: ImportConfig,
+  ) => {
+    processImport(data as ImportRow[], config);
     setMappingDialogState((prev) => ({ ...prev, isOpen: false }));
   };
 
