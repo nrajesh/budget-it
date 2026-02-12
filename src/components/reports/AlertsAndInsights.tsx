@@ -15,16 +15,17 @@ import {
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { differenceInDays } from "date-fns";
-import { Budget } from "@/data/finance-data";
+import { Budget, Transaction } from "@/data/finance-data";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import { useNavigate } from "react-router-dom";
 
 import { calculateBudgetSpent } from "@/utils/budgetUtils";
 import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface AlertsAndInsightsProps {
-  historicalTransactions: any[];
-  futureTransactions: any[];
-  accounts: any[];
+  historicalTransactions: Transaction[];
+  futureTransactions: Transaction[];
+  accounts: Payee[];
   budgets: Budget[];
 }
 
@@ -177,8 +178,8 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
       const spentInSelectedCurrency = calculateBudgetSpent(
         budget as any, // Cast to any to avoid type mismatch with DataProvider Budget vs finance-data Budget
         historicalTransactions,
-        accounts,
-        vendors,
+        accounts as unknown as import("@/types/dataProvider").Account[],
+        vendors as unknown as import("@/types/dataProvider").Vendor[],
         convertBetweenCurrencies,
         selectedCurrency,
       );
@@ -267,7 +268,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
                     Low Balance Warnings:
                   </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
-                    {lowBalanceAlerts.map((alert: any, index: number) => (
+                    {lowBalanceAlerts.map((alert, index: number) => (
                       <li key={`${alert.accountName}-${index}`}>
                         <span
                           onClick={() => handleAccountClick(alert.accountName)}

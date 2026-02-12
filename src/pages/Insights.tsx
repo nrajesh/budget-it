@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from "@/context/DataProviderContext";
@@ -57,7 +57,8 @@ export default function Insights() {
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
 
   // Fetch budgets logic
-  const fetchBudgets = async () => {
+  // Fetch budgets logic
+  const fetchBudgets = useCallback(async () => {
     if (!activeLedger?.id) return;
     setIsLoading(true);
     try {
@@ -68,11 +69,11 @@ export default function Insights() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeLedger?.id, dataProvider]);
 
   useEffect(() => {
     fetchBudgets();
-  }, [activeLedger?.id, dataProvider]);
+  }, [fetchBudgets]);
 
   // Budget Insights Logic
   const insights = useMemo(() => {

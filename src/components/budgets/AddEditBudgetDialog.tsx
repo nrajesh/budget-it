@@ -93,7 +93,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const accountTypes = React.useMemo(() => {
-    const types = new Set(accounts.map((a) => (a as any).type || "Other"));
+    const types = new Set(accounts.map((a) => a.type || "Other"));
     return Array.from(types).sort();
   }, [accounts]);
 
@@ -388,6 +388,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       categoryName = values.budget_scope_name || "";
       categoryId = "";
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dbPayload: any = {
       user_id: activeLedger.id,
       category_id: categoryId,
@@ -437,8 +438,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       if (onSuccess) onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      showError(`Failed to save: ${error.message}`);
+    } catch (error: unknown) {
+      showError(`Failed to save: ${(error as Error).message}`);
     } finally {
       setIsSubmitting(false);
     }

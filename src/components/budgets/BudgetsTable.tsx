@@ -58,8 +58,8 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
       const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      const scope = (budget as any).budget_scope || "category";
-      const scopeName = ((budget as any).budget_scope_name || "").trim().toLowerCase();
+      const scope = budget.budget_scope || "category";
+      const scopeName = (budget.budget_scope_name || "").trim().toLowerCase();
 
       const category = categories.find((c) => c.id === budget.category_id);
       const categoryName = category?.name || budget.category_name;
@@ -157,7 +157,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                 <TableRow key={budget.id}>
                   <TableCell className="font-medium">
                     {(() => {
-                      if ((budget as any).budget_scope === "account") {
+                      if (budget.budget_scope === "account") {
                         return (
                           <div className="flex items-center gap-2">
                             <Wallet className="h-4 w-4 text-slate-400" />
@@ -166,7 +166,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                           </div>
                         );
                       }
-                      if ((budget as any).budget_scope === "vendor") {
+                      if (budget.budget_scope === "vendor") {
                         return (
                           <div className="flex items-center gap-2">
                             <Store className="h-4 w-4 text-slate-400" />
@@ -175,7 +175,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                           </div>
                         );
                       }
-                      if ((budget as any).budget_scope === "sub_category") {
+                      if (budget.budget_scope === "sub_category") {
                         return (
                           <div className="flex items-center gap-2">
                             <Layers className="h-4 w-4 text-slate-400" />

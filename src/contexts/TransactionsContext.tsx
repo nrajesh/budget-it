@@ -230,7 +230,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
   // const { user } = useUser();
-  const { activeLedger, refreshLedgers, switchLedger } = useLedger();
+  const { activeLedger, refreshLedgers } = useLedger();
   const ledgerId = activeLedger?.id || "";
 
   const [operationProgress, setOperationProgress] =
@@ -295,10 +295,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-        | "DELETE_TRANSACTION"
-        | "DELETE_SCHEDULE"
-        | "DELETE_BUDGET"
-        | "DELETE_ENTITY";
+      | "DELETE_TRANSACTION"
+      | "DELETE_SCHEDULE"
+      | "DELETE_BUDGET"
+      | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -1425,9 +1425,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [
     dataProvider,
     refreshLedgers,
-    switchLedger,
-    invalidateAllData,
-    refetchTransactions,
+    dataProvider,
     queryClient,
   ]);
 

@@ -78,6 +78,7 @@ const ScheduledBackups = () => {
   const [frequencyInput, setFrequencyInput] = React.useState("");
   const [isEncrypted, setIsEncrypted] = React.useState(false);
   const [password, setPassword] = React.useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dirHandle, setDirHandle] = React.useState<any>(null); // FileSystemDirectoryHandle
   const [backupPath, setBackupPath] = React.useState<string | null>(null); // Electron Path
 
@@ -174,9 +175,10 @@ const ScheduledBackups = () => {
           );
         }
       }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        showError("Failed to select folder: " + err.message);
+    } catch (err: unknown) {
+      const error = err as Error;
+      if (error.name !== "AbortError") {
+        showError("Failed to select folder: " + error.message);
       }
     }
   };
@@ -224,8 +226,8 @@ const ScheduledBackups = () => {
       setIsEncrypted(false);
       setDirHandle(null);
       setBackupPath(null);
-    } catch (e: any) {
-      showError("Failed to create backup schedule: " + e.message);
+    } catch (e: unknown) {
+      showError("Failed to create backup schedule: " + (e as Error).message);
     }
   };
 
@@ -251,8 +253,8 @@ const ScheduledBackups = () => {
       } else {
         showError("Permission denied. Backups cannot run.");
       }
-    } catch (e: any) {
-      showError("Error checking permission: " + e.message);
+    } catch (e: unknown) {
+      showError("Error checking permission: " + (e as Error).message);
     }
   };
 

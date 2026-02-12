@@ -203,7 +203,7 @@ export function BalanceOverTimeChart({
       });
 
       // Store snapshot
-      const obj: { date: string; [key: string]: number | string } = {
+      const obj: { date: string;[key: string]: number | string } = {
         date: formatDateToDDMMYYYY(dateStr),
       };
       accountsToDisplay.forEach((account) => {
@@ -271,7 +271,7 @@ export function BalanceOverTimeChart({
           new Date(dateA).getTime() - new Date(dateB).getTime(),
       )
       .map(([date, balances]) => {
-        const obj: { date: string; [key: string]: number | string } = {
+        const obj: { date: string;[key: string]: number | string } = {
           date: formatDateToDDMMYYYY(date),
         };
         accountsToDisplay.forEach((account) => {
@@ -397,7 +397,7 @@ export function BalanceOverTimeChart({
       if (monthlyData[monthKey]) {
         lastMonthBalances = { ...monthlyData[monthKey] };
       }
-      const obj: { month: string; [key: string]: number | string } = {
+      const obj: { month: string;[key: string]: number | string } = {
         month: monthKey,
       };
       accountsToDisplay.forEach((account) => {
@@ -513,7 +513,7 @@ export function BalanceOverTimeChart({
   }, []);
 
   const handleBarClick = React.useCallback(
-    (_data: any, monthIndex: number, clickedDataKey: string) => {
+    (_data: unknown, monthIndex: number, clickedDataKey: string) => {
       setActiveBar((prevActiveBar) => {
         if (
           prevActiveBar?.monthIndex === monthIndex &&
@@ -568,9 +568,11 @@ export function BalanceOverTimeChart({
     const commonTooltip = (
       <ChartTooltip
         cursor={false}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         content={(props: any) => {
           const { payload } = props;
           // Filter out items with 0 value
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const filteredPayload = payload?.filter(
             (item: any) => Math.abs(Number(item.value)) > 0,
           );
@@ -644,12 +646,12 @@ export function BalanceOverTimeChart({
                   stroke={
                     activeLine === null
                       ? dynamicChartConfig[
-                          account as keyof typeof dynamicChartConfig
-                        ]?.color || "#888"
+                        account as keyof typeof dynamicChartConfig
+                      ]?.color || "#888"
                       : activeLine === account
                         ? dynamicChartConfig[
-                            account as keyof typeof dynamicChartConfig
-                          ]?.color || "#888"
+                          account as keyof typeof dynamicChartConfig
+                        ]?.color || "#888"
                         : "#ccc"
                   }
                   fill={`url(#gradient-${slugify(account)})`}
@@ -668,12 +670,12 @@ export function BalanceOverTimeChart({
                   stroke={
                     activeLine === null
                       ? dynamicChartConfig[
-                          account as keyof typeof dynamicChartConfig
-                        ]?.color || "#888"
+                        account as keyof typeof dynamicChartConfig
+                      ]?.color || "#888"
                       : activeLine === account
                         ? dynamicChartConfig[
-                            account as keyof typeof dynamicChartConfig
-                          ]?.color || "#888"
+                          account as keyof typeof dynamicChartConfig
+                        ]?.color || "#888"
                         : "#ccc"
                   }
                   strokeWidth={2}
@@ -725,13 +727,13 @@ export function BalanceOverTimeChart({
                     fill={
                       activeBar === null
                         ? dynamicChartConfig[
+                          account as keyof typeof dynamicChartConfig
+                        ]?.color || "#888"
+                        : activeBar.monthIndex === monthIndex &&
+                          activeBar.dataKey === account
+                          ? dynamicChartConfig[
                             account as keyof typeof dynamicChartConfig
                           ]?.color || "#888"
-                        : activeBar.monthIndex === monthIndex &&
-                            activeBar.dataKey === account
-                          ? dynamicChartConfig[
-                              account as keyof typeof dynamicChartConfig
-                            ]?.color || "#888"
                           : "#ccc"
                     }
                   />
@@ -780,7 +782,7 @@ export function BalanceOverTimeChart({
                         activeBar === null
                           ? color
                           : activeBar.monthIndex === index &&
-                              activeBar.dataKey === account
+                            activeBar.dataKey === account
                             ? color
                             : "#ccc"
                       }

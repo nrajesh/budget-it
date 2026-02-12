@@ -101,8 +101,7 @@ export function calculateBudgetSpent(
       if ((t.account || "").trim().toLowerCase() !== budgetScopeName) return false;
     } else if (budgetScopeType === "vendor") {
       if ((t.vendor || "").trim().toLowerCase() !== budgetScopeName) return false;
-    } else if (budgetScopeType === "vendor") {
-      if ((t.vendor || "").trim().toLowerCase() !== budgetScopeName) return false;
+
     } else if (budgetScopeType === "sub_category") {
       if ((t.sub_category || "").trim().toLowerCase() !== budgetScopeName) return false;
     } else {

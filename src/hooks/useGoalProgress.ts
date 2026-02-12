@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Budget } from "@/types/dataProvider";
 import { Transaction } from "@/data/finance-data";
+import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import {
     differenceInCalendarDays,
     startOfMonth,
@@ -26,7 +27,7 @@ export interface GoalProgress {
 export function calculateGoalProgress(
     budget: Budget,
     transactions: Transaction[],
-    accounts: any[] = [],
+    accounts: Payee[] = [],
     now: Date = new Date(),
 ): GoalProgress {
     if (!budget.is_goal) {
@@ -178,7 +179,7 @@ export function calculateGoalProgress(
 export function useGoalProgress(
     budget: Budget,
     transactions: Transaction[],
-    accounts: any[] = [],
+    accounts: Payee[] = [],
 ): GoalProgress {
     return useMemo(
         () => calculateGoalProgress(budget, transactions, accounts),

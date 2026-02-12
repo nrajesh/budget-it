@@ -35,7 +35,7 @@ export function BudgetCard({
   const navigate = useNavigate();
 
   // Goal progress (only computed when is_goal)
-  const goalProgress = useGoalProgress(budget as any, transactions, accounts);
+  const goalProgress = useGoalProgress(budget, transactions, accounts);
 
   // Scope-aware display name
   const budgetScope = budget.budget_scope || "category";
@@ -80,7 +80,7 @@ export function BudgetCard({
         .map((a) => a.name);
     }
 
-    const navState: Record<string, any> = {
+    const navState: Record<string, unknown> = {
       dateRange: {
         from: startDate.toISOString(),
         to: endDate.toISOString(),
@@ -144,8 +144,8 @@ export function BudgetCard({
         >
           {budgetScope === "account" && <Wallet className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
           {budgetScope === "vendor" && <Store className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
-          {(budgetScope as any) === "sub_category" && <Layers className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
-          {(budgetScope as any) === "category" && !budget.sub_category_name && <Tag className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {budgetScope === "sub_category" && <Layers className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
+          {budgetScope === "category" && !budget.sub_category_name && <Tag className="h-4 w-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />}
           {displayName}
           {budgetScope === "category" && budget.sub_category_name && (
             <span className="text-xl font-normal text-slate-500 dark:text-slate-400">
