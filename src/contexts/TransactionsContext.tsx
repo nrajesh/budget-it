@@ -181,7 +181,17 @@ const calculateNextDate = (currentDate: Date, frequency: string): Date => {
   let intervalValue = 1;
   let intervalUnit = "m";
 
-  if (["Daily", "Weekly", "Monthly", "Yearly"].includes(frequency)) {
+  if (
+    [
+      "Daily",
+      "Weekly",
+      "Fortnightly",
+      "Bi-Weekly",
+      "Monthly",
+      "Quarterly",
+      "Yearly",
+    ].includes(frequency)
+  ) {
     switch (frequency) {
       case "Daily":
         intervalUnit = "d";
@@ -189,8 +199,17 @@ const calculateNextDate = (currentDate: Date, frequency: string): Date => {
       case "Weekly":
         intervalUnit = "w";
         break;
+      case "Fortnightly":
+      case "Bi-Weekly":
+        intervalUnit = "w";
+        intervalValue = 2;
+        break;
       case "Monthly":
         intervalUnit = "m";
+        break;
+      case "Quarterly":
+        intervalUnit = "m";
+        intervalValue = 3;
         break;
       case "Yearly":
         intervalUnit = "y";

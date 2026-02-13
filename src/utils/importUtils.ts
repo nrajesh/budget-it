@@ -150,3 +150,43 @@ export function parseRobustAmount(
   const result = parseFloat(cleanString);
   return isNaN(result) ? 0 : result;
 }
+
+/**
+ * Validates and normalizes a recurrence frequency string.
+ * Supports: "Daily", "Weekly", "Fortnightly", "Monthly", "Quarterly", "Yearly"
+ * and unit format like "1d", "2w", "3m", "1y".
+ */
+export function parseRobustFrequency(
+  frequency: string | null | undefined,
+): string | null {
+  if (!frequency) return null;
+  const trimmed = frequency.trim();
+  if (!trimmed) return null;
+
+  const lower = trimmed.toLowerCase();
+  if (lower === "none") return null;
+
+  // Named frequencies
+  const namedFrequencies: Record<string, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    fortnightly: "Fortnightly",
+    fortnight: "Fortnightly",
+    "bi-weekly": "Fortnightly",
+    biweekly: "Fortnightly",
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    yearly: "Yearly",
+  };
+
+  if (namedFrequencies[lower]) {
+    return namedFrequencies[lower];
+  }
+
+  // Unit format (e.g., 1d, 2w, 3m, 1y)
+  if (/^\d+[dwmy]$/.test(lower)) {
+    return lower;
+  }
+
+  return null;
+}

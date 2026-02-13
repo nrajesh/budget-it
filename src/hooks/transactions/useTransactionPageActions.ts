@@ -3,7 +3,11 @@ import Papa from "papaparse";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
-import { parseRobustDate, parseRobustAmount } from "@/utils/importUtils";
+import {
+  parseRobustDate,
+  parseRobustAmount,
+  parseRobustFrequency,
+} from "@/utils/importUtils";
 import { showError, showSuccess } from "@/utils/toast";
 import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
@@ -473,7 +477,9 @@ export const useTransactionPageActions = (
             ""
           ).trim(),
           currency: (row.Currency || row.currency || "USD").trim(),
-          recurrence_frequency: (row.Frequency || row.frequency || null) as any, // TODO: validate Frequency
+          recurrence_frequency: parseRobustFrequency(
+            row.Frequency || row.frequency,
+          ),
           recurrence_end_date:
             parseRobustDate(
               row["End Date"] || row["end date"] || "",

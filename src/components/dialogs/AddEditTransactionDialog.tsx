@@ -457,6 +457,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                           <SelectItem value="None">None</SelectItem>
                           <SelectItem value="Daily">Daily</SelectItem>
                           <SelectItem value="Weekly">Weekly</SelectItem>
+                          <SelectItem value="Fortnightly">Fortnightly</SelectItem>
                           <SelectItem value="Monthly">Monthly</SelectItem>
                           <SelectItem value="Quarterly">Quarterly</SelectItem>
                           <SelectItem value="Yearly">Yearly</SelectItem>
