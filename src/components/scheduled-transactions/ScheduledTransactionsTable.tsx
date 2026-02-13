@@ -25,7 +25,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { formatDateToDDMMYYYY, cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import {
   MoreHorizontal,
@@ -294,7 +294,12 @@ export function ScheduledTransactionsTable({
                               e.stopPropagation();
                               handleCategoryClick(transaction.category);
                             }}
-                            className={`${badgeVariants({ variant: "outline" })} text-slate-700 dark:text-slate-300 ${transaction.category !== "Transfer" ? "cursor-pointer hover:border-primary" : ""}`}
+                            className={cn(
+                              badgeVariants({ variant: "outline" }),
+                              "text-slate-700 dark:text-slate-300",
+                              transaction.category !== "Transfer" &&
+                                "cursor-pointer hover:border-primary",
+                            )}
                           >
                             {transaction.category || "Uncategorized"}
                           </button>
