@@ -22,6 +22,8 @@ import {
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
+  PaginationFirst,
+  PaginationLast,
 } from "@/components/ui/pagination";
 import { type Transaction } from "@/data/finance-data";
 import { useTransactions } from "@/contexts/TransactionsContext";
@@ -287,6 +289,12 @@ export function RecentTransactions({
           <Pagination>
             <PaginationContent>
               <PaginationItem>
+                <PaginationFirst
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                />
+              </PaginationItem>
+              <PaginationItem>
                 <PaginationPrevious
                   onClick={
                     currentPage === 1
@@ -303,6 +311,12 @@ export function RecentTransactions({
                       ? undefined
                       : () => paginate(currentPage + 1)
                   }
+                  disabled={currentPage === totalPages}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLast
+                  onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 />
               </PaginationItem>

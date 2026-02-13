@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Budget } from "../types/budgets";
+import { Account } from "@/types/dataProvider";
 import { BudgetSummary } from "../components/budgets/BudgetSummary";
 import { AddEditBudgetDialog } from "../components/budgets/AddEditBudgetDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -53,10 +54,10 @@ export default function BudgetsPage() {
         // in favor of client-side calculation to match Alerts logic.
         const data = await dataProvider.getBudgetsWithSpending(currentUserId);
         setBudgets(data || []);
-      } catch (error: any) {
+      } catch (error: unknown) {
         toast({
           title: "Error fetching budgets",
-          description: error.message,
+          description: (error as Error).message,
           variant: "destructive",
         });
       }
@@ -75,13 +76,22 @@ export default function BudgetsPage() {
 
   // Recalculate spent amounts using shared logic
   const processedBudgets = useMemo(() => {
-    // effectiveBudgets defined above, need to move it up or reference here?
-    // Let's rely on 'budgets' state for this memo, but then filter 'processedBudgets'.
+    // Adapt Payees to Accounts for budget calculation
+    const adaptedAccounts = accounts.map((a) => ({
+      ...a,
+      currency: a.currency || "USD",
+      type: a.type || "Other",
+      starting_balance: a.starting_balance || 0,
+      user_id: "", // partial match
+      remarks: a.remarks || "",
+      created_at: a.created_at || new Date().toISOString(),
+    })) as unknown as Account[];
+
     return budgets.map((budget) => {
       const spent = calculateBudgetSpent(
         budget,
         transactions,
-        accounts as any,
+        adaptedAccounts,
         vendors,
         convertBetweenCurrencies,
         budget.currency, // Calculate spent in the budget's currency
@@ -105,6 +115,11 @@ export default function BudgetsPage() {
       budget.category_name.toLowerCase().includes(lowerCaseSearchTerm),
     );
   }, [processedBudgets, searchTerm, hiddenBudgetIds]);
+
+  // Separate spending budgets from goal budgets for summary calculations
+  const spendingBudgets = useMemo(() => {
+    return filteredBudgets.filter((b) => !b.is_goal);
+  }, [filteredBudgets]);
 
   const activeBudgets = useMemo(() => {
     return filteredBudgets.filter((b) => b.is_active !== false);
@@ -146,10 +161,10 @@ export default function BudgetsPage() {
       // If we don't update 'budgets' state, effectiveBudgets filters it.
       // But if we reload, it's gone.
       // So simple delete is fine.
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error deleting budget",
-        description: error.message,
+        description: (error as Error).message,
         variant: "destructive",
       });
     }
@@ -193,7 +208,7 @@ export default function BudgetsPage() {
           />
         </div>
 
-        <BudgetSummary budgets={filteredBudgets} isLoading={isLoading} />
+        <BudgetSummary budgets={spendingBudgets} isLoading={isLoading} />
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
@@ -203,6 +218,7 @@ export default function BudgetsPage() {
             isLoading={isLoading}
             onEdit={handleOpenDialog}
             onDelete={handleDeleteClick}
+            transactions={transactions}
           />
 
           {inactiveBudgets.length > 0 && (
@@ -215,6 +231,7 @@ export default function BudgetsPage() {
                 isLoading={isLoading}
                 onEdit={handleOpenDialog}
                 onDelete={handleDeleteClick}
+                transactions={transactions}
               />
             </div>
           )}

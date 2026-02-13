@@ -72,8 +72,8 @@ const AccountDeduplicationDialog: React.FC<
       );
       await invalidateAllData();
       onClose();
-    } catch (error: any) {
-      showError(`Merge failed: ${error.message}`);
+    } catch (error: unknown) {
+      showError(`Merge failed: ${(error as Error).message}`);
     } finally {
       setIsProcessing(false);
     }

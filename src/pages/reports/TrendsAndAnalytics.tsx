@@ -18,8 +18,10 @@ import {
 } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
+import { Transaction } from "@/types/dataProvider";
+
 interface TrendsAndAnalyticsProps {
-  transactions: any[];
+  transactions: Transaction[];
 }
 
 const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({

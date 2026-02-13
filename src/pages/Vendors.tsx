@@ -39,8 +39,8 @@ const VendorsPage = () => {
       await invalidateAllData();
       setEditingVendorId(null);
     },
-    onError: (error: any) =>
-      showError(`Failed to update vendor name: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to update vendor name: ${(error as Error).message}`),
   });
 
   const startEditing = (vendor: { id: string; name: string }) => {
@@ -121,7 +121,7 @@ const VendorsPage = () => {
         {...managementProps}
         selectedEntity={managementProps.selectedPayee}
         DeduplicationDialogComponent={VendorDeduplicationDialog}
-        CleanupDialogComponent={(props: any) => (
+        CleanupDialogComponent={(props) => (
           <CleanupEntitiesDialog {...props} entityType="vendor" />
         )}
       />

@@ -58,6 +58,16 @@ electron_1.app.whenReady().then(() => {
     }));
     electron_1.ipcMain.handle('write-backup-file', (_event, folder, filename, content) => __awaiter(void 0, void 0, void 0, function* () {
         try {
+            // SECURITY: Prevent path traversal
+            if (path_1.default.basename(filename) !== filename || filename === '..' || filename === '.') {
+                console.error("Security alert: Attempted path traversal in filename", filename);
+                throw new Error("Invalid filename: Path traversal detected");
+            }
+            // SECURITY: Enforce file extension to prevent arbitrary file write
+            if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
+                console.error("Security alert: Invalid file extension", filename);
+                throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
+            }
             // Ensure directory exists
             if (!fs_1.default.existsSync(folder)) {
                 fs_1.default.mkdirSync(folder, { recursive: true });

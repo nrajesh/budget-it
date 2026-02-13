@@ -9,7 +9,17 @@ export interface ProgressCallback {
   (progress: { stage: string; progress: number; totalStages: number }): void;
 }
 
-const DEMO_BUDGETS = [
+const DEMO_BUDGETS: {
+  category?: string;
+  sub?: string;
+  amount: number;
+  frequency: string;
+  budget_scope?: "category" | "account" | "vendor";
+  budget_scope_name?: string;
+  is_goal?: boolean;
+  goal_context?: string;
+}[] = [
+  // Category-level spending budgets
   { category: "Groceries", amount: 800, frequency: "Monthly" },
   { category: "Dining Out", sub: "Coffee", amount: 120, frequency: "Monthly" },
   { category: "Entertainment", amount: 200, frequency: "Monthly" },
@@ -41,10 +51,64 @@ const DEMO_BUDGETS = [
   },
   { category: "Shopping", sub: "Clothing", amount: 200, frequency: "Monthly" },
   { category: "Housing", sub: "Rent", amount: 1500, frequency: "Monthly" },
+  // Account-level spending budgets
+  {
+    amount: 2000,
+    frequency: "Monthly",
+    budget_scope: "account",
+    budget_scope_name: "__ACCOUNT_0__",
+  },
+  {
+    amount: 500,
+    frequency: "Monthly",
+    budget_scope: "account",
+    budget_scope_name: "__ACCOUNT_1__",
+  },
+  // Vendor-level spending budgets
+  {
+    amount: 50,
+    frequency: "Monthly",
+    budget_scope: "vendor",
+    budget_scope_name: "Netflix",
+  },
+  {
+    amount: 200,
+    frequency: "Monthly",
+    budget_scope: "vendor",
+    budget_scope_name: "Employer",
+  },
+  // Savings goals
+  {
+    category: "Groceries",
+    amount: 5000,
+    frequency: "Monthly",
+    is_goal: true,
+    goal_context: "Groceries",
+  },
+  {
+    amount: 10000,
+    frequency: "Monthly",
+    budget_scope: "account",
+    budget_scope_name: "__ACCOUNT_1__",
+    is_goal: true,
+    goal_context: "__ACCOUNT_1__",
+  },
 ];
 
+interface DemoScheduledTransaction {
+  accountType: string;
+  vendor: string;
+  category: string;
+  sub_category?: string;
+  amount: number;
+  frequency: string;
+  remarks: string;
+  isTransfer?: boolean;
+  next_date_offset?: number;
+}
+
 // Template for scheduled transactions for HOME budget
-const HOME_SCHEDULED_TRANSACTIONS = [
+const HOME_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking",
     vendor: "Landlord",
@@ -112,7 +176,7 @@ const HOME_SCHEDULED_TRANSACTIONS = [
 ];
 
 // Template for CHILD budget
-const CHILD_SCHEDULED_TRANSACTIONS = [
+const CHILD_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking", // Allowance account
     vendor: "Spotify",
@@ -170,7 +234,7 @@ const CHILD_SCHEDULED_TRANSACTIONS = [
 ];
 
 // Template for OFFSHORE budget
-const OFFSHORE_SCHEDULED_TRANSACTIONS = [
+const OFFSHORE_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking", // Foreign Checking
     vendor: "Property Management",
@@ -363,7 +427,9 @@ export const generateDiverseDemoData = async (
   let currentLedgerIndex = 0;
 
   for (const ledgerItem of createdLedgers) {
-    const ledger = ledgerItem as Ledger & { config: any };
+    const ledger = ledgerItem as Ledger & {
+      config: (typeof ledgersToCreate)[0];
+    };
     const lId = ledger.id;
     const config = ledger.config;
 
@@ -415,25 +481,63 @@ export const generateDiverseDemoData = async (
     }
 
     // --- Create Budgets ---
-    // --- Create Budgets ---
-    // const budgetCategories = ... (unused)
-    const shuffledBudgets = DEMO_BUDGETS.sort(() => 0.5 - Math.random());
+    const shuffledBudgets = [...DEMO_BUDGETS].sort(() => 0.5 - Math.random());
     const selectedBudgets = shuffledBudgets.slice(0, config.budgetCount);
 
     for (const budget of selectedBudgets) {
-      const catId = categoryMap.get(budget.category);
-      if (!catId) continue;
+      const scope = budget.budget_scope || "category";
+
+      // Resolve __ACCOUNT_N__ placeholders to real account names
+      let resolvedScopeName = budget.budget_scope_name || "";
+      let resolvedGoalContext = budget.goal_context || "";
+      const placeholderMatch = resolvedScopeName.match(/^__ACCOUNT_(\d+)__$/);
+      if (placeholderMatch) {
+        const idx = parseInt(placeholderMatch[1], 10);
+        resolvedScopeName =
+          createdAccountNames[idx % createdAccountNames.length] ||
+          createdAccountNames[0];
+      }
+      const goalPlaceholderMatch =
+        resolvedGoalContext.match(/^__ACCOUNT_(\d+)__$/);
+      if (goalPlaceholderMatch) {
+        const idx = parseInt(goalPlaceholderMatch[1], 10);
+        resolvedGoalContext =
+          createdAccountNames[idx % createdAccountNames.length] ||
+          createdAccountNames[0];
+      }
+
+      // For category-scoped budgets, resolve category ID
+      let catId = "";
+      if (scope === "category") {
+        catId = categoryMap.get(budget.category || "") || "";
+        if (!catId) continue; // Skip if category doesn't exist
+      }
+
+      // Target date for goals: 6 months from now
+      const targetDate = budget.is_goal
+        ? new Date(
+            new Date().getFullYear(),
+            new Date().getMonth() + 6,
+            1,
+          ).toISOString()
+        : null;
 
       await dataProvider.addBudget({
         user_id: lId,
         category_id: catId,
-        category_name: budget.category,
+        category_name:
+          scope === "category" ? budget.category || "" : resolvedScopeName,
         target_amount: budget.amount,
         currency: config.currency,
-        start_date: new Date(new Date().getFullYear(), 0, 1).toISOString(), // Start of year
+        start_date: new Date(new Date().getFullYear(), 0, 1).toISOString(),
         end_date: null,
         frequency: budget.frequency as Budget["frequency"],
         sub_category_name: budget.sub,
+        budget_scope: scope,
+        budget_scope_name: scope !== "category" ? resolvedScopeName : undefined,
+        is_goal: budget.is_goal || false,
+        target_date: targetDate,
+        goal_context: budget.is_goal ? resolvedGoalContext : undefined,
       });
     }
 
@@ -519,7 +623,7 @@ export const generateDiverseDemoData = async (
     const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(
       (c) => c !== "Transfer",
     );
-    const transactionsBatch: Partial<Transaction>[] = []; // Explicit type to prevent 'never' inference
+    const transactionsBatch: Omit<Transaction, "id" | "created_at">[] = [];
     const vendorsToEnsure = new Set<string>();
 
     // Generate phase (in-memory)
@@ -644,16 +748,8 @@ export const generateDiverseDemoData = async (
 
     // DataProvider might not have addMultipleTransactions interface fully typed in all contexts,
     // but LocalDataProvider has it. Cast if necessary or assume DataProvider interface has it.
-    if ("addMultipleTransactions" in dataProvider) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (dataProvider as any).addMultipleTransactions(transactionsBatch);
-    } else {
-      // Fallback (Should not happen with LocalDataProvider)
-      for (const tx of transactionsBatch) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (dataProvider as any).addTransaction(tx);
-      }
-    }
+    // DataProvider interface guarantees addMultipleTransactions
+    await dataProvider.addMultipleTransactions(transactionsBatch);
 
     currentLedgerIndex++;
   }

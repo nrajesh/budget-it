@@ -80,15 +80,16 @@ const BackupManager = () => {
 
           isSuccess = true;
           showSuccess(`Scheduled backup completed (${filename})`);
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.error("[BackupManager] Backup failed:", e);
+          const error = e as Error;
 
-          if (e.name === "NotFoundError") {
+          if (error.name === "NotFoundError") {
             showError(
               `Backup folder not found for config ${backup.id}. Backup disabled.`,
             );
             await db.backup_configs.update(backup.id, { isActive: false });
-          } else if (e.name === "NotAllowedError") {
+          } else if (error.name === "NotAllowedError") {
             showError(
               `Permission denied for backup config ${backup.id}. Backup disabled.`,
             );
@@ -98,6 +99,7 @@ const BackupManager = () => {
 
         // 4. Update Schedule (Always advance time to avoid stuck loop)
         const nextRun = new Date(now.getTime() + backup.frequency);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updatePayload: any = {
           nextBackup: nextRun.toISOString(),
         };

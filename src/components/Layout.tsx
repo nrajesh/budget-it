@@ -4,22 +4,12 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import {
   Users,
-  Mountain,
   LayoutGrid,
   BarChart3,
   Phone,
-  Newspaper,
-  ChevronDown,
-  FileText,
-  Mail,
-  Moon,
-  Sun,
-  Plus,
-  User,
-  Bell,
-  Banknote,
-  Tag,
-  Calendar,
+  Calendar, // Restore
+  Newspaper, // Restore
+  FileText, // Restore
   Building2,
   Globe,
   Home,
@@ -28,6 +18,15 @@ import {
   Landmark,
   Lightbulb,
   DatabaseZap,
+  Shield,
+  ChevronDown,
+  Moon,
+  Sun,
+  Plus,
+  User,
+  Bell,
+  Banknote,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,11 +97,13 @@ const Layout = () => {
       case "/insights":
         return "Insights";
       case "/settings":
-        return "Settings";
+        return "Ledger";
       case "/data-management":
-        return "Data Management";
+        return "Data";
       case "/vendors":
         return "Vendors";
+      case "/currencies":
+        return "Currencies";
       case "/accounts":
         return "Accounts";
       case "/categories":
@@ -111,6 +112,8 @@ const Layout = () => {
         return "Scheduled Transactions";
       case "/budgets":
         return "Budgets";
+      case "/backup":
+        return "Backup";
       default:
         return "Page Not Found";
     }
@@ -144,9 +147,7 @@ const Layout = () => {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="size-9 shrink-0">
-              <Mountain className="size-5 text-primary" />
-            </Button>
+            <img src="/logo.png" alt="Budget It!" className="size-8 shrink-0" />
             <span className="text-lg font-semibold">Budget It!</span>
           </div>
         </SidebarHeader>
@@ -233,10 +234,21 @@ const Layout = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/currencies"}
+                >
+                  <Link to="/currencies">
+                    <Banknote />
+                    <span>Currencies</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarGroupLabel>Setup</SidebarGroupLabel>
+            <SidebarGroupLabel>Configure</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -267,7 +279,9 @@ const Layout = () => {
                           asChild
                           isActive={location.pathname === "/reports/essential"}
                         >
-                          <Link to="/reports/essential">Essential</Link>
+                          <Link to="/reports/essential">
+                            <span>Essential</span>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                       <SidebarMenuSubItem>
@@ -275,7 +289,9 @@ const Layout = () => {
                           asChild
                           isActive={location.pathname === "/reports/advanced"}
                         >
-                          <Link to="/reports/advanced">Advanced</Link>
+                          <Link to="/reports/advanced">
+                            <span>Advanced</span>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
@@ -296,7 +312,7 @@ const Layout = () => {
             </SidebarMenu>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarGroupLabel>User</SidebarGroupLabel>
+            <SidebarGroupLabel>Setup</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -305,7 +321,7 @@ const Layout = () => {
                 >
                   <Link to="/settings">
                     <User />
-                    <span>Settings</span>
+                    <span>Ledger</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -316,14 +332,19 @@ const Layout = () => {
                 >
                   <Link to="/data-management">
                     <DatabaseZap />
-                    <span>Data Management</span>
+                    <span>Data</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Mail />
-                  Notifications
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/backup"}
+                >
+                  <Link to="/backup">
+                    <Shield />
+                    <span>Backup</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

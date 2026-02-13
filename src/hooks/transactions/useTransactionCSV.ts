@@ -66,7 +66,20 @@ export const useTransactionCSV = () => {
             return;
           }
 
-          const parsedData = results.data as any[];
+          interface CSVRow {
+            Date: string;
+            Account: string;
+            Vendor: string;
+            Category: string;
+            Amount: string;
+            Remarks: string;
+            Currency: string;
+            Frequency?: string;
+            "End Date"?: string;
+            transfer_id?: string;
+          }
+
+          const parsedData = results.data as CSVRow[];
           if (parsedData.length === 0) {
             showError("No data found in CSV.");
             setIsImporting(false);
@@ -229,8 +242,8 @@ export const useTransactionCSV = () => {
             });
 
             refetchTransactions();
-          } catch (error: any) {
-            showError(`Import failed: ${error.message}`);
+          } catch (error: unknown) {
+            showError(`Import failed: ${(error as Error).message}`);
             setOperationProgress(null);
           } finally {
             setIsImporting(false);
@@ -240,8 +253,8 @@ export const useTransactionCSV = () => {
             // Dialog closes automatically on 100% or we can ensure it's closed in case of error
           }
         },
-        error: (error: any) => {
-          showError(`CSV parsing error: ${error.message}`);
+        error: (error: unknown) => {
+          showError(`CSV parsing error: ${(error as Error).message}`);
           setIsImporting(false);
         },
       });

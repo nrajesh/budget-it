@@ -84,15 +84,25 @@ const CategoryPieChart = () => {
   const isLoading = isLoadingTransactions;
 
   const onPieClick = useCallback(
-    (data: any, index: number) => {
+    (
+      data: {
+        id?: string;
+        name?: string;
+        vendor_name?: string;
+        total_amount: number;
+      },
+      index: number,
+    ) => {
       if (!selectedCategory) {
         // If in top-level categories, set active index and drill down
         setActiveIndex(index);
-        setSelectedCategory({ id: data.id, name: data.name });
+        setSelectedCategory({ id: data.id || "", name: data.name || "" });
 
         // Auto-filter Recent transactions by category
-        const categorySlug = slugify(data.name);
-        setSelectedCategories([categorySlug]);
+        if (data.name) {
+          const categorySlug = slugify(data.name);
+          setSelectedCategories([categorySlug]);
+        }
       } else {
         // If drilled down, just toggle active index for the vendor
         setActiveIndex((prevIndex) =>
@@ -100,8 +110,10 @@ const CategoryPieChart = () => {
         );
 
         // Auto-filter Recent transactions by vendor
-        const vendorSlug = slugify(data.vendor_name);
-        setSelectedVendors([vendorSlug]);
+        if (data.vendor_name) {
+          const vendorSlug = slugify(data.vendor_name);
+          setSelectedVendors([vendorSlug]);
+        }
       }
     },
     [selectedCategory, setSelectedCategories, setSelectedVendors],
@@ -120,10 +132,10 @@ const CategoryPieChart = () => {
   }, [handleResetFilters]);
 
   const renderActiveShape = useCallback(
-    (props: any) => {
+    (props: unknown) => {
       return (
         <ActivePieShape
-          {...props}
+          {...(props as any)}
           formatCurrency={formatCurrency}
           onCenterClick={resetActiveIndex}
         />

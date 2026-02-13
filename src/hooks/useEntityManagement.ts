@@ -73,11 +73,12 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       setSelectedRows([]);
       setIsBulkDelete(false);
     },
-    onError: (error: any) => showError(`Failed to delete: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Failed to delete: ${(error as Error).message}`),
   });
 
   const batchUpsertMutation = useMutation({
-    mutationFn: async (_dataToUpsert: any[]) => {
+    mutationFn: async (_dataToUpsert: unknown[]) => {
       // Only categories use this currently via CSV import
       // useCategoryManagement passes this.
       // We'll rely on useCategoryManagement's override or specific logic if provided,
@@ -109,7 +110,8 @@ export const useEntityManagement = <T extends { id: string; name: string }>({
       if (onSuccess) onSuccess();
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    onError: (error: any) => showError(`Import failed: ${error.message}`),
+    onError: (error: unknown) =>
+      showError(`Import failed: ${(error as Error).message}`),
     onSettled: () => setIsImporting(false),
   });
 

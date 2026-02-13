@@ -28,7 +28,11 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
         if (typeof path === "string" && path.includes(".")) {
           return path
             .split(".")
-            .reduce((obj: any, k) => (obj ? obj[k] : null), item);
+            .reduce(
+              (obj: unknown, k) =>
+                obj ? (obj as Record<string, unknown>)[k] : null,
+              item,
+            );
         }
         return item[path as keyof T];
       };
@@ -36,10 +40,20 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
       const aValue = getValue(a, key);
       const bValue = getValue(b, key);
 
-      if (aValue < bValue) {
+      if (aValue === bValue) return 0;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if ((aValue as number) < (bValue as number)) {
         return direction === "asc" ? -1 : 1;
       }
-      if (aValue > bValue) {
+      if ((aValue as number) > (bValue as number)) {
         return direction === "asc" ? 1 : -1;
       }
       return 0;

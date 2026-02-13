@@ -8,6 +8,7 @@ import {
   ScheduledTransaction,
   SubCategory,
   Ledger,
+  BackupConfig,
 } from "../types/dataProvider";
 import { db } from "@/lib/dexieDB";
 import { v4 as uuidv4 } from "uuid";
@@ -678,6 +679,7 @@ export class LocalDataProvider implements DataProvider {
       id: uuidv4(),
       spent_amount: 0, // Initial
       is_active: budget.is_active ?? true,
+      is_goal: budget.is_goal ?? false,
       created_at: budget.created_at || new Date().toISOString(),
     });
   }
@@ -767,9 +769,9 @@ export class LocalDataProvider implements DataProvider {
   }
 
   // Migration Utils
-  async exportData(userId?: string): Promise<any> {
+  async exportData(userId?: string): Promise<unknown> {
     // Helper to rename user_id to ledger_id
-    const mapToLedgerId = (items: any[]) =>
+    const mapToLedgerId = (items: Record<string, any>[]) =>
       items.map((item) => {
         const { user_id, ...rest } = item;
         return { ...rest, ledger_id: user_id };
@@ -816,6 +818,25 @@ export class LocalDataProvider implements DataProvider {
       return rest;
     });
 
+    // Active Currencies from LocalStorage (Unified)
+    let parsedActiveCurrencies = [];
+    try {
+      const activeCurrencies = localStorage.getItem("active_currencies");
+      parsedActiveCurrencies = activeCurrencies
+        ? JSON.parse(activeCurrencies)
+        : [];
+    } catch (e) {
+      console.error("Failed to parse active_currencies", e);
+    }
+
+    let parsedExchangeRates = {};
+    try {
+      const rates = localStorage.getItem("currency_exchange_rates");
+      parsedExchangeRates = rates ? JSON.parse(rates) : {};
+    } catch (e) {
+      console.error("Failed to parse currency_exchange_rates", e);
+    }
+
     const data = {
       transactions: mapToLedgerId(await db.transactions.toArray()),
       scheduled_transactions: mapToLedgerId(
@@ -828,28 +849,36 @@ export class LocalDataProvider implements DataProvider {
       sub_categories: mapToLedgerId(await db.sub_categories.toArray()),
       ledgers: await db.ledgers.toArray(),
       backup_configs: cleanBackupConfigs,
+      active_currencies: parsedActiveCurrencies, // Export unified list
+      currency_exchange_rates: parsedExchangeRates, // Export rates
       version: 2,
       exportedAt: new Date().toISOString(),
     };
     return data;
   }
 
-  async importData(data: any, userId?: string): Promise<void> {
-    if (!data || !data.transactions) throw new Error("Invalid data format");
+  async importData(data: unknown, userId?: string): Promise<void> {
+    const importData = data as Record<string, any>;
+    if (!importData || !importData.transactions)
+      throw new Error("Invalid data format");
 
     // Helper to map ledger_id back to user_id (for internal DB compatibility)
     // If incoming data has user_id, keep it (legacy backup). If ledger_id, map it.
-    const mapToUserId = (items: any[], overrideUserId?: string) =>
+    const mapToUserId = (
+      items: Record<string, unknown>[],
+      overrideUserId?: string,
+    ) =>
       items.map((item) => {
+        const typedItem = item as Record<string, any>;
         // If we are importing into a specific scope (overrideUserId), we FORCE that ID.
         if (overrideUserId) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { ledger_id, user_id, ...rest } = item;
+          const { ledger_id, user_id, ...rest } = typedItem;
           return { ...rest, user_id: overrideUserId };
         }
 
         // Otherwise, we restore the ID from the file (ledger_id or user_id)
-        const { ledger_id, user_id, ...rest } = item;
+        const { ledger_id, user_id, ...rest } = typedItem;
         const finalId = ledger_id || user_id;
         return { ...rest, user_id: finalId };
       });
@@ -876,16 +905,35 @@ export class LocalDataProvider implements DataProvider {
           // For now, let's implement simple atomic import:
 
           // 1. Prepare data with userId override
-          const transactions = mapToUserId(data.transactions || [], userId);
-          const scheduled = mapToUserId(
-            data.scheduled_transactions || [],
+          const transactions = mapToUserId(
+            (importData.transactions as Record<string, unknown>[]) || [],
             userId,
-          );
-          const budgets = mapToUserId(data.budgets || [], userId);
-          const vendors = mapToUserId(data.vendors || [], userId);
-          const accounts = mapToUserId(data.accounts || [], userId);
-          const categories = mapToUserId(data.categories || [], userId);
-          const subCategories = mapToUserId(data.sub_categories || [], userId);
+          ) as Transaction[];
+          const scheduled = mapToUserId(
+            (importData.scheduled_transactions as Record<string, unknown>[]) ||
+              [],
+            userId,
+          ) as ScheduledTransaction[];
+          const budgets = mapToUserId(
+            (importData.budgets as Record<string, unknown>[]) || [],
+            userId,
+          ) as Budget[];
+          const vendors = mapToUserId(
+            (importData.vendors as Record<string, unknown>[]) || [],
+            userId,
+          ) as Vendor[];
+          const accounts = mapToUserId(
+            (importData.accounts as Record<string, unknown>[]) || [],
+            userId,
+          ) as Account[];
+          const categories = mapToUserId(
+            (importData.categories as Record<string, unknown>[]) || [],
+            userId,
+          ) as Category[];
+          const subCategories = mapToUserId(
+            (importData.sub_categories as Record<string, unknown>[]) || [],
+            userId,
+          ) as SubCategory[];
 
           // 2. Clear existing for this ledger
           await this.clearTransactions(userId);
@@ -916,24 +964,103 @@ export class LocalDataProvider implements DataProvider {
           await db.ledgers.clear();
           await db.backup_configs.clear();
 
-          if (data.ledgers) await db.ledgers.bulkAdd(data.ledgers);
-          if (data.backup_configs)
-            await db.backup_configs.bulkAdd(data.backup_configs);
-
-          if (data.transactions)
-            await db.transactions.bulkAdd(mapToUserId(data.transactions));
-          if (data.scheduled_transactions)
-            await db.scheduled_transactions.bulkAdd(
-              mapToUserId(data.scheduled_transactions),
+          if (importData.ledgers)
+            await db.ledgers.bulkAdd(importData.ledgers as Ledger[]);
+          if (importData.backup_configs)
+            await db.backup_configs.bulkAdd(
+              importData.backup_configs as BackupConfig[],
             );
-          if (data.budgets) await db.budgets.bulkAdd(mapToUserId(data.budgets));
-          if (data.vendors) await db.vendors.bulkAdd(mapToUserId(data.vendors));
-          if (data.accounts)
-            await db.accounts.bulkAdd(mapToUserId(data.accounts));
-          if (data.categories)
-            await db.categories.bulkAdd(mapToUserId(data.categories));
-          if (data.sub_categories)
-            await db.sub_categories.bulkAdd(mapToUserId(data.sub_categories));
+
+          if (importData.transactions)
+            await db.transactions.bulkAdd(
+              mapToUserId(
+                importData.transactions as Record<string, unknown>[],
+              ) as Transaction[],
+            );
+          if (importData.scheduled_transactions)
+            await db.scheduled_transactions.bulkAdd(
+              mapToUserId(
+                importData.scheduled_transactions as Record<string, unknown>[],
+              ) as ScheduledTransaction[],
+            );
+          if (importData.budgets)
+            await db.budgets.bulkAdd(
+              mapToUserId(
+                importData.budgets as Record<string, unknown>[],
+              ) as Budget[],
+            );
+          if (importData.vendors)
+            await db.vendors.bulkAdd(
+              mapToUserId(
+                importData.vendors as Record<string, unknown>[],
+              ) as Vendor[],
+            );
+          if (importData.accounts)
+            await db.accounts.bulkAdd(
+              mapToUserId(
+                importData.accounts as Record<string, unknown>[],
+              ) as Account[],
+            );
+          if (importData.categories)
+            await db.categories.bulkAdd(
+              mapToUserId(
+                importData.categories as Record<string, unknown>[],
+              ) as Category[],
+            );
+          if (importData.sub_categories)
+            await db.sub_categories.bulkAdd(
+              mapToUserId(
+                importData.sub_categories as Record<string, unknown>[],
+              ) as SubCategory[],
+            );
+
+          // Import Active Currencies (Unified)
+          if (
+            importData.active_currencies &&
+            Array.isArray(importData.active_currencies)
+          ) {
+            try {
+              localStorage.setItem(
+                "active_currencies",
+                JSON.stringify(importData.active_currencies),
+              );
+            } catch (e) {
+              console.error("Failed to import active currencies", e);
+            }
+          } else if (
+            importData.custom_currencies &&
+            Array.isArray(importData.custom_currencies)
+          ) {
+            try {
+              localStorage.setItem(
+                "custom_currencies",
+                JSON.stringify(importData.custom_currencies),
+              );
+            } catch (e) {
+              console.error("Failed to import legacy custom currencies", e);
+            }
+          }
+          // Import Exchange Rates
+          if (importData.currency_exchange_rates) {
+            try {
+              const existingRates = JSON.parse(
+                localStorage.getItem("currency_exchange_rates") || "{}",
+              );
+              const newRates = {
+                ...existingRates,
+                ...(importData.currency_exchange_rates as Record<
+                  string,
+                  number
+                >),
+              };
+              localStorage.setItem(
+                "currency_exchange_rates",
+                JSON.stringify(newRates),
+              );
+            } catch (e) {
+              console.error("Failed to import exchange rates", e);
+            }
+          }
         }
       },
     );
