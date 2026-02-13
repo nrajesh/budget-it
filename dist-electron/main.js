@@ -63,6 +63,11 @@ electron_1.app.whenReady().then(() => {
                 console.error("Security alert: Attempted path traversal in filename", filename);
                 throw new Error("Invalid filename: Path traversal detected");
             }
+            // SECURITY: Enforce file extension to prevent arbitrary file write
+            if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
+                console.error("Security alert: Invalid file extension", filename);
+                throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
+            }
             // Ensure directory exists
             if (!fs_1.default.existsSync(folder)) {
                 fs_1.default.mkdirSync(folder, { recursive: true });
