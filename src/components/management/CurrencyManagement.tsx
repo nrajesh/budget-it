@@ -133,6 +133,18 @@ export const CurrencyManagement = () => {
               <ThemedCardDescription>
                 Manage exchange rates relative to your base currency (
                 {selectedCurrency}).
+                <span className="block mt-2 text-xs text-muted-foreground/80">
+                  Data sourced from{" "}
+                  <a
+                    href="https://frankfurter.dev"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-primary transition-colors"
+                  >
+                    Frankfurter API
+                  </a>{" "}
+                  (Open Source, No API Key, No Tracking).
+                </span>
               </ThemedCardDescription>
             </div>
             <Button

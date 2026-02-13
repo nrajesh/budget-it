@@ -7,6 +7,9 @@ import { TopCategoriesList } from "@/components/infographic/TopCategoriesList";
 import { startOfMonth, subDays, isAfter, format } from "date-fns";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
+import { RunwayCard } from "@/components/dashboard/RunwayCard";
+import { BudgetStatusCard } from "@/components/dashboard/BudgetStatusCard";
+import { ConsolidatedMetricsCard } from "@/components/dashboard/ConsolidatedMetricsCard";
 
 export const FinancialPulseDashboard = () => {
   const { transactions, accounts } = useTransactions();
@@ -89,11 +92,11 @@ export const FinancialPulseDashboard = () => {
           dailyMap.set(
             dateKey,
             current +
-              convertBetweenCurrencies(
-                Math.abs(t.amount),
-                t.currency || "USD",
-                selectedCurrency || "USD",
-              ),
+            convertBetweenCurrencies(
+              Math.abs(t.amount),
+              t.currency || "USD",
+              selectedCurrency || "USD",
+            ),
           );
         }
       }
@@ -160,9 +163,10 @@ export const FinancialPulseDashboard = () => {
   ]);
 
   return (
-    <div className="p-4 md:p-8 rounded-xl shadow-2xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+    <div className="p-4 md:p-8 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="space-y-6 animate-in fade-in duration-700 slide-in-from-bottom-4">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
               Financial Pulse
@@ -171,21 +175,28 @@ export const FinancialPulseDashboard = () => {
               Your wealth at a glance.
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-sm uppercase tracking-widest font-semibold text-slate-500">
-              Current Balance
-            </div>
-            <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
-              {formatCurrency(netWorth)}
-            </div>
+          {/* Search Bar - Moved to top right for compact layout */}
+          <div className="w-full md:w-auto min-w-[300px]">
+            <SearchFilterBar />
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8">
-          <SearchFilterBar />
+
+        {/* Row 1: Runway & Budget Status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+          <RunwayCard />
+          <BudgetStatusCard />
         </div>
 
+        {/* Row 2: Consolidated Metrics */}
+        <ConsolidatedMetricsCard
+          netWorth={formatCurrency(netWorth)}
+          income={formatCurrency(monthlyFlow.income)}
+          expenses={formatCurrency(monthlyFlow.expenses)}
+        />
+
+
+        {/* Row 3: Wealthometer Section */}
         <Wealthometer
           netWorth={netWorth}
           monthlyIncome={monthlyFlow.income}
@@ -193,6 +204,7 @@ export const FinancialPulseDashboard = () => {
           currencyFormatter={formatCurrency}
         />
 
+        {/* Row 4: Charts & Trends */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MonthlyTrends data={trendData} currencyFormatter={formatCurrency} />
           <TopCategoriesList

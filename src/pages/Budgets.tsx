@@ -8,7 +8,7 @@ import { AddEditBudgetDialog } from "../components/budgets/AddEditBudgetDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useLedger } from "@/contexts/LedgerContext";
-import { PlusCircle, Wand2 } from "lucide-react";
+import { PlusCircle, Wand2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -173,6 +173,62 @@ export default function BudgetsPage() {
     setIsConfirmingDelete(false);
   };
 
+  // Mass Delete Logic
+  const [selectedBudgetIds, setSelectedBudgetIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const toggleSelection = useCallback((budgetId: string) => {
+    setSelectedBudgetIds((prev) => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(budgetId)) {
+        newSelection.delete(budgetId);
+      } else {
+        newSelection.add(budgetId);
+      }
+      return newSelection;
+    });
+  }, []);
+
+  const handleMassDelete = async () => {
+    if (selectedBudgetIds.size === 0) return;
+
+    try {
+      selectedBudgetIds.forEach((id) => {
+        deleteBudget(id);
+      });
+      setSelectedBudgetIds(new Set());
+      toast({
+        title: "Budgets deleted",
+        description: `Successfully deleted ${selectedBudgetIds.size} budgets.`,
+      });
+    } catch (error: unknown) {
+      toast({
+        title: "Error deleting budgets",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedBudgetIds.size === filteredBudgets.length) {
+      setSelectedBudgetIds(new Set());
+    } else {
+      const allIds = new Set(filteredBudgets.map((b) => b.id));
+      setSelectedBudgetIds(allIds);
+    }
+  };
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedBudgetIds.size === filteredBudgets.length && filteredBudgets.length > 0) {
+      setSelectedBudgetIds(new Set());
+    } else {
+      const allIds = new Set(filteredBudgets.map((b) => b.id));
+      setSelectedBudgetIds(allIds);
+    }
+  }, [selectedBudgetIds.size, filteredBudgets]);
+
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
@@ -199,13 +255,32 @@ export default function BudgetsPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="mb-6 flex gap-4">
+        <div className="mb-6 flex gap-4 items-center">
           <Input
             placeholder="Search budgets by category name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-lg bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800"
           />
+          <Button
+            variant="outline"
+            onClick={handleSelectAll}
+            className="animate-in fade-in zoom-in duration-300"
+          >
+            {selectedBudgetIds.size === filteredBudgets.length && filteredBudgets.length > 0
+              ? "Deselect All"
+              : "Select All"}
+          </Button>
+          {selectedBudgetIds.size > 0 && (
+            <Button
+              variant="destructive"
+              onClick={handleMassDelete}
+              className="animate-in fade-in zoom-in duration-300"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete ({selectedBudgetIds.size})
+            </Button>
+          )}
         </div>
 
         <BudgetSummary budgets={spendingBudgets} isLoading={isLoading} />
@@ -219,6 +294,8 @@ export default function BudgetsPage() {
             onEdit={handleOpenDialog}
             onDelete={handleDeleteClick}
             transactions={transactions}
+            selectedBudgetIds={selectedBudgetIds}
+            onToggleSelection={toggleSelection}
           />
 
           {inactiveBudgets.length > 0 && (
@@ -232,6 +309,8 @@ export default function BudgetsPage() {
                 onEdit={handleOpenDialog}
                 onDelete={handleDeleteClick}
                 transactions={transactions}
+                selectedBudgetIds={selectedBudgetIds}
+                onToggleSelection={toggleSelection}
               />
             </div>
           )}

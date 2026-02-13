@@ -34,12 +34,16 @@ export function BudgetSummary({ budgets, isLoading }: BudgetSummaryProps) {
     // Normalize Target Amount to a monthly value
     switch (budget.frequency) {
       case "Monthly":
+      case "1m":
         normalizedTarget = budget.target_amount;
         break;
       case "Quarterly":
+      case "1q":
+      case "3m":
         normalizedTarget = budget.target_amount / 3;
         break;
       case "Yearly":
+      case "1y":
         normalizedTarget = budget.target_amount / 12;
         break;
       case "One-time": {

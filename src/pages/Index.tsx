@@ -1,16 +1,9 @@
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react"; // Added icons
-import { cn, slugify } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import { FinancialPulseDashboard } from "@/components/dashboard/FinancialPulseDashboard";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -18,6 +11,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 // New Components
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { StackedCategoryChart } from "@/components/dashboard/StackedCategoryChart";
+import { RunwayCard } from "@/components/dashboard/RunwayCard";
+import { BudgetStatusCard } from "@/components/dashboard/BudgetStatusCard";
+import { ConsolidatedMetricsCard } from "@/components/dashboard/ConsolidatedMetricsCard";
 
 const Index = () => {
   const { transactions } = useTransactions();
@@ -119,60 +115,7 @@ const Index = () => {
   // I will reuse the monthly logic from before to get at least some comparison if possible, or just mock it for "UI likeness" if acceptable.
   // Let's bring back the monthly data calculation for the change percentages.
 
-  const monthlyData = useMemo(() => {
-    const inc: Record<string, number> = {};
-    const exp: Record<string, number> = {};
-    const bal: Record<string, number> = {};
 
-    filteredTransactions.forEach((t) => {
-      if (excludeTransfers && t.category === "Transfer") return;
-      const date = new Date(t.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const amount = convertBetweenCurrencies(
-        t.amount,
-        t.currency || "USD",
-        selectedCurrency || "USD",
-      );
-
-      if (t.amount > 0) inc[key] = (inc[key] || 0) + amount;
-      else exp[key] = (exp[key] || 0) + Math.abs(amount);
-
-      bal[key] = (bal[key] || 0) + amount;
-    });
-    return { inc, exp, bal };
-  }, [
-    filteredTransactions,
-    excludeTransfers,
-    convertBetweenCurrencies,
-    selectedCurrency,
-  ]);
-
-  const calculateChange = (data: Record<string, number>) => {
-    const keys = Object.keys(data).sort();
-    if (keys.length < 2) return { value: "0%", isPositive: true }; // Default
-    const curr = data[keys[keys.length - 1]] || 0;
-    const prev = data[keys[keys.length - 2]] || 0;
-    if (prev === 0) return { value: "0%", isPositive: true };
-    const pct = ((curr - prev) / prev) * 100;
-    return { value: `${Math.abs(pct).toFixed(1)}%`, isPositive: pct >= 0 };
-  };
-
-  // Net worth change is trickier, simplified to just monthly flow change for now
-  const balanceChange = calculateChange(monthlyData.bal);
-
-  // Helper for pill styles
-  const getPillStyle = (isPositive: boolean, inverse = false) => {
-    // Inverse: for expenses, positive change (more expenses) is bad (red)
-    let good = isPositive;
-    if (inverse) good = !isPositive;
-
-    return cn(
-      "text-xs px-2 py-0.5 rounded-full flex items-center gap-1 font-medium",
-      good
-        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-        : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-    );
-  };
 
   if (dashboardStyle === "financial-pulse") {
     return <FinancialPulseDashboard />;
@@ -193,78 +136,18 @@ const Index = () => {
         {/* Search/Filter Bar */}
         <SearchFilterBar />
 
-        {/* Metric Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* Total Balance / Net Worth */}
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                Net Worth
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(totalBalance)}
-                </span>
-                <span className={getPillStyle(balanceChange.isPositive)}>
-                  {balanceChange.isPositive ? (
-                    <ArrowUpRight className="h-3 w-3" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" />
-                  )}
-                  {balanceChange.value}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Income */}
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                Monthly Income
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(totalIncome)}
-                </span>
-                {/* 
-                            Income change logic: usually implies vs last month. 
-                            We can show it if we trust the calc, or just disable if it's confusing.
-                            Keeping it for "sleek" look.
-                        */}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Expenses */}
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <div className="p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg">
-                  <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
-                </div>
-                Monthly Expenses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(totalExpenses)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Metric Cards Row 1 */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <RunwayCard />
+          <BudgetStatusCard />
         </div>
+
+        {/* Metric Cards Row 2 - Consolidated */}
+        <ConsolidatedMetricsCard
+          netWorth={formatCurrency(totalBalance)}
+          income={formatCurrency(totalIncome)}
+          expenses={formatCurrency(totalExpenses)}
+        />
 
         {/* Main Content Grid */}
         <div className="grid gap-4 md:grid-cols-12 h-[500px]">

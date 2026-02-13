@@ -16,6 +16,7 @@ const queryClient = new QueryClient();
 // Lazy load page components
 const Index = lazy(() => import("@/pages/Index"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
+const CalendarView = lazy(() => import("@/pages/CalendarView"));
 const Transactions = lazy(() => import("@/pages/Transactions"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -59,6 +60,7 @@ function App() {
                         <Route path="/ledgers" element={<LedgerEntryPage />} />
                         <Route path="/" element={<Layout />}>
                           <Route index element={<Index />} />
+                          <Route path="calendar" element={<CalendarView />} />
                           <Route
                             path="/transactions"
                             element={<Transactions />}
