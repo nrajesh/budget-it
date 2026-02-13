@@ -16,10 +16,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Transaction } from "@/data/finance-data";
 
 interface StackedCategoryChartProps {
-  transactions: Transaction[];
+  transactions: any[];
   className?: string;
 }
 
@@ -71,14 +70,7 @@ export const StackedCategoryChart = ({
     // 2. Convert to Array and Sort by Total Spend
     const chartData = Array.from(categoryMap.entries()).map(
       ([category, subMap]) => {
-        const entry: {
-          category: string;
-          total: number;
-          [key: string]: string | number;
-        } = {
-          category,
-          total: 0,
-        };
+        const entry: any = { category };
         let total = 0;
         subMap.forEach((amt, sub) => {
           entry[sub] = amt;
@@ -132,7 +124,7 @@ export const StackedCategoryChart = ({
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value: number) => formatCurrency(value)}
+                tickFormatter={(value) => formatCurrency(value)}
                 tick={{ fontSize: 12 }}
               />
               <Tooltip

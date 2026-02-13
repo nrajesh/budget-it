@@ -9,12 +9,9 @@ import {
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { TrendingUp, TrendingDown, Scale } from "lucide-react";
 
-import { Transaction } from "@/types/dataProvider";
-import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
-
 interface NetWorthStatementProps {
-  transactions: Transaction[];
-  accounts: Payee[];
+  transactions: any[];
+  accounts: any[];
 }
 
 const NetWorthStatement: React.FC<NetWorthStatementProps> = ({

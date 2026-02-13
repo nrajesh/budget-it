@@ -32,7 +32,6 @@ export interface ParsedFilterState {
   limit?: number;
   transactionType?: "income" | "expense";
   sortOrder?: "largest" | "smallest";
-  isAllTime?: boolean;
 }
 
 interface SearchContext {
@@ -61,13 +60,9 @@ export const parseSearchQuery = (
   };
 
   let remainingQuery = query;
-  const lowerQuery = query.toLowerCase();
 
-  if (lowerQuery.includes("all time")) {
-    result.isAllTime = true;
-    result.dateRange = undefined;
-    remainingQuery = remainingQuery.replace(/all time/gi, "").trim();
-  }
+  // --- 1. Date Parsing (Basic Regex) ---
+  const lowerQuery = query.toLowerCase();
   const today = new Date();
   today.setHours(12, 0, 0, 0); // Normalize today to noon
 

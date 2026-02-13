@@ -81,9 +81,6 @@ export function calculateBudgetSpent(
   }
 
   // 2. Filter Transactions
-  const budgetScopeType = budget.budget_scope || "category";
-  const budgetScopeName = (budget.budget_scope_name || "").trim().toLowerCase();
-
   const relevantTransactions = transactions.filter((t) => {
     // Date Check logic
     let txDate = new Date(t.date);
@@ -96,39 +93,31 @@ export function calculateBudgetSpent(
     if (!isWithinInterval(txDate, { start: startDate, end: endDate }))
       return false;
 
-    // Scope-based matching
-    if (budgetScopeType === "account") {
-      if ((t.account || "").trim().toLowerCase() !== budgetScopeName)
-        return false;
-    } else if (budgetScopeType === "vendor") {
-      if ((t.vendor || "").trim().toLowerCase() !== budgetScopeName)
-        return false;
-    } else if (budgetScopeType === "sub_category") {
-      if ((t.sub_category || "").trim().toLowerCase() !== budgetScopeName)
-        return false;
-    } else {
-      // Category Check
-      if (
-        t.category.trim().toLowerCase() !==
-        budget.category_name.trim().toLowerCase()
-      )
-        return false;
+    // Category Check
+    if (
+      t.category.trim().toLowerCase() !==
+      budget.category_name.trim().toLowerCase()
+    )
+      return false;
 
-      // Sub-category Check
-      if (
-        budget.sub_category_name &&
-        (!t.sub_category ||
-          t.sub_category.trim().toLowerCase() !==
-            budget.sub_category_name.trim().toLowerCase())
-      )
-        return false;
-    }
+    // Sub-category Check
+    if (
+      budget.sub_category_name &&
+      (!t.sub_category ||
+        t.sub_category.trim().toLowerCase() !==
+          budget.sub_category_name.trim().toLowerCase())
+    )
+      return false;
 
     // Account Scope Check
     if (allowedAccountTypes) {
       const accountName = (t.account || "").trim().toLowerCase();
       const type = accountTypeMap.get(accountName);
 
+      // Robustness: If type is unknown, and we are in strict mode, we reject.
+      // BUT, if the user sees 'Offshore Savings' and it's not mapped, it's a bug.
+      // With the improved mapping above, this should be solved.
+      // If still not found, strictly reject.
       if (!type || !allowedAccountTypes.has(type)) {
         return false;
       }

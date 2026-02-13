@@ -11,13 +11,7 @@ interface ActivePieShapeProps {
   startAngle: number;
   endAngle: number;
   fill: string;
-  payload: {
-    name?: string;
-    vendor_name?: string;
-    total_amount?: number;
-    amount?: number;
-    [key: string]: unknown;
-  };
+  payload: any;
   formatCurrency: (value: number) => string;
   onCenterClick?: () => void;
 }

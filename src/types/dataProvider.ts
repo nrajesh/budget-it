@@ -14,7 +14,6 @@ export interface Transaction {
   recurrence_id?: string | null;
   recurrence_frequency?: string | null;
   recurrence_end_date?: string | null;
-  is_projected?: boolean;
   created_at: string;
 }
 
@@ -35,12 +34,6 @@ export interface Budget {
   created_at?: string;
   account_scope?: "ALL" | "GROUP";
   account_scope_values?: string[] | null;
-  is_goal?: boolean;
-  target_date?: string | null;
-  monthly_contribution?: number | null;
-  goal_context?: string | null;
-  budget_scope?: "category" | "account" | "vendor" | "sub_category";
-  budget_scope_name?: string | null;
 }
 
 export interface Vendor {
@@ -112,18 +105,6 @@ export interface Ledger {
   currency: string;
   created_at: string;
   last_accessed: string;
-}
-
-export interface BackupConfig {
-  id: string;
-  frequency: number; // in milliseconds
-  isActive: boolean;
-  nextBackup: string; // ISO string
-  lastBackup?: string; // ISO string
-  directoryHandle?: any;
-  path?: string; // Electron: Full file path
-  encrypted?: boolean;
-  passwordHash?: string;
 }
 
 export interface DataProvider {

@@ -75,7 +75,7 @@ export function SpendingByVendorChart({
   }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
 
   const onPieClick = useCallback(
-    (data: { name: string; amount: number }, index: number) => {
+    (data: any, index: number) => {
       setActiveIndex((prevIndex) => (prevIndex === index ? undefined : index));
 
       // Sync with global filters
@@ -91,10 +91,10 @@ export function SpendingByVendorChart({
   }, [handleResetFilters]);
 
   const renderActiveShape = useCallback(
-    (props: unknown) => {
+    (props: any) => {
       return (
         <ActivePieShape
-          {...(props as any)}
+          {...props}
           formatCurrency={formatCurrency}
           onCenterClick={resetAll}
         />

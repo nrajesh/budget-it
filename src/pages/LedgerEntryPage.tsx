@@ -208,7 +208,6 @@ const LedgerEntryPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
-          <img src="/logo.png" alt="Budget It!" className="h-20 w-20 mx-auto" />
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
             Budget It!
           </h1>

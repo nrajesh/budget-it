@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,7 +25,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { formatDateToDDMMYYYY, cn } from "@/lib/utils";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import {
   MoreHorizontal,
@@ -259,50 +259,42 @@ export function ScheduledTransactionsTable({
                                     onUnlink(transaction.transfer_id!);
                                 }}
                                 className="mr-1 p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors group/link"
-                                aria-label="Unlink Pair"
                                 title="Unlink Pair"
                               >
                                 <Link className="h-3.5 w-3.5 text-blue-500 group-hover/link:text-red-500" />
                               </button>
                             )}
-                            <button
-                              type="button"
+                            <span
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleVendorClick(transaction.vendor);
                               }}
-                              className="appearance-none bg-transparent border-0 p-0 text-left font-medium cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 rounded-sm"
+                              className="font-medium cursor-pointer hover:text-primary hover:underline text-slate-700 dark:text-slate-200"
                             >
                               {transaction.vendor || "Unknown"}
-                            </button>
+                            </span>
                           </div>
-                          <button
-                            type="button"
+                          <div
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAccountClick(transaction.account);
                             }}
-                            className="appearance-none bg-transparent border-0 p-0 text-left text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 rounded-sm"
+                            className="text-sm text-slate-500 dark:text-slate-400 cursor-pointer hover:text-primary hover:underline"
                           >
                             {transaction.account || "Unknown"}
-                          </button>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <button
-                            type="button"
+                          <Badge
+                            variant="outline"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCategoryClick(transaction.category);
                             }}
-                            className={cn(
-                              badgeVariants({ variant: "outline" }),
-                              "text-slate-700 dark:text-slate-300",
-                              transaction.category !== "Transfer" &&
-                                "cursor-pointer hover:border-primary",
-                            )}
+                            className={`text-slate-700 dark:text-slate-300 ${transaction.category !== "Transfer" ? "cursor-pointer hover:border-primary" : ""}`}
                           >
                             {transaction.category || "Uncategorized"}
-                          </button>
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {transaction.sub_category && (

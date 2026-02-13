@@ -20,10 +20,7 @@ export const saveFile = async (
         types: [
           {
             description: description,
-            accept: {
-              "application/json": [".json", ".lock"],
-              "text/csv": [".csv"],
-            },
+            accept: { "application/json": [".json", ".lock"] },
           },
         ],
       });
@@ -33,37 +30,19 @@ export const saveFile = async (
       return true;
     }
     throw new Error("File System Access API not supported");
-  } catch (err: unknown) {
-    if (err instanceof Error && err.name === "AbortError") {
+  } catch (err: any) {
+    if (err.name === "AbortError") {
       throw new Error("Save cancelled by user");
     }
 
     // Fallback to classic download
     const element = document.createElement("a");
-
-    // Use application/octet-stream to force download in stubborn browsers (like Safari)
-    // instead of opening the JSON in a tab.
-    const mimeType = filename.endsWith(".csv")
-      ? "text/csv;charset=utf-8"
-      : "application/octet-stream";
-
-    const BOM = filename.endsWith(".csv") ? "\uFEFF" : "";
-    const file = new Blob([BOM + content], { type: mimeType });
-    const url = URL.createObjectURL(file);
-
-    element.href = url;
+    const file = new Blob([content], { type: "application/json" });
+    element.href = URL.createObjectURL(file);
     element.download = filename;
-    element.style.display = "none";
     document.body.appendChild(element);
-
     element.click();
-
-    // Cleanup with a small delay to ensure the click is registered
-    setTimeout(() => {
-      document.body.removeChild(element);
-      URL.revokeObjectURL(url);
-    }, 100);
-
+    document.body.removeChild(element);
     return false; // Indicates fallback was used
   }
 };
@@ -96,9 +75,8 @@ export const processImport = async (
       await dataProvider.importData(parsed);
       return { type: "success" };
     }
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Invalid file format";
-    return { type: "error", message };
+  } catch (e: any) {
+    return { type: "error", message: e.message || "Invalid file format" };
   }
 };
 
@@ -115,8 +93,7 @@ export const processEncryptedImport = async (
     const data = JSON.parse(decryptedParams);
     await dataProvider.importData(data);
     return { type: "success" };
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Decryption failed";
-    return { type: "error", message };
+  } catch (e: any) {
+    return { type: "error", message: e.message || "Decryption failed" };
   }
 };

@@ -6,6 +6,7 @@ import {
   ThemedCardHeader,
   ThemedCardTitle,
 } from "@/components/ThemedCard";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,20 +17,34 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
-import { useTheme, DashboardStyle } from "@/contexts/ThemeContext";
-import { showSuccess } from "@/utils/toast";
+import { useTheme } from "@/contexts/ThemeContext";
+import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
+import { showSuccess, showError } from "@/utils/toast";
+import { RotateCcw, RefreshCw, DatabaseZap } from "lucide-react";
+import { useDataProvider } from "@/context/DataProviderContext";
 
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
+import { CurrencyConversionDialog } from "@/components/dialogs/CurrencyConversionDialog";
 import { useLedger } from "@/contexts/LedgerContext";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
+  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
+  const { handleClearAllFilters } = useTransactionFilters();
   const { dashboardStyle, setDashboardStyle } = useTheme();
-  const { activeLedger, updateLedgerDetails } = useLedger();
+  const dataProvider = useDataProvider();
+  const { activeLedger, updateLedgerDetails, refreshLedgers } = useLedger();
+  const navigate = useNavigate();
 
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
+  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] =
+    React.useState(false);
   const [isManageLedgerOpen, setIsManageLedgerOpen] = React.useState(false);
   const [isCreateLedgerOpen, setIsCreateLedgerOpen] = React.useState(false);
+  const [isCurrencyDialogOpen, setIsCurrencyDialogOpen] = React.useState(false);
   const [futureMonths, setFutureMonths] = React.useState<number>(2);
 
   // Data Management State moved to DataManagementPage
@@ -64,11 +79,46 @@ const SettingsPage = () => {
     }
   };
 
-  // ...
-
   const handleDashboardStyleChange = (value: string) => {
-    setDashboardStyle(value as DashboardStyle);
+    setDashboardStyle(value as any);
     showSuccess(`Dashboard style set to ${value}.`);
+  };
+
+  const handleResetData = async () => {
+    try {
+      await dataProvider.clearAllData();
+      // Refresh ledgers to ensure context is aware of the wipe
+      await refreshLedgers();
+
+      clearAllTransactions();
+      handleClearAllFilters();
+
+      // Clear non-filter persistent state if desired
+      localStorage.removeItem("activeLedgerId");
+      localStorage.removeItem("userLoggedOut");
+      // filter_selectedAccounts is handled by handleClearAllFilters
+
+      showSuccess("All application data has been reset.");
+
+      // Navigate cleanly if needed, but context updates should trigger UI changes
+      // window.location.assign('/ledgers'); // Removed hard reload
+      navigate("/ledgers");
+    } catch (error: any) {
+      showError(`Failed to reset data: ${error.message}`);
+    } finally {
+      setIsResetConfirmOpen(false);
+    }
+  };
+
+  const handleGenerateDemoData = async () => {
+    // setIsDemoDataProgressDialogOpen(true); // Handled globally by context now
+    try {
+      await generateDiverseDemoData();
+    } catch {
+      // Ignore error during demo data generation
+    } finally {
+      setIsGenerateConfirmOpen(false);
+    }
   };
 
   // Data Management Logic moved to DataManagementPage
@@ -78,7 +128,7 @@ const SettingsPage = () => {
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
           <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-            Ledger
+            Settings
           </h1>
           <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
             Manage application preferences and data
@@ -134,6 +184,16 @@ const SettingsPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <div className="pt-4">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => setIsCurrencyDialogOpen(true)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Currency Conversion
+              </Button>
+            </div>
           </ThemedCardContent>
         </ThemedCard>
 
@@ -187,7 +247,69 @@ const SettingsPage = () => {
             </div>
           </ThemedCardContent>
         </ThemedCard>
+
+        {/* Reset Data Card */}
+        <ThemedCard className="border-red-200/50 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10">
+          <ThemedCardHeader>
+            <ThemedCardTitle className="text-red-600 dark:text-red-400">
+              Reset All Data
+            </ThemedCardTitle>
+            <ThemedCardDescription>
+              Permanently delete all transaction, vendor, and account records.
+            </ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <Button
+              variant="destructive"
+              onClick={() => setIsResetConfirmOpen(true)}
+            >
+              <DatabaseZap className="mr-2 h-4 w-4" />
+              Reset All Data
+            </Button>
+          </ThemedCardContent>
+        </ThemedCard>
+
+        {/* Generate Demo Data Card */}
+        <ThemedCard>
+          <ThemedCardHeader>
+            <ThemedCardTitle>Generate Demo Data</ThemedCardTitle>
+            <ThemedCardDescription>
+              Generate diverse demo transactions. This will clear existing data
+              first.
+            </ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <Button
+              onClick={() => setIsGenerateConfirmOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Generate Data
+            </Button>
+          </ThemedCardContent>
+        </ThemedCard>
       </div>
+
+      {/* Dialogs */}
+      {/* Password Dialogs moved to DataManagementPage */}
+
+      <ConfirmationDialog
+        isOpen={isResetConfirmOpen}
+        onOpenChange={setIsResetConfirmOpen}
+        onConfirm={handleResetData}
+        title="Are you sure you want to reset all data?"
+        description="This action cannot be undone. All your transaction, vendor, and account data for ALL ledgers will be permanently deleted."
+        confirmText="Reset Data"
+      />
+
+      <ConfirmationDialog
+        isOpen={isGenerateConfirmOpen}
+        onOpenChange={setIsGenerateConfirmOpen}
+        onConfirm={handleGenerateDemoData}
+        title="Generate new demo data?"
+        description="This will clear all existing transactions and generate new diverse demo data. This action cannot be undone."
+        confirmText="Generate"
+      />
 
       <ManageLedgerDialog
         isOpen={isManageLedgerOpen}
@@ -199,6 +321,11 @@ const SettingsPage = () => {
         isOpen={isCreateLedgerOpen}
         onOpenChange={setIsCreateLedgerOpen}
         ledgerToEdit={undefined}
+      />
+
+      <CurrencyConversionDialog
+        isOpen={isCurrencyDialogOpen}
+        onOpenChange={setIsCurrencyDialogOpen}
       />
     </div>
   );

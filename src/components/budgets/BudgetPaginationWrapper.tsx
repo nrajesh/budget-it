@@ -6,7 +6,6 @@ import React, {
   useRef,
 } from "react";
 import { Budget } from "../../types/budgets";
-import { Transaction } from "@/data/finance-data";
 import { BudgetCard } from "./BudgetCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -17,7 +16,6 @@ interface BudgetPaginationWrapperProps {
   isLoading: boolean;
   onEdit: (budget: Budget) => void;
   onDelete: (budgetId: string) => void;
-  transactions?: Transaction[];
 }
 
 const BUDGETS_PER_PAGE = 3;
@@ -27,7 +25,6 @@ export function BudgetPaginationWrapper({
   isLoading,
   onEdit,
   onDelete,
-  transactions = [],
 }: BudgetPaginationWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,7 +126,6 @@ export function BudgetPaginationWrapper({
             budget={budget}
             onEdit={onEdit}
             onDelete={onDelete}
-            transactions={transactions}
           />
         ))}
       </div>

@@ -22,7 +22,7 @@ interface CSVMappingDialogProps {
   onClose: () => void;
   file: File | null;
   requiredHeaders: string[];
-  onConfirm: (results: Record<string, unknown>[], config: ImportConfig) => void;
+  onConfirm: (results: any[], config: ImportConfig) => void;
 }
 
 export interface ImportConfig {
@@ -49,7 +49,7 @@ const CSVMappingDialog = ({
 
   // Parsed data state
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
-  const [csvData, setCsvData] = useState<Record<string, unknown>[]>([]);
+  const [csvData, setCsvData] = useState<any[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -73,12 +73,12 @@ const CSVMappingDialog = ({
     if (!file) return;
     setIsLoading(true);
 
-    Papa.parse(file, {
+    Papa.parse(file as any, {
       header: true,
       skipEmptyLines: true,
 
       delimiter: config.delimiter === "auto" ? "" : config.delimiter, // Empty string = auto-detect
-      complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
+      complete: (results: any) => {
         const headers: string[] = results.meta.fields || [];
         setCsvHeaders(headers);
         setCsvData(results.data);
@@ -140,7 +140,7 @@ const CSVMappingDialog = ({
         }
         setIsLoading(false);
       },
-      error: (error: unknown) => {
+      error: (error: any) => {
         console.error("CSV Parse Error", error);
         setIsLoading(false);
         // Ideally show toast here, but we can just stay on step 1?
@@ -157,9 +157,9 @@ const CSVMappingDialog = ({
 
   const handleConfirm = () => {
     // Apply mapping to data
-    const mappedData = csvData.map((row) => {
+    const mappedData = csvData.map((row: any) => {
       // Keep original data, then overwrite with standardized keys
-      const newRow: Record<string, unknown> = { ...row };
+      const newRow: any = { ...row };
       Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
         newRow[requiredHeader] = row[csvHeader];
       });
@@ -235,11 +235,8 @@ const CSVMappingDialog = ({
                 <Label>Decimal Format</Label>
                 <Select
                   value={config.decimalSeparator}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      decimalSeparator: val as "." | ",",
-                    }))
+                  onValueChange={(val: any) =>
+                    setConfig((prev) => ({ ...prev, decimalSeparator: val }))
                   }
                 >
                   <SelectTrigger>
@@ -326,7 +323,7 @@ const CSVMappingDialog = ({
                           <tr key={i} className="border-b last:border-0">
                             {csvHeaders.map((h) => (
                               <td key={h} className="p-1 whitespace-nowrap">
-                                {String(row[h] ?? "")}
+                                {row[h]}
                               </td>
                             ))}
                           </tr>

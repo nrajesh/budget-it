@@ -18,8 +18,6 @@ import { slugify } from "@/lib/utils";
 import { AddEditScheduledTransactionDialog } from "@/components/scheduled-transactions/AddEditScheduledTransactionDialog";
 import { projectScheduledTransactions } from "@/utils/forecasting";
 import { addMonths } from "date-fns";
-import { Transaction } from "@/data/finance-data";
-import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 
@@ -130,14 +128,13 @@ const Transactions = () => {
   const dataProvider = useDataProvider();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
 
   const [isScheduledDialogOpen, setIsScheduledDialogOpen] = useState(false);
   const [scheduledTransactionToEdit, setScheduledTransactionToEdit] =
-    useState<ScheduledTransaction | null>(null);
+    useState<any>(null);
   const [selectedTransactionForSchedule, setSelectedTransactionForSchedule] =
-    useState<ScheduledTransaction | null>(null);
+    useState<any>(null);
 
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
@@ -145,7 +142,7 @@ const Transactions = () => {
   const { toast } = useToast();
 
   const filteredTransactions = React.useMemo(() => {
-    let projected: Transaction[] = [];
+    let projected: any[] = [];
     if (scheduledTransactions.length > 0) {
       const today = new Date();
       const start = new Date(today);
@@ -259,41 +256,30 @@ const Transactions = () => {
     transactionType,
   ]);
 
-  // Memoized handlers to prevent unnecessary re-renders of TransactionTable/TransactionRow
-  const handleDeleteTransactionsWrapper = React.useCallback(
-    async (
-      items: {
-        id: string;
-        transfer_id?: string;
-        is_projected?: boolean;
-        recurrence_id?: string;
-        date?: string;
-      }[],
-    ) => {
-      // Simplified Logic: Directly delete without prompting.
-      // Real transactions are deleted. Projected transactions are 'skipped'.
-      const extendedItems = items.map((i) => {
-        // Find full object to carry extra metadata if needed (like recurrence_id for projected items)
-        // Actually, filteredTransactions should have it.
-        const full = filteredTransactions.find((t) => t.id === i.id);
-        return full
-          ? {
-              ...i,
-              ...full,
-              transfer_id: full.transfer_id || undefined,
-              recurrence_id: full.recurrence_id || undefined,
-            }
-          : i;
-      });
+  const handleDeleteTransactionsWrapper = async (
+    items: {
+      id: string;
+      transfer_id?: string;
+      is_projected?: boolean;
+      recurrence_id?: string;
+      date?: string;
+    }[],
+  ) => {
+    // Simplified Logic: Directly delete without prompting.
+    // Real transactions are deleted. Projected transactions are 'skipped'.
+    const extendedItems = items.map((i) => {
+      // Find full object to carry extra metadata if needed (like recurrence_id for projected items)
+      // Actually, filteredTransactions should have it.
+      const full = filteredTransactions.find((t) => t.id === i.id);
+      return full ? { ...i, ...full } : i;
+    });
 
-      await deleteMultipleTransactions(extendedItems);
-    },
-    [filteredTransactions, deleteMultipleTransactions],
-  );
+    await deleteMultipleTransactions(extendedItems);
+  };
   // Removed handleConfirmDelete and related dialogs.
 
   const handleScheduleTransactions = (
-    selectedTransactions: Transaction[],
+    selectedTransactions: any[],
     clearSelection: () => void,
   ) => {
     if (selectedTransactions.length === 0) return;
@@ -323,9 +309,9 @@ const Transactions = () => {
     setSelectedTransactionForSchedule({
       ...transaction,
       frequency: "Monthly",
-      id: "",
+      id: undefined,
       date: new Date().toISOString(),
-    } as unknown as ScheduledTransaction);
+    });
     setIsScheduledDialogOpen(true);
     clearSelection();
   };
@@ -384,41 +370,6 @@ const Transactions = () => {
     }
   };
 
-  const handleUnlinkTransaction = React.useCallback(
-    async (transferId: string) => {
-      const confirm = window.confirm(
-        "Are you sure you want to unlink these transactions?",
-      );
-      if (confirm) {
-        await unlinkTransaction(transferId);
-        toast({
-          title: "Transactions Unlinked",
-          description: "The transfer link has been removed.",
-        });
-      }
-    },
-    [unlinkTransaction, toast],
-  );
-
-  const handleLinkTransactions = React.useCallback(
-    async (id1: string, id2: string) => {
-      await linkTransactions(id1, id2);
-      toast({
-        title: "Transactions Linked",
-        description: "The transactions have been paired as a transfer.",
-      });
-    },
-    [linkTransactions, toast],
-  );
-
-  const handleRowDoubleClick = React.useCallback(
-    (transaction: Transaction) => {
-      setEditingTransaction(transaction);
-      setIsDialogOpen(true);
-    },
-    [setEditingTransaction, setIsDialogOpen],
-  );
-
   return (
     <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
@@ -446,9 +397,30 @@ const Transactions = () => {
           onDeleteTransactions={handleDeleteTransactionsWrapper}
           onAddTransaction={addTransaction}
           onScheduleTransactions={handleScheduleTransactions}
-          onUnlinkTransaction={handleUnlinkTransaction}
-          onLinkTransactions={handleLinkTransactions}
-          onRowDoubleClick={handleRowDoubleClick}
+          onUnlinkTransaction={async (transferId) => {
+            const confirm = window.confirm(
+              "Are you sure you want to unlink these transactions?",
+            );
+            if (confirm) {
+              await unlinkTransaction(transferId);
+              toast({
+                title: "Transactions Unlinked",
+                description: "The transfer link has been removed.",
+              });
+            }
+          }}
+          onLinkTransactions={async (id1, id2) => {
+            await linkTransactions(id1, id2);
+            toast({
+              title: "Transactions Linked",
+              description: "The transactions have been paired as a transfer.",
+            });
+          }}
+          onRowDoubleClick={(transaction) => {
+            setEditingTransaction(transaction);
+            setEditingTransaction(transaction);
+            setIsDialogOpen(true);
+          }}
           accountCurrencyMap={accountCurrencyMap}
         />
       </div>
@@ -539,7 +511,7 @@ const Transactions = () => {
       <CSVMappingDialog
         isOpen={mappingDialogState.isOpen}
         onClose={() =>
-          setMappingDialogState((prev) => ({ ...prev, isOpen: false }))
+          setMappingDialogState((prev: any) => ({ ...prev, isOpen: false }))
         }
         file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}

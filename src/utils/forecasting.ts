@@ -1,4 +1,4 @@
-import { ScheduledTransaction, Transaction } from "@/types/dataProvider";
+import { Transaction, ScheduledTransaction } from "@/types/dataProvider";
 import {
   addDays,
   addWeeks,
@@ -11,6 +11,10 @@ import {
   endOfDay,
 } from "date-fns";
 
+export interface ProjectedTransaction extends Transaction {
+  is_projected: boolean;
+}
+
 /**
  * Projects scheduled transactions into a list of virtual future transactions
  * within a specified date range.
@@ -20,22 +24,12 @@ import {
  * @param endDate End of the projection window
  * @returns Array of virtual Transaction objects with is_projected: true
  */
-const FREQUENCY_MAP: Record<string, { value: number; unit: string }> = {
-  Daily: { value: 1, unit: "d" },
-  Weekly: { value: 1, unit: "w" },
-  "Bi-Weekly": { value: 2, unit: "w" },
-  Monthly: { value: 1, unit: "m" },
-  Quarterly: { value: 3, unit: "m" },
-  Yearly: { value: 1, unit: "y" },
-};
-
 export function projectScheduledTransactions(
   scheduledTransactions: ScheduledTransaction[],
   startDate: Date,
   endDate: Date,
-): Transaction[] {
-  // We return Transaction[] that matches Transaction shape but with extra flags if needed
-  const projected: Transaction[] = [];
+): ProjectedTransaction[] {
+  const projected: ProjectedTransaction[] = [];
   const windowStart = startOfDay(startDate);
   const windowEnd = endOfDay(endDate);
 
@@ -46,37 +40,11 @@ export function projectScheduledTransactions(
     // Safety: If current date is invalid
     if (isNaN(currentDate.getTime())) return;
 
-    // If the scheduled date is BEFORE the window start, we need to fast-forward it
-    // to the first occurrence within the window.
-    // HOWEVER, for simple reports like "Net Worth", usually we just want everything FROM today.
-    // Ideally, the 'st.date' IS the next occurrence. So if it's in the past, it's overdue.
-    // If it's in the future, it's upcoming.
-
-    // We iterate while currentDate <= windowEnd
-    // But we also need to respect st.recurrence_end_date if exists.
     const recurrenceEnd = st.end_date ? parseISO(st.end_date) : null;
 
     // Loop limit safety (e.g. 500 instances max per transaction to prevent infinite loops)
     let iterations = 0;
     const MAX_ITERATIONS = 365 * 5; // 5 years of daily
-
-    // Pre-calculate frequency interval to avoid parsing in the loop
-    let intervalValue = 1;
-    let intervalUnit = "m";
-
-    const mapped = FREQUENCY_MAP[st.frequency];
-
-    if (mapped) {
-      intervalValue = mapped.value;
-      intervalUnit = mapped.unit;
-    } else {
-      // Parse "1d", "2w" etc.
-      const match = st.frequency.match(/^(\d+)([dwmy])$/);
-      if (match) {
-        intervalValue = parseInt(match[1], 10);
-        intervalUnit = match[2];
-      }
-    }
 
     while (
       isBefore(currentDate, windowEnd) ||
@@ -101,57 +69,34 @@ export function projectScheduledTransactions(
           account: st.account,
           vendor: st.vendor,
           category: st.category,
-          sub_category: st.sub_category,
+          sub_category: st.sub_category || null,
           remarks: st.remarks || "Projected",
           is_scheduled_origin: true,
-          is_projected: true, // Flag for UI/Logic to distinguish
+          is_projected: true,
           recurrence_id: st.id,
-          transfer_id: st.transfer_id,
-          created_at: currentDate.toISOString(),
+          transfer_id: st.transfer_id || null,
+          created_at: new Date().toISOString(),
         });
       }
 
       // Advance Date
-      // Advance Date
-      // Support legacy "Daily", "Weekly", "Monthly", "Yearly"
-      // And new format "1d", "2w", "3m", "1y"
       let intervalValue = 1;
       let intervalUnit = "m";
 
-      if (
-        [
-          "Daily",
-          "Weekly",
-          "Fortnightly",
-          "Bi-Weekly",
-          "Monthly",
-          "Quarterly",
-          "Yearly",
-        ].includes(st.frequency)
-      ) {
-        switch (st.frequency) {
-          case "Daily":
-            intervalUnit = "d";
-            break;
-          case "Weekly":
-            intervalUnit = "w";
-            break;
-          case "Fortnightly":
-          case "Bi-Weekly":
-            intervalUnit = "w";
-            intervalValue = 2;
-            break;
-          case "Monthly":
-            intervalUnit = "m";
-            break;
-          case "Quarterly":
-            intervalUnit = "m";
-            intervalValue = 3;
-            break;
-          case "Yearly":
-            intervalUnit = "y";
-            break;
-        }
+      const namedFrequencies: Record<string, { unit: string; value: number }> = {
+        Daily: { unit: "d", value: 1 },
+        Weekly: { unit: "w", value: 1 },
+        Fortnightly: { unit: "w", value: 2 },
+        "Bi-Weekly": { unit: "w", value: 2 },
+        Monthly: { unit: "m", value: 1 },
+        Quarterly: { unit: "m", value: 3 },
+        Yearly: { unit: "y", value: 1 },
+      };
+
+      if (namedFrequencies[st.frequency]) {
+        const mapped = namedFrequencies[st.frequency];
+        intervalValue = mapped.value;
+        intervalUnit = mapped.unit;
       } else {
         // Parse "1d", "2w" etc.
         const match = st.frequency.match(/^(\d+)([dwmy])$/);
@@ -175,7 +120,7 @@ export function projectScheduledTransactions(
           currentDate = addYears(currentDate, intervalValue);
           break;
         default:
-          currentDate = addMonths(currentDate, 1); // Fallback
+          currentDate = addMonths(currentDate, 1);
           break;
       }
     }

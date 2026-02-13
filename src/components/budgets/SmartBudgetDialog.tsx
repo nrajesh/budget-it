@@ -193,16 +193,14 @@ export function SmartBudgetDialog({
           );
         }
 
-        const newBudget: Omit<
-          import("@/types/dataProvider").Budget,
-          "id" | "spent_amount"
-        > = {
+        const newBudget: any = {
           user_id: userId,
           category_id: catId,
           category_name: item.category,
           sub_category_id: subCatId,
           sub_category_name: item.subCategory,
           target_amount: item.proposedAmount,
+          spent_amount: 0, // Initial state
           currency: activeLedger?.currency || "USD", // Default or fetch from user settings
           start_date: new Date().toISOString().substring(0, 10), // Today
           end_date: null,
@@ -219,13 +217,11 @@ export function SmartBudgetDialog({
       });
       onSave(); // Trigger refresh in parent
       onClose();
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error(error);
-      const message =
-        error instanceof Error ? error.message : "Something went wrong.";
       toast({
         title: "Error creating budgets",
-        description: message,
+        description: error.message || "Something went wrong.",
         variant: "destructive",
       });
     } finally {

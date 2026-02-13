@@ -513,7 +513,7 @@ export function BalanceOverTimeChart({
   }, []);
 
   const handleBarClick = React.useCallback(
-    (_data: unknown, monthIndex: number, clickedDataKey: string) => {
+    (_data: any, monthIndex: number, clickedDataKey: string) => {
       setActiveBar((prevActiveBar) => {
         if (
           prevActiveBar?.monthIndex === monthIndex &&
@@ -568,11 +568,9 @@ export function BalanceOverTimeChart({
     const commonTooltip = (
       <ChartTooltip
         cursor={false}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         content={(props: any) => {
           const { payload } = props;
           // Filter out items with 0 value
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const filteredPayload = payload?.filter(
             (item: any) => Math.abs(Number(item.value)) > 0,
           );

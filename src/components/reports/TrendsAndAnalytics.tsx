@@ -19,10 +19,10 @@ import {
 } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Budget, Transaction } from "@/data/finance-data";
+import { Budget } from "@/data/finance-data";
 
 interface TrendsAndAnalyticsProps {
-  transactions: Transaction[];
+  transactions: any[];
   budgets: Budget[];
 }
 

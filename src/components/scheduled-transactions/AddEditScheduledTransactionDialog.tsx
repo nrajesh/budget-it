@@ -40,9 +40,7 @@ interface AddEditScheduledTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   transaction: ScheduledTransactionType | null;
-  onSubmit: (
-    values: Omit<ScheduledTransactionType, "id" | "created_at" | "user_id">,
-  ) => void;
+  onSubmit: (values: any) => void;
   isSubmitting: boolean;
   accounts: Payee[];
   allPayees: { value: string; label: string; isAccount: boolean }[];
@@ -193,13 +191,7 @@ export const AddEditScheduledTransactionDialog: React.FC<
               onSubmit={form.handleSubmit((values) => {
                 // Construct frequency string
                 const frequency = `${values.frequency_value}${values.frequency_unit}`;
-                // Get currency from selected account
-                const selectedAccount = accounts.find(
-                  (a) => a.name === values.account,
-                );
-                const currency = selectedAccount?.currency || "USD";
-
-                onSubmit({ ...values, frequency, currency });
+                onSubmit({ ...values, frequency });
               })}
               className="space-y-4"
             >

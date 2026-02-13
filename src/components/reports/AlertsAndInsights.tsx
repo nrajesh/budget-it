@@ -15,17 +15,16 @@ import {
 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { differenceInDays } from "date-fns";
-import { Budget, Transaction } from "@/data/finance-data";
-import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
+import { Budget } from "@/data/finance-data";
 import { useNavigate } from "react-router-dom";
 
 import { calculateBudgetSpent } from "@/utils/budgetUtils";
 import { useTransactions } from "@/contexts/TransactionsContext";
 
 interface AlertsAndInsightsProps {
-  historicalTransactions: Transaction[];
-  futureTransactions: Transaction[];
-  accounts: Payee[];
+  historicalTransactions: any[];
+  futureTransactions: any[];
+  accounts: any[];
   budgets: Budget[];
 }
 
@@ -52,12 +51,6 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
   const handleCategoryClick = (categoryName: string) => {
     if (categoryName === "Transfer") return;
     navigate("/transactions", { state: { filterCategory: categoryName } });
-  };
-
-  const handleSubCategoryClick = (subCategoryName: string) => {
-    navigate("/transactions", {
-      state: { filterSubCategory: subCategoryName },
-    });
   };
 
   // 1. Calculate Low Balance Alerts
@@ -164,8 +157,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
 
   // 2. Calculate Budget Overrun Alerts
   const budgetOverrunAlerts = React.useMemo(() => {
-    const alerts: { displayName: string; percentage: number; scope: string }[] =
-      [];
+    const alerts: { categoryName: string; percentage: number }[] = [];
 
     // Filter budgets to active ones
     const activeBudgets = budgets.filter((b) => b.is_active !== false);
@@ -179,10 +171,10 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
 
       // Calculate spent in selected currency
       const spentInSelectedCurrency = calculateBudgetSpent(
-        budget as unknown as import("@/types/dataProvider").Budget, // Cast to avoid type mismatch
+        budget as any, // Cast to any to avoid type mismatch with DataProvider Budget vs finance-data Budget
         historicalTransactions,
-        accounts as unknown as import("@/types/dataProvider").Account[],
-        vendors as unknown as import("@/types/dataProvider").Vendor[],
+        accounts,
+        vendors,
         convertBetweenCurrencies,
         selectedCurrency,
       );
@@ -191,15 +183,9 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
         targetAmount > 0 ? (spentInSelectedCurrency / targetAmount) * 100 : 0;
 
       if (percentage >= 90) {
-        const scope = budget.budget_scope || "category";
-        const displayName =
-          scope !== "category" && budget.budget_scope_name
-            ? budget.budget_scope_name
-            : budget.category_name!;
         alerts.push({
-          displayName,
+          categoryName: budget.category_name!,
           percentage: Math.round(percentage),
-          scope,
         });
       }
     });
@@ -272,7 +258,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
                     Low Balance Warnings:
                   </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
-                    {lowBalanceAlerts.map((alert, index: number) => (
+                    {lowBalanceAlerts.map((alert: any, index: number) => (
                       <li key={`${alert.accountName}-${index}`}>
                         <span
                           onClick={() => handleAccountClick(alert.accountName)}
@@ -317,22 +303,14 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
                   </h4>
                   <ul className="space-y-2 list-disc pl-5 text-sm">
                     {budgetOverrunAlerts.map((alert, index) => (
-                      <li key={`${alert.displayName}-${index}`}>
+                      <li key={`${alert.categoryName}-${index}`}>
                         <span
-                          onClick={() => {
-                            if (alert.scope === "account") {
-                              handleAccountClick(alert.displayName);
-                            } else if (alert.scope === "vendor") {
-                              handleVendorClick(alert.displayName);
-                            } else if (alert.scope === "sub_category") {
-                              handleSubCategoryClick(alert.displayName);
-                            } else {
-                              handleCategoryClick(alert.displayName);
-                            }
-                          }}
+                          onClick={() =>
+                            handleCategoryClick(alert.categoryName)
+                          }
                           className="font-semibold cursor-pointer hover:text-primary hover:underline"
                         >
-                          {alert.displayName}
+                          {alert.categoryName}
                         </span>{" "}
                         budget is at{" "}
                         <span

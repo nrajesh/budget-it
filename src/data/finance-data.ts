@@ -97,12 +97,6 @@ export type Budget = {
   created_at?: string;
   account_scope?: "ALL" | "GROUP";
   account_scope_values?: string[] | null;
-  is_goal?: boolean;
-  target_date?: string | null;
-  monthly_contribution?: number | null;
-  goal_context?: string | null;
-  budget_scope?: "category" | "account" | "vendor" | "sub_category";
-  budget_scope_name?: string | null;
 };
 
 // Base categories for seeding and initial demo data generation.

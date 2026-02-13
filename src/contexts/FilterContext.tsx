@@ -98,13 +98,16 @@ export const FilterProvider: React.FC<{ children: ReactNode }> = ({
   );
 
   const setDateRange = useCallback((range: DateRange | undefined) => {
-    setDateRangeState(range);
+    let newRange = range;
+    if (!newRange) {
+      newRange = {
+        from: startOfMonth(new Date()),
+        to: endOfMonth(new Date()),
+      };
+    }
+    setDateRangeState(newRange);
     try {
-      if (range) {
-        localStorage.setItem("filter_dateRange", JSON.stringify(range));
-      } else {
-        localStorage.removeItem("filter_dateRange");
-      }
+      localStorage.setItem("filter_dateRange", JSON.stringify(newRange));
     } catch (e) {
       console.error(e);
     }

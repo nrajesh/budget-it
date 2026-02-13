@@ -26,13 +26,6 @@ interface CurrencyContextType {
   exchangeRates: { [key: string]: number };
   updateExchangeRate: (currencyCode: string, newRate: number) => void;
   refreshExchangeRates: () => Promise<void>;
-  addCurrency: (
-    code: string,
-    name: string,
-    symbol: string,
-    initialRate: number,
-  ) => void;
-  removeCurrency: (code: string) => void;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(
@@ -42,26 +35,6 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>(() => {
     return localStorage.getItem("selectedCurrency") || "USD";
-  });
-
-  const [currencies, setCurrencies] = useState<
-    { code: string; name: string; symbol: string }[]
-  >(() => {
-    const saved = localStorage.getItem("active_currencies");
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Fallback to default available currencies + check for old custom_currencies migration
-    const oldCustom = localStorage.getItem("custom_currencies");
-    const parsedOldCustom = oldCustom ? JSON.parse(oldCustom) : [];
-
-    // Map default const to state shape if needed (they match)
-    const defaults = availableCurrencies.map((c) => ({
-      ...c,
-      symbol: currencySymbols[c.code] || c.code,
-    }));
-
-    return [...defaults, ...parsedOldCustom];
   });
 
   const [exchangeRatesState, setExchangeRatesState] = useState<{
@@ -82,18 +55,6 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [exchangeRatesState]);
 
-  useEffect(() => {
-    localStorage.setItem("active_currencies", JSON.stringify(currencies));
-  }, [currencies]);
-
-  const allCurrencySymbols = React.useMemo(() => {
-    const symbols: { [key: string]: string } = {};
-    currencies.forEach((c) => {
-      symbols[c.code] = c.symbol;
-    });
-    return symbols;
-  }, [currencies]);
-
   const setCurrency = useCallback(
     (currency: string) => {
       if (exchangeRatesState[currency]) {
@@ -103,35 +64,6 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [exchangeRatesState],
-  );
-
-  const addCustomCurrency = useCallback(
-    (code: string, name: string, symbol: string, initialRate: number) => {
-      setCurrencies((prev) => {
-        if (prev.some((c) => c.code === code)) return prev;
-        return [...prev, { code, name, symbol }];
-      });
-      setExchangeRatesState((prev) => ({
-        ...prev,
-        [code]: initialRate,
-      }));
-    },
-    [],
-  );
-
-  const removeCustomCurrency = useCallback(
-    (code: string) => {
-      // Prevent removing the currently selected base currency
-      if (code === selectedCurrency) {
-        // Should ideally warn UI, but for now just ignore
-        console.warn("Cannot remove active base currency");
-        return;
-      }
-
-      setCurrencies((prev) => prev.filter((c) => c.code !== code));
-      // Optional: Remove from exchange rates, or keep it (doesn't hurt)
-    },
-    [selectedCurrency],
   );
 
   const updateExchangeRate = useCallback(
@@ -160,16 +92,15 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       const newRates: { [key: string]: number } = {};
       let hasUpdates = false;
 
-      // Check all active currencies
-      currencies.forEach((curr) => {
+      availableCurrencies.forEach((curr) => {
         if (data.rates[curr.code]) {
           newRates[curr.code] = data.rates[curr.code];
           hasUpdates = true;
         } else if (exchangeRatesState[curr.code]) {
-          // Fallback to existing
+          // Fallback to existing if removed from API
           newRates[curr.code] = exchangeRatesState[curr.code];
         } else {
-          // Fallback to initial hardcoded or 1
+          // Fallback to initial hardcoded
           newRates[curr.code] = defaultExchangeRates[curr.code] || 1;
         }
       });
@@ -181,7 +112,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to refresh exchange rates:", error);
       throw error; // Re-throw so UI can show toast
     }
-  }, [exchangeRatesState, currencies]);
+  }, [exchangeRatesState]);
 
   const convertBetweenCurrencies = useCallback(
     (amount: number, fromCurrency: string, toCurrency: string): number => {
@@ -212,10 +143,10 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         amount = 0;
       }
       const displayCurrency = currencyCode || selectedCurrency;
-      const symbol = allCurrencySymbols[displayCurrency] || displayCurrency;
+      const symbol = currencySymbols[displayCurrency] || displayCurrency;
       return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     },
-    [selectedCurrency, allCurrencySymbols],
+    [selectedCurrency],
   );
 
   const value = React.useMemo(
@@ -223,14 +154,12 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       selectedCurrency,
       setCurrency,
       formatCurrency,
-      currencySymbols: allCurrencySymbols,
-      availableCurrencies: currencies, // Use the state here
+      currencySymbols,
+      availableCurrencies,
       convertBetweenCurrencies,
       exchangeRates: exchangeRatesState,
       updateExchangeRate,
       refreshExchangeRates,
-      addCurrency: addCustomCurrency,
-      removeCurrency: removeCustomCurrency,
     }),
     [
       selectedCurrency,
@@ -240,10 +169,6 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       exchangeRatesState,
       updateExchangeRate,
       refreshExchangeRates,
-      allCurrencySymbols,
-      currencies,
-      addCustomCurrency,
-      removeCustomCurrency,
     ],
   );
 

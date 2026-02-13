@@ -117,7 +117,7 @@ export function SpendingCategoriesChart({
   const currentData = selectedCategory ? subCategoryData : categoriesData;
 
   const onPieClick = useCallback(
-    (data: { name: string; amount: number }, index: number) => {
+    (data: any, index: number) => {
       if (!selectedCategory) {
         setActiveIndex(index);
         setSelectedCategory({ name: data.name });
@@ -152,10 +152,10 @@ export function SpendingCategoriesChart({
   }, [handleResetFilters]);
 
   const renderActiveShape = useCallback(
-    (props: unknown) => {
+    (props: any) => {
       return (
         <ActivePieShape
-          {...(props as any)}
+          {...props}
           formatCurrency={formatCurrency}
           onCenterClick={resetAll}
         />

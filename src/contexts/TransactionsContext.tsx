@@ -143,10 +143,10 @@ const TransactionsContext = React.createContext<
   TransactionsContextType | undefined
 >(undefined);
 
-const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
+const transformPayeeData = (data: any[]): Payee[] => {
   if (!data) return [];
   return data
-    .map((item) => ({
+    .map((item: any) => ({
       id: item.id,
       name: item.name,
       is_account: item.is_account,
@@ -163,10 +163,10 @@ const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const transformCategoryData = (data: Record<string, any>[]): Category[] => {
+const transformCategoryData = (data: any[]): Category[] => {
   if (!data) return [];
   return data
-    .map((item) => ({
+    .map((item: any) => ({
       id: item.id,
       name: item.name,
       user_id: item.user_id,
@@ -249,7 +249,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   const queryClient = useQueryClient();
   const { convertBetweenCurrencies: _convert } = useCurrency();
   // const { user } = useUser();
-  const { activeLedger, refreshLedgers } = useLedger();
+  const { activeLedger, refreshLedgers, switchLedger } = useLedger();
   const ledgerId = activeLedger?.id || "";
 
   const [operationProgress, setOperationProgress] =
@@ -375,9 +375,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       if (type) {
         setHiddenEntityIds((prev) => {
           const next = new Map(prev);
-          const currentSet = new Set(next.get(type) || []);
+          const currentSet = new Set(next.get(type as any) || []);
           lastAction.payload.ids.forEach((id) => currentSet.delete(id));
-          next.set(type, currentSet);
+          next.set(type as any, currentSet);
           return next;
         });
       }
@@ -872,7 +872,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [dataProvider, invalidateAllData]);
 
   const addScheduledTransaction = React.useCallback(
-    async (transaction: Omit<ScheduledTransaction, "id" | "created_at">) => {
+    async (transaction: any) => {
       const userId = ledgerId;
 
       // Check for transfer
@@ -938,7 +938,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const updateScheduledTransaction = React.useCallback(
-    async (transaction: ScheduledTransaction) => {
+    async (transaction: any) => {
       // Ensure we preserve user_id or set it if missing
       const userId = transaction.user_id || ledgerId;
 
@@ -1441,7 +1441,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  }, [dataProvider, refreshLedgers, dataProvider, queryClient]);
+  }, [
+    dataProvider,
+    refreshLedgers,
+    switchLedger,
+    invalidateAllData,
+    refetchTransactions,
+    queryClient,
+  ]);
 
   const processScheduledTransactions = React.useCallback(async () => {
     if (

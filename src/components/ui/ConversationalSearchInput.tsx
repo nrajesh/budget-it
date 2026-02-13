@@ -43,7 +43,6 @@ export function ConversationalSearchInput({
   const [input, setInput] = React.useState("");
   const [nlpDate, setNlpDate] =
     React.useState<ParsedFilterState["dateRange"]>();
-  const [isAllTime, setIsAllTime] = React.useState(false);
 
   // Reset to root when closing
   React.useEffect(() => {
@@ -51,7 +50,6 @@ export function ConversationalSearchInput({
       setStep("ROOT");
       setInput("");
       setNlpDate(undefined);
-      setIsAllTime(false);
     }
   }, [open]);
 
@@ -66,19 +64,13 @@ export function ConversationalSearchInput({
         vendors: [],
       };
       const result = parseSearchQuery(input, parserContext);
-      if (result.isAllTime) {
-        setIsAllTime(true);
-        setNlpDate(undefined);
-      } else if (result.dateRange) {
+      if (result.dateRange) {
         setNlpDate(result.dateRange);
-        setIsAllTime(false);
       } else {
         setNlpDate(undefined);
-        setIsAllTime(false);
       }
     } else {
       setNlpDate(undefined);
-      setIsAllTime(false);
     }
   }, [input]);
 
@@ -163,21 +155,6 @@ export function ConversationalSearchInput({
               <Calendar className="mr-2 h-4 w-4 text-primary" />
               Use Date: {format(nlpDate.from!, "MMM d")} -{" "}
               {nlpDate.to ? format(nlpDate.to, "MMM d, yyyy") : ""}
-            </CommandItem>
-          </CommandGroup>
-        )}
-
-        {isAllTime && (
-          <CommandGroup heading="Detected Date">
-            <CommandItem
-              value="date-all-time"
-              onSelect={() => {
-                onUpdate({ isAllTime: true });
-                setOpen(false);
-              }}
-            >
-              <Calendar className="mr-2 h-4 w-4 text-primary" />
-              Time Range: All Time
             </CommandItem>
           </CommandGroup>
         )}

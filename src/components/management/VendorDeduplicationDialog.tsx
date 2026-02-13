@@ -74,8 +74,8 @@ const VendorDeduplicationDialog: React.FC<VendorReconciliationDialogProps> = ({
       );
       await invalidateAllData();
       onClose();
-    } catch (error: unknown) {
-      showError(`Merge failed: ${(error as Error).message}`);
+    } catch (error: any) {
+      showError(`Merge failed: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }

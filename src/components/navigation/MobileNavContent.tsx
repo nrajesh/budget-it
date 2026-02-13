@@ -11,16 +11,16 @@ import {
   ScrollText,
   PiggyBank,
   User,
+  Bell,
+  ChevronDown,
   Lightbulb,
-  DatabaseZap,
-  Shield,
 } from "lucide-react"; // Importing icons
 
 const MobileNavContent = () => {
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="flex items-center gap-2 text-xl font-bold">
-        <img src="/logo.png" alt="Budget It! Logo" className="h-6 w-6" />
+        <img src="/placeholder.svg" alt="Budget It! Logo" className="h-6 w-6" />
         Budget It!
       </div>
 
@@ -104,9 +104,7 @@ const MobileNavContent = () => {
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">
-          Configure
-        </h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">Setup</h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
             <Link
@@ -117,24 +115,14 @@ const MobileNavContent = () => {
               Scheduled
             </Link>
           </SheetClose>
-          <SheetClose asChild>
-            <Link
-              to="/reports/essential"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
+          {/* Reports with dropdown - simplified for now */}
+          <div className="flex items-center justify-between rounded-lg px-3 py-2 text-muted-foreground hover:text-primary">
+            <div className="flex items-center gap-3">
               <ScrollText className="h-4 w-4" />
-              Essential Reports
-            </Link>
-          </SheetClose>
-          <SheetClose asChild>
-            <Link
-              to="/reports/advanced"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <ScrollText className="h-4 w-4" />
-              Advanced Reports
-            </Link>
-          </SheetClose>
+              Reports
+            </div>
+            <ChevronDown className="h-4 w-4" />
+          </div>
           <SheetClose asChild>
             <Link
               to="/budgets"
@@ -146,34 +134,25 @@ const MobileNavContent = () => {
           </SheetClose>
         </nav>
       </div>
+
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Setup</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">User</h3>
         <nav className="grid gap-2">
-          <SheetClose asChild>
-            <Link
-              to="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
+          {/* User Profile with dropdown - simplified for now */}
+          <div className="flex items-center justify-between rounded-lg px-3 py-2 text-muted-foreground hover:text-primary">
+            <div className="flex items-center gap-3">
               <User className="h-4 w-4" />
-              Ledger
-            </Link>
-          </SheetClose>
+              User Profile
+            </div>
+            <ChevronDown className="h-4 w-4" />
+          </div>
           <SheetClose asChild>
             <Link
-              to="/data-management"
+              to="/notifications"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
-              <DatabaseZap className="h-4 w-4" />
-              Data
-            </Link>
-          </SheetClose>
-          <SheetClose asChild>
-            <Link
-              to="/backup"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-            >
-              <Shield className="h-4 w-4" />
-              Backup
+              <Bell className="h-4 w-4" />
+              Notifications
             </Link>
           </SheetClose>
         </nav>

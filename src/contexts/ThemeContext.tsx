@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type DashboardStyle = "standard" | "financial-pulse";
+type DashboardStyle = "standard" | "financial-pulse";
 
 interface ThemeContextType {
   dashboardStyle: DashboardStyle;

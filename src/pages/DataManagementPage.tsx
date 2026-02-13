@@ -8,14 +8,7 @@ import {
 } from "@/components/ThemedCard";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  FileJson,
-  FileLock,
-  Upload,
-  AlertCircle,
-  RotateCcw,
-  DatabaseZap,
-} from "lucide-react";
+import { FileJson, FileLock, Upload, AlertCircle } from "lucide-react";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -26,27 +19,14 @@ import {
 } from "@/utils/backupUtils";
 import { encryptData } from "@/utils/crypto";
 import PasswordDialog from "@/components/dialogs/PasswordDialog";
-import { useNavigate } from "react-router-dom";
-import { useTransactions } from "@/contexts/TransactionsContext";
-import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
-import { useLedger } from "@/contexts/LedgerContext";
-import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
+import ScheduledBackups from "@/components/backup/ScheduledBackups";
 
 const DataManagementPage = () => {
   const dataProvider = useDataProvider();
-  const navigate = useNavigate();
-  const { generateDiverseDemoData, clearAllTransactions } = useTransactions();
-  const { handleClearAllFilters } = useTransactionFilters();
-  const { refreshLedgers } = useLedger();
 
   // Data Management State
   const [isExportPasswordOpen, setIsExportPasswordOpen] = React.useState(false);
   const [isImportPasswordOpen, setIsImportPasswordOpen] = React.useState(false);
-  // Reset / Demo Data State
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = React.useState(false);
-  const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] =
-    React.useState(false);
-
   const [tempImportFile, setTempImportFile] = React.useState<string | null>(
     null,
   );
@@ -65,13 +45,10 @@ const DataManagementPage = () => {
 
       if (success) {
         showSuccess("File saved successfully!");
-      } else {
-        showSuccess("Export file download started.");
       }
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error.message !== "Save cancelled by user") {
-        showError(`Export failed: ${error.message}`);
+    } catch (e: any) {
+      if (e.message !== "Save cancelled by user") {
+        showError(`Export failed: ${e.message}`);
       }
     }
   };
@@ -92,10 +69,9 @@ const DataManagementPage = () => {
       if (success) {
         showSuccess("Encrypted file saved successfully!");
       }
-    } catch (e: unknown) {
-      const error = e as Error;
-      if (error.message !== "Save cancelled by user") {
-        showError(`Encryption failed: ${error.message}`);
+    } catch (e: any) {
+      if (e.message !== "Save cancelled by user") {
+        showError(`Encryption failed: ${e.message}`);
       }
     }
   };
@@ -148,46 +124,12 @@ const DataManagementPage = () => {
     }
   };
 
-  const handleResetData = async () => {
-    try {
-      await dataProvider.clearAllData();
-      // Refresh ledgers to ensure context is aware of the wipe
-      await refreshLedgers();
-
-      clearAllTransactions();
-      handleClearAllFilters();
-
-      // Clear non-filter persistent state if desired
-      localStorage.removeItem("activeLedgerId");
-      localStorage.removeItem("userLoggedOut");
-      // filter_selectedAccounts is handled by handleClearAllFilters
-
-      showSuccess("All application data has been reset.");
-
-      navigate("/ledgers");
-    } catch (error: unknown) {
-      showError(`Reset failed: ${(error as Error).message}`);
-    } finally {
-      setIsResetConfirmOpen(false);
-    }
-  };
-
-  const handleGenerateDemoData = async () => {
-    try {
-      await generateDiverseDemoData();
-    } catch {
-      // Ignore error during demo data generation
-    } finally {
-      setIsGenerateConfirmOpen(false);
-    }
-  };
-
   return (
     <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
           <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-            Data
+            Data Management
           </h1>
           <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
             Export, import, and schedule backups for your data.
@@ -257,69 +199,10 @@ const DataManagementPage = () => {
         </ThemedCardContent>
       </ThemedCard>
 
-      {/* Scheduled Backups Section Moved to /backup */}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Reset Data Card */}
-        <ThemedCard className="border-red-200/50 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10">
-          <ThemedCardHeader>
-            <ThemedCardTitle className="text-red-600 dark:text-red-400">
-              Reset All Data
-            </ThemedCardTitle>
-            <ThemedCardDescription>
-              Permanently delete all transaction, vendor, and account records.
-            </ThemedCardDescription>
-          </ThemedCardHeader>
-          <ThemedCardContent>
-            <Button
-              variant="destructive"
-              onClick={() => setIsResetConfirmOpen(true)}
-            >
-              <DatabaseZap className="mr-2 h-4 w-4" />
-              Reset All Data
-            </Button>
-          </ThemedCardContent>
-        </ThemedCard>
-
-        {/* Generate Demo Data Card */}
-        <ThemedCard>
-          <ThemedCardHeader>
-            <ThemedCardTitle>Generate Demo Data</ThemedCardTitle>
-            <ThemedCardDescription>
-              Generate diverse demo transactions. This will clear existing data
-              first.
-            </ThemedCardDescription>
-          </ThemedCardHeader>
-          <ThemedCardContent>
-            <Button
-              onClick={() => setIsGenerateConfirmOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Generate Data
-            </Button>
-          </ThemedCardContent>
-        </ThemedCard>
-      </div>
+      {/* Scheduled Backups Section */}
+      <ScheduledBackups />
 
       {/* Dialogs */}
-      <ConfirmationDialog
-        isOpen={isResetConfirmOpen}
-        onOpenChange={setIsResetConfirmOpen}
-        onConfirm={handleResetData}
-        title="Are you sure you want to reset all data?"
-        description="This action cannot be undone. All your transaction, vendor, and account data for ALL ledgers will be permanently deleted."
-        confirmText="Reset Data"
-      />
-
-      <ConfirmationDialog
-        isOpen={isGenerateConfirmOpen}
-        onOpenChange={setIsGenerateConfirmOpen}
-        onConfirm={handleGenerateDemoData}
-        title="Generate new demo data?"
-        description="This will clear all existing transactions and generate new diverse demo data. This action cannot be undone."
-        confirmText="Generate"
-      />
       <PasswordDialog
         isOpen={isExportPasswordOpen}
         onOpenChange={setIsExportPasswordOpen}

@@ -16,10 +16,8 @@ import {
 } from "@/components/ui/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-import { Transaction } from "@/types/dataProvider";
-
 interface IncomeExpenseSummaryProps {
-  transactions: Transaction[];
+  transactions: any[];
 }
 
 const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({

@@ -1,8 +1,5 @@
 export const isElectron = (): boolean => {
-  return (
-    typeof window !== "undefined" &&
-    !!(window as unknown as { electron?: ElectronAPI }).electron
-  );
+  return typeof window !== "undefined" && !!(window as any).electron;
 };
 
 export interface ElectronAPI {
@@ -16,7 +13,7 @@ export interface ElectronAPI {
 
 export const getElectronAPI = (): ElectronAPI | null => {
   if (isElectron()) {
-    return (window as unknown as { electron?: ElectronAPI }).electron || null;
+    return (window as any).electron;
   }
   return null;
 };

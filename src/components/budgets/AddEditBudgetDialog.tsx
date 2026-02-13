@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
@@ -29,42 +30,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
-import { Switch } from "@/components/ui/switch";
+// import { useUser } from "@/contexts/UserContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Loader2,
-  Target,
-  TrendingUp,
-  Wallet,
-  Tag,
-  Store,
-  Check,
-  ChevronsUpDown,
-  X,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Budget } from "@/data/finance-data";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useLedger } from "@/contexts/LedgerContext";
-import { differenceInCalendarDays, endOfMonth, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface AddEditBudgetDialogProps {
   isOpen: boolean;
@@ -82,7 +58,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
   onSuccess,
 }) => {
   const { activeLedger } = useLedger();
-  const { categories, subCategories, accounts, vendors } = useTransactions();
+  const { categories, subCategories, accounts } = useTransactions();
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const dataProvider = useDataProvider();
@@ -93,76 +69,27 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
     return Array.from(types).sort();
   }, [accounts]);
 
-  // Options for tracking scope dropdowns
-  const accountOptions = React.useMemo(
-    () =>
-      accounts
-        .map((a) => ({ value: a.name, label: a.name }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [accounts],
-  );
-
-  const vendorOptions = React.useMemo(
-    () =>
-      vendors
-        .filter((v) => !v.is_account)
-        .map((v) => ({ value: v.name, label: v.name }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [vendors],
-  );
-
-  const categoryOptions = React.useMemo(
-    () =>
-      categories
-        .filter((c) => c.name !== "Transfer")
-        .map((c) => ({ value: c.name, label: c.name }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [categories],
-  );
-
   const formSchema = React.useMemo(
     () =>
       z
         .object({
-          // Tracking scope
-          budget_scope: z.enum(["category", "account", "vendor"]),
-          budget_scope_name: z.string().nullable().optional(),
-          category_id: z.string().optional(),
+          category_id: z.string().min(1, "Category is required"),
           sub_category_id: z.string().nullable().optional(),
-          target_amount: z.coerce.number().positive("Amount must be positive"),
+          target_amount: z.coerce
+            .number()
+            .positive("Target amount must be positive"),
           currency: z.string().min(1, "Currency is required"),
           start_date: z.string().min(1, "Start date is required"),
-          frequency_value: z.coerce.number().min(1),
-          frequency_unit: z.string().min(1),
+          frequency_value: z.coerce
+            .number()
+            .min(1, "Frequency value must be at least 1"),
+          frequency_unit: z.string().min(1, "Frequency unit is required"),
           end_date: z.string().optional(),
           is_active: z.boolean(),
           account_scope: z.enum(["ALL", "GROUP"]),
           account_scope_values: z.array(z.string()).optional(),
-          // Goal fields
-          is_goal: z.boolean(),
-          target_date: z.string().optional(),
         })
         .superRefine((data, ctx) => {
-          // For category scope: category_id is required
-          if (data.budget_scope === "category") {
-            if (!data.category_id || data.category_id.length === 0) {
-              ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Category is required.",
-                path: ["category_id"],
-              });
-            }
-          } else {
-            // For account/vendor scope: budget_scope_name is required
-            if (!data.budget_scope_name) {
-              ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `Please select ${data.budget_scope === "account" ? "an account" : "a vendor"}.`,
-                path: ["budget_scope_name"],
-              });
-            }
-          }
-
           if (
             data.account_scope === "GROUP" &&
             (!data.account_scope_values ||
@@ -176,32 +103,23 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           }
 
           if (!allBudgets) return;
+          // const frequency = `${data.frequency_value}${data.frequency_unit}`;
+          // const startDate = new Date(data.start_date).toLocaleDateString('en-CA');
 
-          // Duplicate check based on scope
-          const isDuplicate = allBudgets.some((b) => {
-            if (b.id === budget?.id) return false;
-            const existingScope = b.budget_scope || "category";
-            if (existingScope !== data.budget_scope) return false;
-            if (data.budget_scope === "category") {
-              return (
-                b.category_id === data.category_id &&
-                b.sub_category_id === (data.sub_category_id || null)
-              );
-            }
-            return (
-              (b.budget_scope_name || "").toLowerCase() ===
-              (data.budget_scope_name || "").toLowerCase()
-            );
-          });
+          // Strict duplicate check: One budget per Category/Sub-category pair
+          const isDuplicate = allBudgets.some(
+            (b) =>
+              b.id !== budget?.id &&
+              b.category_id === data.category_id &&
+              b.sub_category_id === (data.sub_category_id || null),
+          );
 
           if (isDuplicate) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `A budget for this ${data.budget_scope} already exists.`,
-              path:
-                data.budget_scope === "category"
-                  ? ["category_id"]
-                  : ["budget_scope_name"],
+              message:
+                "A budget for this category/sub-category already exists.",
+              path: ["category_id"],
             });
           }
         }),
@@ -217,56 +135,14 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       currency: selectedCurrency,
       frequency_value: 1,
       frequency_unit: "m",
-      budget_scope: "category",
-      budget_scope_name: null,
-      category_id: "",
       sub_category_id: null,
       account_scope: "ALL",
       account_scope_values: [],
-      is_goal: false,
-      target_date: "",
     },
   });
 
-  const isGoal = form.watch("is_goal");
-  const budgetScope = form.watch("budget_scope");
-  const targetAmount = form.watch("target_amount");
-  const targetDateStr = form.watch("target_date");
-
+  // Watch category_id to filter sub-categories
   const selectedCategoryId = form.watch("category_id");
-
-  // Monthly contribution for goals
-  const computedMonthlyContribution = React.useMemo(() => {
-    if (!isGoal || !targetAmount || targetAmount <= 0) return null;
-    const now = new Date();
-    let targetDate: Date;
-
-    if (targetDateStr) {
-      targetDate = parseISO(targetDateStr);
-    } else {
-      targetDate = endOfMonth(now);
-    }
-
-    const remainingDays = differenceInCalendarDays(targetDate, now);
-    if (remainingDays <= 0) return targetAmount;
-    const remainingMonths = Math.max(1, remainingDays / 30.44);
-    return targetAmount / remainingMonths;
-  }, [isGoal, targetAmount, targetDateStr]);
-
-  // Options for the tracking scope dropdown
-  const trackingScopeOptions = React.useMemo(() => {
-    switch (budgetScope) {
-      case "account":
-        return accountOptions;
-      case "vendor":
-        return vendorOptions;
-      case "category":
-      default:
-        return categoryOptions;
-    }
-  }, [budgetScope, accountOptions, vendorOptions, categoryOptions]);
-
-  // Options for goal context dropdown
 
   const filteredSubCategories = React.useMemo(() => {
     if (!selectedCategoryId) return [];
@@ -275,13 +151,14 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
     );
   }, [selectedCategoryId, subCategories]);
 
-  // Reset on open/close
+  // Reset logic
   React.useEffect(() => {
     if (isOpen) {
       if (budget) {
         let frequencyVal = 1;
         let frequencyUnit = "m";
 
+        // Handle legacy frequencies
         if (budget.frequency === "Monthly") {
           frequencyVal = 1;
           frequencyUnit = "m";
@@ -294,7 +171,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
         } else if (budget.frequency === "One-time") {
           frequencyVal = 1;
           frequencyUnit = "m";
-        } else {
+        } // Defaulting one-time to 1m for now or need better handling? One-time budgets usually don't recur. AddEditDialog assumes recurrence.
+        else {
           const frequencyMatch = budget.frequency.match(/^(\d+)([dwmy])$/);
           if (frequencyMatch) {
             frequencyVal = parseInt(frequencyMatch[1], 10);
@@ -303,12 +181,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
         }
 
         form.reset({
-          budget_scope:
-            (budget.budget_scope === "sub_category"
-              ? "category"
-              : budget.budget_scope) || "category",
-          budget_scope_name: budget.budget_scope_name || null,
-          category_id: budget.category_id || "",
+          category_id: budget.category_id,
           sub_category_id: budget.sub_category_id,
           target_amount: budget.target_amount,
           currency: budget.currency,
@@ -321,15 +194,9 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           is_active: budget.is_active,
           account_scope: budget.account_scope || "ALL",
           account_scope_values: budget.account_scope_values || [],
-          is_goal: budget.is_goal || false,
-          target_date: budget.target_date
-            ? formatDateToYYYYMMDD(budget.target_date)
-            : "",
         });
       } else {
         form.reset({
-          budget_scope: "category",
-          budget_scope_name: null,
           category_id: "",
           sub_category_id: null,
           target_amount: 0,
@@ -341,30 +208,16 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           is_active: true,
           account_scope: "ALL",
           account_scope_values: [],
-          is_goal: false,
-          target_date: "",
         });
       }
     }
-  }, [
-    isOpen,
-    budget,
-    form,
-    selectedCurrency,
-    accounts,
-    categories,
-    subCategories,
-    vendors,
-  ]);
+  }, [isOpen, budget, form, selectedCurrency]);
 
   const onSubmit = async (values: BudgetFormData) => {
     if (!activeLedger) return;
     setIsSubmitting(true);
 
-    const frequency = values.is_goal
-      ? "1m"
-      : `${values.frequency_value}${values.frequency_unit}`;
-
+    const frequency = `${values.frequency_value}${values.frequency_unit}`;
     const selectedCategory = categories.find(
       (c) => c.id === values.category_id,
     );
@@ -372,346 +225,223 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       ? subCategories.find((s) => s.id === values.sub_category_id)?.name
       : null;
 
-    // For goals: target_date is the end milestone
-    let resolvedTargetDate: string | null = null;
-    if (values.is_goal) {
-      if (values.target_date) {
-        resolvedTargetDate = new Date(values.target_date).toISOString();
-      } else {
-        resolvedTargetDate = endOfMonth(new Date()).toISOString();
-      }
-    }
-
-    // Resolve display-friendly category_name for non-category scopes
-    let categoryName = selectedCategory?.name || "";
-    let categoryId = values.category_id || "";
-
-    if (values.budget_scope !== "category") {
-      // For account/vendor/sub-category scoped budgets, store the scope name as the display
-      // If sub-category, we might want to store the parent category if available, but for now just scope name
-      categoryName = values.budget_scope_name || "";
-      categoryId = "";
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dbPayload: any = {
       user_id: activeLedger.id,
-      category_id: categoryId,
-      category_name: categoryName,
-      sub_category_id:
-        values.budget_scope === "category"
-          ? values.sub_category_id || null
-          : null,
-      sub_category_name: values.budget_scope === "category" ? subCatName : null,
+      category_id: values.category_id,
+      category_name: selectedCategory?.name || "",
+      sub_category_id: values.sub_category_id || null,
+      sub_category_name: subCatName,
       target_amount: values.target_amount,
       currency: values.currency,
       start_date: new Date(values.start_date).toISOString(),
       frequency: frequency as any,
-      end_date: values.is_goal
-        ? resolvedTargetDate
-        : values.end_date
-          ? new Date(values.end_date).toISOString()
-          : null,
+      end_date: values.end_date
+        ? new Date(values.end_date).toISOString()
+        : null,
       is_active: values.is_active,
-
-      account_scope:
-        values.account_scope_values && values.account_scope_values.length > 0
-          ? "GROUP"
-          : "ALL",
+      account_scope: values.account_scope,
       account_scope_values:
-        values.account_scope_values && values.account_scope_values.length > 0
-          ? values.account_scope_values
-          : null,
-      is_goal: values.is_goal,
-      target_date: resolvedTargetDate,
-      monthly_contribution:
-        values.is_goal && computedMonthlyContribution
-          ? Math.round(computedMonthlyContribution * 100) / 100
-          : null,
-
-      budget_scope: values.budget_scope,
-      budget_scope_name:
-        values.budget_scope !== "category"
-          ? values.budget_scope_name || null
-          : null,
+        values.account_scope === "GROUP" ? values.account_scope_values : null,
     };
 
     try {
       if (budget) {
         await dataProvider.updateBudget({ ...budget, ...dbPayload });
-        showSuccess(
-          values.is_goal
-            ? "Goal updated successfully!"
-            : "Budget updated successfully!",
-        );
+        showSuccess("Budget updated successfully!");
       } else {
         await dataProvider.addBudget(dbPayload);
-        showSuccess(
-          values.is_goal
-            ? "Goal created successfully!"
-            : "Budget created successfully!",
-        );
+        showSuccess("Budget created successfully!");
       }
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       if (onSuccess) onSuccess();
       onOpenChange(false);
-    } catch (error: unknown) {
-      showError(`Failed to save: ${(error as Error).message}`);
+    } catch (error: any) {
+      showError(`Failed to save budget: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Pill button component
-  const ScopePill = ({
-    value,
-    label,
-    icon: Icon,
-    active,
-    onClick,
-    activeColor = "emerald",
-  }: {
-    value: string;
-    label: string;
-    icon: React.ElementType;
-    active: boolean;
-    onClick: () => void;
-    activeColor?: "emerald" | "rose";
-  }) => {
-    const colorMap = {
-      emerald: active
-        ? "bg-emerald-600 text-white shadow-sm"
-        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700",
-      rose: active
-        ? "bg-rose-600 text-white shadow-sm"
-        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-rose-300 dark:hover:border-rose-700",
-    };
-
-    return (
-      <button
-        key={value}
-        type="button"
-        onClick={onClick}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${colorMap[activeColor]}`}
-      >
-        <Icon className="h-3 w-3" />
-        {label}
-      </button>
-    );
-  };
-
-  const pillColor = isGoal ? "emerald" : "rose";
-  const sectionBg = isGoal
-    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10"
-    : "border-rose-200 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-950/10";
-  const sectionHeaderColor = isGoal
-    ? "text-emerald-700 dark:text-emerald-400"
-    : "text-rose-700 dark:text-rose-400";
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        className="max-h-[90vh] overflow-y-auto"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isGoal ? (
-              <Target className="h-5 w-5 text-emerald-600" />
-            ) : (
-              <TrendingUp className="h-5 w-5 text-primary" />
-            )}
-            {budget ? "Edit" : "Create"} {isGoal ? "Goal" : "Budget"}
-          </DialogTitle>
+          <DialogTitle>{budget ? "Edit" : "Create"} Budget</DialogTitle>
           <DialogDescription>
-            {isGoal
-              ? "Set a savings target — we'll track your progress."
-              : "Set a spending limit for a category, account, or vendor."}
+            Set a spending target for a category or sub-category.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            {/* ── Mode Toggle ── */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="is_goal"
+              name="category_id"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20 border-emerald-200/60 dark:border-emerald-800/60">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-sm flex items-center gap-2 cursor-pointer">
-                      <Target className="h-4 w-4 text-emerald-600" />
-                      Savings Goal
-                    </FormLabel>
-                    <FormDescription className="text-xs">
-                      Track as a saving target instead of a spending limit.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Combobox
+                    options={categories
+                      .filter((c) => c.name !== "Transfer")
+                      .map((cat) => ({ value: cat.id, label: cat.name }))
+                      .sort((a, b) => a.label.localeCompare(b.label))}
+                    value={field.value}
+                    onChange={(val) => {
+                      field.onChange(val);
+                      // Reset sub-category when category changes
+                      form.setValue("sub_category_id", null);
+                    }}
+                    placeholder="Select a category"
+                    searchPlaceholder="Search categories..."
+                    emptyPlaceholder="No category found."
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="sub_category_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sub-category (Optional)</FormLabel>
+                  <Combobox
+                    options={filteredSubCategories
+                      .map((sub) => ({ value: sub.id, label: sub.name }))
+                      .sort((a, b) => a.label.localeCompare(b.label))}
+                    value={field.value || ""}
+                    onChange={(val) => field.onChange(val || null)}
+                    placeholder={
+                      selectedCategoryId
+                        ? filteredSubCategories.length > 0
+                          ? "Select a sub-category"
+                          : "No sub-categories found"
+                        : "Select a category first"
+                    }
+                    searchPlaceholder="Search sub-categories..."
+                    emptyPlaceholder={
+                      selectedCategoryId
+                        ? "No sub-categories found"
+                        : "Select a category first"
+                    }
+                    disabled={
+                      !selectedCategoryId || filteredSubCategories.length === 0
+                    }
+                  />
+                  <FormDescription>
+                    Select a sub-category to target specifically, or leave empty
+                    for the whole category.
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* ── Track Transactions Towards ── */}
-            <div className={`rounded-lg border p-3 space-y-3 ${sectionBg}`}>
-              <h4
-                className={`text-xs font-semibold uppercase tracking-wider ${sectionHeaderColor}`}
-              >
-                Track Transactions Towards
-              </h4>
+            {/* Scope Selection */}
+            <FormField
+              control={form.control}
+              name="account_scope"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Budget Scope</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="ALL" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          All Accounts
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="GROUP" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Specific Account Groups
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              {/* Scope pill buttons */}
+            {form.watch("account_scope") === "GROUP" && (
               <FormField
                 control={form.control}
-                name="budget_scope"
-                render={({ field }) => (
+                name="account_scope_values"
+                render={() => (
                   <FormItem>
-                    <div className="flex flex-wrap gap-1.5">
-                      <ScopePill
-                        value="category"
-                        label="Category"
-                        icon={Tag}
-                        active={field.value === "category"}
-                        onClick={() => {
-                          field.onChange("category");
-                          form.setValue("budget_scope_name", null);
-                        }}
-                        activeColor={pillColor}
-                      />
-
-                      <ScopePill
-                        value="account"
-                        label="Account"
-                        icon={Wallet}
-                        active={field.value === "account"}
-                        onClick={() => {
-                          field.onChange("account");
-                          form.setValue("budget_scope_name", null);
-                          form.setValue("category_id", "");
-                          form.setValue("sub_category_id", null);
-                        }}
-                        activeColor={pillColor}
-                      />
-                      <ScopePill
-                        value="vendor"
-                        label="Vendor"
-                        icon={Store}
-                        active={field.value === "vendor"}
-                        onClick={() => {
-                          field.onChange("vendor");
-                          form.setValue("budget_scope_name", null);
-                          form.setValue("category_id", "");
-                          form.setValue("sub_category_id", null);
-                        }}
-                        activeColor={pillColor}
-                      />
+                    <div className="mb-4">
+                      <FormLabel className="text-base">
+                        Select Account Groups
+                      </FormLabel>
+                      <FormDescription>
+                        Select the account groups this budget applies to.
+                      </FormDescription>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {accountTypes.map((type) => (
+                        <FormField
+                          key={type}
+                          control={form.control}
+                          name="account_scope_values"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={type}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(type)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([
+                                            ...(field.value || []),
+                                            type,
+                                          ])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== type,
+                                            ),
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {type}
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
 
-              {/* Dropdown based on scope */}
-              {budgetScope === "category" ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="category_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Combobox
-                          options={categories
-                            .filter((c) => c.name !== "Transfer")
-                            .map((cat) => ({ value: cat.id, label: cat.name }))
-                            .sort((a, b) => a.label.localeCompare(b.label))}
-                          value={field.value || ""}
-                          onChange={(val) => {
-                            field.onChange(val);
-                            form.setValue("sub_category_id", null);
-                          }}
-                          placeholder="Select a category..."
-                          searchPlaceholder="Search categories..."
-                          emptyPlaceholder="No category found."
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {filteredSubCategories.length > 0 && (
-                    <FormField
-                      control={form.control}
-                      name="sub_category_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <Combobox
-                            options={filteredSubCategories
-                              .map((sub) => ({
-                                value: sub.id,
-                                label: sub.name,
-                              }))
-                              .sort((a, b) => a.label.localeCompare(b.label))}
-                            value={field.value || ""}
-                            onChange={(val) => field.onChange(val || null)}
-                            placeholder="All sub-categories"
-                            searchPlaceholder="Search..."
-                            emptyPlaceholder="No sub-categories"
-                          />
-                          <FormDescription className="text-xs">
-                            Optionally narrow to a sub-category.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                </>
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="budget_scope_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Combobox
-                        options={trackingScopeOptions}
-                        value={field.value || ""}
-                        onChange={(val) => field.onChange(val || null)}
-                        placeholder={
-                          budgetScope === "account"
-                            ? "Select an account..."
-                            : budgetScope === "vendor"
-                              ? "Select a vendor..."
-                              : "Select a category..."
-                        }
-                        searchPlaceholder="Search..."
-                        emptyPlaceholder="No matches found."
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {/* ── How Much ── */}
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="target_amount"
                 render={({ field }) => (
-                  <FormItem className="col-span-3">
-                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                      {isGoal ? "Goal Amount" : "Spending Limit"}
-                    </FormLabel>
+                  <FormItem>
+                    <FormLabel>Target Amount</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                      />
+                      <Input type="number" step="0.01" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -721,10 +451,8 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                 control={form.control}
                 name="currency"
                 render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Currency
-                    </FormLabel>
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -744,17 +472,13 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                 )}
               />
             </div>
-
-            {/* ── When ── */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="start_date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Start Date
-                    </FormLabel>
+                    <FormLabel>Start Date</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -762,267 +486,85 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
                   </FormItem>
                 )}
               />
-              {isGoal ? (
-                <FormField
-                  control={form.control}
-                  name="target_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Target Date
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs">
-                        Defaults to end of month if empty
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                        End Date
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value || ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {/* ── Frequency (budgets only) ── */}
-            {!isGoal && (
-              <div className="flex items-end gap-3">
-                <FormField
-                  control={form.control}
-                  name="frequency_value"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                        Repeat Every
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="number" min="1" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="frequency_unit"
-                  render={({ field }) => (
-                    <FormItem className="w-28">
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="d">Days</SelectItem>
-                          <SelectItem value="w">Weeks</SelectItem>
-                          <SelectItem value="m">Months</SelectItem>
-                          <SelectItem value="y">Years</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {/* ── Monthly contribution callout (Category Scope) ── */}
-            {isGoal &&
-              budgetScope === "category" &&
-              computedMonthlyContribution !== null &&
-              computedMonthlyContribution > 0 && (
-                <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10 p-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                      Suggested monthly saving
-                    </span>
-                    <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                      {new Intl.NumberFormat(undefined, {
-                        style: "currency",
-                        currency: form.watch("currency") || "USD",
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }).format(computedMonthlyContribution)}
-                      <span className="text-xs font-normal ml-0.5 opacity-70">
-                        /mo
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
-
-            {/* Monthly contribution callout for non-category goals */}
-            {isGoal &&
-              budgetScope !== "category" &&
-              computedMonthlyContribution !== null &&
-              computedMonthlyContribution > 0 && (
-                <div className="flex items-center justify-between rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-950/10 p-3">
-                  <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                    Suggested monthly saving
-                  </span>
-                  <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                    {new Intl.NumberFormat(undefined, {
-                      style: "currency",
-                      currency: form.watch("currency") || "USD",
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    }).format(computedMonthlyContribution)}
-                    <span className="text-xs font-normal ml-0.5 opacity-70">
-                      /mo
-                    </span>
-                  </span>
-                </div>
-              )}
-
-            {/* ── Scope (Always visible Multi-select) ── */}
-            <FormField
-              control={form.control}
-              name="account_scope_values"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                    From Accounts (Optional)
-                  </FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className={cn(
-                            "w-full justify-between",
-                            !field.value || field.value.length === 0
-                              ? "text-muted-foreground font-normal"
-                              : "",
-                          )}
-                        >
-                          {field.value && field.value.length > 0 ? (
-                            <div className="flex gap-1 flex-wrap">
-                              {field.value.map((val) => (
-                                <Badge
-                                  variant="secondary"
-                                  key={val}
-                                  className="mr-1 mb-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const newValue = field.value?.filter(
-                                      (v) => v !== val,
-                                    );
-                                    field.onChange(newValue);
-                                  }}
-                                >
-                                  {val}
-                                  <X className="ml-1 h-3 w-3 hover:text-destructive cursor-pointer" />
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            "All accounts"
-                          )}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Select account types..." />
-                        <CommandList>
-                          <CommandEmpty>No account type found.</CommandEmpty>
-                          <CommandGroup>
-                            {accountTypes.map((type) => (
-                              <CommandItem
-                                value={type}
-                                key={type}
-                                onSelect={() => {
-                                  let newValue;
-                                  if (field.value?.includes(type)) {
-                                    newValue = field.value.filter(
-                                      (v) => v !== type,
-                                    );
-                                  } else {
-                                    newValue = [...(field.value || []), type];
-                                  }
-                                  field.onChange(newValue);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    field.value?.includes(type)
-                                      ? "opacity-100"
-                                      : "opacity-0",
-                                  )}
-                                />
-                                {type}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormDescription className="text-xs">
-                    Leave empty to include transactions from all accounts.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* ── Active toggle + Save ── */}
-            <div className="flex items-center justify-between pt-2 border-t">
               <FormField
                 control={form.control}
-                name="is_active"
+                name="end_date"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2 space-y-0">
+                  <FormItem>
+                    <FormLabel>End Date (Optional)</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <Input type="date" {...field} value={field.value || ""} />
                     </FormControl>
-                    <FormLabel className="font-normal text-sm cursor-pointer">
-                      Active
-                    </FormLabel>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting} size="sm">
+            </div>
+            <div className="flex items-end gap-2">
+              <FormField
+                control={form.control}
+                name="frequency_value"
+                render={({ field }) => (
+                  <FormItem className="flex-grow">
+                    <FormLabel>Frequency</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="frequency_unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="d">Days</SelectItem>
+                        <SelectItem value="w">Weeks</SelectItem>
+                        <SelectItem value="m">Months</SelectItem>
+                        <SelectItem value="y">Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Active</FormLabel>
+                    <FormDescription>
+                      Uncheck to pause budget monitoring.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {budget ? "Update" : "Create"} {isGoal ? "Goal" : "Budget"}
+                Save
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

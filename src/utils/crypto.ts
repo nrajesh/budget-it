@@ -18,15 +18,17 @@ export async function encryptData(
   password: string,
 ): Promise<string> {
   const enc = new TextEncoder();
-  const salt = window.crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
-  const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const salt = window.crypto.getRandomValues(
+    new Uint8Array(SALT_LENGTH),
+  ) as any;
+  const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH)) as any;
   const passwordKey = await importPassword(password);
 
   const key = await deriveKey(passwordKey, salt, ["encrypt"]);
   const encryptedContent = await window.crypto.subtle.encrypt(
     {
       name: ENC_ALGO,
-      iv: iv as unknown as BufferSource,
+      iv: iv,
     },
     key,
     enc.encode(data),
@@ -61,10 +63,10 @@ export async function decryptData(
     const decryptedContent = await window.crypto.subtle.decrypt(
       {
         name: ENC_ALGO,
-        iv: iv as unknown as BufferSource,
+        iv: iv as any,
       },
       key,
-      ciphertext as unknown as BufferSource,
+      ciphertext as any,
     );
 
     const dec = new TextDecoder();
@@ -94,7 +96,7 @@ async function deriveKey(
   return window.crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: salt as unknown as BufferSource,
+      salt: salt as any,
       iterations: PBKDF2_ITERATIONS,
       hash: HASH_ALGO,
     },

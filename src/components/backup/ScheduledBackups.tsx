@@ -30,8 +30,7 @@ import {
 } from "lucide-react";
 import { parseFrequency, formatFrequency } from "@/utils/frequencyParser";
 import { showSuccess, showError } from "@/utils/toast";
-import { db } from "@/lib/dexieDB";
-import { BackupConfig } from "@/types/dataProvider";
+import { db, BackupConfig } from "@/lib/dexieDB"; // Direct DB access for now, or via Context? Direct is fine for this specific feature.
 
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
@@ -79,7 +78,6 @@ const ScheduledBackups = () => {
   const [frequencyInput, setFrequencyInput] = React.useState("");
   const [isEncrypted, setIsEncrypted] = React.useState(false);
   const [password, setPassword] = React.useState("");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dirHandle, setDirHandle] = React.useState<any>(null); // FileSystemDirectoryHandle
   const [backupPath, setBackupPath] = React.useState<string | null>(null); // Electron Path
 
@@ -176,10 +174,9 @@ const ScheduledBackups = () => {
           );
         }
       }
-    } catch (err: unknown) {
-      const error = err as Error;
-      if (error.name !== "AbortError") {
-        showError("Failed to select folder: " + error.message);
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        showError("Failed to select folder: " + err.message);
       }
     }
   };
@@ -227,8 +224,8 @@ const ScheduledBackups = () => {
       setIsEncrypted(false);
       setDirHandle(null);
       setBackupPath(null);
-    } catch (e: unknown) {
-      showError("Failed to create backup schedule: " + (e as Error).message);
+    } catch (e: any) {
+      showError("Failed to create backup schedule: " + e.message);
     }
   };
 
@@ -254,8 +251,8 @@ const ScheduledBackups = () => {
       } else {
         showError("Permission denied. Backups cannot run.");
       }
-    } catch (e: unknown) {
-      showError("Error checking permission: " + (e as Error).message);
+    } catch (e: any) {
+      showError("Error checking permission: " + e.message);
     }
   };
 

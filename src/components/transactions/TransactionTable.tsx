@@ -23,40 +23,18 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTableSort } from "@/hooks/useTableSort";
 import { SortableHeader } from "@/components/ui/sortable-header";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationFirst,
-  PaginationLast,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Transaction } from "@/types/dataProvider";
 
 interface TransactionTableProps {
-  transactions: Transaction[];
+  transactions: any[];
   loading: boolean;
   onRefresh: () => void;
   onDeleteTransactions: (
     transactions: { id: string; transfer_id?: string }[],
   ) => void;
-  onAddTransaction: (
-    transaction: Omit<Transaction, "id" | "created_at">,
-  ) => void;
-  onRowDoubleClick?: (
-    transaction: Transaction,
-    event: React.MouseEvent,
-  ) => void;
+  onAddTransaction: (transaction: any) => void;
+  onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
   onScheduleTransactions?: (
-    transactions: Transaction[],
+    transactions: any[],
     clearSelection: () => void,
   ) => void;
   onUnlinkTransaction?: (transferId: string) => void;
@@ -81,19 +59,14 @@ const TransactionRow = React.memo(
     navigate,
     toast,
   }: {
-    transaction: Transaction;
+    transaction: any;
     isSelected: boolean;
     onToggleSelect: (id: string) => void;
-    onRowDoubleClick?: (
-      transaction: Transaction,
-      event: React.MouseEvent,
-    ) => void;
+    onRowDoubleClick?: (transaction: any, event: React.MouseEvent) => void;
     onUnlinkTransaction?: (transferId: string) => void;
-    onAddTransaction: (
-      transaction: Omit<Transaction, "id" | "created_at">,
-    ) => void;
+    onAddTransaction: (transaction: any) => void;
     onScheduleTransactions?: (
-      transactions: Transaction[],
+      transactions: any[],
       clearSelection: () => void,
     ) => void;
     onDeleteTransactions: (
@@ -102,8 +75,8 @@ const TransactionRow = React.memo(
     accountCurrencyMap?: Map<string, string>;
     selectedCurrency: string;
     today: Date;
-    navigate: any; // useNavigate return type is hard to import? It's `NavigateFunction`.
-    toast: any; // `useToast` return type.
+    navigate: any;
+    toast: any;
   }) => {
     const isFuture = useMemo(() => {
       const txnDate = new Date(transaction.date);
@@ -111,11 +84,11 @@ const TransactionRow = React.memo(
       return txnDate > today;
     }, [transaction.date, today]);
 
-    const renderCell = (field: string, value: unknown) => {
+    const renderCell = (field: string, value: any) => {
       return (
         <span className="cursor-pointer">
           {field === "amount"
-            ? (value as number).toLocaleString(undefined, {
+            ? value.toLocaleString(undefined, {
                 style: "currency",
                 currency:
                   accountCurrencyMap?.get(transaction.account) ||
@@ -123,8 +96,8 @@ const TransactionRow = React.memo(
                   selectedCurrency,
               })
             : field === "date"
-              ? new Date(value as string).toLocaleDateString()
-              : (value as React.ReactNode) || "-"}
+              ? new Date(value).toLocaleDateString()
+              : value || "-"}
         </span>
       );
     };
@@ -156,7 +129,7 @@ const TransactionRow = React.memo(
                     title="Unlink Transfer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onUnlinkTransaction && transaction.transfer_id)
+                      if (onUnlinkTransaction)
                         onUnlinkTransaction(transaction.transfer_id);
                     }}
                   >
@@ -205,7 +178,7 @@ const TransactionRow = React.memo(
             </TableCell>
             <TableCell
               className="max-w-[200px] truncate text-slate-600 dark:text-slate-400"
-              title={transaction.remarks || ""}
+              title={transaction.remarks}
             >
               {renderCell("remarks", transaction.remarks)}
             </TableCell>
@@ -246,19 +219,19 @@ const TransactionRow = React.memo(
           </ContextMenuItem>
           <ContextMenuItem
             inset
-            onClick={() => {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { id, created_at, ...rest } = transaction;
+            onClick={() =>
               onAddTransaction({
-                ...rest,
+                ...transaction,
+                id: undefined,
+                created_at: undefined,
                 remarks: transaction.remarks + " (Copy)",
                 recurrence_id: undefined,
                 is_scheduled_origin: undefined,
                 is_projected: undefined,
-                recurrence_frequency: undefined,
+                frequency: undefined,
                 recurrence_end_date: undefined,
-              });
-            }}
+              })
+            }
           >
             <Copy className="h-4 w-4 mr-2" /> Duplicate
           </ContextMenuItem>
@@ -300,50 +273,28 @@ const TransactionTable = ({
     return d;
   }, []);
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Reset pagination when data length changes (e.g. filters applied)
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [transactions.length]);
-
   // Use the sorting hook
   const { sortedData, sortConfig, handleHeaderClick, handleHeaderRightClick } =
     useTableSort({
       data: transactions,
-      initialSort: { key: "date", direction: "desc" },
+      initialSort: { key: "date", direction: "desc" }, // Default sort by date descending seems appropriate for transactions
     });
 
-  // Calculate Pagination
-  const totalItems = sortedData.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const offset = (currentPage - 1) * pageSize;
-  const paginatedData = useMemo(
-    () => sortedData.slice(offset, offset + pageSize),
-    [sortedData, offset, pageSize],
-  );
-
-  // Selection Handlers (Updated for Pagination)
+  // Selection Handlers
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
-      const currentIds = paginatedData.map((t) => t.id);
-      const allSelected = currentIds.every((id) => prev.has(id));
-
-      const newSet = new Set(prev);
-      if (allSelected) {
-        currentIds.forEach((id) => newSet.delete(id));
+      if (prev.size === sortedData.length) {
+        return new Set();
       } else {
-        currentIds.forEach((id) => newSet.add(id));
+        return new Set(sortedData.map((t) => t.id));
       }
-      return newSet;
     });
-  }, [paginatedData]);
+  }, [sortedData]);
 
   const toggleSelect = useCallback(
     (id: string) => {
-      // Determine linked IDs first
+      // Determine linked IDs first (stable logic, but depends on sortedData array)
+      // Finding the transaction inside the callback ensures we use the latest 'sortedData'
       const txn = sortedData.find((t) => t.id === id);
       const idsToToggle = [id];
 
@@ -357,6 +308,7 @@ const TransactionTable = ({
 
       setSelectedIds((prev) => {
         const newSelected = new Set(prev);
+        // Determine if we are selecting or deselecting based on the PRIMARY id
         const isSelected = prev.has(id);
 
         idsToToggle.forEach((targetId) => {
@@ -377,7 +329,7 @@ const TransactionTable = ({
   const handleBulkDelete = () => {
     const toDelete = sortedData
       .filter((t) => selectedIds.has(t.id))
-      .map((t) => ({ id: t.id, transfer_id: t.transfer_id || undefined }));
+      .map((t) => ({ id: t.id, transfer_id: t.transfer_id }));
 
     onDeleteTransactions(toDelete);
     setSelectedIds(new Set());
@@ -386,15 +338,17 @@ const TransactionTable = ({
   const handleBulkDuplicate = () => {
     const toDuplicate = sortedData.filter((t) => selectedIds.has(t.id));
     toDuplicate.forEach((t) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, created_at, ...rest } = t;
       onAddTransaction({
-        ...rest,
+        ...t,
+        id: undefined,
+        created_at: undefined,
         date: new Date().toISOString(),
         remarks: `${t.remarks} (Copy)`,
         recurrence_id: undefined,
         is_scheduled_origin: undefined,
         is_projected: undefined,
+        frequency: undefined,
+        recurrence_end_date: undefined,
       });
     });
     setSelectedIds(new Set());
@@ -421,16 +375,11 @@ const TransactionTable = ({
     );
   }
 
-  // Helper to check if all current page items are selected
-  const allCurrentPageSelected =
-    paginatedData.length > 0 &&
-    paginatedData.every((t) => selectedIds.has(t.id));
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Bulk Toolbar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2 sticky top-0 z-10 backdrop-blur-sm">
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2">
           <span className="text-sm font-medium px-2">
             {selectedIds.size} selected
           </span>
@@ -476,7 +425,10 @@ const TransactionTable = ({
             <TableRow>
               <TableHead className="w-[40px]">
                 <Checkbox
-                  checked={allCurrentPageSelected}
+                  checked={
+                    selectedIds.size === sortedData.length &&
+                    sortedData.length > 0
+                  }
                   onCheckedChange={toggleSelectAll}
                 />
               </TableHead>
@@ -548,7 +500,7 @@ const TransactionTable = ({
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedData.map((transaction) => (
+              sortedData.map((transaction) => (
                 <TransactionRow
                   key={transaction.id}
                   transaction={transaction}
@@ -570,71 +522,6 @@ const TransactionTable = ({
           </TableBody>
         </Table>
       </div>
-
-      {/* Pagination Footer */}
-      {totalItems > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
-            <span>Rows per page</span>
-            <Select
-              value={pageSize.toString()}
-              onValueChange={(v) => {
-                setPageSize(Number(v));
-                setCurrentPage(1); // Reset to first page when changing size
-              }}
-            >
-              <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={pageSize.toString()} />
-              </SelectTrigger>
-              <SelectContent side="top">
-                {[10, 20, 50, 100].map((size) => (
-                  <SelectItem key={size} value={size.toString()}>
-                    {size}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="h-4 w-px bg-border mx-2" />
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-          </div>
-
-          <Pagination className="justify-end w-auto order-1 sm:order-2">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationFirst
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                />
-              </PaginationItem>
-
-              {/* Simple Page Indicator / Jumper could go here, but focusing on Nav controls for now */}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLast
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
     </div>
   );
 };

@@ -9,12 +9,9 @@ import {
 import { ResponsiveContainer, Sankey, Tooltip } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-import { Transaction } from "@/data/finance-data";
-import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
-
 interface SankeyChartProps {
-  transactions: Transaction[];
-  accounts: Payee[];
+  transactions: any[];
+  accounts: any[];
 }
 
 const SankeyChart: React.FC<SankeyChartProps> = ({
@@ -147,7 +144,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
               }}
               link={{ stroke: "#777" }}
             >
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip formatter={(value: any) => formatCurrency(value)} />
             </Sankey>
           </ResponsiveContainer>
         ) : (
