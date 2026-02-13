@@ -4,7 +4,7 @@ import { Transaction, Budget } from "@/types/dataProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { CalendarClock, Link } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 
 interface DailyTransactionsProps {
     date: Date | null;

@@ -10,7 +10,6 @@ import {
     isSameDay,
     addMonths,
     subMonths,
-    isBefore,
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     const handlePrevMonth = () => onDateChange(subMonths(currentDate, 1));
     const handleNextMonth = () => onDateChange(addMonths(currentDate, 1));
 
-    const today = new Date();
 
     return (
         <Card className="h-full flex flex-col overflow-hidden">
@@ -77,7 +75,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                         const count = data.count;
                         const isSelected = selectedDate && isSameDay(day, selectedDate);
                         const isCurrentMonth = isSameMonth(day, monthStart);
-                        const isPastOrToday = !isSameDay(day, today) && isBefore(day, today) || isSameDay(day, today);
 
                         // Determine background color
                         let bgClass = "bg-card";

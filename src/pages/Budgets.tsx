@@ -211,15 +211,6 @@ export default function BudgetsPage() {
     }
   };
 
-  const handleSelectAll = () => {
-    if (selectedBudgetIds.size === filteredBudgets.length) {
-      setSelectedBudgetIds(new Set());
-    } else {
-      const allIds = new Set(filteredBudgets.map((b) => b.id));
-      setSelectedBudgetIds(allIds);
-    }
-  };
-
   const handleSelectAll = useCallback(() => {
     if (selectedBudgetIds.size === filteredBudgets.length && filteredBudgets.length > 0) {
       setSelectedBudgetIds(new Set());
