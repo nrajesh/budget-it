@@ -57,9 +57,9 @@ app.whenReady().then(() => {
             }
 
             // SECURITY: Enforce file extension to prevent arbitrary file write
-            if (!filename.endsWith('.json') && !filename.endsWith('.lock')) {
+            if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
                 console.error("Security alert: Invalid file extension", filename);
-                throw new Error("Invalid filename: Only .json and .lock files are allowed");
+                throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
             }
 
             // Ensure directory exists
