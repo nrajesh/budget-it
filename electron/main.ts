@@ -56,6 +56,12 @@ app.whenReady().then(() => {
                 throw new Error("Invalid filename: Path traversal detected");
             }
 
+            // SECURITY: Enforce file extension to prevent arbitrary file write
+            if (!filename.endsWith('.json') && !filename.endsWith('.lock')) {
+                console.error("Security alert: Invalid file extension", filename);
+                throw new Error("Invalid filename: Only .json and .lock files are allowed");
+            }
+
             // Ensure directory exists
             if (!fs.existsSync(folder)) {
                 fs.mkdirSync(folder, { recursive: true });
