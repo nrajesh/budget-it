@@ -158,7 +158,9 @@ export function BudgetCard({
         <div className="absolute top-4 right-4 z-50">
           <Checkbox
             checked={isSelected}
-            onCheckedChange={() => onToggleSelection && onToggleSelection(budget.id)}
+            onCheckedChange={() =>
+              onToggleSelection && onToggleSelection(budget.id)
+            }
             className="h-5 w-5 border-2 border-indigo-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white"
             onClick={(e) => e.stopPropagation()}
           />
@@ -286,7 +288,9 @@ function GoalCard({
         <div className="absolute top-4 right-4 z-50">
           <Checkbox
             checked={isSelected}
-            onCheckedChange={() => onToggleSelection && onToggleSelection(budget.id)}
+            onCheckedChange={() =>
+              onToggleSelection && onToggleSelection(budget.id)
+            }
             className="h-5 w-5 border-2 border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:text-white"
             onClick={(e) => e.stopPropagation()}
           />
@@ -300,7 +304,7 @@ function GoalCard({
           >
             <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             {(budget.budget_scope || "category") !== "category" &&
-              budget.budget_scope_name
+            budget.budget_scope_name
               ? budget.budget_scope_name
               : budget.category_name}
             {(budget.budget_scope || "category") === "category" &&
@@ -312,10 +316,11 @@ function GoalCard({
           </CardTitle>
           {/* On-track / Off-track badge */}
           <div
-            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${isOnTrack
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-              : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-              }`}
+            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
+              isOnTrack
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+            }`}
           >
             {isOnTrack ? (
               <>

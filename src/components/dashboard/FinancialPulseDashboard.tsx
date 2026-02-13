@@ -92,11 +92,11 @@ export const FinancialPulseDashboard = () => {
           dailyMap.set(
             dateKey,
             current +
-            convertBetweenCurrencies(
-              Math.abs(t.amount),
-              t.currency || "USD",
-              selectedCurrency || "USD",
-            ),
+              convertBetweenCurrencies(
+                Math.abs(t.amount),
+                t.currency || "USD",
+                selectedCurrency || "USD",
+              ),
           );
         }
       }
@@ -181,7 +181,6 @@ export const FinancialPulseDashboard = () => {
           </div>
         </div>
 
-
         {/* Row 1: Runway & Budget Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
           <RunwayCard />
@@ -194,7 +193,6 @@ export const FinancialPulseDashboard = () => {
           income={formatCurrency(monthlyFlow.income)}
           expenses={formatCurrency(monthlyFlow.expenses)}
         />
-
 
         {/* Row 3: Wealthometer Section */}
         <Wealthometer

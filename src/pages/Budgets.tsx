@@ -212,7 +212,10 @@ export default function BudgetsPage() {
   };
 
   const handleSelectAll = useCallback(() => {
-    if (selectedBudgetIds.size === filteredBudgets.length && filteredBudgets.length > 0) {
+    if (
+      selectedBudgetIds.size === filteredBudgets.length &&
+      filteredBudgets.length > 0
+    ) {
       setSelectedBudgetIds(new Set());
     } else {
       const allIds = new Set(filteredBudgets.map((b) => b.id));
@@ -258,7 +261,8 @@ export default function BudgetsPage() {
             onClick={handleSelectAll}
             className="animate-in fade-in zoom-in duration-300"
           >
-            {selectedBudgetIds.size === filteredBudgets.length && filteredBudgets.length > 0
+            {selectedBudgetIds.size === filteredBudgets.length &&
+            filteredBudgets.length > 0
               ? "Deselect All"
               : "Select All"}
           </Button>

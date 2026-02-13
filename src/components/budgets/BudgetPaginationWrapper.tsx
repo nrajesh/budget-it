@@ -51,7 +51,11 @@ export function BudgetPaginationWrapper({
 
   // Fix: Redirect to previous page if current page becomes empty
   useEffect(() => {
-    if (currentPage > 1 && paginatedBudgets.length === 0 && budgets.length > 0) {
+    if (
+      currentPage > 1 &&
+      paginatedBudgets.length === 0 &&
+      budgets.length > 0
+    ) {
       setCurrentPage((prev) => Math.max(prev - 1, 1));
     }
   }, [currentPage, paginatedBudgets.length, budgets.length]);

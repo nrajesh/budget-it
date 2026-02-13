@@ -40,7 +40,6 @@ export function BudgetSummary({ budgets, isLoading }: BudgetSummaryProps) {
         normalizedTarget = budget.target_amount / 3;
         break;
       case "Yearly":
-
         normalizedTarget = budget.target_amount / 12;
         break;
       case "One-time": {
