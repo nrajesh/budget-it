@@ -35,25 +35,25 @@ describe("ScheduledTransactionsTable", () => {
       created_at: "2023-01-01T00:00:00.000Z",
     },
     {
-        id: "2",
-        date: "2023-10-27T00:00:00.000Z",
-        frequency: "Monthly",
-        amount: 50,
-        account: "Bank A",
-        vendor: "Bank B",
-        category: "Transfer",
-        transfer_id: "transfer123",
-        currency: "USD",
-        user_id: "user1",
-        created_at: "2023-01-01T00:00:00.000Z",
-    }
+      id: "2",
+      date: "2023-10-27T00:00:00.000Z",
+      frequency: "Monthly",
+      amount: 50,
+      account: "Bank A",
+      vendor: "Bank B",
+      category: "Transfer",
+      transfer_id: "transfer123",
+      currency: "USD",
+      user_id: "user1",
+      created_at: "2023-01-01T00:00:00.000Z",
+    },
   ];
 
   it("renders transactions correctly", () => {
     render(
       <BrowserRouter>
         <ScheduledTransactionsTable transactions={mockTransactions} />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     expect(screen.getByText("Test Vendor")).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("ScheduledTransactionsTable", () => {
     render(
       <BrowserRouter>
         <ScheduledTransactionsTable transactions={mockTransactions} />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Vendor should be a button
@@ -85,12 +85,15 @@ describe("ScheduledTransactionsTable", () => {
   });
 
   it("renders unlink button with aria-label", () => {
-      // We need to provide onUnlink prop to see the button usually, or just check the second transaction which has transfer_id
-      // The button is rendered if transaction.transfer_id is present
-      render(
+    // We need to provide onUnlink prop to see the button usually, or just check the second transaction which has transfer_id
+    // The button is rendered if transaction.transfer_id is present
+    render(
       <BrowserRouter>
-        <ScheduledTransactionsTable transactions={mockTransactions} onUnlink={() => {}} />
-      </BrowserRouter>
+        <ScheduledTransactionsTable
+          transactions={mockTransactions}
+          onUnlink={() => {}}
+        />
+      </BrowserRouter>,
     );
 
     const unlinkButtons = screen.getAllByLabelText("Unlink Pair");
