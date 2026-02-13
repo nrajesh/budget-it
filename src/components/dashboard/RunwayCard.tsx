@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowDownRight, Infinity } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Infinity as InfinityIcon } from "lucide-react";
 import { useFinancialRunway } from "@/hooks/dashboard/useFinancialRunway";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -43,7 +43,7 @@ export const RunwayCard = () => {
                         </p>
                     </div>
                     <div className={`p-2 rounded-full ${isInfinite ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" : (runwayMonths < 3 ? "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400" : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400")}`}>
-                        {isInfinite ? <Infinity className="w-5 h-5" /> : (runwayMonths < 3 ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />)}
+                        {isInfinite ? <InfinityIcon className="w-5 h-5" /> : (runwayMonths < 3 ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />)}
                     </div>
                 </div>
 

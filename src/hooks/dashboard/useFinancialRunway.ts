@@ -75,7 +75,6 @@ export const useFinancialRunway = () => {
 
         let totalIncome = 0;
         let totalExpenses = 0;
-        let transactionCount = 0;
 
         // Filter transactions
         const relevantTransactions = transactions.filter((t) => {
@@ -96,7 +95,6 @@ export const useFinancialRunway = () => {
 
             if (amount > 0) totalIncome += amount;
             else totalExpenses += Math.abs(amount);
-            transactionCount++;
         });
 
         // Average over 3 months
