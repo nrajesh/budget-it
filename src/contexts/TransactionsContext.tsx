@@ -12,7 +12,7 @@ import {
   QueryObserverResult,
 } from "@tanstack/react-query";
 import { useDataProvider } from "@/context/DataProviderContext";
-import { ScheduledTransaction } from "@/types/dataProvider";
+import { ScheduledTransaction, AccountType } from "@/types/dataProvider";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
 import { calculateAccountStats } from "@/utils/accountUtils";
@@ -143,35 +143,35 @@ const TransactionsContext = React.createContext<
   TransactionsContextType | undefined
 >(undefined);
 
-const transformPayeeData = (data: any[]): Payee[] => {
+const transformPayeeData = (data: Record<string, unknown>[]): Payee[] => {
   if (!data) return [];
   return data
-    .map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      is_account: item.is_account,
-      created_at: item.created_at,
-      account_id: item.account_id,
-      currency: item.currency,
-      starting_balance: item.starting_balance,
-      remarks: item.remarks,
-      running_balance: item.running_balance,
-      totalTransactions: item.total_transactions || 0,
-      type: item.type,
-      credit_limit: item.credit_limit,
+    .map((item) => ({
+      id: item.id as string,
+      name: item.name as string,
+      is_account: item.is_account as boolean,
+      created_at: item.created_at as string,
+      account_id: item.account_id as string | undefined,
+      currency: item.currency as string | undefined,
+      starting_balance: (item.starting_balance as number) || 0,
+      remarks: item.remarks as string | undefined,
+      running_balance: item.running_balance as number | undefined,
+      totalTransactions: (item.total_transactions as number) || 0,
+      type: item.type as AccountType,
+      credit_limit: item.credit_limit as number | undefined,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const transformCategoryData = (data: any[]): Category[] => {
+const transformCategoryData = (data: Record<string, unknown>[]): Category[] => {
   if (!data) return [];
   return data
-    .map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      user_id: item.user_id,
-      created_at: item.created_at,
-      totalTransactions: item.total_transactions || 0,
+    .map((item) => ({
+      id: item.id as string,
+      name: item.name as string,
+      user_id: item.user_id as string,
+      created_at: item.created_at as string,
+      totalTransactions: (item.total_transactions as number) || 0,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 };
@@ -375,9 +375,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       if (type) {
         setHiddenEntityIds((prev) => {
           const next = new Map(prev);
-          const currentSet = new Set(next.get(type as any) || []);
+          const currentSet = new Set(next.get(type) || []);
           lastAction.payload.ids.forEach((id) => currentSet.delete(id));
-          next.set(type as any, currentSet);
+          next.set(type, currentSet);
           return next;
         });
       }
@@ -450,7 +450,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const allAccountsDetails = await dataProvider.getAllAccounts(ledgerId);
       const accountMap = new Map(allAccountsDetails.map((a) => [a.id, a]));
 
-      const nameToAccountMap = new Map<string, any>();
+      const nameToAccountMap = new Map<string, (typeof allAccountsDetails)[0]>();
       allVendors.forEach((v) => {
         if (v.is_account && v.account_id) {
           const acc = accountMap.get(v.account_id);
@@ -618,7 +618,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
   const addTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (
+      transaction: Omit<
+        Transaction,
+        | "id"
+        | "currency"
+        | "created_at"
+        | "transfer_id"
+        | "user_id"
+        | "is_scheduled_origin"
+      > & {
+        date: string;
+        receivingAmount?: number;
+        recurrenceFrequency?: string;
+        recurrenceEndDate?: string;
+      },
+    ) => {
       // Check if it's a transfer
       // In our app, a transfer is identified if the vendor name matches an account name
       const isTransfer = accounts.some(
@@ -672,7 +687,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     [accounts, ledgerId, dataProvider, invalidateAllData],
   );
   const updateTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (transaction: Transaction & { receivingAmount?: number }) => {
       // 1. Update the primary transaction
       await dataProvider.updateTransaction(transaction);
 
@@ -872,7 +887,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [dataProvider, invalidateAllData]);
 
   const addScheduledTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (transaction: Omit<ScheduledTransaction, "id" | "created_at">) => {
       const userId = ledgerId;
 
       // Check for transfer
@@ -938,7 +953,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const updateScheduledTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (transaction: ScheduledTransaction) => {
       // Ensure we preserve user_id or set it if missing
       const userId = transaction.user_id || ledgerId;
 

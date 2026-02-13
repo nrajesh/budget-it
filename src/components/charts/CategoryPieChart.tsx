@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { ActivePieShape } from "./ActivePieShape";
+import { ActivePieShape, ActivePieShapeProps } from "./ActivePieShape";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
@@ -84,14 +84,17 @@ const CategoryPieChart = () => {
   const isLoading = isLoadingTransactions;
 
   const onPieClick = useCallback(
-    (data: any, index: number) => {
+    (data: Record<string, unknown>, index: number) => {
       if (!selectedCategory) {
         // If in top-level categories, set active index and drill down
         setActiveIndex(index);
-        setSelectedCategory({ id: data.id, name: data.name });
+        setSelectedCategory({
+          id: data.id as string,
+          name: data.name as string,
+        });
 
         // Auto-filter Recent transactions by category
-        const categorySlug = slugify(data.name);
+        const categorySlug = slugify(data.name as string);
         setSelectedCategories([categorySlug]);
       } else {
         // If drilled down, just toggle active index for the vendor
@@ -100,7 +103,7 @@ const CategoryPieChart = () => {
         );
 
         // Auto-filter Recent transactions by vendor
-        const vendorSlug = slugify(data.vendor_name);
+        const vendorSlug = slugify(data.vendor_name as string);
         setSelectedVendors([vendorSlug]);
       }
     },
@@ -120,10 +123,10 @@ const CategoryPieChart = () => {
   }, [handleResetFilters]);
 
   const renderActiveShape = useCallback(
-    (props: any) => {
+    (props: unknown) => {
       return (
         <ActivePieShape
-          {...props}
+          {...(props as ActivePieShapeProps)}
           formatCurrency={formatCurrency}
           onCenterClick={resetActiveIndex}
         />

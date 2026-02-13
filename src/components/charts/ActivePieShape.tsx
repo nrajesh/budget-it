@@ -3,7 +3,7 @@
 import React from "react";
 import { Sector } from "recharts";
 
-interface ActivePieShapeProps {
+export interface ActivePieShapeProps {
   cx: number;
   cy: number;
   innerRadius: number;
@@ -11,7 +11,13 @@ interface ActivePieShapeProps {
   startAngle: number;
   endAngle: number;
   fill: string;
-  payload: any;
+  payload: {
+    name?: string;
+    vendor_name?: string;
+    total_amount?: number;
+    amount?: number;
+    [key: string]: unknown;
+  };
   formatCurrency: (value: number) => string;
   onCenterClick?: () => void;
 }

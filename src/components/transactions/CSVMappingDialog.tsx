@@ -22,7 +22,7 @@ interface CSVMappingDialogProps {
   onClose: () => void;
   file: File | null;
   requiredHeaders: string[];
-  onConfirm: (results: any[], config: ImportConfig) => void;
+  onConfirm: (results: Record<string, unknown>[], config: ImportConfig) => void;
 }
 
 export interface ImportConfig {
@@ -49,7 +49,7 @@ const CSVMappingDialog = ({
 
   // Parsed data state
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
-  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvData, setCsvData] = useState<Record<string, unknown>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -73,15 +73,15 @@ const CSVMappingDialog = ({
     if (!file) return;
     setIsLoading(true);
 
-    Papa.parse(file as any, {
+    Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
 
       delimiter: config.delimiter === "auto" ? "" : config.delimiter, // Empty string = auto-detect
-      complete: (results: any) => {
+      complete: (results) => {
         const headers: string[] = results.meta.fields || [];
         setCsvHeaders(headers);
-        setCsvData(results.data);
+        setCsvData(results.data as Record<string, unknown>[]);
 
         // Pre-fill mapping if matches found
         const ALIASES: Record<string, string[]> = {
@@ -117,10 +117,10 @@ const CSVMappingDialog = ({
         // Auto-detect decimal separator based on "Amount" column data
         const amountHeader = newMapping["Amount"];
         if (amountHeader) {
-          const sampleValues = results.data
+          const sampleValues = (results.data as Record<string, unknown>[])
             .slice(0, 5)
-            .map((row: any) => row[amountHeader])
-            .filter(Boolean);
+            .map((row) => row[amountHeader])
+            .filter(Boolean) as string[];
           const hasComma = sampleValues.some(
             (val: string) => val.includes(",") && !val.includes("."),
           );
@@ -140,7 +140,7 @@ const CSVMappingDialog = ({
         }
         setIsLoading(false);
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("CSV Parse Error", error);
         setIsLoading(false);
         // Ideally show toast here, but we can just stay on step 1?
@@ -157,9 +157,9 @@ const CSVMappingDialog = ({
 
   const handleConfirm = () => {
     // Apply mapping to data
-    const mappedData = csvData.map((row: any) => {
+    const mappedData = csvData.map((row) => {
       // Keep original data, then overwrite with standardized keys
-      const newRow: any = { ...row };
+      const newRow: Record<string, unknown> = { ...row };
       Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
         newRow[requiredHeader] = row[csvHeader];
       });
@@ -235,7 +235,7 @@ const CSVMappingDialog = ({
                 <Label>Decimal Format</Label>
                 <Select
                   value={config.decimalSeparator}
-                  onValueChange={(val: any) =>
+                  onValueChange={(val: ImportConfig["decimalSeparator"]) =>
                     setConfig((prev) => ({ ...prev, decimalSeparator: val }))
                   }
                 >

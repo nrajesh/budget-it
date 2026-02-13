@@ -106,23 +106,23 @@ export function projectScheduledTransactions(
         }
       }
 
+      let nextDate: Date;
       switch (intervalUnit) {
         case "d":
-          currentDate = addDays(currentDate, intervalValue);
+          nextDate = addDays(currentDate, intervalValue);
           break;
         case "w":
-          currentDate = addWeeks(currentDate, intervalValue);
-          break;
-        case "m":
-          currentDate = addMonths(currentDate, intervalValue);
+          nextDate = addWeeks(currentDate, intervalValue);
           break;
         case "y":
-          currentDate = addYears(currentDate, intervalValue);
+          nextDate = addYears(currentDate, intervalValue);
           break;
+        case "m":
         default:
-          currentDate = addMonths(currentDate, 1);
+          nextDate = addMonths(currentDate, intervalValue);
           break;
       }
+      currentDate = nextDate;
     }
   });
 

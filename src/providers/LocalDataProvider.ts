@@ -928,36 +928,43 @@ export class LocalDataProvider implements DataProvider {
           await db.backup_configs.clear();
 
           if (importPayload.ledgers)
-            await db.ledgers.bulkAdd(
-              importPayload.ledgers as unknown as Record<string, unknown>[],
-            );
+            await db.ledgers.bulkAdd(importPayload.ledgers as unknown as Ledger[]);
           if (importPayload.backup_configs)
             await db.backup_configs.bulkAdd(
-              importPayload.backup_configs as unknown as Record<
-                string,
-                unknown
-              >[],
+              importPayload.backup_configs as unknown as Parameters<
+                typeof db.backup_configs.bulkAdd
+              >[0],
             );
 
           if (importPayload.transactions)
             await db.transactions.bulkAdd(
-              mapToUserId(importPayload.transactions),
+              mapToUserId(importPayload.transactions) as unknown as Transaction[],
             );
           if (importPayload.scheduled_transactions)
             await db.scheduled_transactions.bulkAdd(
-              mapToUserId(importPayload.scheduled_transactions),
+              mapToUserId(
+                importPayload.scheduled_transactions,
+              ) as unknown as ScheduledTransaction[],
             );
           if (importPayload.budgets)
-            await db.budgets.bulkAdd(mapToUserId(importPayload.budgets));
+            await db.budgets.bulkAdd(
+              mapToUserId(importPayload.budgets) as unknown as Budget[],
+            );
           if (importPayload.vendors)
-            await db.vendors.bulkAdd(mapToUserId(importPayload.vendors));
+            await db.vendors.bulkAdd(
+              mapToUserId(importPayload.vendors) as unknown as Vendor[],
+            );
           if (importPayload.accounts)
-            await db.accounts.bulkAdd(mapToUserId(importPayload.accounts));
+            await db.accounts.bulkAdd(
+              mapToUserId(importPayload.accounts) as unknown as Account[],
+            );
           if (importPayload.categories)
-            await db.categories.bulkAdd(mapToUserId(importPayload.categories));
+            await db.categories.bulkAdd(
+              mapToUserId(importPayload.categories) as unknown as Category[],
+            );
           if (importPayload.sub_categories)
             await db.sub_categories.bulkAdd(
-              mapToUserId(importPayload.sub_categories),
+              mapToUserId(importPayload.sub_categories) as unknown as SubCategory[],
             );
         }
       },

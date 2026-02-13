@@ -536,7 +536,7 @@ export const useTransactionPageActions = (
           }
         }
         // Log removed
-      } catch (e: any) {
+      } catch (e) {
         console.error("Insert failed at some point", e);
       }
 
@@ -581,11 +581,13 @@ export const useTransactionPageActions = (
         progress: 100,
         totalStages: 4,
       });
-    } catch (error: any) {
+    } catch (error) {
       setOperationProgress(null);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast({
         title: "Error importing transactions",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     }

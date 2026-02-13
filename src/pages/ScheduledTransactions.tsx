@@ -224,12 +224,12 @@ const ScheduledTransactionsPage = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     setIsSubmitting(true);
     try {
-      const transactionData = {
+      const transactionData: Record<string, unknown> = {
         ...values,
-        frequency: `${values.frequency_value}${values.frequency_unit}`,
+        frequency: `${values.frequency_value as string}${values.frequency_unit as string}`,
       };
       delete transactionData.frequency_value;
       delete transactionData.frequency_unit;
