@@ -1422,7 +1422,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear progress after short delay
       setTimeout(() => setOperationProgress(null), 1000);
     }
-  }, [dataProvider, refreshLedgers, dataProvider, queryClient]);
+  }, [dataProvider, refreshLedgers, queryClient]);
 
   const processScheduledTransactions = React.useCallback(async () => {
     if (

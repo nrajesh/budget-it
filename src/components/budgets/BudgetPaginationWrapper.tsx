@@ -18,6 +18,8 @@ interface BudgetPaginationWrapperProps {
   onEdit: (budget: Budget) => void;
   onDelete: (budgetId: string) => void;
   transactions?: Transaction[];
+  selectedBudgetIds?: Set<string>;
+  onToggleSelection?: (budgetId: string) => void;
 }
 
 const BUDGETS_PER_PAGE = 3;
@@ -28,6 +30,8 @@ export function BudgetPaginationWrapper({
   onEdit,
   onDelete,
   transactions = [],
+  selectedBudgetIds,
+  onToggleSelection,
 }: BudgetPaginationWrapperProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,6 +48,17 @@ export function BudgetPaginationWrapper({
     const end = start + BUDGETS_PER_PAGE;
     return budgets.slice(start, end);
   }, [budgets, currentPage]);
+
+  // Fix: Redirect to previous page if current page becomes empty
+  useEffect(() => {
+    if (
+      currentPage > 1 &&
+      paginatedBudgets.length === 0 &&
+      budgets.length > 0
+    ) {
+      setCurrentPage((prev) => Math.max(prev - 1, 1));
+    }
+  }, [currentPage, paginatedBudgets.length, budgets.length]);
 
   const goToNextPage = useCallback(() => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -130,6 +145,8 @@ export function BudgetPaginationWrapper({
             onEdit={onEdit}
             onDelete={onDelete}
             transactions={transactions}
+            isSelected={selectedBudgetIds?.has(budget.id)}
+            onToggleSelection={onToggleSelection}
           />
         ))}
       </div>

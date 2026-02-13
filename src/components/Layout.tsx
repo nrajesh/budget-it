@@ -90,6 +90,8 @@ const Layout = () => {
     switch (pathname) {
       case "/":
         return "Dashboard";
+      case "/calendar":
+        return "Calendar";
       case "/transactions":
         return "Transactions";
       case "/analytics":
@@ -160,6 +162,17 @@ const Layout = () => {
                   <Link to="/">
                     <LayoutGrid />
                     <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/calendar"}
+                >
+                  <Link to="/calendar">
+                    <Calendar />
+                    <span>Calendar</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

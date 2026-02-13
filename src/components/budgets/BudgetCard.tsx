@@ -23,11 +23,14 @@ import { format, startOfMonth, endOfMonth, endOfDay, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useGoalProgress } from "@/hooks/useGoalProgress";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface BudgetCardProps {
   budget: Budget;
   onEdit: (budget: Budget) => void;
   onDelete: (budgetId: string) => void;
+  isSelected?: boolean;
+  onToggleSelection?: (budgetId: string) => void;
   transactions?: Transaction[];
 }
 
@@ -35,6 +38,8 @@ export function BudgetCard({
   budget,
   onEdit,
   onDelete,
+  isSelected = false,
+  onToggleSelection,
   transactions = [],
 }: BudgetCardProps) {
   const { accounts } = useTransactions();
@@ -118,6 +123,8 @@ export function BudgetCard({
         onEdit={onEdit}
         onDelete={onDelete}
         onTitleClick={handleTitleClick}
+        isSelected={isSelected}
+        onToggleSelection={onToggleSelection}
       />
     );
   }
@@ -143,10 +150,22 @@ export function BudgetCard({
     <Card
       className={
         isOverBudget
-          ? "border-red-500 shadow-lg bg-red-50/30 dark:bg-red-950/20"
-          : "bg-indigo-50/40 dark:bg-slate-900/40 border-indigo-100 dark:border-slate-800"
+          ? "border-red-500 shadow-lg bg-red-50/30 dark:bg-red-950/20 relative"
+          : "bg-indigo-50/40 dark:bg-slate-900/40 border-indigo-100 dark:border-slate-800 relative"
       }
     >
+      {onToggleSelection && (
+        <div className="absolute top-4 right-4 z-50">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() =>
+              onToggleSelection && onToggleSelection(budget.id)
+            }
+            className="h-5 w-5 border-2 border-indigo-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <CardHeader>
         <CardTitle
           className="flex items-baseline gap-2 cursor-pointer hover:underline hover:text-primary transition-colors text-slate-900 dark:text-slate-50"
@@ -233,6 +252,8 @@ interface GoalCardProps {
   goalProgress: ReturnType<typeof useGoalProgress>;
   onEdit: (budget: Budget) => void;
   onDelete: (budgetId: string) => void;
+  isSelected?: boolean;
+  onToggleSelection?: (budgetId: string) => void;
   onTitleClick: () => void;
 }
 
@@ -241,6 +262,8 @@ function GoalCard({
   goalProgress,
   onEdit,
   onDelete,
+  isSelected = false,
+  onToggleSelection,
   onTitleClick,
 }: GoalCardProps) {
   const {
@@ -260,7 +283,19 @@ function GoalCard({
     : "End of month";
 
   return (
-    <Card className="border-emerald-300 dark:border-emerald-700 shadow-lg bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-cyan-50/30 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/10">
+    <Card className="border-emerald-300 dark:border-emerald-700 shadow-lg bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-cyan-50/30 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/10 relative">
+      {onToggleSelection && (
+        <div className="absolute top-4 right-4 z-50">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() =>
+              onToggleSelection && onToggleSelection(budget.id)
+            }
+            className="h-5 w-5 border-2 border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:text-white"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle
