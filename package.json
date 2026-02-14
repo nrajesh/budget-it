@@ -19,7 +19,8 @@
     "electron:compile": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 --esModuleInterop --skipLibCheck && echo '{\"type\": \"commonjs\"}' > dist-electron/package.json",
     "electron": "wait-on tcp:8081 && pnpm run electron:compile && cross-env VITE_DEV_SERVER_URL=http://localhost:8081 electron .",
     "electron:build": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 && electron-builder",
-    "electron:dev": "concurrently -k \"pnpm run dev\" \"pnpm run electron\""
+    "electron:dev": "concurrently -k \"pnpm run dev\" \"pnpm run electron\"",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -94,11 +95,16 @@
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.0.0",
+    "electron-builder": "^24.13.3",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "fake-indexeddb": "^6.2.5",
     "globals": "^15.9.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "postcss": "^8.4.47",
     "prettier": "^3.8.1",
@@ -107,11 +113,7 @@
     "typescript-eslint": "^8.0.1",
     "vite": "^6.3.4",
     "vitest": "^4.0.18",
-    "electron": "^33.0.0",
-    "electron-builder": "^24.13.3",
-    "concurrently": "^8.2.2",
-    "wait-on": "^7.2.0",
-    "cross-env": "^7.0.3"
+    "wait-on": "^7.2.0"
   },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
   "build": {
