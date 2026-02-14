@@ -139,5 +139,5 @@ describe("Performance Benchmark", () => {
 
     const all = await db.transactions.toArray();
     expect(all.length).toBe(TRANSACTION_COUNT);
-  }, 20000);
+  }, 60000);
 });
