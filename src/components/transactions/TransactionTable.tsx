@@ -152,8 +152,9 @@ const TransactionRow = React.memo(
                 />
                 {transaction.transfer_id && (
                   <button
-                    className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors"
+                    className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Unlink Transfer"
+                    aria-label="Unlink Transfer"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onUnlinkTransaction && transaction.transfer_id)
@@ -169,9 +170,11 @@ const TransactionRow = React.memo(
               <div className="flex items-center gap-2">
                 {renderCell("date", transaction.date)}
                 {transaction.is_scheduled_origin && (
-                  <span
+                  <button
+                    type="button"
                     title="Go to Scheduled Transaction"
-                    className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full p-1 transition-colors"
+                    aria-label="Go to Scheduled Transaction"
+                    className="hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full p-1 transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (transaction.recurrence_id) {
@@ -187,7 +190,7 @@ const TransactionRow = React.memo(
                     }}
                   >
                     <CalendarClock className="h-4 w-4 text-blue-500" />
-                  </span>
+                  </button>
                 )}
               </div>
             </TableCell>
