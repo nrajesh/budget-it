@@ -15,5 +15,5 @@ Papa.parse(csvContent, {
             console.log("First Row:", results.data[0]);
         }
     },
-    error: (err) => console.error(err)
+    error: (err: unknown) => console.error(err)
 });
