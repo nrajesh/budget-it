@@ -1268,7 +1268,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!dString) return null;
 
         // Handle DD/MM/YYYY (common import format issue)
-        const ddmmyyyy = dString.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+        const ddmmyyyy = dString.match(new RegExp("^(\\d{1,2})[-./](\\d{1,2})[-./](\\d{4})$"));
         if (ddmmyyyy) {
           return new Date(parseInt(ddmmyyyy[3], 10), parseInt(ddmmyyyy[2], 10) - 1, parseInt(ddmmyyyy[1], 10));
         }

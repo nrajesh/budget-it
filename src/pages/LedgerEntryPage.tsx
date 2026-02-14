@@ -23,7 +23,6 @@ import {
 import {
   ImportConfig,
   parseImportedData,
-  REQUIRED_CSV_HEADERS,
   MAPPABLE_CSV_HEADERS,
 } from "@/utils/csvUtils";
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
