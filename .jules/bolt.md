@@ -9,3 +9,7 @@
 ## 2026-02-14 - Optimizing Interleaved Historical & Projected Balances
 **Learning:** `RecentTransactions` was recalculating balances for the entire history O(N) whenever the filtered view changed (e.g. searching), because "projected" transactions were merged and sorted with history. Since projected transactions are almost always in the future, we can optimize by memoizing the historical calculation and using a "Fast Path" to just clone the map and append future transactions.
 **Action:** When mixing heavy static datasets (history) with light dynamic datasets (projections), split the calculation. Memoize the static part. Use a fast-path strategy (clone + append) if the dynamic data is strictly after the static data, falling back to full merge only when necessary.
+
+## 2026-02-14 - TypeScript Control Flow Analysis & Closures
+**Learning:** TS Control Flow Analysis (narrowing types like `Date | null` to `Date`) does not propagate into callback functions (e.g., `.every(() => ...)`) unless the variable is constant or captured in a way TS understands.
+**Action:** When using a narrowed variable inside a callback, assign it to a `const` variable within the narrowed scope to ensure the callback sees the narrowed type.

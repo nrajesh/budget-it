@@ -1,4 +1,3 @@
-import React from "react";
 import { render, act } from "@testing-library/react";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { vi, describe, it, expect } from "vitest";

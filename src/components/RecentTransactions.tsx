@@ -113,7 +113,7 @@ export function RecentTransactions({
       const sortedHistory = [...allTransactions].sort(sortDesc).reverse();
       let lastDate: Date | null = null;
 
-      sortedHistory.forEach((t) => {
+      for (const t of sortedHistory) {
         const normalizedAccountName = t.account.trim().toLowerCase();
         const currentBalance =
           accountRunningBalances.get(normalizedAccountName) || 0;
@@ -126,7 +126,7 @@ export function RecentTransactions({
         if (!lastDate || d > lastDate) {
           lastDate = d;
         }
-      });
+      }
 
       return {
         historicalMap: map,
@@ -150,9 +150,12 @@ export function RecentTransactions({
     // Check if we can use Fast Path: All extras are newer than history
     // We use strict inequality (>) to avoid edge cases where an extra has the same date
     // as the last historical transaction but should be sorted before it (e.g. by created_at).
-    const isFastPath =
-      !latestHistoricalDate ||
-      uniqueExtras.every((t) => new Date(t.date) > latestHistoricalDate);
+    let isFastPath = true;
+    if (latestHistoricalDate) {
+      // Capture the date to ensure TS narrows it correctly inside the callback
+      const cutoffDate = latestHistoricalDate;
+      isFastPath = uniqueExtras.every((t) => new Date(t.date) > cutoffDate);
+    }
 
     if (isFastPath) {
       // Fast Path: Clone historical map and append extras
