@@ -1,1 +1,0 @@
-npx -y ts-node scripts/update-badge.ts && git add README.md
