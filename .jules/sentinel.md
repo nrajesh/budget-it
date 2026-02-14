@@ -14,3 +14,8 @@
 **Vulnerability:** The `write-backup-file` IPC handler allowed saving files with any extension, enabling attackers to write executable files (e.g., `.sh`, `.bat`) if they could control the filename argument.
 **Learning:** Even with path traversal protection (using `path.basename`), unrestricted file extensions in file-write operations can lead to Remote Code Execution (RCE) by writing startup scripts or executables.
 **Prevention:** Enforce a strict allowlist of file extensions (e.g., `.json`, `.lock`) in the Main process for any IPC handler that writes files.
+
+## 2025-05-19 - CSV Injection in Financial Exports
+**Vulnerability:** CSV exports (generated via `Papa.unparse` or manually) allowed formulas (starting with `=`, `+`, `-`, `@`) to execute when opened in Excel.
+**Learning:** Naively escaping all fields starting with `-` breaks financial data (negative numbers) in Excel, turning them into text. A security fix that degrades core functionality (calculation on exports) is a regression.
+**Prevention:** Use a `sanitizeCSVField` utility that escapes dangerous characters but explicitly allows strictly numeric strings (even those starting with `-` or `+`) to pass through unescaped.

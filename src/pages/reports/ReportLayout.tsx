@@ -16,6 +16,7 @@ import { useDataProvider } from "@/context/DataProviderContext";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { saveFile } from "@/utils/backupUtils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 import { Transaction } from "@/types/dataProvider";
 import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
@@ -325,13 +326,13 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
       ...combinedFilteredTransactions.map((t) =>
         [
           format(new Date(t.date), "yyyy-MM-dd"),
-          `"${(accountNameMap.get(slugify(t.account)) || t.account).replace(/"/g, '""')}"`,
-          `"${t.vendor.replace(/"/g, '""')}"`,
-          `"${t.category.replace(/"/g, '""')}"`,
-          `"${(t.sub_category || "").replace(/"/g, '""')}"`,
-          t.amount,
-          t.currency,
-          `"${(t.remarks || "").replace(/"/g, '""')}"`,
+          `"${sanitizeCSVField(accountNameMap.get(slugify(t.account)) || t.account).replace(/"/g, '""')}"`,
+          `"${sanitizeCSVField(t.vendor).replace(/"/g, '""')}"`,
+          `"${sanitizeCSVField(t.category).replace(/"/g, '""')}"`,
+          `"${sanitizeCSVField(t.sub_category || "").replace(/"/g, '""')}"`,
+          sanitizeCSVField(t.amount),
+          sanitizeCSVField(t.currency),
+          `"${sanitizeCSVField(t.remarks || "").replace(/"/g, '""')}"`,
         ].join(","),
       ),
     ].join("\n");

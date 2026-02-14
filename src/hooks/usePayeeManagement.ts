@@ -6,6 +6,7 @@ import Papa from "papaparse";
 import { showError } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 import { saveFile } from "@/utils/backupUtils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 import { useLedger } from "@/contexts/LedgerContext";
 import { slugify } from "@/lib/utils";
@@ -108,10 +109,10 @@ export const usePayeeManagement = (isAccount: boolean) => {
         headers.join(","),
         ...payees.map((p) =>
           [
-            `"${p.name.replace(/"/g, '""')}"`,
-            p.currency || "USD",
-            p.starting_balance || 0,
-            `"${(p.remarks || "").replace(/"/g, '""')}"`,
+            `"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`,
+            sanitizeCSVField(p.currency || "USD"),
+            sanitizeCSVField(p.starting_balance || 0),
+            `"${sanitizeCSVField(p.remarks || "").replace(/"/g, '""')}"`,
           ].join(","),
         ),
       ].join("\n");
@@ -119,7 +120,9 @@ export const usePayeeManagement = (isAccount: boolean) => {
       const headers = ["Vendor Name"];
       csvContent = [
         headers.join(","),
-        ...payees.map((p) => [`"${p.name.replace(/"/g, '""')}"`].join(",")),
+        ...payees.map((p) =>
+          [`"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`].join(","),
+        ),
       ].join("\n");
     }
 

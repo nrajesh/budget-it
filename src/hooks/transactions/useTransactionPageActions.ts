@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
 import { Transaction, AccountType, Ledger } from "@/types/dataProvider";
 import { saveFile } from "@/utils/backupUtils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 export interface ImportConfig {
   importMode?: "replace" | "append";
@@ -225,7 +226,16 @@ export const useTransactionPageActions = (
       });
     }
 
-    const csv = Papa.unparse(dataToExport);
+    const sanitizedData = dataToExport.map((row) => {
+      const newRow: Record<string, unknown> = {};
+      Object.keys(row).forEach((key) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        newRow[key] = sanitizeCSVField((row as any)[key]);
+      });
+      return newRow;
+    });
+
+    const csv = Papa.unparse(sanitizedData);
     const BOM = "\uFEFF";
     const csvString = BOM + csv;
 

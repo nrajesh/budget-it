@@ -5,6 +5,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { formatDateToDDMMYYYY, parseDateFromDDMMYYYY } from "@/lib/utils";
 import Papa from "papaparse";
 import { useDataProvider } from "@/context/DataProviderContext";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 export const useTransactionCSV = () => {
   const {
@@ -293,7 +294,16 @@ export const useTransactionCSV = () => {
         : "",
     }));
 
-    const csv = Papa.unparse(dataToExport, {
+    const sanitizedData = dataToExport.map((row) => {
+      const newRow: Record<string, unknown> = {};
+      Object.keys(row).forEach((key) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        newRow[key] = sanitizeCSVField((row as any)[key]);
+      });
+      return newRow;
+    });
+
+    const csv = Papa.unparse(sanitizedData, {
       delimiter: ";",
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
