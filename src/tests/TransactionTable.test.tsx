@@ -62,11 +62,11 @@ describe("TransactionTable", () => {
     render(
       <BrowserRouter>
         <TransactionTable
-            transactions={mockTransactions}
-            loading={false}
-            onRefresh={vi.fn()}
-            onDeleteTransactions={vi.fn()}
-            onAddTransaction={vi.fn()}
+          transactions={mockTransactions}
+          loading={false}
+          onRefresh={vi.fn()}
+          onDeleteTransactions={vi.fn()}
+          onAddTransaction={vi.fn()}
         />
       </BrowserRouter>,
     );
@@ -76,16 +76,16 @@ describe("TransactionTable", () => {
     expect(scheduleButton.tagName).toBe("BUTTON");
   });
 
-   it("renders 'Unlink Transfer' button with aria-label", () => {
+  it("renders 'Unlink Transfer' button with aria-label", () => {
     render(
       <BrowserRouter>
         <TransactionTable
-            transactions={mockTransactions}
-            loading={false}
-            onRefresh={vi.fn()}
-            onDeleteTransactions={vi.fn()}
-            onAddTransaction={vi.fn()}
-            onUnlinkTransaction={vi.fn()}
+          transactions={mockTransactions}
+          loading={false}
+          onRefresh={vi.fn()}
+          onDeleteTransactions={vi.fn()}
+          onAddTransaction={vi.fn()}
+          onUnlinkTransaction={vi.fn()}
         />
       </BrowserRouter>,
     );
