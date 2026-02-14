@@ -6,7 +6,7 @@
 
 <!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
 <p align="center">
-  <a href="https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/main">
+  <a href="https://app.circleci.com/pipelines/github/nrajesh/budget-it">
     <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
   </a>
   <a href="https://budget-it-nine.vercel.app/">
