@@ -70,122 +70,129 @@ const CSVMappingDialog = ({
     }
   }, [isOpen, file]);
 
-  const handleParse = useCallback((shouldAdvanceStart: boolean = false) => {
-    if (!file) return;
-    setIsLoading(true);
+  const handleParse = useCallback(
+    (shouldAdvanceStart: boolean = false) => {
+      if (!file) return;
+      setIsLoading(true);
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const text = e.target?.result;
-      if (typeof text !== "string") {
-        setIsLoading(false);
-        return;
-      }
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result;
+        if (typeof text !== "string") {
+          setIsLoading(false);
+          return;
+        }
 
-      Papa.parse(text, {
-        header: true,
-        skipEmptyLines: "greedy", // Better for skipping empty lines
-        delimiter: config.delimiter === "auto" ? "" : config.delimiter,
-        complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
-          const headers: string[] = results.meta.fields || [];
-          setCsvHeaders(headers);
-          setCsvData(results.data);
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: "greedy", // Better for skipping empty lines
+          delimiter: config.delimiter === "auto" ? "" : config.delimiter,
+          complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
+            const headers: string[] = results.meta.fields || [];
+            setCsvHeaders(headers);
+            setCsvData(results.data);
 
-          // Pre-fill mapping if matches found
-          const ALIASES: Record<string, string[]> = {
-            Payee: ["Vendor", "Counterparty", "Merchant", "Description", "Party"],
-            Subcategory: ["Sub-Category", "Sub Category", "Sub_Category"],
-            Notes: ["Remarks", "Description", "Memo", "Details", "Comment"],
-            Account: ["Account Name", "Wallet"],
-            Amount: ["Value", "Cost", "Total"],
-            Date: ["Txn Date", "Transaction Date", "Day"],
-            Currency: ["Curr", "Cur", "Code"],
-            "Transfer Account": [
-              "To Account",
-              "Receiving Account",
-              "Destination Account",
-            ],
-            "Transfer Amount": [
-              "To Amount",
-              "Receiving Amount",
-              "Transfer Value",
-            ],
-          };
+            // Pre-fill mapping if matches found
+            const ALIASES: Record<string, string[]> = {
+              Payee: [
+                "Vendor",
+                "Counterparty",
+                "Merchant",
+                "Description",
+                "Party",
+              ],
+              Subcategory: ["Sub-Category", "Sub Category", "Sub_Category"],
+              Notes: ["Remarks", "Description", "Memo", "Details", "Comment"],
+              Account: ["Account Name", "Wallet"],
+              Amount: ["Value", "Cost", "Total"],
+              Date: ["Txn Date", "Transaction Date", "Day"],
+              Currency: ["Curr", "Cur", "Code"],
+              "Transfer Account": [
+                "To Account",
+                "Receiving Account",
+                "Destination Account",
+              ],
+              "Transfer Amount": [
+                "To Amount",
+                "Receiving Amount",
+                "Transfer Value",
+              ],
+            };
 
-          const newMapping: Record<string, string> = {};
+            const newMapping: Record<string, string> = {};
 
-          requiredHeaders.forEach((required) => {
-            const lowerRequired = required.toLowerCase();
-            const aliases = ALIASES[required] || [];
-            const searchTerms = [
-              lowerRequired,
-              ...aliases.map((a) => a.toLowerCase()),
-            ];
+            requiredHeaders.forEach((required) => {
+              const lowerRequired = required.toLowerCase();
+              const aliases = ALIASES[required] || [];
+              const searchTerms = [
+                lowerRequired,
+                ...aliases.map((a) => a.toLowerCase()),
+              ];
 
-            // Find first match in headers that matches any search term
-            const match = headers.find((header) => {
-              const h = header.trim().toLowerCase();
-              return searchTerms.includes(h);
+              // Find first match in headers that matches any search term
+              const match = headers.find((header) => {
+                const h = header.trim().toLowerCase();
+                return searchTerms.includes(h);
+              });
+
+              if (match) newMapping[required] = match;
             });
+            setMapping(newMapping);
 
-            if (match) newMapping[required] = match;
-          });
-          setMapping(newMapping);
+            // Auto-detect decimal separator based on "Amount" column data
+            const amountHeader = newMapping["Amount"];
+            if (amountHeader) {
+              const sampleValues = results.data
+                .slice(0, 5)
+                .map((row: any) => row[amountHeader])
+                .filter(Boolean);
+              const hasComma = sampleValues.some(
+                (val: string) => val.includes(",") && !val.includes("."),
+              );
+              const hasCommaDecimal = sampleValues.some(
+                (val: string) =>
+                  /^\d+,\d{2}$/.test(val.replace(/[^\d,]/g, "")) ||
+                  /-\d+,\d{2}$/.test(val.replace(/[^\d,-]/g, "")),
+              );
 
-          // Auto-detect decimal separator based on "Amount" column data
-          const amountHeader = newMapping["Amount"];
-          if (amountHeader) {
-            const sampleValues = results.data
-              .slice(0, 5)
-              .map((row: any) => row[amountHeader])
-              .filter(Boolean);
-            const hasComma = sampleValues.some(
-              (val: string) => val.includes(",") && !val.includes("."),
-            );
-            const hasCommaDecimal = sampleValues.some(
-              (val: string) =>
-                /^\d+,\d{2}$/.test(val.replace(/[^\d,]/g, "")) ||
-                /-\d+,\d{2}$/.test(val.replace(/[^\d,-]/g, "")),
-            );
+              if (hasComma || hasCommaDecimal) {
+                setConfig((prev) => ({ ...prev, decimalSeparator: "," }));
+              }
 
-            if (hasComma || hasCommaDecimal) {
-              setConfig((prev) => ({ ...prev, decimalSeparator: "," }));
-            }
-
-            // Auto-detect sign convention: If any value is negative, it must be "negative is expense" (or just signed)
-            // If all are positive, default to "negative" is still safe unless it's a CC statement with only positives.
-            // But if we see a negative, we SHOULD force "negative" or at least default to it.
-            const hasNegative = sampleValues.some(
-              (val: string) => {
+              // Auto-detect sign convention: If any value is negative, it must be "negative is expense" (or just signed)
+              // If all are positive, default to "negative" is still safe unless it's a CC statement with only positives.
+              // But if we see a negative, we SHOULD force "negative" or at least default to it.
+              const hasNegative = sampleValues.some((val: string) => {
                 const normalized = val.replace(/[\u2013\u2014\u2212]/g, "-");
                 return normalized.includes("-") || normalized.includes("(");
+              });
+              if (hasNegative) {
+                setConfig((prev) => ({ ...prev, expenseSign: "negative" }));
               }
-            );
-            if (hasNegative) {
-              setConfig((prev) => ({ ...prev, expenseSign: "negative" }));
+              setHasNegativeValues(hasNegative);
             }
-            setHasNegativeValues(hasNegative);
-          }
 
-          if (shouldAdvanceStart) {
-            setStep("mapping");
-          }
-          setIsLoading(false);
-        },
-        error: (error: unknown) => {
-          console.error("CSV Parse Error", error);
-          setIsLoading(false);
-        },
-      });
-    };
+            if (shouldAdvanceStart) {
+              setStep("mapping");
+            }
+            setIsLoading(false);
+          },
+          error: (error: unknown) => {
+            console.error("CSV Parse Error", error);
+            setIsLoading(false);
+          },
+        });
+      };
 
-    reader.onerror = () => {
-      console.error("File reading failed");
-      setIsLoading(false);
-    };
+      reader.onerror = () => {
+        console.error("File reading failed");
+        setIsLoading(false);
+      };
 
-    reader.readAsText(file);
-  }, [file, config.delimiter, requiredHeaders]);
+      reader.readAsText(file);
+    },
+    [file, config.delimiter, requiredHeaders],
+  );
 
   // Auto-refresh preview when delimiter changes
   useEffect(() => {
@@ -477,7 +484,10 @@ const CSVMappingDialog = ({
               </div>
               <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-md">
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                  <strong>Tip:</strong> If your CSV already contains separate rows for each leg of a transfer (balanced file), leave <strong>Transfer Account</strong> unmapped to avoid duplicate transactions.
+                  <strong>Tip:</strong> If your CSV already contains separate
+                  rows for each leg of a transfer (balanced file), leave{" "}
+                  <strong>Transfer Account</strong> unmapped to avoid duplicate
+                  transactions.
                 </p>
               </div>
             </div>

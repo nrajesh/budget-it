@@ -119,12 +119,12 @@ const TransactionRow = React.memo(
         <span className="cursor-pointer">
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
-              style: "currency",
-              currency:
-                accountCurrencyMap?.get(transaction.account) ||
-                transaction.currency ||
-                selectedCurrency,
-            })
+                style: "currency",
+                currency:
+                  accountCurrencyMap?.get(transaction.account) ||
+                  transaction.currency ||
+                  selectedCurrency,
+              })
             : field === "date"
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
@@ -244,7 +244,7 @@ const TransactionRow = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => { })
+              onScheduleTransactions([transaction], () => {})
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}
@@ -332,8 +332,6 @@ const TransactionTable = ({
     [sortedData, offset, pageSize],
   );
 
-
-
   // Selection Handlers (Updated for Pagination)
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
@@ -377,7 +375,11 @@ const TransactionTable = ({
           }
         });
 
-        console.log("Toggle Select Debug:", { clickedId: id, txnTransferId: txn?.transfer_id, linkedIdsFound: idsToToggle });
+        console.log("Toggle Select Debug:", {
+          clickedId: id,
+          txnTransferId: txn?.transfer_id,
+          linkedIdsFound: idsToToggle,
+        });
 
         return newSelected;
       });

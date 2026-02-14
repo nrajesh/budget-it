@@ -158,18 +158,14 @@ const Transactions = () => {
         end = addMonths(today, 6);
       }
 
-      return projectScheduledTransactions(
-        scheduledTransactions,
-        start,
-        end,
-      );
+      return projectScheduledTransactions(scheduledTransactions, start, end);
     }
     return [];
   }, [scheduledTransactions, dateRange?.to]);
 
   const combinedTransactions = React.useMemo(
     () => [...allTransactions, ...projectedTransactions],
-    [allTransactions, projectedTransactions]
+    [allTransactions, projectedTransactions],
   );
 
   const filteredTransactions = React.useMemo(() => {
@@ -283,11 +279,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 

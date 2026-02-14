@@ -295,10 +295,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-      | "DELETE_TRANSACTION"
-      | "DELETE_SCHEDULE"
-      | "DELETE_BUDGET"
-      | "DELETE_ENTITY";
+        | "DELETE_TRANSACTION"
+        | "DELETE_SCHEDULE"
+        | "DELETE_BUDGET"
+        | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -1028,7 +1028,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
-
     },
     [
       ledgerId,
@@ -1268,9 +1267,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!dString) return null;
 
         // Handle DD/MM/YYYY (common import format issue)
-        const ddmmyyyy = dString.match(new RegExp("^(\\d{1,2})[-./](\\d{1,2})[-./](\\d{4})$"));
+        const ddmmyyyy = dString.match(
+          new RegExp("^(\\d{1,2})[-./](\\d{1,2})[-./](\\d{4})$"),
+        );
         if (ddmmyyyy) {
-          return new Date(parseInt(ddmmyyyy[3], 10), parseInt(ddmmyyyy[2], 10) - 1, parseInt(ddmmyyyy[1], 10));
+          return new Date(
+            parseInt(ddmmyyyy[3], 10),
+            parseInt(ddmmyyyy[2], 10) - 1,
+            parseInt(ddmmyyyy[1], 10),
+          );
         }
 
         const d = new Date(dString);
@@ -1333,7 +1338,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           }
 
           if (shouldLink) {
-
             await dataProvider.linkTransactionsAsTransfer(t1.id, t2.id);
             pairsLinked.push([t1.id, t2.id]);
             processedIds.add(t1.id);
@@ -1353,10 +1357,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const unlinkTransaction = React.useCallback(
     async (transferId: string) => {
-      console.log("[TransactionsContext] unlinkTransaction called with:", transferId);
+      console.log(
+        "[TransactionsContext] unlinkTransaction called with:",
+        transferId,
+      );
       try {
         await dataProvider.unlinkTransactions(transferId);
-        console.log("[TransactionsContext] dataProvider.unlinkTransactions completed");
+        console.log(
+          "[TransactionsContext] dataProvider.unlinkTransactions completed",
+        );
         await invalidateAllData();
         console.log("[TransactionsContext] invalidateAllData completed");
       } catch (error) {

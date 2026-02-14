@@ -94,7 +94,9 @@ export const useTransactionCSV = () => {
           );
 
           const uniqueVendors = [
-            ...new Set(parsedData.map((row: any) => row.Vendor).filter(Boolean)),
+            ...new Set(
+              parsedData.map((row: any) => row.Vendor).filter(Boolean),
+            ),
           ];
           await Promise.all(
             uniqueVendors.map((name: any) => {
@@ -118,7 +120,9 @@ export const useTransactionCSV = () => {
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [
-            ...new Set(parsedData.map((row: any) => row.Category).filter(Boolean)),
+            ...new Set(
+              parsedData.map((row: any) => row.Category).filter(Boolean),
+            ),
           ];
           await Promise.all(
             uniqueCategories.map((name: any) =>
@@ -136,7 +140,7 @@ export const useTransactionCSV = () => {
 
               return {
                 user_id: activeLedger!.id, // Required by type
-                ...parsed
+                ...parsed,
               };
             })
             .filter((t: any) => t !== null);

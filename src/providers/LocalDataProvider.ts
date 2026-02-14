@@ -911,7 +911,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-            [],
+              [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(

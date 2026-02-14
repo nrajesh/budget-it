@@ -101,7 +101,9 @@ export const useTransactionPageActions = (
       file: null,
     });
 
-  const [missingCurrencyAccounts, setMissingCurrencyAccounts] = useState<string[]>([]);
+  const [missingCurrencyAccounts, setMissingCurrencyAccounts] = useState<
+    string[]
+  >([]);
   const [pendingImport, setPendingImport] = useState<{
     data: ImportRow[];
     config?: ImportConfig;
@@ -314,11 +316,15 @@ export const useTransactionPageActions = (
       let newAccountsCount = 0;
 
       const uniqueAccounts = new Set<string>();
-      data.forEach(r => {
+      data.forEach((r) => {
         const main = (r.Account || "").trim();
         if (main) uniqueAccounts.add(main);
 
-        const transfer = (r["Transfer Account"] || r["transfer account"] || "").trim();
+        const transfer = (
+          r["Transfer Account"] ||
+          r["transfer account"] ||
+          ""
+        ).trim();
         if (transfer) uniqueAccounts.add(transfer);
       });
 
@@ -434,7 +440,10 @@ export const useTransactionPageActions = (
           continue;
         }
 
-        let amount = parseRobustAmount(amountRaw as string, config?.decimalSeparator);
+        let amount = parseRobustAmount(
+          amountRaw as string,
+          config?.decimalSeparator,
+        );
         const date = parseRobustDate(dateRaw as string, config?.dateFormat);
 
         // Apply Expense Sign Logic
@@ -452,12 +461,20 @@ export const useTransactionPageActions = (
           continue;
         }
 
-        const transferAccount = (row["Transfer Account"] || row["transfer account"] || "").trim();
+        const transferAccount = (
+          row["Transfer Account"] ||
+          row["transfer account"] ||
+          ""
+        ).trim();
 
         const baseTx: Omit<Transaction, "id" | "created_at" | "updated_at"> = {
           user_id: userId,
           date: date,
-          account: (row.Account || row.account || "Uncategorized Account").trim(),
+          account: (
+            row.Account ||
+            row.account ||
+            "Uncategorized Account"
+          ).trim(),
           vendor: (
             row.Payee ||
             row.Vendor ||
@@ -497,8 +514,12 @@ export const useTransactionPageActions = (
           is_scheduled_origin: false,
         };
 
-        if (transferAccount && transferAccount.toLowerCase() !== baseTx.account.toLowerCase()) {
-          const transferAmountRaw = row["Transfer Amount"] || row["transfer amount"];
+        if (
+          transferAccount &&
+          transferAccount.toLowerCase() !== baseTx.account.toLowerCase()
+        ) {
+          const transferAmountRaw =
+            row["Transfer Amount"] || row["transfer amount"];
           const sharedTransferId = `split-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
           // Transaction 1: From Main Account (Use original amount)
@@ -514,14 +535,20 @@ export const useTransactionPageActions = (
           });
 
           // Transaction 2: To Receiving Account (Invert sign if no specific amount provided)
-          const amountTo = transferAmountRaw ?
-            parseRobustAmount(transferAmountRaw as string, config?.decimalSeparator) :
-            -amount;
+          const amountTo = transferAmountRaw
+            ? parseRobustAmount(
+                transferAmountRaw as string,
+                config?.decimalSeparator,
+              )
+            : -amount;
 
           // Resolve currency
           let currencyTo = newAccountCurrencies?.[transferAccount];
           if (!currencyTo) {
-            currencyTo = await dataProvider.getAccountCurrency(transferAccount, userId);
+            currencyTo = await dataProvider.getAccountCurrency(
+              transferAccount,
+              userId,
+            );
           }
           if (!currencyTo) currencyTo = "USD";
 
@@ -535,7 +562,6 @@ export const useTransactionPageActions = (
             transfer_id: sharedTransferId,
             remarks: baseTx.remarks || `Transfer from ${baseTx.account}`,
           });
-
         } else {
           transactionsToInsert.push(baseTx);
         }
@@ -561,13 +587,17 @@ export const useTransactionPageActions = (
       });
 
       let successCount = 0;
-      const UPDATE_BATCH = Math.max(10, Math.floor(transactionsToInsert.length / 20));
+      const UPDATE_BATCH = Math.max(
+        10,
+        Math.floor(transactionsToInsert.length / 20),
+      );
 
       for (const t of transactionsToInsert) {
         await dataProvider.addTransaction(t as Transaction);
         successCount++;
         if (successCount % UPDATE_BATCH === 0) {
-          const percent = 55 + Math.floor((successCount / transactionsToInsert.length) * 40);
+          const percent =
+            55 + Math.floor((successCount / transactionsToInsert.length) * 40);
           setOperationProgress({
             title: "Importing CSV",
             description: `Saving... (${successCount}/${transactionsToInsert.length})`,
@@ -582,8 +612,10 @@ export const useTransactionPageActions = (
       const details = [];
       if (newAccountsCount > 0) details.push(`${newAccountsCount} accounts`);
       if (newVendorsCount > 0) details.push(`${newVendorsCount} vendors`);
-      if (newCategoriesCount > 0) details.push(`${newCategoriesCount} categories`);
-      if (newSubCategoriesCount > 0) details.push(`${newSubCategoriesCount} sub-categories`);
+      if (newCategoriesCount > 0)
+        details.push(`${newCategoriesCount} categories`);
+      if (newSubCategoriesCount > 0)
+        details.push(`${newSubCategoriesCount} sub-categories`);
 
       if (details.length > 0) {
         desc += ` Added ${details.join(", ")}.`;
@@ -643,23 +675,28 @@ export const useTransactionPageActions = (
 
       // Identify unknown accounts in "Transfer Account" column
       const transferAccounts = new Set<string>();
-      data.forEach(r => {
-        const acc = (r["Transfer Account"] || r["transfer account"] || "").trim();
+      data.forEach((r) => {
+        const acc = (
+          r["Transfer Account"] ||
+          r["transfer account"] ||
+          ""
+        ).trim();
         if (acc) transferAccounts.add(acc);
       });
 
       if (transferAccounts.size > 0) {
         const existingVendors = await dataProvider.getAllVendors(userId);
         const existingAccountNames = new Set(
-          existingVendors.filter(p => p.is_account).map(p => p.name)
+          existingVendors.filter((p) => p.is_account).map((p) => p.name),
         );
 
         const unknownAccounts: string[] = [];
         for (const acc of Array.from(transferAccounts)) {
           if (!existingAccountNames.has(acc)) {
             // Check if it's defined elsewhere in CSV as a main account with a currency
-            const definedInCSV = data.find(r =>
-              (r.Account || "").trim() === acc && (r.Currency || r.currency)
+            const definedInCSV = data.find(
+              (r) =>
+                (r.Account || "").trim() === acc && (r.Currency || r.currency),
             );
 
             if (!definedInCSV) {
@@ -676,7 +713,6 @@ export const useTransactionPageActions = (
       }
 
       executeImport(data, config);
-
     } catch (e) {
       showError("Failed to analyze import file: " + (e as Error).message);
     }
