@@ -51,4 +51,9 @@ describe("sanitizeCSVField", () => {
     expect(sanitizeCSVField(-100)).toBe("-100");
     expect(sanitizeCSVField(-10.55)).toBe("-10.55");
   });
+
+  it("should handle boolean types correctly", () => {
+    expect(sanitizeCSVField(true)).toBe("true");
+    expect(sanitizeCSVField(false)).toBe("false");
+  });
 });

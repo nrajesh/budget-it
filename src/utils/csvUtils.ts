@@ -14,7 +14,7 @@
  * @returns The sanitized string.
  */
 export const sanitizeCSVField = (
-  field: string | number | null | undefined,
+  field: string | number | boolean | null | undefined,
 ): string => {
   if (field === null || field === undefined) return "";
   const str = String(field);
