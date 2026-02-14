@@ -716,12 +716,12 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async unlinkTransactions(transferId: string): Promise<void> {
-    await db.transaction("rw", db.transactions, async () => {
-      await db.transactions
-        .where("transfer_id")
-        .equals(transferId)
-        .modify({ transfer_id: null });
-    });
+    console.log("[LocalDataProvider] Unlinking transfer:", transferId);
+    const count = await db.transactions
+      .where("transfer_id")
+      .equals(transferId)
+      .modify({ transfer_id: null }); // Use explicit null
+    console.log("[LocalDataProvider] Unlinked count:", count);
   }
 
   async clearAllData(): Promise<void> {

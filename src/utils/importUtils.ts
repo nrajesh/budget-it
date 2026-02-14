@@ -147,6 +147,11 @@ export function parseRobustAmount(
     }
   }
 
+  // Handle trailing negative sign (e.g. "100.00-") which parseFloat ignores (returns positive)
+  if (cleanString.endsWith("-")) {
+    cleanString = "-" + cleanString.substring(0, cleanString.length - 1);
+  }
+
   const result = parseFloat(cleanString);
   return isNaN(result) ? 0 : result;
 }

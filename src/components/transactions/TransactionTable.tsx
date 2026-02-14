@@ -43,6 +43,7 @@ import { Transaction } from "@/types/dataProvider";
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  allData?: Transaction[]; // Full dataset for finding hidden transfer partners
   loading: boolean;
   onRefresh: () => void;
   onDeleteTransactions: (
@@ -80,6 +81,7 @@ const TransactionRow = React.memo(
     today,
     navigate,
     toast,
+    isValidTransfer,
   }: {
     transaction: Transaction;
     isSelected: boolean;
@@ -104,6 +106,7 @@ const TransactionRow = React.memo(
     today: Date;
     navigate: any; // useNavigate return type is hard to import? It's `NavigateFunction`.
     toast: any; // `useToast` return type.
+    isValidTransfer: boolean;
   }) => {
     const isFuture = useMemo(() => {
       const txnDate = new Date(transaction.date);
@@ -150,7 +153,7 @@ const TransactionRow = React.memo(
                   checked={isSelected}
                   onCheckedChange={() => onToggleSelect(transaction.id)}
                 />
-                {transaction.transfer_id && (
+                {transaction.transfer_id && isValidTransfer && (
                   <button
                     className="h-4 w-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="Unlink Transfer"
@@ -282,6 +285,7 @@ TransactionRow.displayName = "TransactionRow";
 
 const TransactionTable = ({
   transactions,
+  allData,
   loading,
   onDeleteTransactions,
   onAddTransaction,
@@ -347,11 +351,12 @@ const TransactionTable = ({
   const toggleSelect = useCallback(
     (id: string) => {
       // Determine linked IDs first
-      const txn = sortedData.find((t) => t.id === id);
+      const txn = (allData || sortedData).find((t) => t.id === id);
       const idsToToggle = [id];
 
-      if (txn?.transfer_id) {
-        sortedData.forEach((t) => {
+      // Always toggle pair if it exists (even if hidden)
+      if (txn?.transfer_id && !txn.transfer_id.startsWith("split-")) {
+        (allData || sortedData).forEach((t) => {
           if (t.transfer_id === txn.transfer_id && t.id !== id) {
             idsToToggle.push(t.id);
           }
@@ -370,10 +375,16 @@ const TransactionTable = ({
           }
         });
 
+        console.log("Toggle Select Debug:", {
+          clickedId: id,
+          txnTransferId: txn?.transfer_id,
+          linkedIdsFound: idsToToggle,
+        });
+
         return newSelected;
       });
     },
-    [sortedData],
+    [sortedData, allData],
   );
 
   // Bulk Actions
@@ -567,6 +578,12 @@ const TransactionTable = ({
                   today={today}
                   navigate={navigate}
                   toast={toast}
+                  isValidTransfer={
+                    !!(
+                      transaction.transfer_id &&
+                      !transaction.transfer_id.startsWith("split-")
+                    )
+                  }
                 />
               ))
             )}

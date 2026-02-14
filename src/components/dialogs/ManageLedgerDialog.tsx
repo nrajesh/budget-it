@@ -46,12 +46,16 @@ interface ManageLedgerDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   ledgerToEdit?: Ledger; // If null, create new
+  onConfirm?: (values: z.infer<typeof formSchema>) => void;
+  submitLabel?: string;
 }
 
 export function ManageLedgerDialog({
   isOpen,
   onOpenChange,
   ledgerToEdit,
+  onConfirm,
+  submitLabel,
 }: ManageLedgerDialogProps) {
   const { createLedger, updateLedgerDetails, deleteLedger, ledgers } =
     useLedger();
@@ -103,6 +107,12 @@ export function ManageLedgerDialog({
           type: "manual",
           message: "A ledger with this name already exists.",
         });
+        return;
+      }
+
+      if (onConfirm) {
+        onConfirm(values);
+        // onOpenChange(false); // Handled by parent to avoid clearing state prematurely
         return;
       }
 
@@ -278,7 +288,9 @@ export function ManageLedgerDialog({
                   Delete
                 </Button>
               )}
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                {submitLabel || "Save Changes"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

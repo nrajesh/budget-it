@@ -56,15 +56,16 @@ export default function CalendarView() {
 
     // Process actual transactions
     transactions.forEach((t) => {
-      if (t.category === "Transfer") return; // Exclude transfers from count and net amount? User said "transfers don't count".
-
       const dateKey = t.date.split("T")[0];
       if (!data[dateKey])
         data[dateKey] = { count: 0, netAmount: 0, hasScheduled: false };
 
       data[dateKey].count += 1;
-      // Assuming amount is signed (negative for expense, positive for income) based on previous analysis
-      data[dateKey].netAmount += t.amount;
+
+      // Exclude transfers from net amount calculation to not affect daily spending color
+      if (t.category !== "Transfer") {
+        data[dateKey].netAmount += t.amount;
+      }
     });
 
     // Process scheduled occurrences
@@ -88,7 +89,8 @@ export default function CalendarView() {
   // Combine transactions for the Daily View
   const combinedDailyTransactions = useMemo(() => {
     if (!selectedDate) return [];
-    const dateKey = selectedDate.toISOString().split("T")[0];
+    // Use local formatting to match the visual date on calendar
+    const dateKey = format(selectedDate, "yyyy-MM-dd");
 
     const actual = transactions.filter((t) => t.date.startsWith(dateKey));
 

@@ -93,9 +93,23 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
                           {isProjected && (
                             <CalendarClock className="h-4 w-4 text-blue-500" />
                           )}
-                          <span className="font-semibold">{t.vendor}</span>
+                          <span className="font-semibold">
+                            {isTransfer
+                              ? isExpense
+                                ? `${t.account} \u2192 ${t.vendor}`
+                                : `${t.vendor} \u2192 ${t.account}`
+                              : t.vendor}
+                          </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
+                          {!isTransfer && (
+                            <>
+                              <span className="font-medium text-foreground/70">
+                                {t.account}
+                              </span>
+                              {" \u2022 "}
+                            </>
+                          )}
                           {t.category}
                           {t.sub_category && ` / ${t.sub_category}`}
                         </span>

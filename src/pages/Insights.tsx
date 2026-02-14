@@ -29,13 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { AddEditBudgetDialog } from "@/components/budgets/AddEditBudgetDialog";
-import {
-  startOfMonth,
-  subMonths,
-  endOfMonth,
-  isWithinInterval,
-  format,
-} from "date-fns";
+import { isWithinInterval, format, subDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Account } from "@/types/dataProvider";
 
@@ -181,186 +175,245 @@ export default function Insights() {
   };
 
   // Trend Analysis Logic
-  const { topAccountTrends, topVendorTrends, currentMonthName, prevMonthName } =
-    useMemo(() => {
-      const now = new Date();
-      const currentMonthStart = startOfMonth(now);
-      const currentMonthEnd = endOfMonth(now);
-      const prevMonthStart = startOfMonth(subMonths(now, 1));
-      const prevMonthEnd = endOfMonth(subMonths(now, 1));
+  const {
+    topAccountTrends,
+    topVendorTrends,
+    currentPeriodLabel,
+    prevPeriodLabel,
+    hasInsufficientData,
+  } = useMemo(() => {
+    const now = new Date();
 
-      const currentMonthName = format(now, "MMMM");
-      const prevMonthName = format(subMonths(now, 1), "MMMM");
+    // 1. Determine Anchor Date
+    // Default to today. If no transactions in last 30 days, find latest transaction date
+    let anchorDate = now;
+    const last30DaysStartDate = subDays(now, 30);
 
-      const currentMonthTxs = transactions.filter(
-        (t) =>
-          !t.is_scheduled_origin &&
-          isWithinInterval(new Date(t.date), {
-            start: currentMonthStart,
-            end: currentMonthEnd,
-          }),
+    const recentTransactions = transactions.filter(
+      (t) => new Date(t.date) >= last30DaysStartDate && new Date(t.date) <= now,
+    );
+
+    if (recentTransactions.length === 0 && transactions.length > 0) {
+      // No recent data, find the absolute latest transaction
+      const latestTx = transactions.reduce((latest, current) => {
+        return new Date(current.date) > new Date(latest.date)
+          ? current
+          : latest;
+      }, transactions[0]);
+      anchorDate = new Date(latestTx.date);
+    }
+
+    // 2. Define Time Windows
+    const currentPeriodEnd = anchorDate;
+    const currentPeriodStart = subDays(anchorDate, 30);
+
+    const prevPeriodEnd = subDays(currentPeriodStart, 1); // Avoid overlap
+    const prevPeriodStart = subDays(prevPeriodEnd, 30);
+
+    // Labels for UI
+    const currentPeriodLabel = `${format(currentPeriodStart, "MMM d")} - ${format(currentPeriodEnd, "MMM d")}`;
+    const prevPeriodLabel = `${format(prevPeriodStart, "MMM d")} - ${format(prevPeriodEnd, "MMM d")}`;
+
+    // 3. Filter Transactions
+    const currentPeriodTxs = transactions.filter(
+      (t) =>
+        !t.is_scheduled_origin &&
+        isWithinInterval(new Date(t.date), {
+          start: currentPeriodStart,
+          end: currentPeriodEnd,
+        }),
+    );
+
+    const prevPeriodTxs = transactions.filter(
+      (t) =>
+        !t.is_scheduled_origin &&
+        isWithinInterval(new Date(t.date), {
+          start: prevPeriodStart,
+          end: prevPeriodEnd,
+        }),
+    );
+
+    // Check for sufficient data
+    // If we have current data but NO previous data, we can't do a trend comparison.
+    const hasInsufficientData = prevPeriodTxs.length === 0;
+
+    const analyzeEntity = (
+      entityName: string,
+      type: "Vendor" | "Account",
+    ): TrendItem | null => {
+      const currentTxs = currentPeriodTxs.filter(
+        (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
       );
 
-      const prevMonthTxs = transactions.filter(
-        (t) =>
-          !t.is_scheduled_origin &&
-          isWithinInterval(new Date(t.date), {
-            start: prevMonthStart,
-            end: prevMonthEnd,
-          }),
+      const prevTxs = prevPeriodTxs.filter(
+        (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
       );
 
-      const analyzeEntity = (
-        entityName: string,
-        type: "Vendor" | "Account",
-      ): TrendItem | null => {
-        const currentTxs = currentMonthTxs.filter(
-          (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
+      // Only consider if there is activity in at least one month
+      if (currentTxs.length === 0 && prevTxs.length === 0) return null;
+
+      if (type === "Account") {
+        const currentCount = currentTxs.length;
+        const prevCount = prevTxs.length;
+        const diff = currentCount - prevCount;
+
+        if (Math.abs(diff) < 2) return null; // Ignore tiny variance
+
+        const percentVal =
+          prevCount > 0
+            ? (diff / prevCount) * 100
+            : currentCount > 0
+              ? Infinity
+              : 0;
+        const direction = diff > 0 ? "increasing" : "decreasing";
+
+        return {
+          entity: entityName,
+          type,
+          metric: "Frequency",
+          currentValue: currentCount,
+          prevValue: prevCount,
+          diff,
+          absDiff: Math.abs(diff),
+          percentVal,
+          direction,
+          message: `${currentCount} vs ${prevCount} in previous period`,
+        };
+      } else {
+        // Vendor Amount Analysis
+        const currentAmount = currentTxs.reduce(
+          (sum, t) => sum + Math.abs(t.amount),
+          0,
         );
-
-        const prevTxs = prevMonthTxs.filter(
-          (t) => (type === "Vendor" ? t.vendor : t.account) === entityName,
+        const prevAmount = prevTxs.reduce(
+          (sum, t) => sum + Math.abs(t.amount),
+          0,
         );
+        const diff = currentAmount - prevAmount;
 
-        // Only consider if there is activity in at least one month
-        if (currentTxs.length === 0 && prevTxs.length === 0) return null;
+        if (Math.abs(diff) < 10) return null; // Ignore < 10 currency unit diff
 
-        if (type === "Account") {
-          const currentCount = currentTxs.length;
-          const prevCount = prevTxs.length;
-          const diff = currentCount - prevCount;
+        const percentVal =
+          prevAmount > 0
+            ? (diff / prevAmount) * 100
+            : currentAmount > 0
+              ? Infinity
+              : 0;
+        const direction = diff > 0 ? "increasing" : "decreasing";
+        const currency =
+          currentTxs[0]?.currency || prevTxs[0]?.currency || "USD";
 
-          if (Math.abs(diff) < 2) return null; // Ignore tiny variance
+        return {
+          entity: entityName,
+          type,
+          metric: "Spending",
+          currentValue: currentAmount,
+          prevValue: prevAmount,
+          diff,
+          absDiff: Math.abs(diff),
+          percentVal,
+          direction,
+          currency,
+          message: `${formatCurrency(currentAmount, currency)} vs ${formatCurrency(prevAmount, currency)} in previous period`,
+        };
+      }
+    };
 
-          const percentVal =
-            prevCount > 0
-              ? (diff / prevCount) * 100
-              : currentCount > 0
-                ? Infinity
-                : 0;
-          const direction = diff > 0 ? "increasing" : "decreasing";
+    const interestingEntities = new Set<string>();
+    [...currentPeriodTxs, ...prevPeriodTxs].forEach((t) => {
+      if (t.vendor) interestingEntities.add(t.vendor);
+      if (t.account) interestingEntities.add(t.account);
+    });
 
-          return {
-            entity: entityName,
-            type,
-            metric: "Frequency",
-            currentValue: currentCount,
-            prevValue: prevCount,
-            diff,
-            absDiff: Math.abs(diff),
-            percentVal,
-            direction,
-            message: `${currentCount} vs ${prevCount} last month`,
-          };
-        } else {
-          // Vendor Amount Analysis
-          const currentAmount = currentTxs.reduce(
-            (sum, t) => sum + Math.abs(t.amount),
-            0,
-          );
-          const prevAmount = prevTxs.reduce(
-            (sum, t) => sum + Math.abs(t.amount),
-            0,
-          );
-          const diff = currentAmount - prevAmount;
+    const accountAnalyses = [];
+    const vendorAnalyses = [];
 
-          if (Math.abs(diff) < 10) return null; // Ignore < 10 currency unit diff
+    for (const entity of interestingEntities) {
+      const isAccount = accounts.some((a) => a.name === entity);
+      const isVendor = vendors.some((v) => v.name === entity);
 
-          const percentVal =
-            prevAmount > 0
-              ? (diff / prevAmount) * 100
-              : currentAmount > 0
-                ? Infinity
-                : 0;
-          const direction = diff > 0 ? "increasing" : "decreasing";
-          const currency =
-            currentTxs[0]?.currency || prevTxs[0]?.currency || "USD";
+      if (isAccount) {
+        const analysis = analyzeEntity(entity, "Account");
+        if (analysis) accountAnalyses.push(analysis);
+      } else if (isVendor || !isAccount) {
+        const analysis = analyzeEntity(entity, "Vendor");
+        if (analysis) vendorAnalyses.push(analysis);
+      }
+    }
 
-          return {
-            entity: entityName,
-            type,
-            metric: "Spending",
-            currentValue: currentAmount,
-            prevValue: prevAmount,
-            diff,
-            absDiff: Math.abs(diff),
-            percentVal,
-            direction,
-            currency,
-            message: `${formatCurrency(currentAmount, currency)} vs ${formatCurrency(prevAmount, currency)} last month`,
-          };
-        }
-      };
+    // Sorting Logic:
+    // 1. Abs(% Change) DESC
+    // 2. Abs(Value Change) DESC
+    // 3. Alphabetical ASC
+    const sortFn = (a: TrendItem, b: TrendItem) => {
+      const pA = Math.abs(a.percentVal);
+      const pB = Math.abs(b.percentVal);
 
-      const interestingEntities = new Set<string>();
-      [...currentMonthTxs, ...prevMonthTxs].forEach((t) => {
-        if (t.vendor) interestingEntities.add(t.vendor);
-        if (t.account) interestingEntities.add(t.account);
-      });
+      // Handle Infinity (New items) usually treated as highest change
+      if (pA === Infinity && pB === Infinity) return b.absDiff - a.absDiff;
+      if (pA === Infinity) return -1;
+      if (pB === Infinity) return 1;
 
-      const accountAnalyses = [];
-      const vendorAnalyses = [];
-
-      for (const entity of interestingEntities) {
-        const isAccount = accounts.some((a) => a.name === entity);
-        const isVendor = vendors.some((v) => v.name === entity);
-
-        if (isAccount) {
-          const analysis = analyzeEntity(entity, "Account");
-          if (analysis) accountAnalyses.push(analysis);
-        } else if (isVendor || !isAccount) {
-          const analysis = analyzeEntity(entity, "Vendor");
-          if (analysis) vendorAnalyses.push(analysis);
-        }
+      if (Math.abs(pA - pB) > 1) {
+        // 1% tolerance for "same percentage"
+        return pB - pA;
       }
 
-      // Sorting Logic:
-      // 1. Abs(% Change) DESC
-      // 2. Abs(Value Change) DESC
-      // 3. Alphabetical ASC
-      const sortFn = (a: TrendItem, b: TrendItem) => {
-        const pA = Math.abs(a.percentVal);
-        const pB = Math.abs(b.percentVal);
+      // Clash on percentage, verify actual number difference difference
+      if (Math.abs(b.absDiff - a.absDiff) > 0.01) {
+        return b.absDiff - a.absDiff;
+      }
 
-        // Handle Infinity (New items) usually treated as highest change
-        if (pA === Infinity && pB === Infinity) return b.absDiff - a.absDiff;
-        if (pA === Infinity) return -1;
-        if (pB === Infinity) return 1;
+      // Alphabetical
+      return a.entity.localeCompare(b.entity);
+    };
 
-        if (Math.abs(pA - pB) > 1) {
-          // 1% tolerance for "same percentage"
-          return pB - pA;
-        }
-
-        // Clash on percentage, verify actual number difference difference
-        if (Math.abs(b.absDiff - a.absDiff) > 0.01) {
-          return b.absDiff - a.absDiff;
-        }
-
-        // Alphabetical
-        return a.entity.localeCompare(b.entity);
-      };
-
-      return {
-        topAccountTrends: accountAnalyses.sort(sortFn).slice(0, 5),
-        topVendorTrends: vendorAnalyses.sort(sortFn).slice(0, 5),
-        currentMonthName,
-        prevMonthName,
-      };
-    }, [transactions, accounts, vendors, formatCurrency]);
+    return {
+      topAccountTrends: accountAnalyses.sort(sortFn).slice(0, 5),
+      topVendorTrends: vendorAnalyses.sort(sortFn).slice(0, 5),
+      currentPeriodLabel,
+      prevPeriodLabel,
+      hasInsufficientData,
+    };
+  }, [transactions, accounts, vendors, formatCurrency]);
 
   const handleTrendClick = (trend: TrendItem) => {
+    // We need to re-calculate the range here to match the logic inside useMemo or lift the state.
+    // For simplicity, we can just grab "last 30 days from now" as a heuristic or simply
+    // replicate the anchor logic.
+    // Since we want to show the user the transactions relevant to the trend, which might be
+    // historically anchored, let's just use the current period label's dates if possible, or simpler:
+    // pass the calculated dates out of useMemo?
+    //
+    // Actually, `activeLedger` context might change, so re-calculating is fine.
+    // Let's replicate the anchor logic briefly to get correct navigation target.
+
     const now = new Date();
-    const range = {
-      from: startOfMonth(now),
-      to: endOfMonth(now),
-    };
+    let anchorDate = now;
+    const last30DaysStartDate = subDays(now, 30);
+    const recentTransactions = transactions.filter(
+      (t) => new Date(t.date) >= last30DaysStartDate && new Date(t.date) <= now,
+    );
+    if (recentTransactions.length === 0 && transactions.length > 0) {
+      const latestTx = transactions.reduce((latest, current) => {
+        return new Date(current.date) > new Date(latest.date)
+          ? current
+          : latest;
+      }, transactions[0]);
+      anchorDate = new Date(latestTx.date);
+    }
+
+    const currentPeriodStart = subDays(anchorDate, 30);
+    const currentPeriodEnd = anchorDate;
 
     navigate("/transactions", {
       state: {
         filterAccount: trend.type === "Account" ? trend.entity : undefined,
         filterVendor: trend.type === "Vendor" ? trend.entity : undefined,
-        dateRange: range,
+        dateRange: {
+          from: currentPeriodStart,
+          to: currentPeriodEnd,
+        },
       },
     });
   };
@@ -596,15 +649,22 @@ export default function Insights() {
               <div className="flex flex-col">
                 <h2 className="text-xl font-semibold">Top Account Activity</h2>
                 <span className="text-xs text-muted-foreground">
-                  Comparing{" "}
-                  {topAccountTrends.length > 0
-                    ? currentMonthName || "Current"
-                    : "Current"}{" "}
-                  vs {prevMonthName || "Previous"} Month
+                  {hasInsufficientData
+                    ? "Not enough data for comparison"
+                    : `Comparing ${currentPeriodLabel} vs ${prevPeriodLabel}`}
                 </span>
               </div>
             </div>
-            {topAccountTrends.length === 0 ? (
+            {hasInsufficientData ? (
+              <Alert variant="default" className="bg-muted/50 border-dashed">
+                <Lightbulb className="h-4 w-4" />
+                <AlertTitle>Insufficient Data</AlertTitle>
+                <AlertDescription>
+                  Trends will appear here once you have more than 30 days of
+                  transaction history.
+                </AlertDescription>
+              </Alert>
+            ) : topAccountTrends.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
                 No significant account changes.
               </div>
@@ -622,15 +682,22 @@ export default function Insights() {
               <div className="flex flex-col">
                 <h2 className="text-xl font-semibold">Top Vendor Spending</h2>
                 <span className="text-xs text-muted-foreground">
-                  Comparing{" "}
-                  {topAccountTrends.length > 0
-                    ? currentMonthName || "Current"
-                    : "Current"}{" "}
-                  vs {prevMonthName || "Previous"} Month
+                  {hasInsufficientData
+                    ? "Not enough data for comparison"
+                    : `Comparing ${currentPeriodLabel} vs ${prevPeriodLabel}`}
                 </span>
               </div>
             </div>
-            {topVendorTrends.length === 0 ? (
+            {hasInsufficientData ? (
+              <Alert variant="default" className="bg-muted/50 border-dashed">
+                <Lightbulb className="h-4 w-4" />
+                <AlertTitle>Insufficient Data</AlertTitle>
+                <AlertDescription>
+                  Trends will appear here once you have more than 30 days of
+                  transaction history.
+                </AlertDescription>
+              </Alert>
+            ) : topVendorTrends.length === 0 ? (
               <div className="text-sm text-muted-foreground italic">
                 No significant spending changes.
               </div>

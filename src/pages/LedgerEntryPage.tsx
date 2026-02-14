@@ -18,8 +18,15 @@ import {
   Plus,
   Upload,
   RotateCcw,
+  FileText,
 } from "lucide-react";
+import {
+  ImportConfig,
+  parseImportedData,
+  MAPPABLE_CSV_HEADERS,
+} from "@/utils/csvUtils";
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
+import CSVMappingDialog from "@/components/transactions/CSVMappingDialog";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { decryptData } from "@/utils/crypto";
 import { showSuccess, showError } from "@/utils/toast";
@@ -60,9 +67,142 @@ const LedgerEntryPage = () => {
   const [isImportPasswordOpen, setIsImportPasswordOpen] = useState(false);
   const [tempImportFile, setTempImportFile] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Advanced CSV Import State
+  const [csvImportFile, setCsvImportFile] = useState<File | null>(null);
+  const [isNewLedgerDialogOpen, setIsNewLedgerDialogOpen] = useState(false);
+  const [isMappingDialogOpen, setIsMappingDialogOpen] = useState(false);
+  const [newLedgerDetails, setNewLedgerDetails] = useState<{
+    name: string;
+    currency: string;
+    icon?: string;
+    short_name?: string;
+  } | null>(null);
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleImportCSVClick = () => {
+    csvFileInputRef.current?.click();
+  };
+
+  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvImportFile(file);
+    // Open Ledger Details Dialog first
+    setIsNewLedgerDialogOpen(true);
+    e.target.value = ""; // Reset input
+  };
+
+  const handleLedgerDetailsConfirmed = (values: {
+    name: string;
+    currency: string;
+    icon?: string;
+    short_name?: string;
+  }) => {
+    setNewLedgerDetails(values);
+    setIsNewLedgerDialogOpen(false);
+    // Open Mapping Dialog next
+    setIsMappingDialogOpen(true);
+  };
+
+  const handleMappingConfirmed = async (
+    mappedData: Record<string, unknown>[],
+    config: ImportConfig,
+  ) => {
+    if (!newLedgerDetails) return;
+
+    try {
+      // 1. Create New Ledger
+      const newLedger = await dataProvider.addLedger({
+        name: newLedgerDetails.name,
+        currency: newLedgerDetails.currency,
+        icon: newLedgerDetails.icon || "wallet",
+        short_name: newLedgerDetails.short_name,
+      });
+
+      const ledgerId = newLedger.id;
+
+      // 2. Parse and Import Transactions
+      const transactions = parseImportedData(
+        mappedData,
+        config,
+        newLedgerDetails.currency,
+      );
+
+      if (transactions.length === 0) {
+        showError("No valid transactions found after parsing.");
+        // We created an empty ledger. User might be confused.
+        return;
+      }
+
+      // We need to ensure Accounts, Vendors, Categories exist.
+      // Logic reused/adapted from previous implementation but using parsed transactions
+
+      // Step A: Payees/Accounts
+      const uniqueAccounts = [
+        ...new Set(transactions.map((t) => t.account).filter(Boolean)),
+      ];
+      for (const accName of uniqueAccounts) {
+        // Find currency for this account from data if possible?
+        // parsed transactions have currency set to default or parsed.
+        // We can find the first transaction for this account to get currency
+        const t = transactions.find((tx) => tx.account === accName);
+        const accCurrency = t?.currency || newLedgerDetails.currency;
+        await dataProvider.ensurePayeeExists(accName, true, ledgerId, {
+          currency: accCurrency,
+        });
+      }
+
+      const uniqueVendors = [
+        ...new Set(transactions.map((t) => t.vendor).filter(Boolean)),
+      ];
+      for (const vendName of uniqueVendors) {
+        await dataProvider.ensurePayeeExists(vendName, false, ledgerId);
+      }
+
+      // Step B: Categories
+      const uniqueCategories = [
+        ...new Set(transactions.map((t) => t.category).filter(Boolean)),
+      ];
+      for (const catName of uniqueCategories) {
+        await dataProvider.ensureCategoryExists(catName, ledgerId);
+      }
+
+      // Step C: Insert Transactions
+      const transactionsToInsert = transactions.map((t) => ({
+        user_id: ledgerId,
+        date: t.date,
+        account: t.account,
+        vendor: t.vendor,
+        category: t.category,
+        amount: t.amount,
+        remarks: t.remarks,
+        currency: t.currency,
+        transfer_id: t.transfer_id,
+        is_scheduled_origin: t.is_scheduled_origin,
+        recurrence_frequency: t.recurrence_frequency,
+        recurrence_end_date: t.recurrence_end_date,
+      }));
+
+      await dataProvider.addMultipleTransactions(transactionsToInsert);
+
+      showSuccess(
+        `Imported ${transactionsToInsert.length} transactions into new ledger "${newLedgerDetails.name}".`,
+      );
+      await refreshLedgers();
+    } catch (e) {
+      console.error(e);
+      showError("Failed to import CSV data.");
+    } finally {
+      setIsMappingDialogOpen(false);
+      setCsvImportFile(null);
+      setNewLedgerDetails(null);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -346,13 +486,20 @@ const LedgerEntryPage = () => {
         {/* Import Backup Controls */}
         {ledgers.length === 0 && (
           <>
-            <div className="w-full flex justify-center mt-4">
+            <div className="w-full flex flex-col justify-center items-center mt-4 gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
                 accept=".json,.lock"
+              />
+              <input
+                type="file"
+                ref={csvFileInputRef}
+                onChange={handleCSVFileChange}
+                className="hidden"
+                accept=".csv"
               />
               <Button
                 variant="ghost"
@@ -361,6 +508,14 @@ const LedgerEntryPage = () => {
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Import Backup (JSON / Encrypted)
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-primary"
+                onClick={handleImportCSVClick}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Import Transactions CSV (Experimental)
               </Button>
             </div>
             <div className="w-full flex justify-center mt-2">
@@ -377,7 +532,7 @@ const LedgerEntryPage = () => {
 
         {ledgers.length > 0 && (
           <>
-            <div className="flex justify-center pt-8">
+            <div className="flex flex-col justify-center items-center pt-8 gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -385,14 +540,30 @@ const LedgerEntryPage = () => {
                 className="hidden"
                 accept=".json,.lock"
               />
+              <input
+                type="file"
+                ref={csvFileInputRef}
+                onChange={handleCSVFileChange}
+                className="hidden"
+                accept=".csv"
+              />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleImportClick}
-                className="text-muted-foreground hover:text-primary"
+                className="text-muted-foreground hover:text-primary w-full max-w-xs"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Import Backup
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImportCSVClick}
+                className="text-muted-foreground hover:text-primary w-full max-w-xs"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Import Transactions CSV
               </Button>
             </div>
             <div className="flex justify-center mt-2">
@@ -411,6 +582,27 @@ const LedgerEntryPage = () => {
       <ManageLedgerDialog
         isOpen={isCreateOpen}
         onOpenChange={setIsCreateOpen}
+      />
+
+      {/* New Ledger Dialog for CSV Import */}
+      <ManageLedgerDialog
+        isOpen={isNewLedgerDialogOpen}
+        onOpenChange={setIsNewLedgerDialogOpen}
+        onConfirm={handleLedgerDetailsConfirmed}
+        submitLabel="Next"
+      />
+
+      {/* CSV Mapping Dialog */}
+      <CSVMappingDialog
+        isOpen={isMappingDialogOpen}
+        onClose={() => {
+          setIsMappingDialogOpen(false);
+          setCsvImportFile(null);
+        }}
+        file={csvImportFile}
+        requiredHeaders={MAPPABLE_CSV_HEADERS}
+        onConfirm={handleMappingConfirmed}
+        isNewLedger={true}
       />
 
       <PasswordDialog

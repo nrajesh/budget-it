@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Papa from "papaparse";
 import {
   Dialog,
@@ -23,14 +23,10 @@ interface CSVMappingDialogProps {
   file: File | null;
   requiredHeaders: string[];
   onConfirm: (results: Record<string, unknown>[], config: ImportConfig) => void;
+  isNewLedger?: boolean;
 }
 
-export interface ImportConfig {
-  delimiter: string;
-  dateFormat: string;
-  decimalSeparator: "." | ",";
-  importMode: "append" | "replace";
-}
+import { ImportConfig } from "@/utils/csvUtils";
 
 const CSVMappingDialog = ({
   isOpen,
@@ -38,6 +34,7 @@ const CSVMappingDialog = ({
   file,
   requiredHeaders,
   onConfirm,
+  isNewLedger,
 }: CSVMappingDialogProps) => {
   const [step, setStep] = useState<"config" | "mapping">("config");
   const [config, setConfig] = useState<ImportConfig>({
@@ -45,6 +42,7 @@ const CSVMappingDialog = ({
     dateFormat: "auto",
     decimalSeparator: ".",
     importMode: "append",
+    expenseSign: "negative",
   });
 
   // Parsed data state
@@ -52,6 +50,7 @@ const CSVMappingDialog = ({
   const [csvData, setCsvData] = useState<Record<string, unknown>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [hasNegativeValues, setHasNegativeValues] = useState(false);
 
   // Reset when dialog opens
   useEffect(() => {
@@ -62,91 +61,145 @@ const CSVMappingDialog = ({
         dateFormat: "auto",
         decimalSeparator: ".",
         importMode: "append",
+        expenseSign: "negative",
       });
       setMapping({});
       setCsvHeaders([]);
       setCsvData([]);
+      setHasNegativeValues(false);
     }
   }, [isOpen, file]);
 
-  const handleParse = (shouldAdvanceStart: boolean = false) => {
-    if (!file) return;
-    setIsLoading(true);
+  const handleParse = useCallback(
+    (shouldAdvanceStart: boolean = false) => {
+      if (!file) return;
+      setIsLoading(true);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const text = e.target?.result;
+        if (typeof text !== "string") {
+          setIsLoading(false);
+          return;
+        }
 
-      delimiter: config.delimiter === "auto" ? "" : config.delimiter, // Empty string = auto-detect
-      complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
-        const headers: string[] = results.meta.fields || [];
-        setCsvHeaders(headers);
-        setCsvData(results.data);
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: "greedy", // Better for skipping empty lines
+          delimiter: config.delimiter === "auto" ? "" : config.delimiter,
+          complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
+            const headers: string[] = results.meta.fields || [];
+            setCsvHeaders(headers);
+            setCsvData(results.data);
 
-        // Pre-fill mapping if matches found
-        const ALIASES: Record<string, string[]> = {
-          Payee: ["Vendor", "Counterparty", "Merchant", "Description", "Party"],
-          Subcategory: ["Sub-Category", "Sub Category", "Sub_Category"],
-          Notes: ["Remarks", "Description", "Memo", "Details", "Comment"],
-          Account: ["Account Name", "Wallet"],
-          Amount: ["Value", "Cost", "Total"],
-          Date: ["Txn Date", "Transaction Date", "Day"],
-          Currency: ["Curr", "Cur", "Code"],
-        };
+            // Pre-fill mapping if matches found
+            const ALIASES: Record<string, string[]> = {
+              Payee: [
+                "Vendor",
+                "Counterparty",
+                "Merchant",
+                "Description",
+                "Party",
+              ],
+              Subcategory: ["Sub-Category", "Sub Category", "Sub_Category"],
+              Notes: ["Remarks", "Description", "Memo", "Details", "Comment"],
+              Account: ["Account Name", "Wallet"],
+              Amount: ["Value", "Cost", "Total"],
+              Date: ["Txn Date", "Transaction Date", "Day"],
+              Currency: ["Curr", "Cur", "Code"],
+              "Transfer Account": [
+                "To Account",
+                "Receiving Account",
+                "Destination Account",
+              ],
+              "Transfer Amount": [
+                "To Amount",
+                "Receiving Amount",
+                "Transfer Value",
+              ],
+            };
 
-        const newMapping: Record<string, string> = {};
+            const newMapping: Record<string, string> = {};
 
-        requiredHeaders.forEach((required) => {
-          const lowerRequired = required.toLowerCase();
-          const aliases = ALIASES[required] || [];
-          const searchTerms = [
-            lowerRequired,
-            ...aliases.map((a) => a.toLowerCase()),
-          ];
+            requiredHeaders.forEach((required) => {
+              const lowerRequired = required.toLowerCase();
+              const aliases = ALIASES[required] || [];
+              const searchTerms = [
+                lowerRequired,
+                ...aliases.map((a) => a.toLowerCase()),
+              ];
 
-          // Find first match in headers that matches any search term
-          const match = headers.find((header) => {
-            const h = header.trim().toLowerCase();
-            return searchTerms.includes(h);
-          });
+              // Find first match in headers that matches any search term
+              const match = headers.find((header) => {
+                const h = header.trim().toLowerCase();
+                return searchTerms.includes(h);
+              });
 
-          if (match) newMapping[required] = match;
+              if (match) newMapping[required] = match;
+            });
+            setMapping(newMapping);
+
+            // Auto-detect decimal separator based on "Amount" column data
+            const amountHeader = newMapping["Amount"];
+            if (amountHeader) {
+              const sampleValues = results.data
+                .slice(0, 5)
+                .map((row: any) => row[amountHeader])
+                .filter(Boolean);
+              const hasComma = sampleValues.some(
+                (val: string) => val.includes(",") && !val.includes("."),
+              );
+              const hasCommaDecimal = sampleValues.some(
+                (val: string) =>
+                  /^\d+,\d{2}$/.test(val.replace(/[^\d,]/g, "")) ||
+                  /-\d+,\d{2}$/.test(val.replace(/[^\d,-]/g, "")),
+              );
+
+              if (hasComma || hasCommaDecimal) {
+                setConfig((prev) => ({ ...prev, decimalSeparator: "," }));
+              }
+
+              // Auto-detect sign convention: If any value is negative, it must be "negative is expense" (or just signed)
+              // If all are positive, default to "negative" is still safe unless it's a CC statement with only positives.
+              // But if we see a negative, we SHOULD force "negative" or at least default to it.
+              const hasNegative = sampleValues.some((val: string) => {
+                const normalized = val.replace(/[\u2013\u2014\u2212]/g, "-");
+                return normalized.includes("-") || normalized.includes("(");
+              });
+              if (hasNegative) {
+                setConfig((prev) => ({ ...prev, expenseSign: "negative" }));
+              }
+              setHasNegativeValues(hasNegative);
+            }
+
+            if (shouldAdvanceStart) {
+              setStep("mapping");
+            }
+            setIsLoading(false);
+          },
+          error: (error: unknown) => {
+            console.error("CSV Parse Error", error);
+            setIsLoading(false);
+          },
         });
-        setMapping(newMapping);
+      };
 
-        // Auto-detect decimal separator based on "Amount" column data
-        const amountHeader = newMapping["Amount"];
-        if (amountHeader) {
-          const sampleValues = results.data
-            .slice(0, 5)
-            .map((row: any) => row[amountHeader])
-            .filter(Boolean);
-          const hasComma = sampleValues.some(
-            (val: string) => val.includes(",") && !val.includes("."),
-          );
-          const hasCommaDecimal = sampleValues.some(
-            (val: string) =>
-              /^\d+,\d{2}$/.test(val.replace(/[^\d,]/g, "")) ||
-              /-\d+,\d{2}$/.test(val.replace(/[^\d,-]/g, "")),
-          );
-
-          if (hasComma || hasCommaDecimal) {
-            setConfig((prev) => ({ ...prev, decimalSeparator: "," }));
-          }
-        }
-
-        if (shouldAdvanceStart) {
-          setStep("mapping");
-        }
+      reader.onerror = () => {
+        console.error("File reading failed");
         setIsLoading(false);
-      },
-      error: (error: unknown) => {
-        console.error("CSV Parse Error", error);
-        setIsLoading(false);
-        // Ideally show toast here, but we can just stay on step 1?
-      },
-    });
-  };
+      };
+
+      reader.readAsText(file);
+    },
+    [file, config.delimiter, requiredHeaders],
+  );
+
+  // Auto-refresh preview when delimiter changes
+  useEffect(() => {
+    if (isOpen && file) {
+      handleParse(false);
+    }
+  }, [config.delimiter, isOpen, file, handleParse]); // Added handleParse to dependencies
 
   const handleMappingChange = (required: string, value: string) => {
     setMapping((prev) => ({
@@ -161,7 +214,10 @@ const CSVMappingDialog = ({
       // Keep original data, then overwrite with standardized keys
       const newRow: Record<string, unknown> = { ...row };
       Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
-        newRow[requiredHeader] = row[csvHeader];
+        // Only map if csvHeader is selected/valid
+        if (csvHeader) {
+          newRow[requiredHeader] = row[csvHeader];
+        }
       });
       return newRow;
     });
@@ -253,56 +309,94 @@ const CSVMappingDialog = ({
               </div>
 
               <div className="grid gap-2">
-                <Label>Import Mode</Label>
-                <div className="flex gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="append"
-                      name="importMode"
-                      value="append"
-                      checked={config.importMode !== "replace"}
-                      onChange={() =>
-                        setConfig((prev) => ({ ...prev, importMode: "append" }))
-                      }
-                      className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label
-                      htmlFor="append"
-                      className="font-normal cursor-pointer"
-                    >
-                      Append to existing
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="replace"
-                      name="importMode"
-                      value="replace"
-                      checked={config.importMode === "replace"}
-                      onChange={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          importMode: "replace",
-                        }))
-                      }
-                      className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <Label
-                      htmlFor="replace"
-                      className="font-normal cursor-pointer"
-                    >
-                      Replace existing
-                    </Label>
-                  </div>
-                </div>
+                <Label>Amount Sign Convention</Label>
+                <Select
+                  value={config.expenseSign}
+                  onValueChange={(val) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      expenseSign: val as "negative" | "positive",
+                    }))
+                  }
+                  disabled={hasNegativeValues}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="negative">
+                      Negative is Expense (-100)
+                    </SelectItem>
+                    <SelectItem value="positive">
+                      Positive is Expense (100)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  {config.importMode === "replace"
-                    ? "Warning: This will delete ALL existing transactions before importing."
-                    : "New transactions will be added to your existing data."}
+                  {hasNegativeValues
+                    ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
+                    : config.expenseSign === "positive"
+                      ? "Expenses entered as positive numbers (Income will be negative)"
+                      : "Expenses entered as negative numbers (Income will be positive)"}
                 </p>
               </div>
+
+              {!isNewLedger && (
+                <div className="grid gap-2">
+                  <Label>Import Mode</Label>
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="append"
+                        name="importMode"
+                        value="append"
+                        checked={config.importMode !== "replace"}
+                        onChange={() =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            importMode: "append",
+                          }))
+                        }
+                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <Label
+                        htmlFor="append"
+                        className="font-normal cursor-pointer"
+                      >
+                        Append to existing
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="replace"
+                        name="importMode"
+                        value="replace"
+                        checked={config.importMode === "replace"}
+                        onChange={() =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            importMode: "replace",
+                          }))
+                        }
+                        className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <Label
+                        htmlFor="replace"
+                        className="font-normal cursor-pointer"
+                      >
+                        Replace existing
+                      </Label>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {config.importMode === "replace"
+                      ? "Warning: This will delete ALL existing transactions before importing."
+                      : "New transactions will be added to your existing data."}
+                  </p>
+                </div>
+              )}
 
               {/* Preview Area */}
               <div className="border rounded-md p-3 bg-muted/30 mt-4">
@@ -387,6 +481,14 @@ const CSVMappingDialog = ({
                     </div>
                   </div>
                 ))}
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-md">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <strong>Tip:</strong> If your CSV already contains separate
+                  rows for each leg of a transfer (balanced file), leave{" "}
+                  <strong>Transfer Account</strong> unmapped to avoid duplicate
+                  transactions.
+                </p>
               </div>
             </div>
           )}
