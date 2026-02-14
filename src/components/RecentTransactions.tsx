@@ -91,23 +91,95 @@ export function RecentTransactions({
     return extras.length > 0 ? extras : EMPTY_EXTRAS;
   }, [transactions, seenIds]);
 
+  // Optimization: Pre-calculate historical balances separately.
+  // This depends ONLY on global history and accounts, not on the filtered view/extras.
+  const { historicalMap, finalAccountBalances, latestHistoricalDate } =
+    React.useMemo(() => {
+      const map = new Map<string, number>();
+      const accountRunningBalances = new Map<string, number>();
+
+      // Initialize with starting balances
+      accounts.forEach((acc) => {
+        if (acc.name) {
+          accountRunningBalances.set(
+            acc.name.trim().toLowerCase(),
+            acc.starting_balance || 0,
+          );
+        }
+      });
+
+      // Sort History (Oldest -> Newest)
+      // Note: sortDesc sorts Newest -> Oldest, so we reverse it.
+      const sortedHistory = [...allTransactions].sort(sortDesc).reverse();
+      let lastDate: Date | null = null;
+
+      sortedHistory.forEach((t) => {
+        const normalizedAccountName = t.account.trim().toLowerCase();
+        const currentBalance =
+          accountRunningBalances.get(normalizedAccountName) || 0;
+        const newBalance = currentBalance + t.amount;
+
+        accountRunningBalances.set(normalizedAccountName, newBalance);
+        map.set(t.id, newBalance);
+
+        const d = new Date(t.date);
+        if (!lastDate || d > lastDate) {
+          lastDate = d;
+        }
+      });
+
+      return {
+        historicalMap: map,
+        finalAccountBalances: accountRunningBalances,
+        latestHistoricalDate: lastDate,
+      };
+    }, [allTransactions, accounts]);
+
   /*
    * Calculate running balances per account in their native currency.
-   * We iterate through ALL transactions chronologically to build the correct historical state.
    *
-   * Optimization: Calculate balances ONLY when the underlying data (global state + extras) changes.
-   * This is the expensive part (O(N)), now decoupled from simple view filtering (O(M)).
+   * Optimization: We now merge the pre-calculated historical data with any "extras" (projected transactions).
+   * If extras are all in the future, we use a fast-path clone.
+   * If extras are interleaved, we fall back to full recalculation (rare).
    */
   const balanceMap = React.useMemo(() => {
-    // 2. Sort ALL transactions Descending (Master Display Order)
-    // We merge global transactions with the passed 'transactions' prop.
+    if (uniqueExtras.length === 0) {
+      return historicalMap;
+    }
+
+    // Check if we can use Fast Path: All extras are newer than history
+    // We use strict inequality (>) to avoid edge cases where an extra has the same date
+    // as the last historical transaction but should be sorted before it (e.g. by created_at).
+    const isFastPath =
+      !latestHistoricalDate ||
+      uniqueExtras.every((t) => new Date(t.date) > latestHistoricalDate);
+
+    if (isFastPath) {
+      // Fast Path: Clone historical map and append extras
+      // This avoids sorting the massive history array and iterating it again.
+      const newMap = new Map(historicalMap);
+      // We must clone the running balances to avoid mutating the memoized base state
+      const currentRunningBalances = new Map(finalAccountBalances);
+
+      // Extras need to be sorted amongst themselves
+      const sortedExtras = [...uniqueExtras].sort(sortDesc).reverse();
+
+      sortedExtras.forEach((t) => {
+        const normalizedAccountName = t.account.trim().toLowerCase();
+        const currentBalance =
+          currentRunningBalances.get(normalizedAccountName) || 0;
+        const newBalance = currentBalance + t.amount;
+
+        currentRunningBalances.set(normalizedAccountName, newBalance);
+        newMap.set(t.id, newBalance);
+      });
+
+      return newMap;
+    }
+
+    // Slow Path: Interleaved extras. Must re-calculate everything to ensure correctness.
     const combinedTransactions = [...allTransactions, ...uniqueExtras];
-
-    const allSortedDesc = combinedTransactions.sort(sortDesc);
-
-    // 3. Calculate balances by processing Oldest -> Newest (Reverse of Master Display)
-    // This ensures calculation perfectly opposes the display order
-    const allSortedAsc = [...allSortedDesc].reverse();
+    const allSortedAsc = combinedTransactions.sort(sortDesc).reverse();
 
     const map = new Map<string, number>();
     const accountRunningBalances = new Map<string, number>();
@@ -126,7 +198,6 @@ export function RecentTransactions({
       const normalizedAccountName = t.account.trim().toLowerCase();
       const currentBalance =
         accountRunningBalances.get(normalizedAccountName) || 0;
-      // We assume transaction amount is already in the account's currency
       const newBalance = currentBalance + t.amount;
 
       accountRunningBalances.set(normalizedAccountName, newBalance);
@@ -134,7 +205,14 @@ export function RecentTransactions({
     });
 
     return map;
-  }, [allTransactions, uniqueExtras, accounts]);
+  }, [
+    uniqueExtras,
+    historicalMap,
+    finalAccountBalances,
+    latestHistoricalDate,
+    allTransactions,
+    accounts,
+  ]);
 
   // Cheap: Attach balances to the view
   const transactionsWithCorrectBalance = React.useMemo(() => {

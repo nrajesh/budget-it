@@ -5,3 +5,7 @@
 ## 2024-05-24 - Memoizing Handlers for Virtualized Lists
 **Learning:** `TransactionTable.tsx` memoized its row component (`TransactionRow`), but `Transactions.tsx` passed inline arrow functions (e.g., `onRowDoubleClick`, `onUnlinkTransaction`) as props. This caused `TransactionTable` to receive new props on every render, triggering a re-render of ALL rows, negating the benefit of `React.memo` on the rows.
 **Action:** Wrap all event handlers passed to large lists or memoized components in `useCallback` to ensure referential stability. This allows `React.memo` to effectively skip re-renders for rows whose data hasn't changed.
+
+## 2026-02-14 - Optimizing Interleaved Historical & Projected Balances
+**Learning:** `RecentTransactions` was recalculating balances for the entire history O(N) whenever the filtered view changed (e.g. searching), because "projected" transactions were merged and sorted with history. Since projected transactions are almost always in the future, we can optimize by memoizing the historical calculation and using a "Fast Path" to just clone the map and append future transactions.
+**Action:** When mixing heavy static datasets (history) with light dynamic datasets (projections), split the calculation. Memoize the static part. Use a fast-path strategy (clone + append) if the dynamic data is strictly after the static data, falling back to full merge only when necessary.
