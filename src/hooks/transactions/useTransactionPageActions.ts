@@ -14,6 +14,7 @@ export interface ImportConfig {
   importMode?: "replace" | "append";
   decimalSeparator?: "." | ",";
   dateFormat?: string;
+  expenseSign?: "negative" | "positive";
 }
 
 export interface MappingDialogState {
@@ -71,6 +72,10 @@ export interface ImportRow {
   "end date"?: string;
   "Transfer ID"?: string;
   "transfer id"?: string;
+  "Transfer Account"?: string;
+  "transfer account"?: string;
+  "Transfer Amount"?: string;
+  "transfer amount"?: string;
 }
 
 /**
@@ -95,6 +100,12 @@ export const useTransactionPageActions = (
       isOpen: false,
       file: null,
     });
+
+  const [missingCurrencyAccounts, setMissingCurrencyAccounts] = useState<string[]>([]);
+  const [pendingImport, setPendingImport] = useState<{
+    data: ImportRow[];
+    config?: ImportConfig;
+  } | null>(null);
 
   // --- Export Logic ---
   const handleExport = () => {
@@ -249,32 +260,24 @@ export const useTransactionPageActions = (
   };
 
   /**
-   * Processes the parsed CSV data and inserts it into the database.
-   * Handles entity creation (Accounts, Payees, Categories) if they don't exist.
-   *
-   * @param data - The array of row objects from PapaParse
-   * @param config - Configuration options like date format or decimal separator
+   * Internal function to execute the import after validation and currency resolution.
    */
-  const processImport = async (data: ImportRow[], config?: ImportConfig) => {
+  const executeImport = async (
+    data: ImportRow[],
+    config?: ImportConfig,
+    newAccountCurrencies?: Record<string, string>,
+  ) => {
     try {
       const userId = activeLedger?.id;
-      if (!userId) {
-        showError(
-          "No active ledger selected. Please select a ledger to import transactions.",
-        );
-        return;
-      }
+      if (!userId) return;
 
       const isReplace = config?.importMode === "replace";
 
       if (isReplace) {
-        // Log removed
         await dataProvider.clearTransactions(userId);
         await dataProvider.clearBudgets(userId);
         await dataProvider.clearScheduledTransactions(userId);
       }
-
-      // Log removed
 
       const totalSteps = 4;
       setOperationProgress({
@@ -286,7 +289,6 @@ export const useTransactionPageActions = (
       });
 
       const knownAccountIds = new Set<string>();
-      const newAccountNames = new Set<string>();
       const knownVendorIds = new Set<string>();
       const knownCategoryIds = new Set<string>();
       const knownSubCategoryIds = new Set<string>();
@@ -310,13 +312,25 @@ export const useTransactionPageActions = (
         totalStages: 4,
       });
       let newAccountsCount = 0;
-      const uniqueAccounts = [
-        ...new Set(data.map((r) => (r.Account || "").trim()).filter(Boolean)),
-      ];
 
-      for (const name of uniqueAccounts) {
+      const uniqueAccounts = new Set<string>();
+      data.forEach(r => {
+        const main = (r.Account || "").trim();
+        if (main) uniqueAccounts.add(main);
+
+        const transfer = (r["Transfer Account"] || r["transfer account"] || "").trim();
+        if (transfer) uniqueAccounts.add(transfer);
+      });
+
+      for (const name of Array.from(uniqueAccounts)) {
+        let currency = newAccountCurrencies?.[name];
+
+        if (!currency) {
+          const row = data.find((r) => (r.Account || "").trim() === name);
+          currency = row?.Currency || "USD";
+        }
+
         const row = data.find((r) => (r.Account || "").trim() === name);
-        const currency = row?.Currency || "USD";
         const type = row?.["Account Type"] as AccountType | undefined;
 
         const id = await dataProvider.ensurePayeeExists(name, true, userId, {
@@ -326,7 +340,6 @@ export const useTransactionPageActions = (
         if (id && !knownAccountIds.has(id)) {
           newAccountsCount++;
           knownAccountIds.add(id);
-          newAccountNames.add(name);
         }
       }
 
@@ -352,7 +365,7 @@ export const useTransactionPageActions = (
         }
       }
 
-      // 3. Process Categories & Sub-categories
+      // 3. Process Categories
       setOperationProgress({
         title: "Importing CSV",
         description: "Processing Categories...",
@@ -421,30 +434,30 @@ export const useTransactionPageActions = (
           continue;
         }
 
-        const amount = parseRobustAmount(amountRaw, config?.decimalSeparator);
-        const date = parseRobustDate(dateRaw, config?.dateFormat);
+        let amount = parseRobustAmount(amountRaw as string, config?.decimalSeparator);
+        const date = parseRobustDate(dateRaw as string, config?.dateFormat);
+
+        // Apply Expense Sign Logic
+        if (config?.expenseSign === "positive") {
+          // User indicated Positive numbers are Expenses.
+          // Since we store Expenses as negative, we invert the sign.
+          // Example: CSV has 100 (Expense) -> We store -100.
+          // Example: CSV has -100 (Refund/Income) -> We store 100.
+          amount = -amount;
+        }
 
         if (!date) {
-          console.warn(
-            "Skipping row due to invalid date. Raw Date:",
-            dateRaw,
-            "Parsed:",
-            date,
-            "Row:",
-            row,
-          );
+          console.warn("Skipping row due to invalid date", row);
           skippedCount++;
           continue;
         }
 
-        const t: Omit<Transaction, "id" | "created_at" | "updated_at"> = {
+        const transferAccount = (row["Transfer Account"] || row["transfer account"] || "").trim();
+
+        const baseTx: Omit<Transaction, "id" | "created_at" | "updated_at"> = {
           user_id: userId,
           date: date,
-          account: (
-            row.Account ||
-            row.account ||
-            "Uncategorized Account"
-          ).trim(),
+          account: (row.Account || row.account || "Uncategorized Account").trim(),
           vendor: (
             row.Payee ||
             row.Vendor ||
@@ -473,7 +486,7 @@ export const useTransactionPageActions = (
             ""
           ).trim(),
           currency: (row.Currency || row.currency || "USD").trim(),
-          recurrence_frequency: row.Frequency || row.frequency || null, // TODO: validate Frequency
+          recurrence_frequency: row.Frequency || row.frequency || null,
           recurrence_end_date:
             parseRobustDate(
               row["End Date"] || row["end date"] || "",
@@ -483,7 +496,49 @@ export const useTransactionPageActions = (
             (row["Transfer ID"] || row["transfer id"] || "").trim() || null,
           is_scheduled_origin: false,
         };
-        transactionsToInsert.push(t);
+
+        if (transferAccount && transferAccount.toLowerCase() !== baseTx.account.toLowerCase()) {
+          const transferAmountRaw = row["Transfer Amount"] || row["transfer amount"];
+          const sharedTransferId = `split-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+
+          // Transaction 1: From Main Account (Use original amount)
+          const amountFrom = amount;
+
+          transactionsToInsert.push({
+            ...baseTx,
+            amount: amountFrom,
+            category: "Transfer",
+            transfer_id: sharedTransferId,
+            remarks: baseTx.remarks || `Transfer to ${transferAccount}`,
+            vendor: `Transfer to ${transferAccount}`,
+          });
+
+          // Transaction 2: To Receiving Account (Invert sign if no specific amount provided)
+          const amountTo = transferAmountRaw ?
+            parseRobustAmount(transferAmountRaw as string, config?.decimalSeparator) :
+            -amount;
+
+          // Resolve currency
+          let currencyTo = newAccountCurrencies?.[transferAccount];
+          if (!currencyTo) {
+            currencyTo = await dataProvider.getAccountCurrency(transferAccount, userId);
+          }
+          if (!currencyTo) currencyTo = "USD";
+
+          transactionsToInsert.push({
+            ...baseTx,
+            account: transferAccount,
+            vendor: `Transfer from ${baseTx.account}`,
+            category: "Transfer",
+            amount: amountTo,
+            currency: currencyTo,
+            transfer_id: sharedTransferId,
+            remarks: baseTx.remarks || `Transfer from ${baseTx.account}`,
+          });
+
+        } else {
+          transactionsToInsert.push(baseTx);
+        }
       }
 
       if (transactionsToInsert.length === 0) {
@@ -504,44 +559,31 @@ export const useTransactionPageActions = (
         progress: 55,
         totalStages: 4,
       });
-      try {
-        let successCount = 0;
-        const UPDATE_BATCH = Math.max(
-          10,
-          Math.floor(transactionsToInsert.length / 20),
-        );
 
-        // Batch insert using addMultipleTransactions if available or loop
-        // The original code looped addTransaction
-        for (const t of transactionsToInsert) {
-          await dataProvider.addTransaction(t as Transaction); // Type assertion needed as addTransaction expects Transaction usually but handles omits
-          successCount++;
-          if (successCount % UPDATE_BATCH === 0) {
-            const percent =
-              55 +
-              Math.floor((successCount / transactionsToInsert.length) * 40);
-            setOperationProgress({
-              title: "Importing CSV",
-              description: `Saving... (${successCount}/${transactionsToInsert.length})`,
-              stage: "Stage 4/4: Transactions",
-              progress: Math.min(99, percent),
-              totalStages: 4,
-            });
-          }
+      let successCount = 0;
+      const UPDATE_BATCH = Math.max(10, Math.floor(transactionsToInsert.length / 20));
+
+      for (const t of transactionsToInsert) {
+        await dataProvider.addTransaction(t as Transaction);
+        successCount++;
+        if (successCount % UPDATE_BATCH === 0) {
+          const percent = 55 + Math.floor((successCount / transactionsToInsert.length) * 40);
+          setOperationProgress({
+            title: "Importing CSV",
+            description: `Saving... (${successCount}/${transactionsToInsert.length})`,
+            stage: "Stage 4/4: Transactions",
+            progress: Math.min(99, percent),
+            totalStages: 4,
+          });
         }
-        // Log removed
-      } catch (e: unknown) {
-        console.error("Insert failed at some point", e);
       }
 
       let desc = `Imported ${transactionsToInsert.length} transactions.`;
       const details = [];
       if (newAccountsCount > 0) details.push(`${newAccountsCount} accounts`);
       if (newVendorsCount > 0) details.push(`${newVendorsCount} vendors`);
-      if (newCategoriesCount > 0)
-        details.push(`${newCategoriesCount} categories`);
-      if (newSubCategoriesCount > 0)
-        details.push(`${newSubCategoriesCount} sub-categories`);
+      if (newCategoriesCount > 0) details.push(`${newCategoriesCount} categories`);
+      if (newSubCategoriesCount > 0) details.push(`${newSubCategoriesCount} sub-categories`);
 
       if (details.length > 0) {
         desc += ` Added ${details.join(", ")}.`;
@@ -582,6 +624,67 @@ export const useTransactionPageActions = (
         description: (error as Error).message,
         variant: "destructive",
       });
+    } finally {
+      setPendingImport(null);
+      setMissingCurrencyAccounts([]);
+    }
+  };
+
+  /**
+   * Starts the import process by analyzing the data.
+   */
+  const startImport = async (data: ImportRow[], config?: ImportConfig) => {
+    try {
+      const userId = activeLedger?.id;
+      if (!userId) {
+        showError("No active ledger selected.");
+        return;
+      }
+
+      // Identify unknown accounts in "Transfer Account" column
+      const transferAccounts = new Set<string>();
+      data.forEach(r => {
+        const acc = (r["Transfer Account"] || r["transfer account"] || "").trim();
+        if (acc) transferAccounts.add(acc);
+      });
+
+      if (transferAccounts.size > 0) {
+        const existingVendors = await dataProvider.getAllVendors(userId);
+        const existingAccountNames = new Set(
+          existingVendors.filter(p => p.is_account).map(p => p.name)
+        );
+
+        const unknownAccounts: string[] = [];
+        for (const acc of Array.from(transferAccounts)) {
+          if (!existingAccountNames.has(acc)) {
+            // Check if it's defined elsewhere in CSV as a main account with a currency
+            const definedInCSV = data.find(r =>
+              (r.Account || "").trim() === acc && (r.Currency || r.currency)
+            );
+
+            if (!definedInCSV) {
+              unknownAccounts.push(acc);
+            }
+          }
+        }
+
+        if (unknownAccounts.length > 0) {
+          setMissingCurrencyAccounts(unknownAccounts);
+          setPendingImport({ data, config });
+          return;
+        }
+      }
+
+      executeImport(data, config);
+
+    } catch (e) {
+      showError("Failed to analyze import file: " + (e as Error).message);
+    }
+  };
+
+  const resolveMissingCurrencies = (currencies: Record<string, string>) => {
+    if (pendingImport) {
+      executeImport(pendingImport.data, pendingImport.config, currencies);
     }
   };
 
@@ -589,7 +692,7 @@ export const useTransactionPageActions = (
     data: Record<string, unknown>[],
     config: ImportConfig,
   ) => {
-    processImport(data as ImportRow[], config);
+    startImport(data as ImportRow[], config);
     setMappingDialogState((prev) => ({ ...prev, isOpen: false }));
   };
 
@@ -611,7 +714,9 @@ export const useTransactionPageActions = (
     handleImportClick,
     handleFileChange,
     fileInputRef,
-    processImport,
+    processImport: startImport,
+    missingCurrencyAccounts,
+    resolveMissingCurrencies,
     mappingDialogState,
     setMappingDialogState,
     handleMappingConfirm,

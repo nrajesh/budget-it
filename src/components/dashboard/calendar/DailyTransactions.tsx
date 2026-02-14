@@ -84,7 +84,7 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
                     className={cn(
                       "flex flex-col space-y-2 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors",
                       isProjected &&
-                        "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50 border-dashed",
+                      "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50 border-dashed",
                     )}
                   >
                     <div className="flex items-center justify-between">
@@ -93,9 +93,23 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
                           {isProjected && (
                             <CalendarClock className="h-4 w-4 text-blue-500" />
                           )}
-                          <span className="font-semibold">{t.vendor}</span>
+                          <span className="font-semibold">
+                            {isTransfer
+                              ? isExpense
+                                ? `${t.account} \u2192 ${t.vendor}`
+                                : `${t.vendor} \u2192 ${t.account}`
+                              : t.vendor}
+                          </span>
                         </div>
                         <span className="text-xs text-muted-foreground">
+                          {!isTransfer && (
+                            <>
+                              <span className="font-medium text-foreground/70">
+                                {t.account}
+                              </span>
+                              {" \u2022 "}
+                            </>
+                          )}
                           {t.category}
                           {t.sub_category && ` / ${t.sub_category}`}
                         </span>
@@ -123,7 +137,7 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
                             ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                             : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
                           isProjected &&
-                            "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+                          "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
                         )}
                       >
                         <span>

@@ -233,6 +233,11 @@ This single command does everything:
 
 ---
 
+## 🔗 Live Demo
+Try the latest version of the app here: **[budget-it-nine.vercel.app](https://budget-it-nine.vercel.app)**
+
+---
+
 ## 📂 Project Structure
 
 ```
@@ -243,30 +248,42 @@ budget-it/
 ├── src/
 │   ├── components/            # Reusable UI components
 │   │   ├── ui/                #   Shadcn primitives (Button, Dialog, etc.)
-│   │   ├── backup/            #   Backup & scheduled backup components
-│   │   ├── budgets/           #   Budget cards, tables, forms
-│   │   ├── charts/            #   Recharts chart wrappers
-│   │   ├── dashboard/         #   Dashboard widgets
-│   │   ├── dialogs/           #   Modal dialogs (Add/Edit Transaction, etc.)
-│   │   ├── filters/           #   Search & filter controls
-│   │   ├── reports/           #   Report generation components
-│   │   └── transactions/      #   Transaction tables & headers
-│   ├── contexts/              # React Context providers
-│   │   ├── TransactionsContext.tsx  # Core financial data
-│   │   ├── LedgerContext.tsx        # Multi-ledger management
-│   │   ├── FilterContext.tsx        # Global filter state
-│   │   ├── CurrencyContext.tsx      # Currency & exchange rates
-│   │   ├── ThemeContext.tsx          # Theme management
-│   │   └── UserContext.tsx          # User preferences
+│   │   ├── budgets/           #   Budget management
+│   │   ├── charts/            #   Visualizations
+│   │   ├── dashboard/         #   Home dashboard widgets
+│   │   ├── dialogs/           #   Modals and popups
+│   │   ├── filters/           #   Search & filtering logic
+│   │   └── transactions/      #   Transaction tables & logic
+│   ├── contexts/              # React Context Definitions
+│   ├── providers/             # Context Providers (Data, Theme, etc.)
 │   ├── hooks/                 # Custom React hooks
 │   ├── pages/                 # Route-level page components
 │   ├── types/                 # TypeScript type definitions
-│   └── utils/                 # Helper functions & utilities
-├── .circleci/                 # CI/CD configuration
+│   ├── utils/                 # Helper functions (currency, date, etc.)
+│   └── tests/                 # Test files
+├── .circleci/                 # CircleCI Pipeline config
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
 ```
+
+---
+
+## ✅ Quality Assurance
+
+We enforce high code quality standards using a strict **CircleCI** pipeline. Every pull request must pass the following checks before merging:
+
+| Check | Command | Description |
+|-------|---------|-------------|
+| **Linting** | `pnpm lint` | ESLint checks for code quality and best practices. |
+| **Type Safe** | `tsc --noEmit` | Full TypeScript strict mode check. |
+| **Formatting** | `pnpm format:check` | Prettier verification to ensure consistent style. |
+| **Testing** | `pnpm test:coverage` | Vitest unit tests with coverage reporting. |
+| **Security** | `pnpm audit` | Checks dependencies for known vulnerabilities. |
+| **Build** | `pnpm build` | Verifies that the production bundle compiles correctly. |
+
+> [!TIP]
+> You can run `pnpm validate` locally to run TypeScript and ESLint checks in one go.
 
 ---
 

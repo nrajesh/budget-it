@@ -6,7 +6,10 @@ const DataProviderContext = createContext<DataProvider | null>(null);
 
 export const DataProviderProvider = ({ children }: { children: ReactNode }) => {
   // Switched to LocalDataProvider
-  const [dataProvider] = useState<DataProvider>(new LocalDataProvider());
+  const [dataProvider] = useState<DataProvider>(() => {
+    console.log("Initializing DataProviderContext with new LocalDataProvider");
+    return new LocalDataProvider();
+  });
 
   return (
     <DataProviderContext.Provider value={dataProvider}>

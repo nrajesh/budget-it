@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Transaction, Category, SubCategory } from "@/data/finance-data";
-import { startOfDay } from "date-fns";
+import { startOfDay, differenceInCalendarDays } from "date-fns";
 import { db } from "@/lib/dexieDB";
 import { useCurrency } from "./CurrencyContext";
 import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
@@ -295,10 +295,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-        | "DELETE_TRANSACTION"
-        | "DELETE_SCHEDULE"
-        | "DELETE_BUDGET"
-        | "DELETE_ENTITY";
+      | "DELETE_TRANSACTION"
+      | "DELETE_SCHEDULE"
+      | "DELETE_BUDGET"
+      | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -1028,6 +1028,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
+
     },
     [
       ledgerId,
@@ -1263,17 +1264,38 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const pairsLinked = [];
       const processedIds = new Set<string>();
 
-      const normalizeDate = (d: string) => d.substring(0, 10);
+      const parseDate = (dString: string): Date | null => {
+        if (!dString) return null;
+
+        // Handle DD/MM/YYYY (common import format issue)
+        const ddmmyyyy = dString.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+        if (ddmmyyyy) {
+          return new Date(parseInt(ddmmyyyy[3], 10), parseInt(ddmmyyyy[2], 10) - 1, parseInt(ddmmyyyy[1], 10));
+        }
+
+        const d = new Date(dString);
+        return isNaN(d.getTime()) ? null : d;
+      };
 
       for (let i = 0; i < listToScan.length; i++) {
         const t1 = listToScan[i];
-        if (t1.transfer_id || processedIds.has(t1.id)) continue;
+
+        // Skip if linked BUT allow if it's a "split-" ID (import artifact we want to convert to real transfer)
+        if (t1.transfer_id && !t1.transfer_id.startsWith("split-")) continue;
+        if (processedIds.has(t1.id)) continue;
 
         for (let j = i + 1; j < listToScan.length; j++) {
           const t2 = listToScan[j];
-          if (t2.transfer_id || processedIds.has(t2.id)) continue;
+          if (t2.transfer_id && !t2.transfer_id.startsWith("split-")) continue;
+          if (processedIds.has(t2.id)) continue;
 
-          if (normalizeDate(t1.date) !== normalizeDate(t2.date)) continue;
+          const d1 = parseDate(t1.date);
+          const d2 = parseDate(t2.date);
+
+          if (!d1 || !d2) continue;
+
+          // Allow 1 day difference to handle timezone offsets or bank processing delays
+          if (Math.abs(differenceInCalendarDays(d1, d2)) > 1) continue;
           if (t1.account === t2.account) continue;
 
           // Check 1: Strict Match (Same Currency, Same Amount)
@@ -1282,13 +1304,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
             Math.abs(t1.amount + t2.amount) <= 0.01;
 
           // Check 2: Cross-Currency/Heuristic Match
-          // - Category is Transfer
-          // - Opposite signs (Money leaving and money entering)
-          // - Account/Vendor swap (Strongest signal) OR just strict Date + Transfer Category (User suggestion, but risky? Let's stick to swap + cat first, OR if cat is transfer and only 2 on that day?)
-          // Let's go with Swap + Category OR Swap + Amount Signs?
-          // User said: "given same transaction date and category used being transfer"
-          const isTransferCat =
-            t1.category === "Transfer" && t2.category === "Transfer";
+          const cat1 = (t1.category || "").toLowerCase();
+          const cat2 = (t2.category || "").toLowerCase();
+          const isTransferCat = cat1 === "transfer" && cat2 === "transfer";
+
           const isOppositeSign = t1.amount * t2.amount < 0;
 
           // Normalize names for comparison
@@ -1299,34 +1318,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
           const isSwapped = t1Acc === t2Vend && t2Acc === t1Vend;
 
-          // Allow link if strict match OR (Transfer Category AND Opposite Signs AND (Swapped OR just Transfer Category if we want to be aggressive per user rq))
-          // Being slightly conservative: Require Swapped OR (Transfer Cat AND Opposite Signs).
-          // Actually, without Swap, linking any two random transfers on same day is risky.
-          // But the user specially asked "make a guess about a pair given same transaction date and category used being transfer".
-          // So I will support:
-          // 1. Strict Match
-          // 2. Swapped Entities (Strong)
-          // 3. Just Transfer Category + Opposite Signs (Heuristic requested by user)
-
           let shouldLink = false;
+
+          const hasTransferKeyword =
+            (t1Vend.includes("transfer") || t1Vend.includes("xfer")) &&
+            (t2Vend.includes("transfer") || t2Vend.includes("xfer"));
 
           if (isStrictMatch) {
             shouldLink = true;
           } else if (isOppositeSign) {
-            if (isSwapped) {
+            if (isSwapped || isTransferCat || hasTransferKeyword) {
               shouldLink = true;
-            } else if (isTransferCat) {
-              // Heuristic: Same Date, Transfer Cat, Opposite Signs.
-              // Maybe check if currencies differ to avoid linking same-currency mismatches (which might just be separate transactions)?
-              // If currencies differ, it's likely a transfer.
-              // If currencies SAME, but amounts differ, it's NOT a transfer (usually).
-              if (t1.currency !== t2.currency) {
-                shouldLink = true;
-              }
             }
           }
 
           if (shouldLink) {
+
             await dataProvider.linkTransactionsAsTransfer(t1.id, t2.id);
             pairsLinked.push([t1.id, t2.id]);
             processedIds.add(t1.id);
@@ -1346,8 +1353,15 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const unlinkTransaction = React.useCallback(
     async (transferId: string) => {
-      await dataProvider.unlinkTransactions(transferId);
-      await invalidateAllData();
+      console.log("[TransactionsContext] unlinkTransaction called with:", transferId);
+      try {
+        await dataProvider.unlinkTransactions(transferId);
+        console.log("[TransactionsContext] dataProvider.unlinkTransactions completed");
+        await invalidateAllData();
+        console.log("[TransactionsContext] invalidateAllData completed");
+      } catch (error) {
+        console.error("[TransactionsContext] unlinkTransaction failed:", error);
+      }
     },
     [dataProvider, invalidateAllData],
   );

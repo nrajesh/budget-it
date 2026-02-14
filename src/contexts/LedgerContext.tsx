@@ -15,7 +15,7 @@ interface LedgerContextType {
   activeLedger: Ledger | null;
   ledgers: Ledger[];
   isLoading: boolean;
-  switchLedger: (ledgerId: string) => Promise<void>;
+  switchLedger: (ledgerId: string, directLedger?: Ledger) => Promise<void>;
   createLedger: (
     name: string,
     currency: string,
@@ -101,8 +101,9 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     init();
   }, [dataProvider, setCurrency, refreshLedgers]);
 
-  const switchLedger = async (ledgerId: string) => {
-    const target = ledgers.find((l) => l.id === ledgerId);
+  const switchLedger = async (ledgerId: string, directLedger?: Ledger) => {
+    // If directLedger is provided (e.g. just created), use it directly to avoid stale state issues
+    const target = directLedger || ledgers.find((l) => l.id === ledgerId);
     if (target) {
       setActiveLedger(target);
       localStorage.setItem("activeLedgerId", target.id);
@@ -148,8 +149,8 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
 
     // if (!startFromScratch) { ... }
 
-    await refreshLedgers();
-    await switchLedger(newLedger.id);
+    // No need to refreshLedgers() as switchLedger triggers a hard reload
+    await switchLedger(newLedger.id, newLedger);
   };
 
   const updateLedgerDetails = async (

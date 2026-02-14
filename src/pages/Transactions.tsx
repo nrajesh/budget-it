@@ -22,6 +22,7 @@ import { Transaction } from "@/data/finance-data";
 import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
+import { MissingCurrencyDialog } from "@/components/dialogs/MissingCurrencyDialog";
 
 const Transactions = () => {
   //   const session = useSession();
@@ -144,8 +145,7 @@ const Transactions = () => {
 
   const { toast } = useToast();
 
-  const filteredTransactions = React.useMemo(() => {
-    let projected: Transaction[] = [];
+  const projectedTransactions = React.useMemo(() => {
     if (scheduledTransactions.length > 0) {
       const today = new Date();
       const start = new Date(today);
@@ -158,15 +158,21 @@ const Transactions = () => {
         end = addMonths(today, 6);
       }
 
-      projected = projectScheduledTransactions(
+      return projectScheduledTransactions(
         scheduledTransactions,
         start,
         end,
       );
     }
+    return [];
+  }, [scheduledTransactions, dateRange?.to]);
 
-    const combinedTransactions = [...allTransactions, ...projected];
+  const combinedTransactions = React.useMemo(
+    () => [...allTransactions, ...projectedTransactions],
+    [allTransactions, projectedTransactions]
+  );
 
+  const filteredTransactions = React.useMemo(() => {
     let result = combinedTransactions.filter((t) => {
       if (dateRange?.from) {
         const tDate = new Date(t.date);
@@ -243,8 +249,7 @@ const Transactions = () => {
 
     return result;
   }, [
-    allTransactions,
-    scheduledTransactions,
+    combinedTransactions,
     selectedAccounts,
     selectedCategories,
     selectedSubCategories,
@@ -278,11 +283,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-              ...i,
-              ...full,
-              transfer_id: full.transfer_id || undefined,
-              recurrence_id: full.recurrence_id || undefined,
-            }
+            ...i,
+            ...full,
+            transfer_id: full.transfer_id || undefined,
+            recurrence_id: full.recurrence_id || undefined,
+          }
           : i;
       });
 
@@ -343,6 +348,8 @@ const Transactions = () => {
     "End Date",
     "Transfer ID",
     "Account Type",
+    "Transfer Account",
+    "Transfer Amount",
   ];
 
   const {
@@ -354,6 +361,8 @@ const Transactions = () => {
     setMappingDialogState,
     handleMappingConfirm,
     handleDetectTransfers,
+    missingCurrencyAccounts,
+    resolveMissingCurrencies,
   } = useTransactionPageActions(filteredTransactions);
 
   const handleCleanupDuplicates = async () => {
@@ -386,6 +395,7 @@ const Transactions = () => {
 
   const handleUnlinkTransaction = React.useCallback(
     async (transferId: string) => {
+      console.log("handleUnlinkTransaction called with:", transferId);
       const confirm = window.confirm(
         "Are you sure you want to unlink these transactions?",
       );
@@ -441,6 +451,7 @@ const Transactions = () => {
       <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <TransactionTable
           transactions={filteredTransactions}
+          allData={combinedTransactions}
           loading={isLoadingTransactions}
           onRefresh={invalidateAllData}
           onDeleteTransactions={handleDeleteTransactionsWrapper}
@@ -544,6 +555,23 @@ const Transactions = () => {
         file={mappingDialogState.file}
         requiredHeaders={REQUIRED_HEADERS}
         onConfirm={handleMappingConfirm}
+      />
+
+      <MissingCurrencyDialog
+        isOpen={missingCurrencyAccounts.length > 0}
+        onOpenChange={(open) => {
+          if (!open) {
+            // If user closes dialog without confirming, we should probably abort import or let them cancel
+            // But the hook resets state on finish/error.
+            // We don't have a direct cancel method exposed yet, but closing dialog essentially pauses it indefinitely unless we clear state.
+            // We should probably just do nothing or reload page.
+            // Ideally we add a cancelImport to the hook but for now let's just let it stay or close.
+            // Actually the dialog has a cancel button which should clear the state.
+          }
+        }}
+        accounts={missingCurrencyAccounts}
+        onConfirm={resolveMissingCurrencies}
+        onCancel={() => window.location.reload()} // Simple way to abort for now or we can expose a reset function
       />
 
       <ConfirmationDialog
