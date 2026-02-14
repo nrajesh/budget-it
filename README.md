@@ -6,8 +6,8 @@
 
 <!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
 <p align="center">
-  <a href="https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/main">
-    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
+  <a href="https://dl.circleci.com/status-badge/redirect/gh/nrajesh/budget-it/tree/pre-prod">
+    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/pre-prod.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
   </a>
   <a href="https://budget-it-nine.vercel.app/">
     <img src="https://deploy-badge.vercel.app/vercel/budget-it-nine?style=flat" alt="Vercel Deployment">
