@@ -287,6 +287,56 @@ We enforce high code quality standards using a strict **CircleCI** pipeline. Eve
 
 ---
 
+## 📚 Documentation & Workflow
+
+### 1. Interpreting the Documentation Folder
+
+The `documentation/` folder serves as the "Constitution" and "Operating System" for the AI agent (and human developers).
+
+| File | Purpose | Impact on Development |
+|------|---------|-----------------------|
+| **`.specify/templates/`** | **The Blueprints** | Defines the structure for Specs (`spec.md`) and Plans (`plan.md`). Ensures every new feature considers "Local-First" and "Privacy" principles automatically. |
+| **`.agent/workflows/`** | **The Instructions** | Defines *how* the AI behaves. The `/speckit.specify` workflow tells the agent: *"Read the user's prompt, fill out the spec template, then ask clarification questions."* |
+| **`documentation/AGENTS.md`** | **The Rulebook** | General rules for the AI. Contains Tech Stack constraints (e.g., "Always use Tailwind") and Boundaries (e.g., "Privacy First: No Data Export"). |
+
+### 2. How to Work with Speckit
+
+Instead of just saying "Build X", use this structured Spec-Driven functionality to prevent architecture drift.
+
+#### 🟢 For a New Feature
+1.  **Specify it**:
+    ```bash
+    /speckit.specify "I want to add a Savings Goal feature where users can set a target amount."
+    ```
+    *Result*: AI creates `specs/savings-goal/spec.md`.
+2.  **Plan it**:
+    ```bash
+    /speckit.plan
+    ```
+    *Result*: AI analyzes codebase and creates `specs/savings-goal/plan.md`.
+3.  **Task it**:
+    ```bash
+    /speckit.tasks
+    ```
+    *Result*: AI creates actionable checklist in `specs/savings-goal/tasks.md`.
+4.  **Implement it**:
+    ```bash
+    /speckit.implement
+    ```
+    *Result*: AI executes the checklist.
+
+#### 🟡 For a Bug Fix
+*   **Small Bug**: Just ask normally (e.g., *"Fix the off-by-one error in budget calc"*).
+*   **Complex Bug**: If logic changes are needed, run `/speckit.specify` to define correct behavior first.
+
+#### 🔴 For a Refactor
+Use `/speckit.plan` to skip the Product Spec phase:
+```bash
+/speckit.plan "Refactor the transaction context to use a reducer instead of state."
+```
+
+---
+
 ## 🛠️ Development Guide
 
 ### Adding New Components

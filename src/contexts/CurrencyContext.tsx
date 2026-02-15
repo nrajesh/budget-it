@@ -11,6 +11,7 @@ import {
   availableCurrencies,
   defaultExchangeRates,
 } from "@/constants/currency";
+import { fetchWithTimeout } from "@/utils/apiUtils";
 
 interface CurrencyContextType {
   selectedCurrency: string;
@@ -148,8 +149,10 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Using Frankfurter API (EU-based, sources from European Central Bank)
       // We request rates relative to USD to match our internal base.
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         "https://api.frankfurter.app/latest?from=USD",
+        {},
+        5000
       );
       if (!response.ok) {
         throw new Error("Failed to fetch rates");
