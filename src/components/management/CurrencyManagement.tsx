@@ -75,7 +75,9 @@ export const CurrencyManagement = () => {
       })
       .catch((err: unknown) => {
         console.error("Failed to fetch currencies:", err);
-        showError("Failed to load currency list. Check your internet connection.");
+        showError(
+          "Failed to load currency list. Check your internet connection.",
+        );
       });
   }, []);
 

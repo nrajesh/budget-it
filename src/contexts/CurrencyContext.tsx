@@ -152,7 +152,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       const response = await fetchWithTimeout(
         "https://api.frankfurter.app/latest?from=USD",
         {},
-        5000
+        5000,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch rates");
