@@ -223,3 +223,27 @@ export function parseTransactionCSV(
     error: onError,
   });
 }
+
+/**
+ * Sanitizes a field for CSV export to prevent formula injection.
+ * Escapes strings starting with =, +, -, or @ by prepending a single quote.
+ * Allows valid signed numbers to pass unescaped.
+ */
+export function sanitizeCSVField(value: string | number | boolean | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const stringValue = String(value);
+
+  // If the value was originally a number, it's safe
+  if (typeof value === "number") return stringValue;
+
+  // Check for dangerous prefixes
+  if (/^[=+\-@]/.test(stringValue)) {
+    // Allow valid signed numbers (e.g., +123, -45.67) to pass unescaped
+    // This regex matches optional sign, digits, optional decimal part
+    if (/^[+-]?\d+(\.\d+)?$/.test(stringValue)) {
+      return stringValue;
+    }
+    return "'" + stringValue;
+  }
+  return stringValue;
+}

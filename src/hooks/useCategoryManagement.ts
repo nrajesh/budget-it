@@ -11,6 +11,7 @@ import { useDataProvider } from "@/context/DataProviderContext";
 import { db } from "@/lib/dexieDB";
 import { slugify } from "@/lib/utils";
 import { saveFile } from "@/utils/backupUtils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 export const useCategoryManagement = () => {
   const { activeLedger } = useLedger();
@@ -271,13 +272,13 @@ export const useCategoryManagement = () => {
         if (catSubs.length > 0) {
           return catSubs.map((sub) =>
             [
-              `"${cat.name.replace(/"/g, '""')}"`,
-              `"${sub.name.replace(/"/g, '""')}"`,
+              `"${sanitizeCSVField(cat.name).replace(/"/g, '""')}"`,
+              `"${sanitizeCSVField(sub.name).replace(/"/g, '""')}"`,
             ].join(","),
           );
         }
         // If no sub-categories, just export category
-        return [[`"${cat.name.replace(/"/g, '""')}"`, ""].join(",")];
+        return [[`"${sanitizeCSVField(cat.name).replace(/"/g, '""')}"`, ""].join(",")];
       }),
     ].join("\n");
 

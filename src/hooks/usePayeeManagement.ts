@@ -9,6 +9,7 @@ import { saveFile } from "@/utils/backupUtils";
 
 import { useLedger } from "@/contexts/LedgerContext";
 import { slugify } from "@/lib/utils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 export const usePayeeManagement = (isAccount: boolean) => {
   const { invalidateAllData, deleteEntity } = useTransactions();
@@ -108,10 +109,10 @@ export const usePayeeManagement = (isAccount: boolean) => {
         headers.join(","),
         ...payees.map((p) =>
           [
-            `"${p.name.replace(/"/g, '""')}"`,
+            `"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`,
             p.currency || "USD",
             p.starting_balance || 0,
-            `"${(p.remarks || "").replace(/"/g, '""')}"`,
+            `"${sanitizeCSVField(p.remarks || "").replace(/"/g, '""')}"`,
           ].join(","),
         ),
       ].join("\n");
@@ -119,7 +120,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
       const headers = ["Vendor Name"];
       csvContent = [
         headers.join(","),
-        ...payees.map((p) => [`"${p.name.replace(/"/g, '""')}"`].join(",")),
+        ...payees.map((p) => [`"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`].join(",")),
       ].join("\n");
     }
 
