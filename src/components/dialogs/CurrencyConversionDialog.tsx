@@ -34,6 +34,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { fetchWithTimeout } from "@/utils/apiUtils";
 
 interface CurrencyConversionDialogProps {
   isOpen: boolean;
@@ -70,16 +71,24 @@ export const CurrencyConversionDialog: React.FC<
   // Fetch available currencies from Frankfurter API for the dropdown
   React.useEffect(() => {
     if (isOpen) {
-      fetch("https://api.frankfurter.app/currencies")
-        .then((res) => res.json())
-        .then((data) => {
+      fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+        .then((res: Response) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
+        .then((data: any) => {
           const formatted = Object.entries(data).map(([code, name]) => ({
             code,
             name: name as string,
           }));
           setApiCurrencies(formatted);
         })
-        .catch((err) => console.error("Failed to fetch currencies:", err));
+        .catch((err: unknown) => {
+          console.error("Failed to fetch currencies:", err);
+          showError(
+            "Failed to load currency list. Check your internet connection.",
+          );
+        });
     }
   }, [isOpen]);
 

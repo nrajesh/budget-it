@@ -26,6 +26,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { fetchWithTimeout } from "@/utils/apiUtils";
 import {
   ThemedCard,
   ThemedCardContent,
@@ -60,16 +61,24 @@ export const CurrencyManagement = () => {
 
   // Fetch available currencies from Frankfurter API for the dropdown
   React.useEffect(() => {
-    fetch("https://api.frankfurter.app/currencies")
-      .then((res) => res.json())
-      .then((data) => {
+    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+      .then((res: Response) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
+      .then((data: any) => {
         const formatted = Object.entries(data).map(([code, name]) => ({
           code,
           name: name as string,
         }));
         setApiCurrencies(formatted);
       })
-      .catch((err) => console.error("Failed to fetch currencies:", err));
+      .catch((err: unknown) => {
+        console.error("Failed to fetch currencies:", err);
+        showError(
+          "Failed to load currency list. Check your internet connection.",
+        );
+      });
   }, []);
 
   // Calculate rates relative to selected currency for display
@@ -251,11 +260,19 @@ export const CurrencyManagement = () => {
 
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
-                                  fetch(
+                                  // Fetch Rate
+                                  // 1 USD = ? NewCurrency
+                                  fetchWithTimeout(
                                     `https://api.frankfurter.app/latest?from=USD&to=${currency.code}`,
+                                    {},
+                                    5000,
                                   )
-                                    .then((res) => res.json())
-                                    .then((data) => {
+                                    .then((res: Response) => {
+                                      if (!res.ok)
+                                        throw new Error("Failed to fetch rate");
+                                      return res.json();
+                                    })
+                                    .then((data: any) => {
                                       const rateUSDToNew =
                                         data.rates[currency.code];
                                       if (rateUSDToNew) {
@@ -277,12 +294,15 @@ export const CurrencyManagement = () => {
                                         );
                                       }
                                     })
-                                    .catch((e) =>
+                                    .catch((e: unknown) => {
                                       console.error(
                                         "Failed to fetch initial rate",
                                         e,
-                                      ),
-                                    );
+                                      );
+                                      showError(
+                                        "Failed to fetch rate. Check internet connection.",
+                                      );
+                                    });
                                 }}
                               >
                                 <Check
