@@ -51,27 +51,46 @@ export function SortableHeader<T>({
     handleMouseUp();
   };
 
+  // Heuristic to fix flex alignment based on text alignment classes
+  const alignmentClass = className?.includes("text-right")
+    ? "justify-end"
+    : className?.includes("text-center")
+      ? "justify-center"
+      : "justify-start";
+
   return (
     <TableHead
       className={cn(
-        "cursor-pointer select-none transition-colors hover:bg-muted/50 active:bg-muted",
+        "p-0", // Remove default padding so button fills cell
         isSorted && "bg-muted/30 text-foreground font-bold",
         className,
       )}
-      onClick={() => onSort(sortKey)}
-      onContextMenu={(e) => onSortReset(e, sortKey)}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      title="Click to sort, Right-click (or long press) to reset"
+      aria-sort={
+        isSorted ? (direction === "asc" ? "ascending" : "descending") : "none"
+      }
       {...props}
     >
-      <div className="flex items-center space-x-1">
+      <button
+        type="button"
+        className={cn(
+          "flex h-full w-full items-center gap-1 px-4 py-2",
+          "cursor-pointer select-none transition-colors hover:bg-muted/50 active:bg-muted",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+          "text-inherit font-inherit bg-transparent border-0", // Reset native button styles
+          alignmentClass,
+        )}
+        onClick={() => onSort(sortKey)}
+        onContextMenu={(e) => onSortReset(e, sortKey)}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        title="Click to sort, Right-click (or long press) to reset"
+      >
         <span>{children || label}</span>
         {isSorted && (
-          <span className="ml-1 inline-flex">
+          <span className="inline-flex">
             {direction === "asc" ? (
               <ArrowUp className="h-3 w-3" />
             ) : (
@@ -79,7 +98,7 @@ export function SortableHeader<T>({
             )}
           </span>
         )}
-      </div>
+      </button>
     </TableHead>
   );
 }
