@@ -278,7 +278,9 @@ export const useCategoryManagement = () => {
           );
         }
         // If no sub-categories, just export category
-        return [[`"${sanitizeCSVField(cat.name).replace(/"/g, '""')}"`, ""].join(",")];
+        return [
+          [`"${sanitizeCSVField(cat.name).replace(/"/g, '""')}"`, ""].join(","),
+        ];
       }),
     ].join("\n");
 

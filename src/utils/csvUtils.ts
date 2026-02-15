@@ -229,7 +229,9 @@ export function parseTransactionCSV(
  * Escapes strings starting with =, +, -, or @ by prepending a single quote.
  * Allows valid signed numbers to pass unescaped.
  */
-export function sanitizeCSVField(value: string | number | boolean | null | undefined): string {
+export function sanitizeCSVField(
+  value: string | number | boolean | null | undefined,
+): string {
   if (value === null || value === undefined) return "";
   const stringValue = String(value);
 

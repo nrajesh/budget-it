@@ -120,7 +120,9 @@ export const usePayeeManagement = (isAccount: boolean) => {
       const headers = ["Vendor Name"];
       csvContent = [
         headers.join(","),
-        ...payees.map((p) => [`"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`].join(",")),
+        ...payees.map((p) =>
+          [`"${sanitizeCSVField(p.name).replace(/"/g, '""')}"`].join(","),
+        ),
       ].join("\n");
     }
 
