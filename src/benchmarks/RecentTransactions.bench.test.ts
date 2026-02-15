@@ -49,45 +49,63 @@ describe('RecentTransactions Performance', () => {
     tx2.sort(sortDescOptimized);
     const end2 = performance.now();
 
+    // eslint-disable-next-line no-console
     console.log(`Sort (new Date): ${(end1 - start1).toFixed(4)}ms`);
+    // eslint-disable-next-line no-console
     console.log(`Sort (String): ${(end2 - start2).toFixed(4)}ms`);
 
-    expect(tx1.map(t => t.id)).toEqual(tx2.map(t => t.id));
+    expect(tx1.map((t) => t.id)).toEqual(tx2.map((t) => t.id));
   });
 
-  it('Filter Performance: Slugify in Loop vs Pre-calc', () => {
+  it("Filter Performance: Slugify in Loop vs Pre-calc", () => {
     // Baseline: Slugify in loop (simulates what happens on EVERY filter change)
     const start1 = performance.now();
     // Simulate 10 filter interactions
-    for(let i=0; i<10; i++) {
-        transactions.filter(t => selectedCategories.includes(slugify(t.category)));
+    for (let i = 0; i < 10; i++) {
+      transactions.filter((t) =>
+        selectedCategories.includes(slugify(t.category)),
+      );
     }
     const end1 = performance.now();
 
     // Optimized: Pre-calc (happens once on data load)
     const startPre = performance.now();
-    const withSlugs = transactions.map(t => ({ ...t, categorySlug: slugify(t.category) }));
+    const withSlugs = transactions.map((t) => ({
+      ...t,
+      categorySlug: slugify(t.category),
+    }));
     const endPre = performance.now();
 
     // Optimized: Filter using pre-calc (simulates 10 filter interactions)
     const start2 = performance.now();
-    for(let i=0; i<10; i++) {
-        withSlugs.filter(t => selectedCategories.includes(t.categorySlug));
+    for (let i = 0; i < 10; i++) {
+      withSlugs.filter((t) => selectedCategories.includes(t.categorySlug));
     }
     const end2 = performance.now();
 
-    console.log(`Filter 10x (Slugify in loop): ${(end1 - start1).toFixed(4)}ms`);
-    console.log(`Filter 10x (Pre-calc filter only): ${(end2 - start2).toFixed(4)}ms`);
-    console.log(`Pre-calc Overhead (Once): ${(endPre - startPre).toFixed(4)}ms`);
+    // eslint-disable-next-line no-console
+    console.log(
+      `Filter 10x (Slugify in loop): ${(end1 - start1).toFixed(4)}ms`,
+    );
+    // eslint-disable-next-line no-console
+    console.log(
+      `Filter 10x (Pre-calc filter only): ${(end2 - start2).toFixed(4)}ms`,
+    );
+    // eslint-disable-next-line no-console
+    console.log(
+      `Pre-calc Overhead (Once): ${(endPre - startPre).toFixed(4)}ms`,
+    );
 
     // Total time for 10 interactions:
     // Baseline: 10 * Loop
     // Optimized: 1 * Overhead + 10 * FastLoop
 
     const totalBaseline = end1 - start1;
-    const totalOptimized = (endPre - startPre) + (end2 - start2);
+    const totalOptimized = endPre - startPre + (end2 - start2);
 
-    console.log(`Total Work (10 interactions): Baseline=${totalBaseline.toFixed(2)}ms vs Optimized=${totalOptimized.toFixed(2)}ms`);
-
+    // eslint-disable-next-line no-console
+    console.log(
+      `Total Work (10 interactions): Baseline=${totalBaseline.toFixed(2)}ms vs Optimized=${totalOptimized.toFixed(2)}ms`,
+    );
   });
 });
