@@ -33,12 +33,25 @@ import { useNavigate } from "react-router-dom";
 
 // Define sort function outside component to ensure stability
 const sortDesc = (a: Transaction, b: Transaction) => {
-  const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-  if (dateDiff !== 0) return dateDiff;
+  // Optimization: Use string comparison for ISO dates to avoid expensive Date object creation
+  if (typeof a.date === "string" && typeof b.date === "string") {
+    const dateDiff = b.date.localeCompare(a.date);
+    if (dateDiff !== 0) return dateDiff;
+  } else {
+    // Fallback for non-string dates
+    const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+  }
 
-  const createdDiff =
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  if (createdDiff !== 0) return createdDiff;
+  // Optimization: Use string comparison for created_at
+  if (typeof a.created_at === "string" && typeof b.created_at === "string") {
+    const createdDiff = b.created_at.localeCompare(a.created_at);
+    if (createdDiff !== 0) return createdDiff;
+  } else {
+    const createdDiff =
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (createdDiff !== 0) return createdDiff;
+  }
 
   return b.id.localeCompare(a.id);
 };
@@ -142,6 +155,8 @@ export function RecentTransactions({
       .map((t) => ({
         ...t,
         runningBalance: balanceMap.get(t.id) ?? 0,
+        // Optimization: Pre-calculate slug to avoid repeated regex ops in filter loop
+        categorySlug: slugify(t.category),
       }))
       .sort(sortDesc);
   }, [transactions, balanceMap]);
@@ -153,7 +168,7 @@ export function RecentTransactions({
       return transactionsWithCorrectBalance;
     }
     return transactionsWithCorrectBalance.filter((t) =>
-      selectedCategories.includes(slugify(t.category)),
+      selectedCategories.includes(t.categorySlug),
     );
   }, [transactionsWithCorrectBalance, selectedCategories]);
 
