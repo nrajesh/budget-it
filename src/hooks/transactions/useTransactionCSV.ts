@@ -11,6 +11,7 @@ import {
   validateCSVHeaders,
   parseCSVRow,
   sanitizeCSVField,
+  CSVRow,
 } from "@/utils/csvUtils";
 
 export const useTransactionCSV = () => {
@@ -46,7 +47,7 @@ export const useTransactionCSV = () => {
       setIsImporting(true);
       setIsImporting(true);
 
-      const onComplete = async (results: any) => {
+      const onComplete = async (results: Papa.ParseResult<CSVRow>) => {
         const actualHeaders = results.meta.fields || [];
         const { isValid, missing } = validateCSVHeaders(actualHeaders);
 
@@ -77,14 +78,14 @@ export const useTransactionCSV = () => {
 
           // Step 1: Ensure all payees exist
           const uniqueAccountsData = parsedData
-            .map((row: any) => ({
+            .map((row) => ({
               name: row.Account,
               currency: row.Currency,
             }))
-            .filter((item: any) => item.name);
+            .filter((item) => item.name);
 
           await Promise.all(
-            uniqueAccountsData.map(async (acc: any) => {
+            uniqueAccountsData.map(async (acc) => {
               await dataProvider.ensurePayeeExists(
                 acc.name,
                 true,
@@ -95,13 +96,11 @@ export const useTransactionCSV = () => {
           );
 
           const uniqueVendors = [
-            ...new Set(
-              parsedData.map((row: any) => row.Vendor).filter(Boolean),
-            ),
+            ...new Set(parsedData.map((row) => row.Vendor).filter(Boolean)),
           ];
           await Promise.all(
-            uniqueVendors.map((name: any) => {
-              const row = parsedData.find((r: any) => r.Vendor === name);
+            uniqueVendors.map((name) => {
+              const row = parsedData.find((r) => r.Vendor === name);
               const isTransfer = row?.Category === "Transfer";
               return dataProvider.ensurePayeeExists(
                 name,
@@ -121,12 +120,10 @@ export const useTransactionCSV = () => {
 
           // Step 2: Ensure all categories exist
           const uniqueCategories = [
-            ...new Set(
-              parsedData.map((row: any) => row.Category).filter(Boolean),
-            ),
+            ...new Set(parsedData.map((row) => row.Category).filter(Boolean)),
           ];
           await Promise.all(
-            uniqueCategories.map((name: any) =>
+            uniqueCategories.map((name) =>
               dataProvider.ensureCategoryExists(name, activeLedger!.id),
             ),
           );
@@ -135,7 +132,7 @@ export const useTransactionCSV = () => {
 
           // Step 3: Prepare transactions for insertion using the now-updated accountCurrencyMap
           const transactionsToInsert = parsedData
-            .map((row: any) => {
+            .map((row) => {
               const parsed = parseCSVRow(row, "USD", accountCurrencyMap);
               if (!parsed) return null;
 
@@ -144,7 +141,7 @@ export const useTransactionCSV = () => {
                 ...parsed,
               };
             })
-            .filter((t: any) => t !== null);
+            .filter((t): t is NonNullable<typeof t> => t !== null);
 
           if (transactionsToInsert.length === 0) {
             showError(
@@ -241,9 +238,7 @@ export const useTransactionCSV = () => {
       Remarks: sanitizeCSVField(t.remarks),
       Currency: sanitizeCSVField(t.currency),
       transfer_id: sanitizeCSVField(t.transfer_id || null),
-      is_scheduled_origin: sanitizeCSVField(
-        t.is_scheduled_origin || false,
-      ),
+      is_scheduled_origin: sanitizeCSVField(t.is_scheduled_origin || false),
       Frequency: sanitizeCSVField(t.recurrence_frequency || "None"),
       "End Date": sanitizeCSVField(
         t.recurrence_end_date

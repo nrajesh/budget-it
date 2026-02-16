@@ -224,7 +224,9 @@ export function parseTransactionCSV(
   });
 }
 
-export function sanitizeCSVField(value: string | number | boolean | null | undefined): string {
+export function sanitizeCSVField(
+  value: string | number | boolean | null | undefined,
+): string {
   if (value === null || value === undefined) {
     return "";
   }
