@@ -6,3 +6,7 @@
 ## 2026-02-11 - Global Tooltip Availability
 **Learning:** The `SidebarProvider` in `Layout.tsx` wraps the application content with a `TooltipProvider`. This means `Tooltip` components can be used anywhere within the main layout without needing a local `TooltipProvider`.
 **Action:** When adding tooltips to components inside the main layout, directly use `Tooltip`, `TooltipTrigger`, and `TooltipContent` without wrapping them in a new provider.
+
+## 2026-02-16 - Sortable Table Headers
+**Learning:** Making `<th>` elements interactive via `onClick` breaks keyboard accessibility (tab focus) and semantic structure. Screen readers expect `aria-sort` on the `<th>` but interaction on a child button.
+**Action:** Wrap header content in a semantic `<button type="button">` that fills the cell. Move event handlers to the button, but keep `aria-sort` on the parent `<th>`. Use flex utilities to handle alignment (e.g., `justify-end` for right-aligned columns).
