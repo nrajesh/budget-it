@@ -9,6 +9,8 @@ import {
   parseISO,
   startOfDay,
   endOfDay,
+  differenceInDays,
+  differenceInWeeks,
 } from "date-fns";
 
 /**
@@ -75,6 +77,32 @@ export function projectScheduledTransactions(
       if (match) {
         intervalValue = parseInt(match[1], 10);
         intervalUnit = match[2];
+      }
+    }
+
+    // Optimization: Fast-forward to the projection window if significantly in the past.
+    // This turns O(N) iterations into O(1) calculation for old scheduled transactions.
+    // Only safe for fixed-length intervals (days/weeks) to avoid drift issues with months/years.
+    if (isBefore(currentDate, windowStart)) {
+      if (intervalUnit === "d") {
+        const diffDays = differenceInDays(windowStart, currentDate);
+        if (diffDays > intervalValue) {
+          const intervalsToSkip = Math.floor(diffDays / intervalValue);
+          if (intervalsToSkip > 0) {
+            currentDate = addDays(currentDate, intervalsToSkip * intervalValue);
+          }
+        }
+      } else if (intervalUnit === "w") {
+        const diffWeeks = differenceInWeeks(windowStart, currentDate);
+        if (diffWeeks > intervalValue) {
+          const intervalsToSkip = Math.floor(diffWeeks / intervalValue);
+          if (intervalsToSkip > 0) {
+            currentDate = addWeeks(
+              currentDate,
+              intervalsToSkip * intervalValue,
+            );
+          }
+        }
       }
     }
 
