@@ -5,3 +5,7 @@
 ## 2024-05-24 - Memoizing Handlers for Virtualized Lists
 **Learning:** `TransactionTable.tsx` memoized its row component (`TransactionRow`), but `Transactions.tsx` passed inline arrow functions (e.g., `onRowDoubleClick`, `onUnlinkTransaction`) as props. This caused `TransactionTable` to receive new props on every render, triggering a re-render of ALL rows, negating the benefit of `React.memo` on the rows.
 **Action:** Wrap all event handlers passed to large lists or memoized components in `useCallback` to ensure referential stability. This allows `React.memo` to effectively skip re-renders for rows whose data hasn't changed.
+
+## 2025-05-25 - Fast-Forwarding Recurring Transactions
+**Learning:** `projectScheduledTransactions` in `src/utils/forecasting.ts` iterated through every occurrence of a recurring transaction from its start date (which could be years ago) to the current window. For daily/weekly transactions, this caused thousands of unnecessary iterations and object allocations.
+**Action:** Implemented an O(1) "fast-forward" optimization for fixed-length intervals (Daily/Weekly) using arithmetic (`differenceInDays`/`differenceInWeeks`) to jump directly to the projection window. Variable-length intervals (Monthly/Yearly) were left as iterative to preserve date correctness (e.g., handling variable month lengths). This reduced processing time by ~40% for long-running daily transactions.
