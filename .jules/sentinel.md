@@ -14,3 +14,8 @@
 **Vulnerability:** The `write-backup-file` IPC handler allowed saving files with any extension, enabling attackers to write executable files (e.g., `.sh`, `.bat`) if they could control the filename argument.
 **Learning:** Even with path traversal protection (using `path.basename`), unrestricted file extensions in file-write operations can lead to Remote Code Execution (RCE) by writing startup scripts or executables.
 **Prevention:** Enforce a strict allowlist of file extensions (e.g., `.json`, `.lock`) in the Main process for any IPC handler that writes files.
+
+## 2025-05-18 - CSV Injection (Formula Injection)
+**Vulnerability:** User input exported to CSV files was not sanitized, allowing formulas (starting with `=`, `+`, `-`, `@`) to execute when opened in spreadsheet software.
+**Learning:** Even if `sanitizeCSVField` is applied, valid numeric values like `-100` must be preserved as numbers while still escaping malicious formulas like `+cmd|' /C calc'!A0`. A regex check for valid numeric format is crucial before escaping.
+**Prevention:** Implement `sanitizeCSVField` that checks for dangerous prefixes but whitelists valid numeric strings to avoid breaking legitimate data.
