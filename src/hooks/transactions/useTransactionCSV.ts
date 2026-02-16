@@ -10,6 +10,7 @@ import {
   parseTransactionCSV,
   validateCSVHeaders,
   parseCSVRow,
+  sanitizeCSVField,
 } from "@/utils/csvUtils";
 
 export const useTransactionCSV = () => {
@@ -232,19 +233,23 @@ export const useTransactionCSV = () => {
     }
 
     const dataToExport = transactions.map((t) => ({
-      Date: formatDateToDDMMYYYY(t.date),
-      Account: t.account,
-      Vendor: t.vendor,
-      Category: t.category,
-      Amount: t.amount,
-      Remarks: t.remarks,
-      Currency: t.currency,
-      transfer_id: t.transfer_id || null,
-      is_scheduled_origin: t.is_scheduled_origin || false,
-      Frequency: t.recurrence_frequency || "None",
-      "End Date": t.recurrence_end_date
-        ? formatDateToDDMMYYYY(t.recurrence_end_date)
-        : "",
+      Date: sanitizeCSVField(formatDateToDDMMYYYY(t.date)),
+      Account: sanitizeCSVField(t.account),
+      Vendor: sanitizeCSVField(t.vendor),
+      Category: sanitizeCSVField(t.category),
+      Amount: sanitizeCSVField(t.amount),
+      Remarks: sanitizeCSVField(t.remarks),
+      Currency: sanitizeCSVField(t.currency),
+      transfer_id: sanitizeCSVField(t.transfer_id || null),
+      is_scheduled_origin: sanitizeCSVField(
+        t.is_scheduled_origin || false,
+      ),
+      Frequency: sanitizeCSVField(t.recurrence_frequency || "None"),
+      "End Date": sanitizeCSVField(
+        t.recurrence_end_date
+          ? formatDateToDDMMYYYY(t.recurrence_end_date)
+          : "",
+      ),
     }));
 
     const csv = Papa.unparse(dataToExport, {

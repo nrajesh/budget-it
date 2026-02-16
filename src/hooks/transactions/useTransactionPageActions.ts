@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { slugify } from "@/lib/utils";
 import { Transaction, AccountType, Ledger } from "@/types/dataProvider";
 import { saveFile } from "@/utils/backupUtils";
+import { sanitizeCSVField } from "@/utils/csvUtils";
 
 export interface ImportConfig {
   importMode?: "replace" | "append";
@@ -28,7 +29,7 @@ export interface ExportRow {
   Payee: string;
   Category: string;
   Subcategory: string;
-  Amount: number;
+  Amount: number | string;
   Notes: string;
   Currency: string;
   Frequency: string;
@@ -112,17 +113,19 @@ export const useTransactionPageActions = (
   // --- Export Logic ---
   const handleExport = () => {
     let dataToExport: ExportRow[] = filteredTransactions.map((t) => ({
-      Date: t.date ? parseRobustDate(t.date)?.split("T")[0] : t.date,
-      Account: t.account,
-      Payee: t.vendor,
-      Category: t.category,
-      Subcategory: t.sub_category || "",
-      Amount: t.amount,
-      Notes: t.remarks || "",
-      Currency: t.currency,
-      Frequency: t.recurrence_frequency || "",
-      "End Date": t.recurrence_end_date || "",
-      "Transfer ID": t.transfer_id || "",
+      Date: sanitizeCSVField(
+        t.date ? parseRobustDate(t.date)?.split("T")[0] : t.date,
+      ),
+      Account: sanitizeCSVField(t.account),
+      Payee: sanitizeCSVField(t.vendor),
+      Category: sanitizeCSVField(t.category),
+      Subcategory: sanitizeCSVField(t.sub_category || ""),
+      Amount: sanitizeCSVField(t.amount),
+      Notes: sanitizeCSVField(t.remarks || ""),
+      Currency: sanitizeCSVField(t.currency),
+      Frequency: sanitizeCSVField(t.recurrence_frequency || ""),
+      "End Date": sanitizeCSVField(t.recurrence_end_date || ""),
+      "Transfer ID": sanitizeCSVField(t.transfer_id || ""),
     }));
 
     let fileName = activeLedger
