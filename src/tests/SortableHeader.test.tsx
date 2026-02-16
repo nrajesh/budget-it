@@ -28,7 +28,7 @@ describe("SortableHeader", () => {
           onSort={mockOnSort}
           onSortReset={mockOnSortReset}
         />
-      </Wrapper>
+      </Wrapper>,
     );
 
     const button = screen.getByRole("button", { name: "Name" });
@@ -45,7 +45,7 @@ describe("SortableHeader", () => {
           onSort={mockOnSort}
           onSortReset={mockOnSortReset}
         />
-      </Wrapper>
+      </Wrapper>,
     );
 
     const th = screen.getByRole("columnheader", { name: "Name" });
@@ -62,7 +62,7 @@ describe("SortableHeader", () => {
           onSort={mockOnSort}
           onSortReset={mockOnSortReset}
         />
-      </Wrapper>
+      </Wrapper>,
     );
 
     const th = screen.getByRole("columnheader", { name: "Name" });
@@ -79,7 +79,7 @@ describe("SortableHeader", () => {
           onSort={mockOnSort}
           onSortReset={mockOnSortReset}
         />
-      </Wrapper>
+      </Wrapper>,
     );
 
     const button = screen.getByRole("button", { name: "Name" });

@@ -62,7 +62,11 @@ export function SortableHeader<T>({
         className,
       )}
       aria-sort={
-        isSorted ? (direction === "asc" ? "ascending" : "descending") : undefined
+        isSorted
+          ? direction === "asc"
+            ? "ascending"
+            : "descending"
+          : undefined
       }
       {...props}
     >
