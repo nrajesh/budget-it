@@ -223,3 +223,21 @@ export function parseTransactionCSV(
     error: onError,
   });
 }
+
+export function sanitizeCSVField(
+  value: string | number | boolean | null | undefined,
+): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  const str = String(value);
+  if (/^[=+\-@]/.test(str)) {
+    // Check if it's a valid number
+    // Allow signs at the start for numbers
+    if (/^[+-]?\d+(\.\d+)?$/.test(str)) {
+      return str;
+    }
+    return "'" + str;
+  }
+  return str;
+}
