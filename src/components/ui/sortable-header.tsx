@@ -51,27 +51,43 @@ export function SortableHeader<T>({
     handleMouseUp();
   };
 
+  const isRightAligned = className?.includes("text-right");
+
   return (
     <TableHead
       className={cn(
-        "cursor-pointer select-none transition-colors hover:bg-muted/50 active:bg-muted",
-        isSorted && "bg-muted/30 text-foreground font-bold",
+        // Reset default padding to allow button to fill the cell
+        // Also remove hover effect from the cell itself since the button handles it
+        "p-0 hover:bg-transparent",
         className,
       )}
-      onClick={() => onSort(sortKey)}
-      onContextMenu={(e) => onSortReset(e, sortKey)}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      title="Click to sort, Right-click (or long press) to reset"
+      aria-sort={
+        isSorted ? (direction === "asc" ? "ascending" : "descending") : undefined
+      }
       {...props}
     >
-      <div className="flex items-center space-x-1">
+      <button
+        className={cn(
+          "flex h-full w-full items-center gap-1 px-4",
+          "ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          "hover:bg-muted/50 active:bg-muted",
+          "font-inherit text-inherit", // Ensure font/color inheritance
+          isSorted && "bg-muted/30 font-bold text-foreground",
+          isRightAligned ? "justify-end" : "justify-start",
+        )}
+        onClick={() => onSort(sortKey)}
+        onContextMenu={(e) => onSortReset(e, sortKey)}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        type="button"
+        title="Click to sort, Right-click (or long press) to reset"
+      >
         <span>{children || label}</span>
         {isSorted && (
-          <span className="ml-1 inline-flex">
+          <span className="ml-1 flex-shrink-0">
             {direction === "asc" ? (
               <ArrowUp className="h-3 w-3" />
             ) : (
@@ -79,7 +95,7 @@ export function SortableHeader<T>({
             )}
           </span>
         )}
-      </div>
+      </button>
     </TableHead>
   );
 }
