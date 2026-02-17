@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type MouseEvent } from "react";
 
 export type SortDirection = "asc" | "desc";
 
@@ -84,7 +84,7 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
     });
   };
 
-  const handleHeaderRightClick = (e: React.MouseEvent) => {
+  const handleHeaderRightClick = (e: MouseEvent) => {
     e.preventDefault(); // Prevent default context menu
     setSortConfig(null);
   };
