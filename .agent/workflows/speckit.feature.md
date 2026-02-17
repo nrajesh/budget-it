@@ -4,7 +4,7 @@ description: End-to-end feature development workflow: from branch creation to sq
 
 # Feature Development Workflow
 
-This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Implement -> Merge.
+This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Checklist -> Tasks -> Implement -> Analyze -> Merge.
 
 **Usage**: `@[/speckit.feature] "Feature Description"`
 
@@ -29,7 +29,7 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Im
 - **Goal**: Create a technical implementation plan.
 - **Action**: 
   - Create `specs/[branch]/plan.md`.
-  - content should include:
+  - Content should include:
     - Technical Context
     - Proposed Changes (files to modify/create)
     - Verification Plan
@@ -54,11 +54,24 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Im
   - Check off items in `task.md` (the main agent task tracker) as you progress.
 - **Validation**: Verify each step.
 
-## 7. Merge to Pre-Prod
-- **Goal**: Squash merge and cleanup.
-- **Trigger**: Only proceed after all tasks are verified complete.
+## 7. Cross-Artifact Analysis (Speckit.Analyze)
+- **Goal**: Validate consistency and quality before merging.
+- **Trigger**: Only proceed after all implementation tasks are verified complete.
 - **Action**:
-  - **Ask User**: "Feature complete. Ready to squash merge to `pre-prod`? (y/n)"
+  - Run non-destructive cross-artifact consistency and quality analysis.
+  - Check `spec.md`, `plan.md`, and `tasks.md` for inconsistencies, duplications, ambiguities, and coverage gaps.
+  - Validate against project constitution (`.specify/memory/constitution.md`).
+  - Produce a structured analysis report with severity ratings.
+- **Gate**:
+  - **If CRITICAL issues found**: STOP. Report issues and ask user to resolve before merging.
+  - **If only LOW/MEDIUM issues**: Warn user but allow proceeding to merge.
+  - **If all clear**: Automatically proceed to merge step.
+
+## 8. Merge to Pre-Prod
+- **Goal**: Squash merge and cleanup.
+- **Trigger**: Only proceed after analysis passes (no CRITICAL issues).
+- **Action**:
+  - **Ask User**: "Feature complete and analysis passed. Ready to squash merge to `pre-prod`? (y/n)"
   - **If Yes**:
     1. `git add . && git commit -m "feat: [feature name] implementation"` (if changes pending)
     2. `git checkout pre-prod`
@@ -66,4 +79,3 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Im
     4. `git commit -m "feat: [feature name]"`
     5. `git branch -D [feature-branch]`
   - **Notify**: "Feature merged to pre-prod and local branch deleted."
-
