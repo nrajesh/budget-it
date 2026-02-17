@@ -491,7 +491,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                 )}
 
                 <DialogFooter className="col-span-2">
-                  <Button type="submit">
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     {isEditMode ? "Save Changes" : "Add Transaction"}
                   </Button>
                 </DialogFooter>
