@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
-import path from 'path';
-import fs from 'fs';
-import { loadAuthorizedFolders, saveAuthorizedFolders, isFolderAuthorized } from './security';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as Security from './security';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -44,7 +44,7 @@ app.whenReady().then(() => {
 
     // Initialize authorized folders from config
     const backupConfigPath = path.join(app.getPath('userData'), 'backup-config.json');
-    authorizedBackupFolders = loadAuthorizedFolders(backupConfigPath);
+    authorizedBackupFolders = Security.loadAuthorizedFolders(backupConfigPath);
 
     ipcMain.handle('select-folder', async () => {
         const result = await dialog.showOpenDialog(mainWindow!, {
@@ -55,7 +55,7 @@ app.whenReady().then(() => {
         const selectedPath = result.filePaths[0];
         // SECURITY: Authorize the selected folder
         authorizedBackupFolders.add(selectedPath);
-        saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
+        Security.saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
 
         return selectedPath;
     });
@@ -76,7 +76,7 @@ app.whenReady().then(() => {
 
             // SECURITY: Validate folder authorization
             // Prevent arbitrary file writes to unauthorized locations
-            if (!isFolderAuthorized(folder, authorizedBackupFolders)) {
+            if (!Security.isFolderAuthorized(folder, authorizedBackupFolders)) {
                  console.error("Security alert: Unauthorized backup folder attempt", folder);
                  throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
             }
