@@ -93,7 +93,7 @@ importers:
         specifier: ^1.1.4
         version: 1.2.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query':
-        specifier: ^5.56.2
+        specifier: ^5.90.21
         version: 5.90.21(react@18.3.1)
       '@uidotdev/usehooks':
         specifier: ^2.4.1
