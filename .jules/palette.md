@@ -10,3 +10,7 @@
 ## 2026-02-16 - Sortable Table Headers
 **Learning:** Making `<th>` elements interactive via `onClick` breaks keyboard accessibility (tab focus) and semantic structure. Screen readers expect `aria-sort` on the `<th>` but interaction on a child button.
 **Action:** Wrap header content in a semantic `<button type="button">` that fills the cell. Move event handlers to the button, but keep `aria-sort` on the parent `<th>`. Use flex utilities to handle alignment (e.g., `justify-end` for right-aligned columns).
+
+## 2026-02-17 - Combobox Interaction Pattern
+**Learning:** The `Combobox` component (specifically in `AddEditTransactionDialog`) renders as a direct text input (via `cmdk`) rather than a button-triggered popover. Automation scripts targeting these fields should look for `input` elements by placeholder text (e.g., "Search accounts...") instead of `button[role='combobox']`.
+**Action:** When automating or testing forms using `Combobox`, target the input field directly for typing and filtering, and use `role="option"` or `[cmdk-item]` to select results.
