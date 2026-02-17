@@ -10,17 +10,17 @@ export default defineConfig(() => ({
   preview: {
     port: 62153,
   },
-  base: './',
+  base: "./",
   plugins: [
     react(),
     {
-      name: 'html-csp',
-      apply: 'build',
+      name: "html-csp",
+      apply: "build",
       transformIndexHtml(html) {
         return html.replace(
-          '<head>',
+          "<head>",
           `<head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.dev; font-src 'self' data:;">`
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.dev; font-src 'self' data:;">`,
         );
       },
     },

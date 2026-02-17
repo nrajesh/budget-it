@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type MouseEvent } from "react";
 
 export type SortDirection = "asc" | "desc";
 
@@ -20,41 +20,50 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
   const sortedData = useMemo(() => {
     if (!sortConfig) return data;
 
-    return [...data].sort((a, b) => {
-      const { key, direction } = sortConfig;
+    const { key, direction } = sortConfig;
+    const isAsc = direction === "asc";
 
-      // Handle nested properties if key is a string with dots (e.g., "category.name")
-      const getValue = (item: T, path: string | keyof T) => {
-        if (typeof path === "string" && path.includes(".")) {
-          return path
-            .split(".")
-            .reduce(
-              (obj: unknown, k) =>
-                obj ? (obj as Record<string, unknown>)[k] : null,
-              item,
-            );
-        }
-        return item[path as keyof T];
+    // Optimization: Determine the value accessor once, outside the loop.
+    // This avoids repeated string splitting and type checking for every comparison.
+    let getValue: (item: T) => unknown;
+
+    if (typeof key === "string" && key.includes(".")) {
+      const pathParts = key.split(".");
+      getValue = (item: T) => {
+        return pathParts.reduce(
+          (obj: unknown, part) =>
+            obj ? (obj as Record<string, unknown>)[part] : null,
+          item,
+        );
       };
+    } else {
+      // Direct access is much faster than reduce
+      getValue = (item: T) => item[key as keyof T];
+    }
 
-      const aValue = getValue(a, key);
-      const bValue = getValue(b, key);
+    return [...data].sort((a, b) => {
+      const aValue = getValue(a);
+      const bValue = getValue(b);
 
       if (aValue === bValue) return 0;
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
 
       if (typeof aValue === "string" && typeof bValue === "string") {
-        return direction === "asc"
+        return isAsc
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
 
-      if ((aValue as number) < (bValue as number)) {
-        return direction === "asc" ? -1 : 1;
+      // Ensure we are comparing numbers safely
+      const aNum = aValue as number;
+      const bNum = bValue as number;
+
+      if (aNum < bNum) {
+        return isAsc ? -1 : 1;
       }
-      if ((aValue as number) > (bValue as number)) {
-        return direction === "asc" ? 1 : -1;
+      if (aNum > bNum) {
+        return isAsc ? 1 : -1;
       }
       return 0;
     });
@@ -75,7 +84,7 @@ export function useTableSort<T>({ data, initialSort }: UseTableSortProps<T>) {
     });
   };
 
-  const handleHeaderRightClick = (e: React.MouseEvent) => {
+  const handleHeaderRightClick = (e: MouseEvent) => {
     e.preventDefault(); // Prevent default context menu
     setSortConfig(null);
   };

@@ -9,3 +9,7 @@
 ## 2025-05-25 - Fast-Forwarding Recurring Transactions
 **Learning:** `projectScheduledTransactions` in `src/utils/forecasting.ts` iterated through every occurrence of a recurring transaction from its start date (which could be years ago) to the current window. For daily/weekly transactions, this caused thousands of unnecessary iterations and object allocations.
 **Action:** Implemented an O(1) "fast-forward" optimization for fixed-length intervals (Daily/Weekly) using arithmetic (`differenceInDays`/`differenceInWeeks`) to jump directly to the projection window. Variable-length intervals (Monthly/Yearly) were left as iterative to preserve date correctness (e.g., handling variable month lengths). This reduced processing time by ~40% for long-running daily transactions.
+
+## 2025-05-26 - Hoisting Property Accessors in Sort Hooks
+**Learning:** `useTableSort.ts` was dynamically splitting string paths (e.g., "category.name") inside the `sort` comparison function. For a table with N items, this resulted in O(N log N) string splits and reduce operations.
+**Action:** Pre-compute the property accessor strategy outside the sort loop. If the key is a nested path, parse it once and create a specialized getter function. If it's a simple key, use direct property access. This removes expensive string operations from the hot path of the sort algorithm.
