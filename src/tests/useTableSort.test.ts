@@ -64,12 +64,7 @@ describe("useTableSort", () => {
   });
 
   it("should handle null and undefined values", () => {
-    const data = [
-      { val: 2 },
-      { val: null },
-      { val: 1 },
-      { val: undefined },
-    ];
+    const data = [{ val: 2 }, { val: null }, { val: 1 }, { val: undefined }];
     // Sort logic places null/undefined at the end for asc? Let's check existing implementation.
     // implementation: if (aValue === null || aValue === undefined) return 1;
     // so null/undefined are pushed to the end.
@@ -104,7 +99,10 @@ describe("useTableSort", () => {
       result.current.handleHeaderClick("val");
     });
 
-    expect(result.current.sortConfig).toEqual({ key: "val", direction: "desc" });
+    expect(result.current.sortConfig).toEqual({
+      key: "val",
+      direction: "desc",
+    });
 
     act(() => {
       result.current.handleHeaderClick("val");
@@ -126,23 +124,26 @@ describe("useTableSort", () => {
       result.current.handleHeaderClick("other");
     });
 
-    expect(result.current.sortConfig).toEqual({ key: "other", direction: "asc" });
+    expect(result.current.sortConfig).toEqual({
+      key: "other",
+      direction: "asc",
+    });
   });
 
   it("should handle mixed string and number sorting", () => {
-     // Existing implementation coerces comparison.
-     const data = [{ val: "10" }, { val: "2" }];
-     // "10" vs "2" -> "10".localeCompare("2") -> -1 (because '1' < '2')
-     // wait, localeCompare handles numeric? No, strictly string.
-     // So "10" comes before "2" in string sort.
+    // Existing implementation coerces comparison.
+    const data = [{ val: "10" }, { val: "2" }];
+    // "10" vs "2" -> "10".localeCompare("2") -> -1 (because '1' < '2')
+    // wait, localeCompare handles numeric? No, strictly string.
+    // So "10" comes before "2" in string sort.
 
-     const { result } = renderHook(() =>
-       useTableSort({
-         data,
-         initialSort: { key: "val", direction: "asc" },
-       }),
-     );
+    const { result } = renderHook(() =>
+      useTableSort({
+        data,
+        initialSort: { key: "val", direction: "asc" },
+      }),
+    );
 
-     expect(result.current.sortedData).toEqual([{ val: "10" }, { val: "2" }]);
+    expect(result.current.sortedData).toEqual([{ val: "10" }, { val: "2" }]);
   });
 });
