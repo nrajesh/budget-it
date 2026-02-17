@@ -15,8 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const security_1 = require("./security");
 let mainWindow = null;
 let isQuitting = false;
+let authorizedBackupFolders = new Set();
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
         width: 1200,
@@ -48,13 +50,20 @@ electron_1.app.on('before-quit', () => {
 });
 electron_1.app.whenReady().then(() => {
     createWindow();
+    // Initialize authorized folders from config
+    const backupConfigPath = path_1.default.join(electron_1.app.getPath('userData'), 'backup-config.json');
+    authorizedBackupFolders = (0, security_1.loadAuthorizedFolders)(backupConfigPath);
     electron_1.ipcMain.handle('select-folder', () => __awaiter(void 0, void 0, void 0, function* () {
         const result = yield electron_1.dialog.showOpenDialog(mainWindow, {
             properties: ['openDirectory', 'createDirectory'],
         });
         if (result.canceled)
             return null;
-        return result.filePaths[0];
+        const selectedPath = result.filePaths[0];
+        // SECURITY: Authorize the selected folder
+        authorizedBackupFolders.add(selectedPath);
+        (0, security_1.saveAuthorizedFolders)(backupConfigPath, authorizedBackupFolders);
+        return selectedPath;
     }));
     electron_1.ipcMain.handle('write-backup-file', (_event, folder, filename, content) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -67,6 +76,12 @@ electron_1.app.whenReady().then(() => {
             if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
                 console.error("Security alert: Invalid file extension", filename);
                 throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
+            }
+            // SECURITY: Validate folder authorization
+            // Prevent arbitrary file writes to unauthorized locations
+            if (!(0, security_1.isFolderAuthorized)(folder, authorizedBackupFolders)) {
+                console.error("Security alert: Unauthorized backup folder attempt", folder);
+                throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
             }
             // Ensure directory exists
             if (!fs_1.default.existsSync(folder)) {

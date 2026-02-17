@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { loadAuthorizedFolders, saveAuthorizedFolders, isFolderAuthorized } from './security';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
+let authorizedBackupFolders = new Set<string>();
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -40,12 +42,22 @@ app.on('before-quit', () => {
 app.whenReady().then(() => {
     createWindow();
 
+    // Initialize authorized folders from config
+    const backupConfigPath = path.join(app.getPath('userData'), 'backup-config.json');
+    authorizedBackupFolders = loadAuthorizedFolders(backupConfigPath);
+
     ipcMain.handle('select-folder', async () => {
         const result = await dialog.showOpenDialog(mainWindow!, {
             properties: ['openDirectory', 'createDirectory'],
         });
         if (result.canceled) return null;
-        return result.filePaths[0];
+
+        const selectedPath = result.filePaths[0];
+        // SECURITY: Authorize the selected folder
+        authorizedBackupFolders.add(selectedPath);
+        saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
+
+        return selectedPath;
     });
 
     ipcMain.handle('write-backup-file', async (_event, folder: string, filename: string, content: string) => {
@@ -60,6 +72,13 @@ app.whenReady().then(() => {
             if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
                 console.error("Security alert: Invalid file extension", filename);
                 throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
+            }
+
+            // SECURITY: Validate folder authorization
+            // Prevent arbitrary file writes to unauthorized locations
+            if (!isFolderAuthorized(folder, authorizedBackupFolders)) {
+                 console.error("Security alert: Unauthorized backup folder attempt", folder);
+                 throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
             }
 
             // Ensure directory exists
