@@ -19,3 +19,8 @@
 **Vulnerability:** User input exported to CSV files was not sanitized, allowing formulas (starting with `=`, `+`, `-`, `@`) to execute when opened in spreadsheet software.
 **Learning:** Even if `sanitizeCSVField` is applied, valid numeric values like `-100` must be preserved as numbers while still escaping malicious formulas like `+cmd|' /C calc'!A0`. A regex check for valid numeric format is crucial before escaping.
 **Prevention:** Implement `sanitizeCSVField` that checks for dangerous prefixes but whitelists valid numeric strings to avoid breaking legitimate data.
+
+## 2025-05-18 - Arbitrary File Write via Unrestricted Folder IPC
+**Vulnerability:** The `write-backup-file` IPC handler accepted any `folder` path from the renderer, allowing a compromised renderer to write files to any user-writable directory (e.g., config locations, autostart folders) even if the filename was sanitized.
+**Learning:** Sanitizing filenames is insufficient if the directory path itself is trusted from the client. Electron IPC handlers must authorize the target directory, especially for file write operations.
+**Prevention:** Implement an allowlist of authorized directories in the Main process. Update the allowlist only when the user explicitly selects a folder via a Main-controlled dialog (`dialog.showOpenDialog`). Validate all write requests against this allowlist.
