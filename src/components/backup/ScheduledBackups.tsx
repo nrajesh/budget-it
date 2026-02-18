@@ -1,5 +1,10 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -35,12 +40,6 @@ import { BackupConfig } from "@/types/dataProvider";
 
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { getElectronAPI } from "@/utils/electron";
 
 // Fading Undo Component
@@ -467,26 +466,24 @@ const ScheduledBackups = () => {
                           </span>
                         </div>
                       ) : (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1 cursor-help underline decoration-dotted underline-offset-4 decoration-muted-foreground/30">
-                                <FolderOpen className="h-3 w-3 text-muted-foreground" />
-                                <span className="truncate max-w-[120px]">
-                                  {b.directoryHandle?.name || "Unknown"}
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="font-medium">
-                                {b.directoryHandle?.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Full path is hidden by browser security.
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 cursor-help underline decoration-dotted underline-offset-4 decoration-muted-foreground/30">
+                              <FolderOpen className="h-3 w-3 text-muted-foreground" />
+                              <span className="truncate max-w-[120px]">
+                                {b.directoryHandle?.name || "Unknown"}
+                              </span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="font-medium">
+                              {b.directoryHandle?.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Full path is hidden by browser security.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </TableCell>
                     <TableCell>
@@ -497,29 +494,27 @@ const ScheduledBackups = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex justify-center">
-                              {b.isActive ? (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-red-500" />
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex justify-center">
                             {b.isActive ? (
-                              <p>Backup active and permission granted.</p>
+                              <CheckCircle className="h-5 w-5 text-green-500" />
                             ) : (
-                              <p>
-                                Backup disabled. Info: Folder missing or
-                                permission denied.
-                              </p>
+                              <XCircle className="h-5 w-5 text-red-500" />
                             )}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {b.isActive ? (
+                            <p>Backup active and permission granted.</p>
+                          ) : (
+                            <p>
+                              Backup disabled. Info: Folder missing or
+                              permission denied.
+                            </p>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       {b.isActive ? (
@@ -538,25 +533,35 @@ const ScheduledBackups = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       {!b.path && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => verifyPermission(b)}
-                          className="text-amber-500 hover:text-amber-600"
-                          title="Verify/Grant Permission"
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => verifyPermission(b)}
+                              className="text-amber-500 hover:text-amber-600"
+                              aria-label="Verify permission"
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Verify permission</TooltipContent>
+                        </Tooltip>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(b.id)}
-                        className="text-red-500 hover:text-red-600"
-                        title="Delete Schedule"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(b.id)}
+                            className="text-red-500 hover:text-red-600"
+                            aria-label="Delete schedule"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete schedule</TooltipContent>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
