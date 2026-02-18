@@ -492,6 +492,7 @@ const TransactionTable = ({
                 <Checkbox
                   checked={allCurrentPageSelected}
                   onCheckedChange={toggleSelectAll}
+                  aria-label="Select all transactions on this page"
                 />
               </TableHead>
               <SortableHeader

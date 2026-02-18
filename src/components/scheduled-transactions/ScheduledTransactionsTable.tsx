@@ -184,6 +184,7 @@ export function ScheduledTransactionsTable({
                     selectedIds.size === transactions.length
                   }
                   onCheckedChange={toggleSelectAll}
+                  aria-label="Select all scheduled transactions"
                 />
               </TableHead>
               <TableHead className="text-slate-800 dark:text-slate-200 font-semibold">
@@ -241,6 +242,7 @@ export function ScheduledTransactionsTable({
                           <Checkbox
                             checked={selectedIds.has(transaction.id)}
                             onCheckedChange={() => toggleSelect(transaction.id)}
+                            aria-label={`Select scheduled transaction for ${transaction.vendor}`}
                           />
                         </TableCell>
                         <TableCell className="text-slate-700 dark:text-slate-300 font-medium">
