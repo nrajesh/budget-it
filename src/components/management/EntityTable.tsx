@@ -165,6 +165,7 @@ export const EntityTable = <T extends { id: string; name: string }>({
                                 size="icon"
                                 onClick={() => handleEditClick(item)}
                                 disabled={!isDeletable(item)}
+                                aria-label="Edit"
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -173,6 +174,7 @@ export const EntityTable = <T extends { id: string; name: string }>({
                                 size="icon"
                                 onClick={() => handleDeleteClick(item)}
                                 disabled={!isDeletable(item)}
+                                aria-label="Delete"
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>

@@ -266,6 +266,7 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
                               className="h-8 w-8 text-green-600"
                               onClick={() => handleSaveEdit(sub)}
                               disabled={isLoading}
+                              aria-label="Save"
                             >
                               <Save className="h-4 w-4" />
                             </Button>
@@ -275,6 +276,7 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
                               className="h-8 w-8 text-muted-foreground"
                               onClick={handleCancelEdit}
                               disabled={isLoading}
+                              aria-label="Cancel"
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -287,6 +289,7 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
                               className="h-8 w-8"
                               onClick={() => handleStartEdit(sub)}
                               disabled={isLoading}
+                              aria-label="Edit sub-category"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -296,6 +299,7 @@ const ManageSubCategoriesDialog: React.FC<ManageSubCategoriesDialogProps> = ({
                               className="h-8 w-8 text-destructive"
                               onClick={() => handleDeleteClick(sub)}
                               disabled={isLoading}
+                              aria-label="Delete sub-category"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

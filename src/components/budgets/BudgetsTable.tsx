@@ -238,6 +238,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                       variant="ghost"
                       size="icon"
                       onClick={() => onEdit(budget)}
+                      aria-label="Edit budget"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -245,6 +246,7 @@ export const BudgetsTable: React.FC<BudgetsTableProps> = ({
                       variant="ghost"
                       size="icon"
                       onClick={() => onDelete(budget)}
+                      aria-label="Delete budget"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

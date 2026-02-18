@@ -230,13 +230,19 @@ export function BudgetCard({
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
-        <Button variant="outline" size="icon" onClick={() => onEdit(budget)}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => onEdit(budget)}
+          aria-label="Edit budget"
+        >
           <Edit className="h-4 w-4" />
         </Button>
         <Button
           variant="destructive"
           size="icon"
           onClick={() => onDelete(budget.id)}
+          aria-label="Delete budget"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -403,6 +409,7 @@ function GoalCard({
           size="icon"
           className="border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
           onClick={() => onEdit(budget)}
+          aria-label="Edit budget"
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -410,6 +417,7 @@ function GoalCard({
           variant="destructive"
           size="icon"
           onClick={() => onDelete(budget.id)}
+          aria-label="Delete budget"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

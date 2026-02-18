@@ -544,6 +544,7 @@ const ScheduledBackups = () => {
                           onClick={() => verifyPermission(b)}
                           className="text-amber-500 hover:text-amber-600"
                           title="Verify/Grant Permission"
+                          aria-label="Verify permission"
                         >
                           <ShieldCheck className="h-4 w-4" />
                         </Button>
@@ -554,6 +555,7 @@ const ScheduledBackups = () => {
                         onClick={() => handleDelete(b.id)}
                         className="text-red-500 hover:text-red-600"
                         title="Delete Schedule"
+                        aria-label="Delete schedule"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
