@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
 import {
   ThemedCard,
   ThemedCardContent,
@@ -49,7 +50,7 @@ import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 
 const LedgerEntryPage = () => {
   const { ledgers, switchLedger, refreshLedgers, deleteLedger } = useLedger();
-  const { generateDiverseDemoData } = useTransactions();
+  const { generateDiverseDemoData, setOperationProgress } = useTransactions();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
 
@@ -117,6 +118,14 @@ const LedgerEntryPage = () => {
     if (!newLedgerDetails) return;
 
     try {
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Creating ledger...",
+        stage: "Creating ledger...",
+        progress: 0,
+        totalStages: 100,
+      });
+
       // 1. Create New Ledger
       const newLedger = await dataProvider.addLedger({
         name: newLedgerDetails.name,
@@ -136,27 +145,37 @@ const LedgerEntryPage = () => {
 
       if (transactions.length === 0) {
         showError("No valid transactions found after parsing.");
-        // We created an empty ledger. User might be confused.
+        setOperationProgress(null);
         return;
       }
 
-      // We need to ensure Accounts, Vendors, Categories exist.
-      // Logic reused/adapted from previous implementation but using parsed transactions
-
       // Step A: Payees/Accounts
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Setting up accounts...",
+        stage: "Setting up accounts...",
+        progress: 15,
+        totalStages: 100,
+      });
+
       const uniqueAccounts = [
         ...new Set(transactions.map((t) => t.account).filter(Boolean)),
       ];
       for (const accName of uniqueAccounts) {
-        // Find currency for this account from data if possible?
-        // parsed transactions have currency set to default or parsed.
-        // We can find the first transaction for this account to get currency
         const t = transactions.find((tx) => tx.account === accName);
         const accCurrency = t?.currency || newLedgerDetails.currency;
         await dataProvider.ensurePayeeExists(accName, true, ledgerId, {
           currency: accCurrency,
         });
       }
+
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Setting up vendors...",
+        stage: "Setting up vendors...",
+        progress: 40,
+        totalStages: 100,
+      });
 
       const uniqueVendors = [
         ...new Set(transactions.map((t) => t.vendor).filter(Boolean)),
@@ -166,6 +185,14 @@ const LedgerEntryPage = () => {
       }
 
       // Step B: Categories
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Setting up categories...",
+        stage: "Setting up categories...",
+        progress: 60,
+        totalStages: 100,
+      });
+
       const uniqueCategories = [
         ...new Set(transactions.map((t) => t.category).filter(Boolean)),
       ];
@@ -174,6 +201,14 @@ const LedgerEntryPage = () => {
       }
 
       // Step C: Insert Transactions
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Inserting transactions...",
+        stage: "Inserting transactions...",
+        progress: 80,
+        totalStages: 100,
+      });
+
       const transactionsToInsert = transactions.map((t) => ({
         user_id: ledgerId,
         date: t.date,
@@ -191,6 +226,14 @@ const LedgerEntryPage = () => {
 
       await dataProvider.addMultipleTransactions(transactionsToInsert);
 
+      setOperationProgress({
+        title: "Importing CSV",
+        description: "Import complete!",
+        stage: "Complete",
+        progress: 100,
+        totalStages: 100,
+      });
+
       showSuccess(
         `Imported ${transactionsToInsert.length} transactions into new ledger "${newLedgerDetails.name}".`,
       );
@@ -199,6 +242,7 @@ const LedgerEntryPage = () => {
       console.error(e);
       showError("Failed to import CSV data.");
     } finally {
+      setTimeout(() => setOperationProgress(null), 500);
       setIsMappingDialogOpen(false);
       setCsvImportFile(null);
       setNewLedgerDetails(null);
@@ -224,13 +268,32 @@ const LedgerEntryPage = () => {
           setIsImportPasswordOpen(true);
         } else {
           // Assume plain text
+          setOperationProgress({
+            title: "Importing Data",
+            description: "Importing backup data...",
+            stage: "Importing...",
+            progress: 50,
+            totalStages: 100,
+          });
+
           await dataProvider.importData(parsed);
+
+          setOperationProgress({
+            title: "Importing Data",
+            description: "Import complete!",
+            stage: "Complete",
+            progress: 100,
+            totalStages: 100,
+          });
+
           showSuccess("Data imported successfully!");
 
           // Instant refresh instead of reload
           await refreshLedgers();
+          setTimeout(() => setOperationProgress(null), 500);
         }
       } catch {
+        setOperationProgress(null);
         showError("Invalid file format.");
       }
     };
@@ -242,15 +305,43 @@ const LedgerEntryPage = () => {
   const handleImportEncryptedParams = async (password: string) => {
     if (!tempImportFile) return;
     try {
+      setOperationProgress({
+        title: "Importing Encrypted Data",
+        description: "Decrypting backup...",
+        stage: "Decrypting...",
+        progress: 25,
+        totalStages: 100,
+      });
+
       const decryptedParams = await decryptData(tempImportFile, password);
       const data = JSON.parse(decryptedParams);
+
+      setOperationProgress({
+        title: "Importing Encrypted Data",
+        description: "Importing data...",
+        stage: "Importing...",
+        progress: 50,
+        totalStages: 100,
+      });
+
       await dataProvider.importData(data);
+
+      setOperationProgress({
+        title: "Importing Encrypted Data",
+        description: "Import complete!",
+        stage: "Complete",
+        progress: 100,
+        totalStages: 100,
+      });
+
       showSuccess("Encrypted data imported successfully!");
       setTempImportFile(null);
 
       // Instant refresh instead of reload
       await refreshLedgers();
+      setTimeout(() => setOperationProgress(null), 500);
     } catch (e) {
+      setOperationProgress(null);
       const message = e instanceof Error ? e.message : "Unknown error";
       showError(`Import failed: ${message}`);
     }
@@ -471,9 +562,8 @@ const LedgerEntryPage = () => {
           })}
 
           <ThemedCard
-            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${
-              ledgers.length === 0 ? "max-w-md w-full" : ""
-            }`}
+            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${ledgers.length === 0 ? "max-w-md w-full" : ""
+              }`}
             onClick={() => setIsCreateOpen(true)}
           >
             <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
@@ -647,6 +737,8 @@ const LedgerEntryPage = () => {
         description="This will clear ALL existing data (ledgers, transactions, budgets) and generate new diverse demo data. This action cannot be undone."
         confirmText="Generate Data"
       />
+
+      <GlobalProgressDialog />
     </div>
   );
 };
