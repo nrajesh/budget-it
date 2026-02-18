@@ -261,6 +261,9 @@ budget-it/
 │   ├── types/                 # TypeScript type definitions
 │   ├── utils/                 # Helper functions (currency, date, etc.)
 │   └── tests/                 # Test files
+├── .agent/workflows/          # AI agent slash command definitions
+├── scheduled-agents/          # AI agent rulesets (personality & rules)
+├── specs/                     # Feature specifications (Speckit artifacts)
 ├── .circleci/                 # CircleCI Pipeline config
 ├── package.json
 ├── vite.config.ts
@@ -309,6 +312,27 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 2.  **Plan**: `/speckit.plan`
 3.  **Task**: `/speckit.tasks`
 4.  **Implement**: `/speckit.implement`
+
+### 3. AI Agent Workflows
+
+This project includes three specialized AI agents that can be invoked via slash commands in a compatible AI-powered IDE. Each agent focuses on a specific area of code quality and runs a self-contained workflow: it scans the codebase, identifies improvements, implements changes, and verifies them — all from a single command.
+
+| Command | Agent | What It Does |
+|---------|-------|--------------|
+| `/agent.palette` | 🎨 Palette | Finds and fixes **UX and accessibility** issues — missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
+| `/agent.bolt` | ⚡ Bolt | Finds and fixes **performance** issues — unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries. |
+| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues — XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks. |
+
+#### How do they work?
+
+Each agent has two parts:
+
+1. **Ruleset** (`scheduled-agents/*.md`) — A detailed personality and checklist that tells the agent what to look for and how to behave. Think of it as the agent's "mission brief".
+2. **Workflow** (`.agent/workflows/agent.*.md`) — The step-by-step process the agent follows: create a branch → scan the codebase → implement fixes → run all quality checks → merge.
+
+#### Do I need a specific IDE?
+
+The slash commands (e.g., `/agent.palette`) work automatically in IDEs that support the `.agent/workflows/` convention. Even if your IDE doesn't support slash commands, the ruleset files in `scheduled-agents/` are plain markdown — you can read them and follow the instructions manually, or paste them as context for any AI assistant.
 
 ---
 
