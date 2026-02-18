@@ -60,6 +60,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDialog";
 // import { useUser } from "@/contexts/UserContext";
@@ -430,24 +435,39 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                setTheme(resolvedTheme === "light" ? "dark" : "light")
-              }
-            >
-              {resolvedTheme === "dark" ? (
-                <Sun className="size-5" />
-              ) : (
-                <Moon className="size-5" />
-              )}
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="size-5" />
-              <span className="sr-only">Notifications</span>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() =>
+                    setTheme(resolvedTheme === "light" ? "dark" : "light")
+                  }
+                  aria-label="Toggle theme"
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="size-5" />
+                  ) : (
+                    <Moon className="size-5" />
+                  )}
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Toggle theme</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Notifications text-muted-foreground hover:text-foreground"
+                >
+                  <Bell className="size-5" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Notifications</TooltipContent>
+            </Tooltip>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -501,13 +521,19 @@ const Layout = () => {
         <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
           <Outlet />
         </main>
-        <Button
-          onClick={() => setIsAddDialogOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          <Plus className="h-6 w-6" />
-          <span className="sr-only">Add Transaction</span>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+              aria-label="Add Transaction"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="sr-only">Add Transaction</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Add Transaction</TooltipContent>
+        </Tooltip>
         <AddEditTransactionDialog
           isOpen={isAddDialogOpen}
           onOpenChange={setIsAddDialogOpen}

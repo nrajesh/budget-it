@@ -6,7 +6,7 @@ The codebase uses shadcn/ui `<Button>` components with `size="icon"` for action 
 - `Layout.tsx`: Uses `<span className="sr-only">` inside the button
 - `TransactionActions.tsx`: Uses `<span className="sr-only">` inside the button
 
-For this change, we'll use `aria-label` directly on the `<Button>` element — it's the simplest approach and consistent with how the `Checkbox` components in the same files are already labelled.
+For this change, we'll use `aria-label` directly on the `<Button>` element for accessibility and wrap them in Shadcn `Tooltip` components for sighted user guidance. `TooltipProvider` is already available globally via `SidebarProvider` in `Layout.tsx`.
 
 ## Proposed Changes
 

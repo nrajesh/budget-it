@@ -12,6 +12,11 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Edit,
   Trash2,
   Target,
@@ -230,22 +235,32 @@ export function BudgetCard({
         </div>
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onEdit(budget)}
-          aria-label="Edit budget"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={() => onDelete(budget.id)}
-          aria-label="Delete budget"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => onEdit(budget)}
+              aria-label="Edit budget"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit budget</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => onDelete(budget.id)}
+              aria-label="Delete budget"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete budget</TooltipContent>
+        </Tooltip>
       </CardFooter>
     </Card>
   );
@@ -404,23 +419,33 @@ function GoalCard({
         )}
       </CardContent>
       <CardFooter className="flex justify-end space-x-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
-          onClick={() => onEdit(budget)}
-          aria-label="Edit budget"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={() => onDelete(budget.id)}
-          aria-label="Delete budget"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+              onClick={() => onEdit(budget)}
+              aria-label="Edit budget"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit budget</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => onDelete(budget.id)}
+              aria-label="Delete budget"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Delete budget</TooltipContent>
+        </Tooltip>
       </CardFooter>
     </Card>
   );

@@ -7,6 +7,7 @@ Many interactive icon-only buttons across the application lack `aria-label` attr
 ## Goals
 
 - Add `aria-label` attributes to all icon-only `<Button size="icon">` instances missing accessible labels
+- Add hover tooltips using Shadcn `Tooltip` component to improve UX for sighted users
 - Ensure screen readers announce meaningful action names (e.g., "Edit budget", "Delete", "Previous month")
 - Follow existing patterns already used in the codebase
 
