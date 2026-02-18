@@ -26,3 +26,7 @@ dist-ssr
 # Dyad-specific files
 AI_RULES.md
 .env
+
+# Lint output artifacts
+lint_output.txt
+lint_report.txt
