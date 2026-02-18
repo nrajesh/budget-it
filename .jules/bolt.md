@@ -13,3 +13,7 @@
 ## 2025-05-26 - Hoisting Property Accessors in Sort Hooks
 **Learning:** `useTableSort.ts` was dynamically splitting string paths (e.g., "category.name") inside the `sort` comparison function. For a table with N items, this resulted in O(N log N) string splits and reduce operations.
 **Action:** Pre-compute the property accessor strategy outside the sort loop. If the key is a nested path, parse it once and create a specialized getter function. If it's a simple key, use direct property access. This removes expensive string operations from the hot path of the sort algorithm.
+
+## 2025-05-27 - Optimizing Projected Transaction Deduplication
+**Learning:** In `useTransactionData.ts`, merging real and projected transactions involved an O(N*M) deduplication loop where every projected transaction was compared against every real transaction using `some()`. This caused a 800ms+ delay on every render for large datasets.
+**Action:** Replace the O(N*M) loop with a O(N) lookup Map (`${date}|${vendor}` -> `amounts[]`). This allows verifying duplicates in O(1) time per projected transaction. Also replaced expensive `new Date(isoString).toISOString().split('T')[0]` with faster `isoString.substring(0, 10)` for date keys.

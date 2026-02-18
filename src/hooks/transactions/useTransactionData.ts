@@ -4,6 +4,10 @@ import { slugify } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { filterTransactions } from "@/utils/nlp-search";
 import { projectScheduledTransactions } from "@/utils/forecasting";
+import {
+  createTransactionLookup,
+  deduplicateTransactions,
+} from "@/utils/transactionUtils";
 
 import { Transaction } from "@/types/dataProvider";
 
@@ -47,6 +51,12 @@ export const useTransactionData = ({
 }: UseTransactionDataProps) => {
   const { transactions, scheduledTransactions } = useTransactions();
 
+  // Create lookup map for deduplication
+  // This depends only on 'transactions' and is O(N)
+  const transactionLookup = React.useMemo(() => {
+    return createTransactionLookup(transactions);
+  }, [transactions]);
+
   const combinedTransactions = React.useMemo(() => {
     const projectionHorizon = new Date();
     projectionHorizon.setFullYear(projectionHorizon.getFullYear() + 1); // 1 year projection
@@ -58,31 +68,17 @@ export const useTransactionData = ({
     );
 
     // Dedup: Filter out projected transactions that have a matching REAL transaction
-    // Match criteria: Same Day, Same Amount, Same Vendor (or Account if transfer)
-    const validProjected = projectedTransactions.filter((p) => {
-      const pDate = new Date(p.date).toISOString().split("T")[0];
-      const pVendor = (p.vendor || "").toLowerCase().trim();
-      const pAmount = p.amount;
-
-      // Check if ANY real transaction matches
-      const hasMatch = transactions.some((t) => {
-        const tDate = new Date(t.date).toISOString().split("T")[0];
-        const tVendor = (t.vendor || "").toLowerCase().trim();
-        return (
-          tDate === pDate &&
-          Math.abs(t.amount - pAmount) < 0.01 &&
-          tVendor === pVendor
-        );
-      });
-
-      return !hasMatch;
-    });
+    // Uses optimized O(1) lookup map instead of O(N) scan per item
+    const validProjected = deduplicateTransactions(
+      projectedTransactions,
+      transactionLookup,
+    );
 
     return [...transactions, ...validProjected].sort(
       (a: Transaction, b: Transaction) =>
         new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
-  }, [transactions, scheduledTransactions]);
+  }, [transactions, scheduledTransactions, transactionLookup]);
 
   const filteredTransactions = React.useMemo(() => {
     let filtered = combinedTransactions;
