@@ -52,7 +52,6 @@ function slowDedup(
 }
 
 describe("Deduplication Benchmark", () => {
-  /* eslint-disable no-console */
   it("compares slow vs fast deduplication", () => {
     // Setup data
     const realTxParams = { count: 5000, start: new Date("2024-01-01") };
@@ -106,5 +105,4 @@ describe("Deduplication Benchmark", () => {
     expect(resultFast.length).toBe(resultSlow.length);
     // Basic verification of content? Not strictly needed for perf bench if lengths match for deterministic data.
   });
-  /* eslint-enable no-console */
 });

@@ -3,7 +3,6 @@ import { projectScheduledTransactions } from "../utils/forecasting";
 import { ScheduledTransaction } from "../types/dataProvider";
 
 describe("performance repro", () => {
-  /* eslint-disable no-console */
   it("measures projection time", () => {
     const st: ScheduledTransaction = {
       id: "1",
@@ -40,5 +39,4 @@ describe("performance repro", () => {
       `Projection time for 1000 iterations: ${(end - start).toFixed(2)}ms`,
     );
   });
-  /* eslint-enable no-console */
 });
