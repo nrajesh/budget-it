@@ -4,7 +4,7 @@ description: End-to-end feature development workflow: from branch creation to sq
 
 # Feature Development Workflow
 
-This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Checklist -> Tasks -> Implement -> Analyze -> Merge.
+This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Checklist -> Tasks -> Implement -> Analyze -> **Verify** -> Merge.
 
 **Usage**: `@[/speckit.feature] "Feature Description"`
 
@@ -65,13 +65,34 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Ch
 - **Gate**:
   - **If CRITICAL issues found**: STOP. Report issues and ask user to resolve before merging.
   - **If only LOW/MEDIUM issues**: Warn user but allow proceeding to merge.
-  - **If all clear**: Automatically proceed to merge step.
+  - **If all clear**: Automatically proceed to verify step.
 
-## 8. Merge to Pre-Prod
+## 8. Local Verification Gate (NON-NEGOTIABLE)
+- **Goal**: Catch lint, formatting, type, and build errors BEFORE merging — mirroring the CI pipeline locally.
+- **Trigger**: Only proceed after cross-artifact analysis passes.
+- **Action**: Run the following checks sequentially. ALL must pass before merging.
+  // turbo
+  1. **Format Check**: `pnpm format:check` (or `npx prettier --check "src/**/*.{ts,tsx,css}"`)
+     - If fails: Run `pnpm format` to auto-fix, then re-check. Commit the formatting fixes.
+  // turbo
+  2. **Lint**: `pnpm lint` (or `npx eslint .`)
+     - If fails: Fix lint errors, then re-check. Commit the fixes.
+  // turbo
+  3. **Type Check**: `pnpm exec tsc --noEmit`
+     - If fails: Fix type errors, then re-check. Commit the fixes.
+  // turbo
+  4. **Build**: `pnpm build`
+     - If fails: Fix build errors, then re-check. Commit the fixes.
+- **Gate**:
+  - **If ANY check fails after fix attempts**: STOP. Report the failure and ask user to resolve.
+  - **If ALL pass**: Proceed to merge.
+- **Notify**: Report verification results to user, e.g. "✅ All local checks passed (format, lint, types, build)."
+
+## 9. Merge to Pre-Prod
 - **Goal**: Squash merge and cleanup.
-- **Trigger**: Only proceed after analysis passes (no CRITICAL issues).
+- **Trigger**: Only proceed after local verification passes (Step 8).
 - **Action**:
-  - **Ask User**: "Feature complete and analysis passed. Ready to squash merge to `pre-prod`? (y/n)"
+  - **Ask User**: "Feature complete and all checks passed. Ready to squash merge to `pre-prod`? (y/n)"
   - **If Yes**:
     1. `git add . && git commit -m "feat: [feature name] implementation"` (if changes pending)
     2. `git checkout pre-prod`
