@@ -562,8 +562,9 @@ const LedgerEntryPage = () => {
           })}
 
           <ThemedCard
-            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${ledgers.length === 0 ? "max-w-md w-full" : ""
-              }`}
+            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+              ledgers.length === 0 ? "max-w-md w-full" : ""
+            }`}
             onClick={() => setIsCreateOpen(true)}
           >
             <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
