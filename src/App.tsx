@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
 import { FilterProvider } from "./contexts/FilterContext";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,7 @@ function App() {
       <Toaster />
       <ShadcnToaster />
       <VercelAnalytics />
+      <SpeedInsights />
     </QueryClientProvider>
   );
 }
