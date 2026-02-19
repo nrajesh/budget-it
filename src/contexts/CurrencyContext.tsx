@@ -69,7 +69,9 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     [key: string]: number;
   }>(() => {
     const savedRates = localStorage.getItem("currency_exchange_rates");
-    return savedRates ? JSON.parse(savedRates) : defaultExchangeRates;
+    const parsedSavedRates = savedRates ? JSON.parse(savedRates) : {};
+    // Merge defaults with saved rates, prioritizing saved rates but ensuring defaults exist
+    return { ...defaultExchangeRates, ...parsedSavedRates };
   });
 
   useEffect(() => {
@@ -195,15 +197,19 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       const fromRate = exchangeRatesState[fromCurrency];
       const toRate = exchangeRatesState[toCurrency];
 
+      // Fallback for missing rates to prevent crashes/NaN
+      const safeFromRate = fromRate ?? 1;
+      const safeToRate = toRate ?? 1;
+
       if (fromRate === undefined || toRate === undefined) {
+        // Only warn if it's not a temporary render state
         console.warn(
-          `Exchange rate not found for conversion from ${fromCurrency} to ${toCurrency}.`,
+          `Exchange rate not found for conversion from ${fromCurrency} (${fromRate}) to ${toCurrency} (${toRate}). Using fallback 1.0`,
         );
-        return amount;
       }
 
-      const amountInBase = amount / fromRate;
-      return amountInBase * toRate;
+      const amountInBase = amount / safeFromRate;
+      return amountInBase * safeToRate;
     },
     [exchangeRatesState],
   );
