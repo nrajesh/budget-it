@@ -142,9 +142,11 @@ export default function CalendarView() {
   }, [selectedDate, transactions, scheduledOccurrences]);
 
   return (
-    <div className="h-full flex flex-col space-y-4 p-4 md:p-8 pt-6 overflow-hidden">
+    <div className="h-full flex flex-col space-y-6 p-6 rounded-xl overflow-hidden transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="flex items-center justify-between space-y-2 shrink-0">
-        <h2 className="text-3xl font-bold tracking-tight">Calendar</h2>
+        <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          Calendar
+        </h1>
       </div>
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
         <div className="h-full min-h-0 overflow-hidden">

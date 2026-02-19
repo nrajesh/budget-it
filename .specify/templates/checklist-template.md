@@ -27,6 +27,13 @@
 - [ ] CHK003 Error states are handled gracefully
 - [ ] CHK004 Loading states are shown (Skeleton/Spinner)
 
+## UI Consistency (New Standard)
+
+- [ ] CHK-UI-01 **Header**: Verify gradient styling and font size match Analytics/Insights (4xl, font-black, tracking-tighter, transparent bg-clip-text).
+- [ ] CHK-UI-02 **Container**: Verify background color (slate-50 / dark-gradient), padding (p-6), and border-radius (rounded-xl) match other pages.
+- [ ] CHK-UI-03 **Responsive**: Verify layout on mobile and desktop.
+- [ ] CHK-UI-04 **Dark Mode**: Verify appearance in dark mode.
+
 ## UI/UX Standards
 
 - [ ] CHK005 Mobile verify (tested on 375px width)
