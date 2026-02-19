@@ -1,17 +1,25 @@
 ---
-description: End-to-end feature development workflow: from branch creation to squash merge.
+description: "End-to-end feature development workflow: from branch creation to squash merge."
 ---
 
-# Feature Development Workflow
+## User Input
 
-This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Checklist -> Tasks -> Implement -> Analyze -> **Verify** -> Merge.
+```text
+$ARGUMENTS
+```
 
-**Usage**: `@[/speckit.feature] "Feature Description"`
+You **MUST** consider the user input before proceeding (if not empty).
 
-## 1. Initialize Feature
-- **Input**: specific feature description from user.
-- **Action**: Run `.specify/scripts/bash/create-new-feature.sh "Feature Description"`.
-- **Validation**: Ensure the script switches to the new branch successfully.
+## Outline
+
+Goal: Manage the complete feature development lifecycle from initialization to merge.
+
+Execution steps:
+
+1. **Initialize Feature**:
+   - **Input**: `$ARGUMENTS` (Feature Description)
+   - **Action**: Run `.specify/scripts/bash/create-new-feature.sh "Feature Description"`.
+   - **Validation**: Ensure the script switches to the new branch successfully.
 
 ## 2. Specification (Speckit.Specify)
 - **Goal**: Create a detailed `spec.md`.
@@ -71,17 +79,17 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Ch
 - **Goal**: Catch lint, formatting, type, and build errors BEFORE merging — mirroring the CI pipeline locally.
 - **Trigger**: Only proceed after cross-artifact analysis passes.
 - **Action**: Run the following checks sequentially. ALL must pass before merging.
-  // turbo
-  1. **Format Check**: `pnpm format:check` (or `npx prettier --check "src/**/*.{ts,tsx,css}"`)
+  
+  **1. Format Check**: `pnpm format:check` (or `npx prettier --check "src/**/*.{ts,tsx,css}"`)
      - If fails: Run `pnpm format` to auto-fix, then re-check. Commit the formatting fixes.
-  // turbo
-  2. **Lint**: `pnpm lint` (or `npx eslint .`)
+  
+  **2. Lint**: `pnpm lint` (or `npx eslint .`)
      - If fails: Fix lint errors, then re-check. Commit the fixes.
-  // turbo
-  3. **Type Check**: `pnpm exec tsc --noEmit`
+  
+  **3. Type Check**: `pnpm exec tsc --noEmit`
      - If fails: Fix type errors, then re-check. Commit the fixes.
-  // turbo
-  4. **Build**: `pnpm build`
+  
+  **4. Build**: `pnpm build`
      - If fails: Fix build errors, then re-check. Commit the fixes.
 - **Gate**:
   - **If ANY check fails after fix attempts**: STOP. Report the failure and ask user to resolve.
@@ -94,9 +102,11 @@ This workflow automates the lifecycle of a feature: Branch -> Spec -> Plan -> Ch
 - **Action**:
   - **Ask User**: "Feature complete and all checks passed. Ready to squash merge to `pre-prod`? (y/n)"
   - **If Yes**:
-    1. `git add . && git commit -m "feat: [feature name] implementation"` (if changes pending)
-    2. `git checkout pre-prod`
-    3. `git merge --squash [feature-branch]`
-    4. `git commit -m "feat: [feature name]"`
-    5. `git branch -D [feature-branch]`
+    ```bash
+    git add . && git commit -m "feat: [feature name] implementation"
+    git checkout pre-prod
+    git merge --squash [feature-branch]
+    git commit -m "feat: [feature name]"
+    git branch -D [feature-branch]
+    ```
   - **Notify**: "Feature merged to pre-prod and local branch deleted."

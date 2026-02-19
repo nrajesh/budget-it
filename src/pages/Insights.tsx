@@ -90,6 +90,7 @@ export default function Insights() {
     const adaptedAccounts = accounts.map((a) => ({
       ...a,
       currency: a.currency || "USD",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: (a.type || "Other") as any, // Cast to avoid complex union matching if strict
       starting_balance: a.starting_balance || 0,
       user_id: "",
@@ -501,10 +502,12 @@ export default function Insights() {
   );
 
   return (
-    <div className="space-y-8 p-6 animate-in fade-in duration-500 pb-20">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
-        <p className="text-muted-foreground mt-2">
+    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+        <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          Insights
+        </h1>
+        <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
           Analysis of your spending trends vs. planned budgets.
         </p>
       </div>
@@ -641,9 +644,9 @@ export default function Insights() {
 
       {/* Usage Trends Section - Split Layout */}
       {(topAccountTrends.length > 0 || topVendorTrends.length > 0) && (
-        <div className="pt-6 border-t md:grid md:grid-cols-2 gap-8">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Account Trends */}
-          <div className="space-y-4">
+          <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-blue-500" />
               <div className="flex flex-col">
@@ -676,7 +679,7 @@ export default function Insights() {
           </div>
 
           {/* Vendor Trends */}
-          <div className="space-y-4 mt-8 md:mt-0">
+          <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
               <div className="flex flex-col">

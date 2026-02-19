@@ -27,6 +27,8 @@ import {
   Bell,
   Banknote,
   Tag,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +61,7 @@ import {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Tooltip,
@@ -71,6 +74,28 @@ import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDia
 import { useLedger } from "@/contexts/LedgerContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
+
+const PinTrigger = () => {
+  const { state, toggleSidebar } = useSidebar();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleSidebar();
+      }}
+      className="hidden md:flex"
+      aria-label={state === "collapsed" ? "Pin Sidebar" : "Unpin Sidebar"}
+    >
+      {state === "collapsed" ? (
+        <Pin className="size-4" />
+      ) : (
+        <PinOff className="size-4" />
+      )}
+    </Button>
+  );
+};
 
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
@@ -151,11 +176,21 @@ const Layout = () => {
 
   return (
     <SidebarProvider className="min-h-screen">
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Budget It!" className="size-8 shrink-0" />
-            <span className="text-lg font-semibold">Budget It!</span>
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="Budget It!"
+                className="size-8 shrink-0"
+              />
+              <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
+                Budget It!
+              </span>
+            </div>
+            <PinTrigger />
+            <SidebarTrigger className="flex md:hidden" />
           </div>
         </SidebarHeader>
         <SidebarContent className="p-0">
@@ -380,13 +415,13 @@ const Layout = () => {
                     ? avatarFallback
                     : avatarFallback}
                 </div>
-                <div className="text-left flex-1 truncate">
+                <div className="text-left flex-1 truncate group-data-[collapsible=icon]:hidden">
                   <p className="text-sm font-medium truncate">{displayName}</p>
                   <p className="text-xs text-muted-foreground truncate">
                     {displayEmail}
                   </p>
                 </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50 group-data-[collapsible=icon]:hidden" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">

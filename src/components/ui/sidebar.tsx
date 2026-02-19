@@ -32,6 +32,8 @@ type SidebarContext = {
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
+  isHovered: boolean;
+  setIsHovered: (hover: boolean) => void;
   toggleSidebar: () => void;
 };
 
@@ -56,7 +58,7 @@ const SidebarProvider = React.forwardRef<
 >(
   (
     {
-      defaultOpen = true,
+      defaultOpen = false,
       open: openProp,
       onOpenChange: setOpenProp,
       className,
@@ -68,6 +70,7 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
+    const [isHovered, setIsHovered] = React.useState(false);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -123,6 +126,8 @@ const SidebarProvider = React.forwardRef<
         isMobile,
         openMobile,
         setOpenMobile,
+        isHovered,
+        setIsHovered,
         toggleSidebar,
       }),
       [
@@ -132,6 +137,8 @@ const SidebarProvider = React.forwardRef<
         isMobile,
         openMobile,
         setOpenMobile,
+        isHovered,
+        setIsHovered,
         toggleSidebar,
       ],
     );
@@ -182,7 +189,14 @@ const Sidebar = React.forwardRef<
     },
     ref,
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const {
+      isMobile,
+      state,
+      openMobile,
+      setOpenMobile,
+      isHovered,
+      setIsHovered,
+    } = useSidebar();
 
     if (collapsible === "none") {
       return (
@@ -224,7 +238,9 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className="group peer hidden md:block text-sidebar-foreground"
         data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-collapsible={
+          state === "collapsed" && !isHovered ? collapsible : ""
+        }
         data-variant={variant}
         data-side={side}
       >
@@ -237,6 +253,11 @@ const Sidebar = React.forwardRef<
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
+            // Fix: Enforce collapsed width when state is collapsed, preventing shift on hover
+            state === "collapsed" &&
+              (variant === "floating" || variant === "inset"
+                ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+                : "w-[var(--sidebar-width-icon)]"),
           )}
         />
         <div
@@ -249,13 +270,19 @@ const Sidebar = React.forwardRef<
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            state === "collapsed" &&
+              isHovered &&
+              "w-[var(--sidebar-width)] shadow-lg z-50",
             className,
           )}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           {...props}
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            data-state={isHovered ? "expanded" : state}
+            className="group flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
             {children}
           </div>
