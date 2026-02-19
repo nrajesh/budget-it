@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
 import { FilterProvider } from "./contexts/FilterContext";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 
 const queryClient = new QueryClient();
 
@@ -109,6 +110,7 @@ function App() {
       </DataProviderProvider>
       <Toaster />
       <ShadcnToaster />
+      <VercelAnalytics />
     </QueryClientProvider>
   );
 }
