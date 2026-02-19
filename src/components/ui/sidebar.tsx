@@ -189,7 +189,7 @@ const Sidebar = React.forwardRef<
     },
     ref,
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile, isHovered, setIsHovered, setOpen } = useSidebar();
+    const { isMobile, state, openMobile, setOpenMobile, isHovered, setIsHovered } = useSidebar();
 
     if (collapsible === "none") {
       return (
