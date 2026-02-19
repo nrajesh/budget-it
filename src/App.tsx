@@ -36,6 +36,8 @@ const DataManagementPage = lazy(() => import("@/pages/DataManagementPage"));
 const BackupPage = lazy(() => import("@/pages/BackupPage"));
 const CurrenciesPage = lazy(() => import("@/pages/CurrenciesPage"));
 import BackupManager from "@/components/backup/BackupManager";
+const DonationPage = lazy(() => import("@/pages/DonationPage"));
+
 
 // ... existing imports
 
@@ -89,10 +91,9 @@ function App() {
                             element={<DataManagementPage />}
                           />
                           <Route path="/backup" element={<BackupPage />} />
-                          <Route
-                            path="/currencies"
-                            element={<CurrenciesPage />}
-                          />
+                          <Route path="/currencies" element={<CurrenciesPage />} />
+                          <Route path="/donate" element={<DonationPage />} />
+
                           <Route path="*" element={<NotFound />} />
                         </Route>
                       </Routes>

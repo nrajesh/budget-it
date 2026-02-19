@@ -29,6 +29,7 @@ import {
   Tag,
   Pin,
   PinOff,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -146,6 +147,8 @@ const Layout = () => {
         return "Budgets";
       case "/backup":
         return "Backup";
+      case "/donate":
+        return "Donate";
       default:
         return "Page Not Found";
     }
@@ -397,6 +400,17 @@ const Layout = () => {
                   <Link to="/backup">
                     <Shield />
                     <span>Backup</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/donate"}
+                >
+                  <Link to="/donate">
+                    <Heart />
+                    <span>Donate</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
