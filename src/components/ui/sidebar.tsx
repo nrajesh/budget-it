@@ -189,7 +189,14 @@ const Sidebar = React.forwardRef<
     },
     ref,
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile, isHovered, setIsHovered } = useSidebar();
+    const {
+      isMobile,
+      state,
+      openMobile,
+      setOpenMobile,
+      isHovered,
+      setIsHovered,
+    } = useSidebar();
 
     if (collapsible === "none") {
       return (
@@ -231,7 +238,9 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className="group peer hidden md:block text-sidebar-foreground"
         data-state={state}
-        data-collapsible={state === "collapsed" && !isHovered ? collapsible : ""}
+        data-collapsible={
+          state === "collapsed" && !isHovered ? collapsible : ""
+        }
         data-variant={variant}
         data-side={side}
       >
@@ -246,9 +255,9 @@ const Sidebar = React.forwardRef<
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
             // Fix: Enforce collapsed width when state is collapsed, preventing shift on hover
             state === "collapsed" &&
-            (variant === "floating" || variant === "inset"
-              ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "w-[var(--sidebar-width-icon)]"),
+              (variant === "floating" || variant === "inset"
+                ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+                : "w-[var(--sidebar-width-icon)]"),
           )}
         />
         <div
@@ -262,8 +271,8 @@ const Sidebar = React.forwardRef<
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
             state === "collapsed" &&
-            isHovered &&
-            "w-[var(--sidebar-width)] shadow-lg z-50",
+              isHovered &&
+              "w-[var(--sidebar-width)] shadow-lg z-50",
             className,
           )}
           onMouseEnter={() => setIsHovered(true)}
@@ -639,7 +648,7 @@ const SidebarMenuAction = React.forwardRef<
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-        "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
+          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
         className,
       )}
       {...props}

@@ -180,7 +180,11 @@ const Layout = () => {
         <SidebarHeader>
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="Budget It!" className="size-8 shrink-0" />
+              <img
+                src="/logo.png"
+                alt="Budget It!"
+                className="size-8 shrink-0"
+              />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Budget It!
               </span>
