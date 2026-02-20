@@ -24,6 +24,24 @@ The plan is broken down into atomic, verifyable steps in `tasks.md`. This checkl
 **Goal:** Execute.
 The agent methodically works through the task list, writing code that strictly adheres to the Spec and Plan.
 
+### 5. Checklists, Analysis, and Merging
+**Goal:** Verify and merge.
+Using workflows like `/speckit.checklist` and `/speckit.analyze`, we evaluate code against requirements.
+
+---
+
+### The End-to-End Feature Workflow (`/speckit.feature`)
+
+Instead of manually running each individual step, the **`/speckit.feature`** workflow automates the contiguous lifecycle. It seamlessly orchestrates branch creation, specifying, planning, tasking, implementing, analyzing, verifying, and merging your changes into the main branch. This is the primary command used for building any new feature.
+
+## Specialized Agent Workflows
+
+Beyond standard feature development, the project utilizes specialized workflows to empower agents to continuously improve targeted areas of the codebase:
+
+- **`/agent.bolt`**: Performance optimization workflow powered by the Bolt ⚡ agent. Focuses on speed, efficiency, and reducing bottlenecks.
+- **`/agent.palette`**: UX enhancement workflow powered by the Palette 🎨 agent. Focuses on accessibility, design consistency, micro-animations, and visual polish.
+- **`/agent.sentinel`**: Security enhancement workflow powered by the Sentinel 🛡️ agent. Focuses on securing data, enforcing best practices, and patching vulnerabilities.
+
 ## The Constitutional Foundation
 
 Our development is governed by a set of immutable rules defined in `documentation/AGENTS.md` and enforced by templates:
