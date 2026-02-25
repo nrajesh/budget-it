@@ -229,7 +229,7 @@ export function SpendingCategoriesChart({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: unknown) => formatCurrency(value as number)}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "none",
