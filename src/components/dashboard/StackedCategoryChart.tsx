@@ -137,7 +137,7 @@ export const StackedCategoryChart = ({
               />
               <Tooltip
                 cursor={{ fill: "transparent" }}
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: any) => formatCurrency(value)}
                 contentStyle={{
                   borderRadius: "8px",
                   border: "none",

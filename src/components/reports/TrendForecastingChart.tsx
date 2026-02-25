@@ -192,13 +192,13 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
                 stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
+                formatter={(value: any, name: any) => [
                   formatCurrency(value),
                   name.charAt(0).toUpperCase() +
-                    name
-                      .slice(1)
-                      .replace(/([A-Z])/g, " $1")
-                      .trim(),
+                  name
+                    .slice(1)
+                    .replace(/([A-Z])/g, " $1")
+                    .trim(),
                 ]}
                 contentStyle={{
                   backgroundColor: isFinancialPulse

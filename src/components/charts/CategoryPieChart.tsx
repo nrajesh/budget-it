@@ -156,10 +156,7 @@ const CategoryPieChart = () => {
   const renderLabel = ({
     name,
     percent,
-  }: {
-    name: string;
-    percent: number;
-  }) => {
+  }: any) => {
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
 
@@ -217,7 +214,7 @@ const CategoryPieChart = () => {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value: any) => formatCurrency(value)}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "none",

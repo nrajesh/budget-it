@@ -59,7 +59,7 @@ export const MonthlyTrends = ({
                 color: "var(--tooltip-text, white)",
               }}
               itemStyle={{ color: "inherit" }}
-              formatter={(value: number) => [currencyFormatter(value), "Spent"]}
+              formatter={(value: any) => [currencyFormatter(value), "Spent"]}
             />
             <Area
               type="monotone"

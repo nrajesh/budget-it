@@ -147,7 +147,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
               }}
               link={{ stroke: "#777" }}
             >
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <Tooltip formatter={(value: any) => formatCurrency(value)} />
             </Sankey>
           </ResponsiveContainer>
         ) : (
