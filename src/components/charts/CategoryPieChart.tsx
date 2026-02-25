@@ -156,7 +156,10 @@ const CategoryPieChart = () => {
   const renderLabel: any = ({
     name,
     percent,
-  }: { name: string; percent: number }) => {
+  }: {
+    name: string;
+    percent: number;
+  }) => {
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
 
