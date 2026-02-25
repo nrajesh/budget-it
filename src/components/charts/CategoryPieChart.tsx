@@ -156,7 +156,8 @@ const CategoryPieChart = () => {
   const renderLabel = ({
     name,
     percent,
-  }: any) => {
+  }: { name: string, percent: number } | Record<string, unknown>) => {
+    // @ts-expect-error type discrepancy
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
 
@@ -214,7 +215,7 @@ const CategoryPieChart = () => {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any) => formatCurrency(value)}
+                formatter={(value: unknown) => formatCurrency(value as number)}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "none",

@@ -216,7 +216,6 @@ export function SpendingCategoriesChart({
                 fill="#8884d8"
                 dataKey="amount"
                 nameKey="name"
-                // @ts-ignore - Recharts 3 type issue
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
                 onClick={onPieClick}
@@ -230,7 +229,7 @@ export function SpendingCategoriesChart({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: any) => formatCurrency(value)}
+                formatter={(value: unknown) => formatCurrency(value as number)}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "none",
