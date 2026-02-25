@@ -135,7 +135,12 @@ export function SpendingByVendorChart({
       </ThemedCardHeader>
       <ThemedCardContent className="pt-6 flex-1">
         <div className="w-full h-[380px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={0}
+            minHeight={0}
+          >
             <PieChart>
               <Pie
                 data={vendorSpendingData}

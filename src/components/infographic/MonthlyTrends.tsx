@@ -32,7 +32,12 @@ export const MonthlyTrends = ({
       icon={<Activity className="w-5 h-5" />}
     >
       <div className="h-[200px] w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          minHeight={0}
+        >
           <AreaChart
             data={data}
             margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
