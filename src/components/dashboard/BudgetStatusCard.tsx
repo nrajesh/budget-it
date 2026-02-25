@@ -105,12 +105,7 @@ export const BudgetStatusCard = () => {
         {/* Mini Bar Chart */}
         {dailyTrends && dailyTrends.length > 0 && (
           <div className="h-32 w-full mt-4 mb-2">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              minWidth={0}
-              minHeight={0}
-            >
+            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyTrends}>
                 <XAxis
                   dataKey="date"

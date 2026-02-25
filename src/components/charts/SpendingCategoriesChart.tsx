@@ -203,12 +203,7 @@ export function SpendingCategoriesChart({
       </ThemedCardHeader>
       <ThemedCardContent className="pt-6 flex-1">
         <div className="w-full h-[250px]">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={0}
-            minHeight={0}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={currentData}

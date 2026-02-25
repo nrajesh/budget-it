@@ -135,12 +135,7 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       </ThemedCardHeader>
       <ThemedCardContent>
         {sankeyData.nodes.length > 1 && sankeyData.links.length > 0 ? (
-          <ResponsiveContainer
-            width="100%"
-            height={chartHeight}
-            minWidth={0}
-            minHeight={0}
-          >
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <Sankey
               data={sankeyData}
               nodePadding={50}

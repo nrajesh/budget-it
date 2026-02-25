@@ -187,12 +187,7 @@ const CategoryPieChart = () => {
       </CardHeader>
       <CardContent className="pt-6">
         <div className="w-full" style={{ height: "500px" }}>
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={0}
-            minHeight={0}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
