@@ -727,44 +727,21 @@ export class LocalDataProvider implements DataProvider {
   async clearAllData(): Promise<void> {
     console.log("[LocalDataProvider] clearAllData: Starting Hard Reset...");
     try {
-      // 1. Close the connection
-      console.log("[LocalDataProvider] Closing DB connection...");
-      db.close();
-
-      // 2. Delete the database (This clears EVERYTHING: data, schema, locks)
-      console.log("[LocalDataProvider] Deleting DB...");
-      await db.delete();
-      console.log("[LocalDataProvider] DB Deleted successfully.");
-
-      // 3. Re-open to re-initialize schema
-      console.log("[LocalDataProvider] Re-opening DB...");
-      await db.open();
-      console.log("[LocalDataProvider] DB Re-opened. Ready.");
-    } catch (error) {
+      if (!db.isOpen()) await db.open();
+      await db.transaction("rw", db.tables, async () => {
+        // Clear all tables dynamically
+        for (const table of db.tables) {
+          console.log(`[LocalDataProvider] Clearing table: ${table.name}`);
+          await table.clear();
+        }
+      });
+      console.log("[LocalDataProvider] Clear Complete.");
+    } catch (fallbackError) {
       console.error(
-        "[LocalDataProvider] clearAllData: Hard Reset FAILED:",
-        error,
+        "[LocalDataProvider] Clear FAILED:",
+        fallbackError,
       );
-      console.error("[LocalDataProvider] Attempting fallback (Table Clear)...");
-
-      // Fallback: Try to open and clear tables if delete failed (e.g. blocked)
-      try {
-        if (!db.isOpen()) await db.open();
-        await db.transaction("rw", db.tables, async () => {
-          // Clear all tables dynamically
-          for (const table of db.tables) {
-            console.log(`[LocalDataProvider] Clearing table: ${table.name}`);
-            await table.clear();
-          }
-        });
-        console.log("[LocalDataProvider] Fallback Clear Complete.");
-      } catch (fallbackError) {
-        console.error(
-          "[LocalDataProvider] Fallback Clear FAILED:",
-          fallbackError,
-        );
-        throw fallbackError; // Re-throw to show error to user
-      }
+      throw fallbackError; // Re-throw to show error to user
     }
   }
 
@@ -911,7 +888,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-              [],
+            [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(
