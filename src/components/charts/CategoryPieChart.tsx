@@ -156,7 +156,7 @@ const CategoryPieChart = () => {
   const renderLabel = ({
     name,
     percent,
-  }: { name: string, percent: number } | Record<string, unknown>) => {
+  }: { name: string; percent: number } | Record<string, unknown>) => {
     // @ts-expect-error type discrepancy
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
