@@ -153,7 +153,7 @@ const CategoryPieChart = () => {
   if (!chartData || chartData.length === 0)
     return <div className="text-center py-4">No data to display.</div>;
 
-  const renderLabel = ({
+  const renderLabel: any = ({
     name,
     percent,
   }: { name: string; percent: number } | Record<string, unknown>) => {
@@ -201,6 +201,7 @@ const CategoryPieChart = () => {
                 fill="#8884d8"
                 dataKey="total_amount"
                 nameKey={selectedCategory ? "vendor_name" : "name"}
+                // @ts-expect-error - Recharts 3 type issue missing activeIndex from PieProps
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
                 onClick={onPieClick}

@@ -216,6 +216,7 @@ export function SpendingCategoriesChart({
                 fill="#8884d8"
                 dataKey="amount"
                 nameKey="name"
+                // @ts-expect-error - Recharts 3 type issue missing activeIndex from PieProps
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
                 onClick={onPieClick}
