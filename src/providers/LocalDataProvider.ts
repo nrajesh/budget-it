@@ -737,10 +737,7 @@ export class LocalDataProvider implements DataProvider {
       });
       console.log("[LocalDataProvider] Clear Complete.");
     } catch (fallbackError) {
-      console.error(
-        "[LocalDataProvider] Clear FAILED:",
-        fallbackError,
-      );
+      console.error("[LocalDataProvider] Clear FAILED:", fallbackError);
       throw fallbackError; // Re-throw to show error to user
     }
   }
@@ -888,7 +885,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-            [],
+              [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(
