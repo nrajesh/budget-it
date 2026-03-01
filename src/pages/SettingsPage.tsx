@@ -22,11 +22,16 @@ import { showSuccess } from "@/utils/toast";
 
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
 import { useLedger } from "@/contexts/LedgerContext";
+import { useSyncConfig } from "@/hooks/useSyncConfig";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const { activeLedger, updateLedgerDetails } = useLedger();
+  const syncConfig = useSyncConfig();
 
   const [isManageLedgerOpen, setIsManageLedgerOpen] = React.useState(false);
   const [isCreateLedgerOpen, setIsCreateLedgerOpen] = React.useState(false);
@@ -185,6 +190,100 @@ const SettingsPage = () => {
               />
               <span className="text-sm text-muted-foreground">months</span>
             </div>
+          </ThemedCardContent>
+        </ThemedCard>
+
+        {/* Sync Settings Card */}
+        <ThemedCard className="md:col-span-2 lg:col-span-3">
+          <ThemedCardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <ThemedCardTitle>Cross-Device Continuity</ThemedCardTitle>
+                <ThemedCardDescription>
+                  Keep your data in sync across devices by choosing a shared
+                  location.
+                </ThemedCardDescription>
+              </div>
+              <Switch
+                checked={syncConfig.config.autoSyncEnabled}
+                onCheckedChange={(checked) => syncConfig.toggleAutoSync(checked)}
+              />
+            </div>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            {syncConfig.config.autoSyncEnabled && (
+              <div className="space-y-4">
+                <Alert className="bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Recommendation</AlertTitle>
+                  <AlertDescription>
+                    To ensure seamless continuity, select a folder synced by a
+                    cloud provider like iCloud, Google Drive, or Dropbox. Any
+                    local folder works, but won't sync automatically to other
+                    devices.
+                    {!syncConfig.isElectron && !syncConfig.isCapacitor && (
+                      <span className="block mt-2 font-medium">
+                        Note: Due to browser privacy controls, you must create this folder manually on your device before selecting it here.
+                      </span>
+                    )}
+                    {syncConfig.isCapacitor && (
+                      <span className="block mt-2 font-medium">
+                        Note: On mobile, synchronization occurs via the native App Documents folder to ensure reliable offline filesystem access.
+                      </span>
+                    )}
+                  </AlertDescription>
+                </Alert>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex-1 border border-slate-200 dark:border-slate-800 rounded-md p-3 bg-white/50 dark:bg-slate-900/50">
+                    <p className="text-sm font-medium">
+                      Sync Location:{" "}
+                      <span className="text-muted-foreground font-normal">
+                        {syncConfig.config.syncDirectoryHandle
+                          ? syncConfig.isElectron || syncConfig.isCapacitor
+                            ? syncConfig.config.syncDirectoryHandle
+                            : syncConfig.config.syncDirectoryHandle.name
+                          : "None Selected"}
+                      </span>
+                    </p>
+                    {syncConfig.needsPermission && (
+                      <p className="text-sm text-red-500 mt-1">
+                        Permission required to access folder.
+                      </p>
+                    )}
+                  </div>
+                  {!syncConfig.isCapacitor && (
+                    <div className="flex gap-2">
+                      {syncConfig.needsPermission ? (
+                        <Button
+                          variant="default"
+                          onClick={async () => {
+                            if (await syncConfig.requestPermission()) {
+                              showSuccess("Access restored to sync folder.");
+                            }
+                          }}
+                        >
+                          Grant Access
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          onClick={async () => {
+                            if (await syncConfig.selectFolder()) {
+                              showSuccess("Sync folder location updated.");
+                            }
+                          }}
+                        >
+                          {syncConfig.config.syncDirectoryHandle
+                            ? "Change Folder"
+                            : "Select Folder"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </ThemedCardContent>
         </ThemedCard>
       </div>

@@ -131,9 +131,9 @@ This single command does everything:
 | **macOS** | ✅ | Electron desktop app or browser |
 | **Windows** | ✅ | Electron desktop app or browser |
 | **Linux** | ✅ | Electron desktop app or browser |
-| **iOS / Android** | ⚠️ Web only | Deploy to Vercel/Netlify and open in mobile Safari/Chrome |
+| **iOS / Android** | ✅ Native | Run natively via Capacitor (`npx cap sync`) |
 
-> Electron cannot run on mobile devices. For mobile access, host the web version and access it via a mobile browser.
+> Electron cannot run on mobile devices. For mobile access, either host the web version or build the native apps using the provided Capactior iOS/Android targets for local continuity features.
 
 ---
 
