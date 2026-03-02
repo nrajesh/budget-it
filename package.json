@@ -56,10 +56,10 @@
     "next-themes": "^0.4.6",
     "papaparse": "^5.5.3",
     "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
+    "react-day-picker": "^9.14.0",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
-    "react-router-dom": "^6.26.2",
+    "react-router-dom": "^7.13.1",
     "recharts": "^3.7.0",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
@@ -81,10 +81,10 @@
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^40.6.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -101,6 +101,11 @@
     "wait-on": "^9.0.4"
   },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
+  "pnpm": {
+    "overrides": {
+      "tar": ">=7.5.8"
+    }
+  },
   "build": {
     "appId": "com.budgetit.app",
     "productName": "Budget It",
