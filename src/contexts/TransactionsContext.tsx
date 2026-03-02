@@ -6,6 +6,7 @@ import { useCurrency } from "./CurrencyContext";
 import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 // import { useUser } from './UserContext'; // Replaced by useLedger
 import { useLedger } from "./LedgerContext";
+import { useContinuitySync } from "@/hooks/useContinuitySync";
 import {
   useQuery,
   useQueryClient,
@@ -231,6 +232,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { convertBetweenCurrencies: _convert } = useCurrency();
   // const { user } = useUser();
   const { activeLedger, refreshLedgers } = useLedger();
+  const { triggerExport } = useContinuitySync();
   const ledgerId = activeLedger?.id || "";
 
   const [operationProgress, setOperationProgress] =
@@ -295,10 +297,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-        | "DELETE_TRANSACTION"
-        | "DELETE_SCHEDULE"
-        | "DELETE_BUDGET"
-        | "DELETE_ENTITY";
+      | "DELETE_TRANSACTION"
+      | "DELETE_SCHEDULE"
+      | "DELETE_BUDGET"
+      | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -649,8 +651,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
+      triggerExport();
     },
-    [accounts, ledgerId, dataProvider, invalidateAllData],
+    [accounts, ledgerId, dataProvider, invalidateAllData, triggerExport],
   );
   const updateTransaction = React.useCallback(
     async (transaction: any) => {
@@ -693,8 +696,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
+      triggerExport();
     },
-    [dataProvider, invalidateAllData, transactions],
+    [dataProvider, invalidateAllData, transactions, triggerExport],
   );
 
   const deleteMultipleTransactions = React.useCallback(
@@ -768,6 +772,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
             finalIds.forEach((id) => next.delete(id));
             return next;
           });
+          triggerExport();
         }, 7000); // 7 seconds
 
         // 3. Push to Undo Stack
@@ -895,8 +900,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
+      triggerExport();
     },
-    [ledgerId, accounts, dataProvider, invalidateAllData],
+    [ledgerId, accounts, dataProvider, invalidateAllData, triggerExport],
   );
 
   const unlinkScheduledTransaction = React.useCallback(
@@ -914,8 +920,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         });
       }
       await invalidateAllData();
+      triggerExport();
     },
-    [ledgerId, scheduledTransactions, dataProvider, invalidateAllData],
+    [ledgerId, scheduledTransactions, dataProvider, invalidateAllData, triggerExport],
   );
 
   const updateScheduledTransaction = React.useCallback(
@@ -1028,6 +1035,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       await invalidateAllData();
+      triggerExport();
     },
     [
       ledgerId,
@@ -1035,6 +1043,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       dataProvider,
       invalidateAllData,
       scheduledTransactions,
+      triggerExport,
     ],
   );
 
@@ -1077,6 +1086,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           finalIds.forEach((id) => next.delete(id));
           return next;
         });
+        triggerExport();
       }, 7000);
 
       // 3. Push to Undo Stack
@@ -1090,7 +1100,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // 4. Show Toast
       showUndoToast(finalIds.length, "scheduled transaction");
     },
-    [scheduledTransactions, dataProvider, invalidateAllData, showUndoToast],
+    [scheduledTransactions, dataProvider, invalidateAllData, showUndoToast, triggerExport],
   );
 
   const deleteScheduledTransaction = React.useCallback(
@@ -1143,6 +1153,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           next.delete(id);
           return next;
         });
+        triggerExport();
       }, 7000);
 
       // 3. Push to Undo Stack
@@ -1156,7 +1167,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // 4. Show Toast
       showUndoToast(1, "budget");
     },
-    [dataProvider, invalidateAllData, showUndoToast],
+    [dataProvider, invalidateAllData, showUndoToast, triggerExport],
   );
 
   const deleteEntity = React.useCallback(
@@ -1194,6 +1205,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           next.set(type, currentSet);
           return next;
         });
+        triggerExport();
       }, 7000);
 
       // 3. Push to Undo Stack
@@ -1206,7 +1218,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       showUndoToast(ids.length, type);
     },
-    [showUndoToast, invalidateAllData],
+    [showUndoToast, invalidateAllData, triggerExport],
   );
 
   const cleanUpDuplicates = React.useCallback(async () => {
@@ -1349,10 +1361,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (pairsLinked.length > 0) {
         await invalidateAllData();
+        triggerExport();
       }
       return pairsLinked.length;
     },
-    [transactions, dataProvider, invalidateAllData],
+    [transactions, dataProvider, invalidateAllData, triggerExport],
   );
 
   const unlinkTransaction = React.useCallback(
@@ -1368,19 +1381,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         await invalidateAllData();
         console.log("[TransactionsContext] invalidateAllData completed");
+        triggerExport();
       } catch (error) {
         console.error("[TransactionsContext] unlinkTransaction failed:", error);
       }
     },
-    [dataProvider, invalidateAllData],
+    [dataProvider, invalidateAllData, triggerExport],
   );
 
   const linkTransactions = React.useCallback(
     async (id1: string, id2: string) => {
-      await dataProvider.linkTransactionsAsTransfer(id1, id2);
+      const transferId = uuidv4();
+      await dataProvider.linkTransactionsAsTransfer(id1, id2, transferId);
       await invalidateAllData();
+      triggerExport();
     },
-    [dataProvider, invalidateAllData],
+    [dataProvider, invalidateAllData, triggerExport],
   );
 
   const generateDiverseDemoData = React.useCallback(async () => {

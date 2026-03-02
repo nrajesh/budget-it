@@ -4,6 +4,7 @@ Auto-generated from all feature plans. Last updated: 2026-02-28
 
 ## Active Technologies
 - TypeScript 5.x + React 18, Vite 5, Capacitor 6, Tailwind CSS, TanStack Query, Dexie.js (IndexedDB) (011-implement-capacitor-native)
+- For mobile development, follow structural, security, and performance rules defined in `documentation/IOS_RULES.md` and `documentation/ANDROID_RULES.md`.
 
 - **Core**: TypeScript 5.x, React 18, Vite 5
 - **Desktop**: Electron (Main/Preload/Renderer)

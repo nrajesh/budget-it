@@ -15,9 +15,9 @@
 
 Goal: Initialize the Capacitor infrastructure within the Vite project.
 
-- [ ] T001 Install Capacitor core and CLI dependencies to `package.json`
-- [ ] T002 Initialize Capacitor config (`npx cap init`) targeting `dist` folder
-- [ ] T003 Install iOS and Android platforms and sync web build
+- [x] T001 Install Capacitor core and CLI dependencies to `package.json`
+- [x] T002 Initialize Capacitor config (`npx cap init`) targeting `dist` folder
+- [x] T003 Install iOS and Android platforms and sync web build
 
 ---
 
@@ -25,8 +25,8 @@ Goal: Initialize the Capacitor infrastructure within the Vite project.
 
 Goal: Establish the new Capacitor filesystem adapter so it is ready for logical routing.
 
-- [ ] T004 Implement `src/utils/fs-capacitor.ts` using `@capacitor/filesystem` for `Directory.Documents` read/write access.
-- [ ] T005 Update `src/utils/fs-adapter.ts` to branch filesystem calls to `fs-capacitor.ts` when `Capacitor.isNativePlatform()` is true.
+- [x] T004 Implement `src/utils/fs-capacitor.ts` using `@capacitor/filesystem` for `Directory.Documents` read/write access.
+- [x] T005 Update `src/utils/fs-adapter.ts` to branch filesystem calls to `fs-capacitor.ts` when `Capacitor.isNativePlatform()` is true.
 
 ---
 
@@ -34,8 +34,8 @@ Goal: Establish the new Capacitor filesystem adapter so it is ready for logical 
 
 Goal: Wire the UI and application lifecycle to gracefully handle mobile contexts instead of web APIs.
 
-- [ ] T006 Update `src/hooks/useSyncConfig.ts` to skip demanding permission toggles/errors when `Capacitor.isNativePlatform()` is true (since native handles permissions internally or via manifest).
-- [ ] T007 Update `src/pages/SettingsPage.tsx` to hide the manual "Select Folder" UI complexity if on Capacitor, replacing it with an informative message that "Sync utilizes the App's native Documents folder".
+- [x] T006 Update `src/hooks/useSyncConfig.ts` to skip demanding permission toggles/errors when `Capacitor.isNativePlatform()` is true (since native handles permissions internally or via manifest).
+- [x] T007 Update `src/pages/SettingsPage.tsx` to hide the manual "Select Folder" UI complexity if on Capacitor, replacing it with an informative message that "Sync utilizes the App's native Documents folder".
 
 ---
 
@@ -43,4 +43,4 @@ Goal: Wire the UI and application lifecycle to gracefully handle mobile contexts
 
 Goal: Ensure zero regressions and formatting compliance.
 
-- [ ] T008 Run lint, TypeScript verification (`tsc --noEmit`), and trigger a standard web build to confirm the web target was unharmed.
+- [x] T008 Run lint, TypeScript verification (`tsc --noEmit`), and trigger a standard web build to confirm the web target was unharmed.

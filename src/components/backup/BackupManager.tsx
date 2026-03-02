@@ -4,7 +4,9 @@ import { db } from "@/lib/dexieDB";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { generateBackupData } from "@/utils/backupUtils";
 import { encryptData } from "@/utils/crypto";
-import { getElectronAPI } from "@/utils/electron";
+import { writeSyncFile } from "@/utils/fs-adapter";
+
+
 
 const BackupManager = () => {
   const dataProvider = useDataProvider();
@@ -16,7 +18,7 @@ const BackupManager = () => {
         .where("nextBackup")
         .belowOrEqual(now.toISOString())
         .toArray();
-      const electron = getElectronAPI();
+
 
       for (const backup of backups) {
         if (!backup.isActive || (!backup.directoryHandle && !backup.path))
@@ -37,46 +39,17 @@ const BackupManager = () => {
             filename = filename.replace(".json", ".lock");
           }
 
-          // 3. Write to File System
-          if (backup.path && electron) {
-            const result = await electron.saveBackup(
-              backup.path,
-              filename,
-              content,
-            );
-            if (!result.success) {
-              throw new Error(result.error || "Electron backup failed");
-            }
-          } else if (backup.directoryHandle) {
-            const dirHandle = backup.directoryHandle;
-
-            // Check permission status first
-            const permState = await dirHandle.queryPermission({
-              mode: "readwrite",
-            });
-
-            if (permState !== "granted") {
-              console.warn(
-                `[BackupManager] Permission needed for config ${backup.id}`,
-              );
-              // We don't error out here, we just skip and let it reschedule?
-              // Or we should pause it?
-              // For now, let's treat it as a skip but update time so we don't spam.
-              // But show a toast once?
-            } else {
-              const fileHandle = await dirHandle.getFileHandle(filename, {
-                create: true,
-              });
-              const writable = await fileHandle.createWritable();
-              await writable.write(content);
-              await writable.close();
-            }
-          } else {
+          // 3. Write to File System using Adapter
+          const handleOrPath = backup.path || backup.directoryHandle;
+          if (!handleOrPath) {
             console.warn(
               `[BackupManager] No valid target for config ${backup.id}`,
             );
             continue;
           }
+
+          await writeSyncFile(handleOrPath, filename, content);
+
 
           isSuccess = true;
           showSuccess(`Scheduled backup completed (${filename})`);

@@ -70,9 +70,16 @@ export const saveFile = async (
 
 /**
  * Generate a full backup object (all ledgers)
+ * Wrapped in a SyncPayloadEnvelope for cross-device compatibility version checking.
  */
 export const generateBackupData = async (dataProvider: DataProvider) => {
-  return await dataProvider.exportData();
+  const rawData = await dataProvider.exportData();
+  return {
+    appVersion: __APP_VERSION__,
+    schemaVersion: 8, // Manually synced to Dexie schema version in dexieDB.ts
+    exportTimestamp: new Date().toISOString(),
+    data: rawData,
+  };
 };
 
 /**
@@ -82,6 +89,7 @@ export const generateBackupData = async (dataProvider: DataProvider) => {
 export type ImportResult =
   | { type: "success" }
   | { type: "encrypted"; content: string }
+  | { type: "warning"; message: string; dataToImport: any } // Added warning type for version mismatch
   | { type: "error"; message: string };
 
 export const processImport = async (
@@ -93,7 +101,24 @@ export const processImport = async (
     if (parsed.ciphertext && parsed.iv && parsed.salt) {
       return { type: "encrypted", content: content };
     } else {
-      await dataProvider.importData(parsed);
+      let dataToImport = parsed;
+      if (parsed.appVersion && parsed.schemaVersion && parsed.data) {
+        // This is a SyncPayloadEnvelope
+        dataToImport = parsed.data;
+        const currentVersion = __APP_VERSION__;
+        if (
+          parsed.appVersion !== currentVersion ||
+          parsed.schemaVersion !== 8 // Dexie schema version
+        ) {
+          return {
+            type: "warning",
+            message: `The imported data is from an incompatible version (App: ${parsed.appVersion}, Schema: ${parsed.schemaVersion}). Importing this data may cause corruption. Do you want to proceed?`,
+            dataToImport: dataToImport,
+          };
+        }
+      }
+
+      await dataProvider.importData(dataToImport);
       return { type: "success" };
     }
   } catch (e: unknown) {

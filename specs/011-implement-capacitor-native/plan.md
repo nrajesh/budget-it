@@ -7,6 +7,21 @@
 
 This plan outlines the steps to wrap the existing Budget-It Web Application in a native mobile shell (iOS/Android) using Capacitor. Based on research regarding mobile OS sandboxing limitations, we will bypass the need for a web-like "Directory Picker" by defaulting the sync location to the platform-native `Documents` directory using `@capacitor/filesystem`. This ensures 100% reliable read/write access and leverages built-in OS sync (like iCloud Drive).
 
+### Architecture Diagram
+
+```mermaid
+flowchart TD
+    A[Budget-It App \n React / Hooks] --> B(fs-adapter.ts \n Unified API Layer)
+    
+    B -->|isElectron() === true| C(fs-electron.ts)
+    B -->|Capacitor.isNativePlatform() === true| D(fs-capacitor.ts)
+    B -->|Fallback| E(fs-web.ts)
+    
+    C --> F[(Node \n fs module)]
+    D --> G[(Capacitor \n Filesystem API)]
+    E --> H[(Web \n File System Access API)]
+```
+
 ## Technical Context
 
 **Language/Version**: TypeScript 5.x

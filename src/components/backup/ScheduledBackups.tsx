@@ -41,6 +41,9 @@ import { BackupConfig } from "@/types/dataProvider";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
 import { getElectronAPI } from "@/utils/electron";
+import { selectSyncDirectory } from "@/utils/fs-adapter";
+import { Capacitor } from '@capacitor/core';
+
 
 // Fading Undo Component
 const FadingUndo: React.FC<{ onUndo: () => void }> = ({ onUndo }) => {
@@ -154,25 +157,14 @@ const ScheduledBackups = () => {
 
   const handleSelectFolder = async () => {
     try {
-      const electron = getElectronAPI();
-      if (electron) {
-        const path = await electron.selectFolder();
-        if (path) {
-          setBackupPath(path);
-          setDirHandle(null); // Clear web handle
-        }
-      } else {
-        // Web Fallback
-        // @ts-expect-error - showDirectoryPicker
-        if (window.showDirectoryPicker) {
-          // @ts-expect-error - showDirectoryPicker
-          const handle = await window.showDirectoryPicker();
-          setDirHandle(handle);
-          setBackupPath(null); // Clear electron path
+      const result = await selectSyncDirectory();
+      if (result) {
+        if (typeof result === "string") {
+          setBackupPath(result);
+          setDirHandle(null);
         } else {
-          showError(
-            "Your browser does not support folder selection for backups.",
-          );
+          setDirHandle(result);
+          setBackupPath(null);
         }
       }
     } catch (err: unknown) {
@@ -307,7 +299,7 @@ const ScheduledBackups = () => {
 
   return (
     <div className="space-y-6">
-      {!("showDirectoryPicker" in window) && !getElectronAPI() && (
+      {!Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI() && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
@@ -315,17 +307,19 @@ const ScheduledBackups = () => {
           </div>
           <p className="mt-1 text-sm">
             Scheduled backups require the File System Access API
-            (Chrome/Edge/Opera) or the Desktop App.
+            (Chrome/Edge/Opera), the Desktop App, or a Native Mobile App.
           </p>
         </div>
       )}
 
+
       <Card
         className={
-          !("showDirectoryPicker" in window) && !getElectronAPI()
+          !Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI()
             ? "opacity-60 pointer-events-none"
             : ""
         }
+
       >
         <CardHeader>
           <CardTitle>Create Scheduled Backup</CardTitle>
@@ -350,8 +344,9 @@ const ScheduledBackups = () => {
                   value={frequencyInput}
                   onChange={(e) => setFrequencyInput(e.target.value)}
                   disabled={
-                    !("showDirectoryPicker" in window) && !getElectronAPI()
+                    !Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI()
                   }
+
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -368,8 +363,9 @@ const ScheduledBackups = () => {
                   onClick={handleSelectFolder}
                   className="w-full justify-start"
                   disabled={
-                    !("showDirectoryPicker" in window) && !getElectronAPI()
+                    !Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI()
                   }
+
                 >
                   <FolderOpen className="mr-2 h-4 w-4" />
                   {backupPath
@@ -389,7 +385,8 @@ const ScheduledBackups = () => {
               onCheckedChange={(c: boolean | string) =>
                 setIsEncrypted(c === true)
               }
-              disabled={!("showDirectoryPicker" in window) && !getElectronAPI()}
+              disabled={!Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI()}
+
             />
             <Label htmlFor="encrypt">Encrypt Backup</Label>
           </div>
@@ -404,8 +401,9 @@ const ScheduledBackups = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter encryption password"
                 disabled={
-                  !("showDirectoryPicker" in window) && !getElectronAPI()
+                  !Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI()
                 }
+
               />
             </div>
           )}
@@ -416,7 +414,8 @@ const ScheduledBackups = () => {
               !parsedFreq ||
               (!dirHandle && !backupPath) ||
               (isEncrypted && !password) ||
-              (!("showDirectoryPicker" in window) && !getElectronAPI())
+              (!Capacitor.isNativePlatform() && !("showDirectoryPicker" in window) && !getElectronAPI())
+
             }
           >
             <Play className="mr-2 h-4 w-4" />

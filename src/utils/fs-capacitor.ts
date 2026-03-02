@@ -1,14 +1,20 @@
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 
 /**
  * Wrapper for the Native Capacitor File System API (iOS/Android)
  */
 
 export const getCapacitorDirectoryHandle = async (): Promise<string> => {
-    // In Capacitor, we don't open a "picker" because of mobile OS sandboxing.
-    // Instead, we just acknowledge and return a static reference to the app's native Documents directory.
-    // The actual read/write operations will use this directory.
-    return "NATIVE_DOCUMENTS_DIRECTORY";
+    try {
+        const result = await FilePicker.pickDirectory();
+        // The picker returns a result with a path/uri
+        // We return the path for future file operations
+        return result.path;
+    } catch (err) {
+        console.error("Failed to pick directory:", err);
+        throw err;
+    }
 };
 
 export const verifyCapacitorPermission = async (): Promise<boolean> => {
@@ -28,25 +34,39 @@ export const verifyCapacitorPermission = async (): Promise<boolean> => {
     }
 };
 
-export const readCapacitorFile = async (filename: string): Promise<string> => {
+export const readCapacitorFile = async (
+    path: string,
+    filename: string,
+): Promise<string> => {
+    // If we have a custom path from the picker, we use it as the base
+    const fullPath = path && path !== "NATIVE_DOCUMENTS_DIRECTORY"
+        ? `${path}/${filename}`
+        : filename;
+
     const contents = await Filesystem.readFile({
-        path: filename,
-        directory: Directory.Documents,
+        path: fullPath,
+        // If path is absolute (from picker), we don't specify the directory property
+        ...(path && path !== "NATIVE_DOCUMENTS_DIRECTORY" ? {} : { directory: Directory.Documents }),
         encoding: Encoding.UTF8,
     });
 
-    // Capacitor's readFile returns { data: string | Blob }
     return contents.data as string;
 };
 
 export const writeCapacitorFile = async (
+    path: string,
     filename: string,
     content: string,
 ): Promise<void> => {
+    const fullPath = path && path !== "NATIVE_DOCUMENTS_DIRECTORY"
+        ? `${path}/${filename}`
+        : filename;
+
     await Filesystem.writeFile({
-        path: filename,
+        path: fullPath,
         data: content,
-        directory: Directory.Documents,
+        ...(path && path !== "NATIVE_DOCUMENTS_DIRECTORY" ? {} : { directory: Directory.Documents }),
         encoding: Encoding.UTF8,
+        recursive: true
     });
 };

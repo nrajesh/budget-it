@@ -22,6 +22,8 @@
     "electron:dev": "concurrently -k \"pnpm run dev\" \"pnpm run electron\""
   },
   "dependencies": {
+    "@capacitor/filesystem": "^8.1.2",
+    "@capawesome/capacitor-file-picker": "^8.0.2",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-checkbox": "^1.1.1",

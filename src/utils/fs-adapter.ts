@@ -52,7 +52,7 @@ export const readSyncFile = async (
     filename: string,
 ): Promise<string> => {
     if (Capacitor.isNativePlatform()) {
-        return await readCapacitorFile(filename);
+        return await readCapacitorFile(handleOrPath as string, filename);
     } else if (isElectron()) {
         return await readElectronFile(handleOrPath as string, filename);
     } else {
@@ -66,7 +66,7 @@ export const writeSyncFile = async (
     content: string,
 ): Promise<void> => {
     if (Capacitor.isNativePlatform()) {
-        await writeCapacitorFile(filename, content);
+        await writeCapacitorFile(handleOrPath as string, filename, content);
     } else if (isElectron()) {
         await writeElectronFile(handleOrPath as string, filename, content);
     } else {

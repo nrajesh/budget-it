@@ -25,7 +25,9 @@ import { useLedger } from "@/contexts/LedgerContext";
 import { useSyncConfig } from "@/hooks/useSyncConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, FolderOpen, ShieldAlert } from "lucide-react";
+import { Label } from "@/components/ui/label";
+
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
@@ -234,54 +236,55 @@ const SettingsPage = () => {
                   </AlertDescription>
                 </Alert>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <div className="flex-1 border border-slate-200 dark:border-slate-800 rounded-md p-3 bg-white/50 dark:bg-slate-900/50">
-                    <p className="text-sm font-medium">
-                      Sync Location:{" "}
-                      <span className="text-muted-foreground font-normal">
+                <div className="space-y-2 max-w-xl">
+                  <Label>Sync Location</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={
+                        syncConfig.config.syncDirectoryHandle
+                          ? "secondary"
+                          : "outline"
+                      }
+                      onClick={async () => {
+                        if (await syncConfig.selectFolder()) {
+                          showSuccess("Sync folder location updated.");
+                        }
+                      }}
+                      className="flex-1 justify-start font-normal"
+                    >
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      <span className="truncate">
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? syncConfig.config.syncDirectoryHandle
                             : syncConfig.config.syncDirectoryHandle.name
-                          : "None Selected"}
+                          : "Select Folder"}
                       </span>
-                    </p>
+                    </Button>
+
                     {syncConfig.needsPermission && (
-                      <p className="text-sm text-red-500 mt-1">
-                        Permission required to access folder.
-                      </p>
+                      <Button
+                        variant="destructive"
+                        onClick={async () => {
+                          if (await syncConfig.requestPermission()) {
+                            showSuccess("Access restored to sync folder.");
+                          }
+                        }}
+                        className="animate-pulse"
+                      >
+                        <ShieldAlert className="mr-2 h-4 w-4" />
+                        Grant Access
+                      </Button>
                     )}
                   </div>
-                  {!syncConfig.isCapacitor && (
-                    <div className="flex gap-2">
-                      {syncConfig.needsPermission ? (
-                        <Button
-                          variant="default"
-                          onClick={async () => {
-                            if (await syncConfig.requestPermission()) {
-                              showSuccess("Access restored to sync folder.");
-                            }
-                          }}
-                        >
-                          Grant Access
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          onClick={async () => {
-                            if (await syncConfig.selectFolder()) {
-                              showSuccess("Sync folder location updated.");
-                            }
-                          }}
-                        >
-                          {syncConfig.config.syncDirectoryHandle
-                            ? "Change Folder"
-                            : "Select Folder"}
-                        </Button>
-                      )}
-                    </div>
+                  {syncConfig.needsPermission && (
+                    <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
+                      <ShieldAlert className="h-3 w-3" />
+                      Browser permission required to access this folder.
+                    </p>
                   )}
                 </div>
+
               </div>
             )}
           </ThemedCardContent>

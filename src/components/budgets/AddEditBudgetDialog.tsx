@@ -65,6 +65,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useContinuitySync } from "@/hooks/useContinuitySync";
 
 interface AddEditBudgetDialogProps {
   isOpen: boolean;
@@ -86,6 +87,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
   const { availableCurrencies, selectedCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const dataProvider = useDataProvider();
+  const { triggerExport } = useContinuitySync();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const accountTypes = React.useMemo(() => {
@@ -454,6 +456,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       if (onSuccess) onSuccess();
       onOpenChange(false);
+      triggerExport();
     } catch (error: unknown) {
       showError(`Failed to save: ${(error as Error).message}`);
     } finally {

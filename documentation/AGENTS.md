@@ -2,6 +2,7 @@
 
 ## Project Structure
 - Always use modular, maintainable app project structure for the respective language and web framework.
+- For iOS/Android development, MUST consult and rigorously adhere to `documentation/IOS_RULES.md` and `documentation/ANDROID_RULES.md` respectively.
 
 ## Tech Stack Rules
 - **React**: You are building a React application using TypeScript.
