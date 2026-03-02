@@ -52,12 +52,7 @@ function App() {
               <UserProvider>
                 <TransactionsProvider>
                   <BackupManager />
-                  <Router
-                    future={{
-                      v7_startTransition: true,
-                      v7_relativeSplatPath: true,
-                    }}
-                  >
+                  <Router>
                     <Suspense fallback={<LoadingSpinner />}>
                       <Routes>
                         <Route path="/ledgers" element={<LedgerEntryPage />} />
