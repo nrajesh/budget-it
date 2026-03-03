@@ -96,7 +96,23 @@ Execution steps:
   - **If ALL pass**: Proceed to merge.
 - **Notify**: Report verification results to user, e.g. "✅ All local checks passed (format, lint, types, build)."
 
-## 9. Merge to Pre-Prod
+## 9. Mobile Sync (iOS & Android) — REQUIRED before merge
+- **Goal**: Ensure iOS and Android Capacitor bundles include the latest web assets.
+- **Trigger**: Only after Step 8 (all local checks pass).
+- **Action**:
+  ```bash
+  pnpm build              # Compile latest web assets → dist/
+  npx cap sync ios        # Copy dist/ → ios/App/App/public/
+  npx cap sync android    # Copy dist/ → android/app/src/main/assets/public/
+  ```
+- **Commit the sync**:
+  ```bash
+  git add ios/ android/
+  git commit -m "chore: sync web build to iOS and Android"
+  ```
+- **Note**: After merging to pre-prod or main, the user must do a **clean build in Xcode / Android Studio** to pick up the updated assets.
+
+## 10. Merge to Pre-Prod
 - **Goal**: Squash merge and cleanup.
 - **Trigger**: Only proceed after local verification passes (Step 8).
 - **Action**:
