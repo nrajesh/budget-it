@@ -60,8 +60,8 @@ const formSchema = z.object({
 interface AddEditPayeeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  payee: Payee | null;
-  onSuccess: () => void;
+  payee?: Payee | null;
+  onSuccess?: () => void;
   isAccountOnly?: boolean;
 }
 
@@ -188,7 +188,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
           `${values.is_account ? "Account" : "Payee"} added successfully!`,
         );
       }
-      onSuccess();
+      onSuccess?.();
       await invalidateAllData();
       onOpenChange(false);
     } catch (error: unknown) {

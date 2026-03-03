@@ -63,7 +63,7 @@ interface TransactionsContextType {
       recurrenceFrequency?: string;
       recurrenceEndDate?: string;
     },
-  ) => void;
+  ) => Promise<void>;
   /** Updates an existing transaction */
   updateTransaction: (transaction: Transaction) => void;
   /** Deletes a transaction by ID, or by transfer_id if provided */
@@ -604,8 +604,19 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   // replacing transactionsService
   const addTransaction = React.useCallback(
     async (
-      transaction: Omit<Transaction, "id" | "created_at"> & {
+      transaction: Omit<
+        Transaction,
+        | "id"
+        | "currency"
+        | "created_at"
+        | "transfer_id"
+        | "user_id"
+        | "is_scheduled_origin"
+      > & {
+        date: string;
         receivingAmount?: number;
+        recurrenceFrequency?: string;
+        recurrenceEndDate?: string;
       },
     ) => {
       // Check if it's a transfer
@@ -624,14 +635,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           transfer_id: transferId,
           user_id: userId,
           category: "Transfer",
-          date: new Date(transaction.date).toISOString(),
+          date: new Date(transaction.date).toISOString() as any,
         };
         // Destructure receivingAmount as we don't store it in the source side amount field directly usually
         // but the dialog sends it.
         const { receivingAmount: _receivingAmount, ...cleanSource } =
           sourceTransaction;
 
-        await dataProvider.addTransaction(cleanSource);
+        await dataProvider.addTransaction(cleanSource as any);
 
         // Destination transaction
         const destTransaction = {
@@ -642,18 +653,20 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           transfer_id: transferId,
           user_id: userId,
           category: "Transfer",
-          date: new Date(transaction.date).toISOString(),
+          date: new Date(transaction.date).toISOString() as any,
         };
         const { receivingAmount: _receivingAmount2, ...cleanDest } =
           destTransaction;
 
-        await dataProvider.addTransaction(cleanDest);
+        await dataProvider.addTransaction(cleanDest as any);
         await dataProvider.ensureCategoryExists("Transfer", userId);
       } else {
         await dataProvider.addTransaction({
           ...transaction,
           user_id: userId,
-        });
+          date: new Date(transaction.date).toISOString(),
+          currency: (transaction as any).currency || "USD", // Ensure currency is present
+        } as any);
       }
 
       await invalidateAllData();

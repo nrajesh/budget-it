@@ -49,7 +49,7 @@ interface GroupedEntityTableProps<T extends { id: string; name: string }> {
   isEditing: (id: string) => boolean;
   isUpdating: boolean;
   isDeletable?: (item: T) => boolean;
-  groupBy: keyof T;
+  groupBy?: keyof T;
 }
 
 const ITEMS_PER_GROUP_PAGE = 5;
@@ -78,7 +78,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
   const groupedData = React.useMemo(() => {
     const groups: Record<string, T[]> = {};
     data.forEach((item) => {
-      const groupValue = String(item[groupBy] || "Uncategorized");
+      const groupValue = String((groupBy ? item[groupBy] : null) || "Uncategorized");
       if (!groups[groupValue]) {
         groups[groupValue] = [];
       }
@@ -131,7 +131,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                 checked={
                   data.length > 0 &&
                   selectedRows.length ===
-                    data.filter((item) => isDeletable(item)).length
+                  data.filter((item) => isDeletable(item)).length
                 }
                 onCheckedChange={(checked) => {
                   const selectableIds = data
@@ -242,8 +242,8 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                     : typeof col.accessor === "function"
                                       ? col.accessor(item)
                                       : (item[
-                                          col.accessor as keyof T
-                                        ] as React.ReactNode) || "-"}
+                                        col.accessor as keyof T
+                                      ] as React.ReactNode) || "-"}
                                 </TableCell>
                               ))}
                               <TableCell
