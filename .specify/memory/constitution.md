@@ -1,50 +1,40 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Budget It Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Privacy First
+No data leaves the device unless explicitly exported to a file by the user. The application must not send telemetry, analytics, or user financial data to any external server without explicit, granular consent.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Local-First & Offline Capable
+The application must function 100% offline. All financial data, transactions, and settings are stored locally using IndexedDB (via Dexie.js). Network connectivity should only be required for explicit external integrations (e.g., fetching exchange rates) and must fail gracefully when offline.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Component-Driven UI
+The user interface is built using React, Shadcn/UI (Radix Primitives), and Tailwind CSS. Components must prioritize reusability, accessibility, and responsiveness across both desktop and mobile form factors. All UI must support Light and Dark modes natively.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Cross-Platform Native Experience
+The application targets Web, Desktop (via Electron), and Mobile (via Capacitor). Features must be designed to feel native on each platform, respecting platform conventions for navigation, gestures, and layout.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Specification-Driven Development
+All feature development must begin with a rigorous specification phase. Coding only begins after the "What" and "How" have been fully defined and agreed upon in the `spec.md` and `plan.md` documents. The `/speckit.feature` workflow governs this lifecycle.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Technical & Platform Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+The development of this project must rigorously adhere to platform-specific rule files located in the `documentation/` directory. Specifically:
+- **iOS Development**: MUST fully comply with `documentation/IOS_RULES.md`.
+- **Android Development**: MUST fully comply with `documentation/ANDROID_RULES.md`.
+- **Desktop Development**: Electron main process must remain isolated; UI must communicate via secured Context Bridge IPC.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Failure to observe these guidelines is a violation of the constitution.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Quality & Workflow Gates
+
+1. **Strict Typing & Validation**: TypeScript strict mode is mandatory. No `any` types. Input validation must be handled via Zod schemas at system boundaries.
+2. **Testing**: Unit tests (Vitest) and UI tests (React Testing Library) are required for core business logic and critical user flows. A Red-Green-Refactor cycle should be preferred.
+3. **State Management**: Use TanStack Query for asynchronous operations (including local IndexedDB interactions) and React Context for global UI state.
+4. **Formatting**: Code must adhere to configured ESLint and styling policies.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This Constitution supersedes all other practices. Amendments to this document must be documented, approved, and accompanied by a migration plan if introducing breaking changes to the workflow. All Pull Requests and spec reviews must verify compliance with these principles. For runtime development guidance, refer to `documentation/AGENTS.md` and `.agent/rules/specify-rules.md`.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.1.0 | **Ratified**: 2024-01-01 | **Last Amended**: 2026-03-02

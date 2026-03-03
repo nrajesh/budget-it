@@ -1,0 +1,9 @@
+{
+	"appId": "com.budgetit.app",
+	"appName": "Budget It!",
+	"webDir": "dist",
+	"packageClassList": [
+		"FilesystemPlugin",
+		"FilePickerPlugin"
+	]
+}

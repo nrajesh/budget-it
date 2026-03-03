@@ -70,6 +70,41 @@ graph TB
     style Dialog fill:#5c6bc0,stroke:#3949ab,color:#fff
 ```
 
+### File System Abstraction (Web, Electron, Capacitor Support)
+
+```mermaid
+flowchart TD
+    subgraph Core["Budget-It React App ⚛️"]
+        A[React Hooks & State]
+    end
+
+    subgraph Adapter["Unified API Layer 🌉"]
+        B(fs-adapter.ts)
+    end
+
+    subgraph Implementations["Platform Specific Engines ⚙️"]
+        C>fs-electron.ts]
+        D>fs-capacitor.ts]
+        E>fs-web.ts]
+    end
+
+    subgraph Native["Underlying OS 📱💻"]
+        F[(Node fs module)]
+        G[(Capacitor Filesystem API)]
+        H[(Web File System Access API)]
+    end
+
+    A -->|"cross-platform calls"| B
+
+    B -->|isElectron() === true| C
+    B -->|Capacitor.isNativePlatform()| D
+    B -->|Fallback| E
+
+    C --> F
+    D --> G
+    E --> H
+```
+
 ### Data Flow
 
 ```mermaid
