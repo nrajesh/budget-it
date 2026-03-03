@@ -1,0 +1,105 @@
+"use client";
+
+import { useState } from "react";
+import { type PeriodType } from "@/hooks/useAnalyticsPeriod";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { MoreHorizontal } from "lucide-react";
+import { type DateRange } from "react-day-picker";
+
+interface PeriodSelectorProps {
+  period: PeriodType;
+  onPeriodChange: (period: PeriodType) => void;
+  onCustomRange: (from: Date, to: Date) => void;
+}
+
+const PERIODS: { value: PeriodType; label: string }[] = [
+  { value: "1W", label: "1W" },
+  { value: "1M", label: "1M" },
+  { value: "6M", label: "6M" },
+  { value: "1Y", label: "1Y" },
+];
+
+export function PeriodSelector({
+  period,
+  onPeriodChange,
+  onCustomRange,
+}: PeriodSelectorProps) {
+  const [customDateRange, setCustomDateRange] = useState<
+    DateRange | undefined
+  >();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const handleCustomApply = () => {
+    if (customDateRange?.from && customDateRange?.to) {
+      onCustomRange(customDateRange.from, customDateRange.to);
+      setPopoverOpen(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 py-3">
+      {PERIODS.map((p) => (
+        <button
+          key={p.value}
+          onClick={() => onPeriodChange(p.value)}
+          className={`
+            px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200
+            ${
+              period === p.value
+                ? "bg-foreground text-background shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }
+          `}
+        >
+          {p.label}
+        </button>
+      ))}
+
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={`
+              p-2 rounded-full transition-all duration-200
+              ${
+                period === "custom"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
+            `}
+            aria-label="Custom date range"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <div className="p-3 space-y-3">
+            <p className="text-sm font-medium text-muted-foreground px-1">
+              Custom range
+            </p>
+            <Calendar
+              mode="range"
+              selected={customDateRange}
+              onSelect={setCustomDateRange}
+              numberOfMonths={1}
+            />
+            <div className="flex justify-end px-1">
+              <Button
+                size="sm"
+                onClick={handleCustomApply}
+                disabled={!customDateRange?.from || !customDateRange?.to}
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}

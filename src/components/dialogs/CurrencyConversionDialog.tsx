@@ -71,16 +71,22 @@ export const CurrencyConversionDialog: React.FC<
   // Fetch available currencies from Frankfurter API for the dropdown
   React.useEffect(() => {
     if (isOpen) {
-      fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+      fetchWithTimeout(
+        "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json",
+        {},
+        5000,
+      )
         .then((res: Response) => {
           if (!res.ok) throw new Error("Failed to fetch");
           return res.json();
         })
         .then((data: Record<string, string>) => {
-          const formatted = Object.entries(data).map(([code, name]) => ({
-            code,
-            name: name as string,
-          }));
+          const formatted = Object.entries(data)
+            .filter(([code]) => code.trim() !== "")
+            .map(([code, name]) => ({
+              code: code.toUpperCase(),
+              name: name as string,
+            }));
           setApiCurrencies(formatted);
         })
         .catch((err: unknown) => {
@@ -159,15 +165,15 @@ export const CurrencyConversionDialog: React.FC<
             <span className="text-xs text-muted-foreground mt-1 block">
               Rates sourced from{" "}
               <a
-                href="https://frankfurter.dev"
+                href="https://github.com/fawazahmed0/exchange-api"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold underline hover:text-foreground"
               >
-                Frankfurter API
+                Currency API
               </a>{" "}
-              (ECB data). No tracking or API key involved. Cryptocurrencies are
-              check manually.
+              (Open Source). No tracking or API key involved. Cryptocurrencies
+              are check manually.
             </span>
           </DialogDescription>
         </DialogHeader>

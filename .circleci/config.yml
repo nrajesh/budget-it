@@ -88,6 +88,31 @@ jobs:
           path: dist
           destination: build-artifacts
 
+  # Sync built web assets into iOS & Android Capacitor projects
+  # Runs only on pre-prod and main — keeps mobile bundles always current
+  cap-sync:
+    executor: node-executor
+    steps:
+      - setup-pnpm
+      - run:
+          name: Install Capacitor CLI
+          command: pnpm exec cap --version || pnpm add -D @capacitor/cli
+      - run:
+          name: Build Production Bundle
+          command: pnpm build
+      - run:
+          name: Sync Web Assets to iOS
+          command: npx cap sync ios
+      - run:
+          name: Sync Web Assets to Android
+          command: npx cap sync android
+      - store_artifacts:
+          path: ios/App/App/public
+          destination: ios-web-assets
+      - store_artifacts:
+          path: android/app/src/main/assets/public
+          destination: android-web-assets
+
   # Optional: Bundle size analysis (install vite-bundle-visualizer to enable)
   analyze-bundle:
     executor: node-executor
@@ -143,6 +168,14 @@ workflows:
       - build:
           requires:
             - test
+      - cap-sync:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - pre-prod
+                - main
       - analyze-bundle:
           requires:
             - build
