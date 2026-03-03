@@ -2,8 +2,9 @@
 
 **Feature Branch**: `013-analytics-mobile-reimagine`  
 **Created**: 2026-03-03  
-**Status**: Draft  
-**Input**: User description: "Reimagine the analytics graphics esp. the 'Balance Over Time' and 'Spending by Category' graphs to be more intuitive for mobile devices using attached references."
+**Status**: ✅ Complete  
+**Input**: User description: "Reimagine the analytics graphics esp. the 'Balance Over Time' and 'Spending by Category' graphs to be more intuitive for mobile devices using attached references."  
+**Completed**: 2026-03-03
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -13,7 +14,7 @@ The user opens the Analytics page and sees three swipable graph types (line, bar
 
 - **Line graph**: Dark line = current period, lighter line = previous period. Pressing a data point shows a tooltip comparing that day's spending vs. the same day in the previous period. Change is displayed as a green (↓ lower spending) or red (▲ higher spending) delta marker.
 - **Bar graph**: Solid bars show the average spending values per sub-period. Dotted horizontal lines mark **max** and **mean** values for the period.
-- **Pie chart**: Colorful segments representing only the selected entity (category by default). Clicking a segment highlights it and filters the bottom transaction table to that category. Clicking the center resets/zooms out.
+- **Pie chart**: Colorful segments representing only the selected entity (category by default). Clicking a segment highlights it (all other segments gray out) and filters the bottom transaction table to that category. Clicking the already-selected segment **or the center** resets/zooms out.
 
 **Why this priority**: This is the core analytics experience — the user must see and switch between chart types easily.
 
@@ -61,9 +62,16 @@ When the user touches/clicks on a data point on the line chart, a tooltip appear
 
 ---
 
-### User Story 4 — Entity Toggle for Bottom Table (Priority: P2)
+### User Story 4 — Entity Toggle for Bottom Table with Three-Level Drill-Down (Priority: P2)
 
 Below the charts, the user sees a section header like "By Category ▾". Tapping this dropdown toggles the bottom table view between: **Category** (includes sub-categories when drilled), **Vendor**, **Currency**, and **Account**. Each row shows the entity name, transaction count, the contributing amount, and the percentage of total for the selected period.
+
+When the **category** entity type is active and a category is selected (either via pie click or table row click):
+- Level 1: **Category list** — clicking a row selects it and syncs the pie chart
+- Level 2: **Sub-category list** — clicking a sub-category drills into transactions
+- Level 3: **Transaction list** — shows vendor, date, amount for individual transactions
+
+A **breadcrumb** (`All › Housing › Coffee`) and **← back** + **Clear** buttons are provided for navigation.
 
 **Why this priority**: Allows multi-dimensional spending analysis quickly without leaving the page.
 
@@ -139,6 +147,10 @@ At the top of the analytics page, a summary header shows:
 - **FR-009**: Desktop users MUST be able to navigate periods via arrow keys and on-screen chevrons.
 - **FR-010**: Summary header MUST show total spent, delta from previous period, and period label.
 - **FR-011**: Bottom table rows MUST show entity name, transaction count, amount, and percentage.
+- **FR-012**: Pie chart segments MUST gray out (opacity 35%) when one segment is selected, making the selected segment the sole coloured element.
+- **FR-013**: Clicking the pie center OR the currently-selected segment MUST reset the selection.
+- **FR-014**: Table MUST support three-level drill-down for category entity type: categories → sub-categories → individual transactions.
+- **FR-015**: Table MUST show a back (‹) button and a Clear button when in sub-category or transaction view.
 
 ### Standard Requirements (Budget It)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
