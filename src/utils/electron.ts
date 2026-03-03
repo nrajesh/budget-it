@@ -12,6 +12,11 @@ export interface ElectronAPI {
     filename: string,
     content: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  selectDirectory?: () => Promise<string | null>;
+  checkDirectoryAccess?: (path: string) => Promise<boolean>;
+  readFile?: (path: string) => Promise<string>;
+  writeFile?: (path: string, content: string) => Promise<void>;
+  joinPath?: (...paths: string[]) => Promise<string>;
 }
 
 export const getElectronAPI = (): ElectronAPI | null => {

@@ -180,13 +180,16 @@ const Layout = () => {
   return (
     <SidebarProvider className="min-h-screen">
       <Sidebar collapsible="icon">
-        <SidebarHeader>
+        <SidebarHeader className="pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
               <img
-                src="/logo.png"
+                src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo.png"}
                 alt="Budget It!"
-                className="size-8 shrink-0"
+                className={cn(
+                  "size-8 shrink-0",
+                  resolvedTheme !== "dark" && "mix-blend-multiply"
+                )}
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Budget It!
@@ -478,7 +481,7 @@ const Layout = () => {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col bg-background">
-        <header className="flex h-14 items-center justify-between border-b bg-background px-4 sm:px-6">
+        <header className="flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between border-b bg-background px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="sm:hidden" />
             <h1 className="text-lg font-semibold">{pageTitle}</h1>

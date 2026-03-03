@@ -39,6 +39,7 @@ const BackupPage = lazy(() => import("@/pages/BackupPage"));
 const CurrenciesPage = lazy(() => import("@/pages/CurrenciesPage"));
 import BackupManager from "@/components/backup/BackupManager";
 const DonationPage = lazy(() => import("@/pages/DonationPage"));
+import { ContinuitySyncManager } from "@/components/ContinuitySyncManager";
 
 // ... existing imports
 
@@ -98,6 +99,7 @@ function App() {
                       </Routes>
                     </Suspense>
                   </Router>
+                  <ContinuitySyncManager />
                 </TransactionsProvider>
               </UserProvider>
             </LedgerProvider>
