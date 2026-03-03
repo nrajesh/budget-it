@@ -22,6 +22,8 @@ import {
   Upload,
   RotateCcw,
   FileText,
+  Moon,
+  Sun,
 } from "lucide-react";
 import {
   ImportConfig,
@@ -52,6 +54,7 @@ import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 
 const LedgerEntryPage = () => {
   const { ledgers, switchLedger, refreshLedgers, deleteLedger } = useLedger();
+  const { setTheme, resolvedTheme } = useTheme();
   const { generateDiverseDemoData, setOperationProgress } = useTransactions();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
@@ -453,6 +456,22 @@ const LedgerEntryPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+      {/* Theme toggle button - top-right corner */}
+      <div className="fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          aria-label="Toggle theme"
+        >
+          {resolvedTheme === "dark" ? (
+            <Sun className="h-5 w-5 text-amber-400" />
+          ) : (
+            <Moon className="h-5 w-5 text-slate-600" />
+          )}
+        </Button>
+      </div>
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
           <LogoImage />
@@ -535,7 +554,7 @@ const LedgerEntryPage = () => {
                   onClick={() => handleSelectLedger(ledger.id)}
                 >
                   <ThemedCardHeader className="flex flex-row items-center gap-4 pb-2 space-y-0 pr-10">
-                    <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform">
+                    <div className="text-primary group-hover:scale-110 transition-transform">
                       {getIcon(ledger.icon)}
                     </div>
                     <div>

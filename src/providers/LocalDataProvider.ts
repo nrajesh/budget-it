@@ -831,8 +831,9 @@ export class LocalDataProvider implements DataProvider {
       sub_categories: mapToLedgerId(await db.sub_categories.toArray()),
       ledgers: await db.ledgers.toArray(),
       backup_configs: cleanBackupConfigs,
-      active_currencies: parsedActiveCurrencies, // Export unified list
-      currency_exchange_rates: parsedExchangeRates, // Export rates
+      active_currencies: parsedActiveCurrencies,
+      currency_exchange_rates: parsedExchangeRates,
+      theme: localStorage.getItem("theme") || "system",
       version: 2,
       exportedAt: new Date().toISOString(),
     };
@@ -1041,6 +1042,14 @@ export class LocalDataProvider implements DataProvider {
               );
             } catch (e) {
               console.error("Failed to import exchange rates", e);
+            }
+          }
+          // Import theme preference
+          if (importData.theme && typeof importData.theme === "string") {
+            try {
+              localStorage.setItem("theme", importData.theme);
+            } catch (e) {
+              console.error("Failed to import theme preference", e);
             }
           }
         }

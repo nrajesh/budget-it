@@ -3,13 +3,10 @@ import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import {
-  Users,
   LayoutGrid,
   BarChart3,
-  Phone,
-  Calendar, // Restore
-  Newspaper, // Restore
-  FileText, // Restore
+  Calendar,
+  Newspaper,
   Building2,
   Globe,
   Home,
@@ -23,13 +20,18 @@ import {
   Moon,
   Sun,
   Plus,
-  User,
   Bell,
-  Banknote,
-  Tag,
   Pin,
   PinOff,
   Heart,
+  Receipt,
+  CreditCard,
+  FolderTree,
+  Store,
+  Coins,
+  Clock,
+  BookOpen,
+  PiggyBank,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -275,7 +277,7 @@ const Layout = () => {
                   isActive={location.pathname === "/transactions"}
                 >
                   <Link to="/transactions">
-                    <Users />
+                    <Receipt />
                     <span>Transactions</span>
                   </Link>
                 </SidebarMenuButton>
@@ -291,7 +293,7 @@ const Layout = () => {
                   isActive={location.pathname === "/accounts"}
                 >
                   <Link to="/accounts">
-                    <Banknote />
+                    <CreditCard />
                     <span>Accounts</span>
                   </Link>
                 </SidebarMenuButton>
@@ -302,7 +304,7 @@ const Layout = () => {
                   isActive={location.pathname === "/categories"}
                 >
                   <Link to="/categories">
-                    <Tag />
+                    <FolderTree />
                     <span>Categories</span>
                   </Link>
                 </SidebarMenuButton>
@@ -313,7 +315,7 @@ const Layout = () => {
                   isActive={location.pathname === "/vendors"}
                 >
                   <Link to="/vendors">
-                    <Phone />
+                    <Store />
                     <span>Vendors</span>
                   </Link>
                 </SidebarMenuButton>
@@ -324,7 +326,7 @@ const Layout = () => {
                   isActive={location.pathname === "/currencies"}
                 >
                   <Link to="/currencies">
-                    <Banknote />
+                    <Coins />
                     <span>Currencies</span>
                   </Link>
                 </SidebarMenuButton>
@@ -340,7 +342,7 @@ const Layout = () => {
                   isActive={location.pathname === "/scheduled"}
                 >
                   <Link to="/scheduled">
-                    <Calendar />
+                    <Clock />
                     <span>Scheduled</span>
                   </Link>
                 </SidebarMenuButton>
@@ -388,7 +390,7 @@ const Layout = () => {
                   isActive={location.pathname === "/budgets"}
                 >
                   <Link to="/budgets">
-                    <FileText />
+                    <PiggyBank />
                     <span>Budgets</span>
                   </Link>
                 </SidebarMenuButton>
@@ -404,7 +406,7 @@ const Layout = () => {
                   isActive={location.pathname === "/settings"}
                 >
                   <Link to="/settings">
-                    <User />
+                    <BookOpen />
                     <span>Ledger</span>
                   </Link>
                 </SidebarMenuButton>
@@ -452,7 +454,7 @@ const Layout = () => {
                 variant="ghost"
                 className="h-auto w-full justify-start gap-2 p-2"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg text-primary">
                   {typeof avatarFallback === "string"
                     ? avatarFallback
                     : avatarFallback}
@@ -521,6 +523,7 @@ const Layout = () => {
                     setTheme(resolvedTheme === "light" ? "dark" : "light")
                   }
                   aria-label="Toggle theme"
+                  className="h-10 w-10"
                 >
                   {resolvedTheme === "dark" ? (
                     <Sun className="size-5" />
@@ -538,6 +541,7 @@ const Layout = () => {
                   variant="ghost"
                   size="icon"
                   aria-label="Notifications text-muted-foreground hover:text-foreground"
+                  className="h-10 w-10"
                 >
                   <Bell className="size-5" />
                   <span className="sr-only">Notifications</span>
@@ -549,9 +553,9 @@ const Layout = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative size-8 rounded-full"
+                  className="relative h-10 w-10 rounded-full"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary border border-border">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full text-primary border border-border">
                     {typeof avatarFallback === "string"
                       ? avatarFallback
                       : avatarFallback}
