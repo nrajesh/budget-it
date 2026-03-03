@@ -1,123 +1,84 @@
-# Feature Specification: [FEATURE NAME]
+# Feature Specification: Auto-Categorize Vendors using AI
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
+**Feature Branch**: `012-identify-best-way`  
+**Created**: 2026-03-03
 **Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**Input**: User description: "identify best way to implement https://github.com/nrajesh/budget-it/issues/96 without compromising fundamentals..."
+
+## Problem Statement
+When importing transaction data or adding new data, vendors often lack an associated category or sub-category. It is tedious for users to manually associate a vendor to a category/sub-category combination every single time, particularly when starting from scratch.
+
+## Goals & Non-Goals
+
+### Goals
+- Allow users to automatically categorize vendors using a cloud AI model (OpenAI, Gemini, Perplexity).
+- Maintain user privacy and control by employing a "Bring Your Own Key" (BYOK) model.
+- Prevent unintended API costs by triggering the categorization explicitly through user action (e.g., an "Auto-Categorize" button) rather than in the background.
+- Ensure accuracy by providing the user's existing categories/sub-categories to the AI model as context.
+- Provide clear setup instructions and documentation links for obtaining API keys.
+
+### Non-Goals
+- Local LLM inference (e.g., Transformers.js or web-llm) is excluded due to hardware constraints and download size.
+- Background asynchronous categorization that automatically consumes tokens upon import.
 
 ## User Scenarios & Testing *(mandatory)*
 
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
+### User Story 1 - Configure AI Settings (Priority: P1)
 
-### User Story 1 - [Brief Title] (Priority: P1)
+As a user, I want to be able to configure my AI provider and API key in settings, with helpful links to provider documentation, so that I can control my own API usage.
 
-[Describe this user journey in plain language]
+**Why this priority**: Core requirement to support the BYOK model while maintaining the app's local-first philosophy.
 
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
+**Independent Test**: Can be fully tested by navigating to settings, selecting a provider, entering an API key, and successfully saving it and verifying the UI feedback.
 
 **Acceptance Scenarios**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **Given** the user navigates to the Settings page, **When** they view the new "AI Integrations" section, **Then** they see a dropdown to select a provider (OpenAI, Gemini, Perplexity) and an input field for the API key.
+2. **Given** the user selects a provider, **When** the provider is selected, **Then** they see a helpful link to that provider's API key documentation.
 
 ---
 
-### User Story 2 - [Brief Title] (Priority: P2)
+### User Story 2 - Trigger Auto-Categorization (Priority: P1)
 
-[Describe this user journey in plain language]
+As a user managing transactions or vendors, I want to explicitly click an "Auto-Categorize" button to categorize uncategorized vendors using my configured AI, so that I don't unknowingly consume API tokens.
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**Why this priority**: The primary solution to Issue #96.
 
-**Independent Test**: [Describe how this can be tested independently]
+**Independent Test**: Can be tested by selecting an uncategorized vendor and triggering the action natively or via a mock API.
 
 **Acceptance Scenarios**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-### User Story 3 - [Brief Title] (Priority: P3)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-[Add more user stories as needed, each with an assigned priority]
-
-### Edge Cases
-
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
-
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+1. **Given** a vendor with missing categories, **When** the user clicks "Auto-Categorize", **Then** the system sends the vendor name alongside existing categories to the AI, and the UI updates with the predicted category.
+2. **Given** the user has not configured an API key, **When** they attempt to auto-categorize, **Then** they are prompted to configure their settings first.
 
 ## Requirements *(mandatory)*
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
-
 ### Functional Requirements
-- **FR-001**: System MUST [be able to manage user's financial transactions giving meaningful insights using inherent entities]
-- **FR-002**: System MUST [be able to derive budgets from transactions and make it intuitive for user to manage their finances]
+- **FR-001**: System MUST provide a settings UI to select an AI provider (OpenAI, Gemini, Perplexity) and input an API key.
+- **FR-002**: System MUST securely store the API key locally, preventing exposure or telemetry to third-party services other than the chosen AI provider.
+- **FR-003**: System MUST provide a manual "Auto-Categorize" button/action in the relevant Vendor or Transaction views.
+- **FR-004**: System MUST inject the user's existing list of categories as context in the prompt sent to the chosen AI provider.
+- **FR-005**: System MUST display links to provider documentation for obtaining API keys.
+- **FR-006**: System MUST fail gracefully with clear error messages if the AI provider returns an error (e.g., invalid key, rate limit, timeout).
 
 ### Standard Requirements (Budget It)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
-- **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise).
+- **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise). *Note: This feature inherently requires network access for API calls, but the rest of the application must not crash offline.*
 - **FR-STD-04**: Feature MUST be compatible with both Web and Electron environments.
 - **FR-STD-05**: All user inputs MUST be validated using Zod schemas.
 
 ### Component Impact
-- **New Components**: [e.g., `src/components/ui/new-button.tsx`]
-- **Modified Components**: [e.g., `src/components/dashboard/widget.tsx`]
-- **Context Updates**: [e.g., `src/contexts/TransactionContext.tsx`]
+- **New Components**: settings section for AI Providers, Auto-Categorize action button/service.
+- **Modified Components**: Vendor/Transaction forms or lists, existing Settings panel.
+- **Context Updates**: AppSettings store for the API key and chosen provider.
 
 ### Key Entities (Budget It Core)
-
-- **Ledger**: The central storage which hosts user's finance. Consider it equivalent of a private book which can be passed on to another user. This is primordial to all other entities.
-- **Transaction**: The central unit of data. Linked to Account, Category, and (optionally) Vendor/Payee.
-- **Account**: Source of funds (Checking, Credit Card, Savings). Tracks current balance and currency.
-- **Vendor**: The merchant or payee (e.g., "Starbucks", "Landlord").
-- **Category**: Hierarchical classification (e.g., `Food > Groceries`).
-- **Budget**: Spending limit or a goal for a specific category or group of categories over a period.
-- **[New Entity]**: [Describe any new entity introduced by this feature]
+- **AI Integration**: A new configuration entity containing the user's `provider` (enum: OPENAI, GEMINI, PERPLEXITY) and `apiKey` (string).
 
 ## Success Criteria *(mandatory)*
 
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
-
 ### Measurable Outcomes
-
-- **SC-001**: [Measurable metric, e.g., "Users can complete transaction creation in under 30 seconds"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent transaction imports without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "Successfully import transactions from CSV file"]
-- **SC-004**: [Business metric, e.g., "Users can manage transactions and budget creations smartly with zero failed states"]
+- **SC-001**: Users can successfully set up an external AI provider and API key in under 2 minutes.
+- **SC-002**: Auto-categorization accurately maps a given vendor to an existing category if a logical match exists.
+- **SC-003**: ZERO token consumption occurs unless the user explicitly triggers auto-categorization manually.

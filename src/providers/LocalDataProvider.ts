@@ -73,9 +73,8 @@ export class LocalDataProvider implements DataProvider {
     const userId = transaction.user_id || "local-user";
 
     // Ensure category exists
-    let catId = null;
     if (transaction.category) {
-      catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(transaction.category, userId);
 
       // Ensure sub-category exists if provided
       if (transaction.sub_category && catId) {
@@ -130,9 +129,8 @@ export class LocalDataProvider implements DataProvider {
     const userId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
-    let catId = null;
     if (transaction.category) {
-      catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(transaction.category, userId);
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -205,9 +203,8 @@ export class LocalDataProvider implements DataProvider {
     const userId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
-    let catId = null;
     if (transaction.category) {
-      catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(transaction.category, userId);
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -232,9 +229,8 @@ export class LocalDataProvider implements DataProvider {
     const userId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
-    let catId = null;
     if (transaction.category) {
-      catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(transaction.category, userId);
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -745,7 +741,7 @@ export class LocalDataProvider implements DataProvider {
   // Migration Utils
   async exportData(userId?: string): Promise<unknown> {
     // Helper to rename user_id to ledger_id
-    const mapToLedgerId = (items: Record<string, any>[]) =>
+    const mapToLedgerId = <T extends { user_id?: string }>(items: T[]) =>
       items.map((item) => {
         const { user_id, ...rest } = item;
         return { ...rest, ledger_id: user_id };
@@ -885,7 +881,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-              [],
+            [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(

@@ -103,8 +103,8 @@ const Analytics = () => {
   // Split into historical and projected for the chart, but use combined for the table
   const { historicalTransactions, projectedTransactions } =
     React.useMemo(() => {
-      const historical: any[] = [];
-      const projected: any[] = [];
+      const historical: (typeof allFilteredData)[number][] = [];
+      const projected: (typeof allFilteredData)[number][] = [];
 
       allFilteredData.forEach((t) => {
         // We can use the flag 'is_scheduled_origin' or date.

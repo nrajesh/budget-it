@@ -24,7 +24,7 @@ export function parseFrequency(input: string): number | null {
 
   if (isNaN(value) || value <= 0) return null;
 
-  let multiplier = 0;
+  let multiplier: number;
 
   // Minutes
   if (["m", "min", "mins", "minute", "minutes"].includes(unit)) {

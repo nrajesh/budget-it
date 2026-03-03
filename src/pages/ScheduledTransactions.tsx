@@ -224,7 +224,13 @@ const ScheduledTransactionsPage = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (
+    values: Partial<ScheduledTransaction> & {
+      frequency_value?: string;
+      frequency_unit?: string;
+      account?: string;
+    },
+  ) => {
     setIsSubmitting(true);
     try {
       const transactionData = {
@@ -238,7 +244,11 @@ const ScheduledTransactionsPage = () => {
       const currency = accountObj?.currency || "USD";
       // Ensure ID is present for local optimistic updates if needed, though dataProvider usually adds it.
       // But let's let backend handle.
-      const payload = { ...transactionData, currency };
+      const payload = {
+        ...transactionData,
+        currency,
+        user_id: transactionData.user_id as string,
+      } as Omit<ScheduledTransaction, "id" | "created_at">;
 
       if (editingTransaction) {
         await updateScheduledTransaction({ ...editingTransaction, ...payload });

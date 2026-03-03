@@ -33,7 +33,18 @@ export type AddEditTransactionFormValues = z.infer<
 >;
 
 interface UseTransactionFormLogicProps {
-  transactionToEdit?: any;
+  transactionToEdit?: Partial<{
+    date: string;
+    account: string;
+    vendor: string;
+    category: string;
+    sub_category: string;
+    amount: number;
+    remarks: string;
+    receivingAmount: number;
+    recurrence_frequency: string;
+    recurrence_end_date: string;
+  }> | null;
   isOpen: boolean;
 }
 
@@ -107,12 +118,12 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-                new Date(transactionToEdit.recurrence_end_date),
-              )
+              new Date(transactionToEdit.recurrence_end_date),
+            )
             : "",
         });
         setTransactionType(
-          transactionToEdit.amount >= 0 ? "income" : "expense",
+          (transactionToEdit.amount ?? 0) >= 0 ? "income" : "expense",
         );
       } else {
         reset({

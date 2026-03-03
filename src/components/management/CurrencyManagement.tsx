@@ -71,7 +71,7 @@ export const CurrencyManagement = () => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
       })
-      .then((data: any) => {
+      .then((data: Record<string, string>) => {
         const formatted = Object.entries(data).map(([code, name]) => ({
           code,
           name: name as string,
@@ -277,7 +277,7 @@ export const CurrencyManagement = () => {
                                         throw new Error("Failed to fetch rate");
                                       return res.json();
                                     })
-                                    .then((data: any) => {
+                                    .then((data: { rates: Record<string, number> }) => {
                                       const rateUSDToNew =
                                         data.rates[currency.code];
                                       if (rateUSDToNew) {

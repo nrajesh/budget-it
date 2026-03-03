@@ -69,8 +69,8 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
       const convertedAmount = Math.abs(
         convertBetweenCurrencies(t.amount, t.currency, selectedCurrency),
       );
-      let sourceNode = "";
-      let targetNode = "";
+      let sourceNode: string;
+      let targetNode: string;
 
       if (t.category === "Transfer") {
         if (t.amount < 0) {

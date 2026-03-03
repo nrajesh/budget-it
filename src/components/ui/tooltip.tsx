@@ -14,7 +14,7 @@ const TooltipTrigger = React.forwardRef<
     asChild?: boolean;
   }
 >(({ className, ...props }, ref) => (
-  <TooltipPrimitive.Trigger ref={ref} {...({ className, ...props } as any)} />
+  <TooltipPrimitive.Trigger ref={ref} className={className} {...props} />
 ));
 TooltipTrigger.displayName = TooltipPrimitive.Trigger.displayName;
 

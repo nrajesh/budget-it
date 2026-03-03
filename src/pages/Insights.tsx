@@ -114,7 +114,7 @@ export default function Insights() {
         const isOverBudget = spent > total;
 
         let status: "good" | "warning" | "critical" = "good";
-        let message = "You are on track.";
+        let message: string;
 
         if (isOverBudget) {
           status = "critical";

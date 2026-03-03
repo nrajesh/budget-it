@@ -144,7 +144,8 @@ const TransactionsContext = React.createContext<
   TransactionsContextType | undefined
 >(undefined);
 
-const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformPayeeData = (data: any[]): Payee[] => {
   if (!data) return [];
   return data
     .map((item) => ({
@@ -164,7 +165,8 @@ const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const transformCategoryData = (data: Record<string, any>[]): Category[] => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformCategoryData = (data: any[]): Category[] => {
   if (!data) return [];
   return data
     .map((item) => ({
@@ -297,10 +299,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-        | "DELETE_TRANSACTION"
-        | "DELETE_SCHEDULE"
-        | "DELETE_BUDGET"
-        | "DELETE_ENTITY";
+      | "DELETE_TRANSACTION"
+      | "DELETE_SCHEDULE"
+      | "DELETE_BUDGET"
+      | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -601,7 +603,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
   const addTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (
+      transaction: Omit<Transaction, "id" | "created_at"> & {
+        receivingAmount?: number;
+      },
+    ) => {
       // Check if it's a transfer
       // In our app, a transfer is identified if the vendor name matches an account name
       const isTransfer = accounts.some(
@@ -656,7 +662,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     [accounts, ledgerId, dataProvider, invalidateAllData, triggerExport],
   );
   const updateTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (
+      transaction: Transaction & {
+        receivingAmount?: number;
+      },
+    ) => {
       // 1. Update the primary transaction
       await dataProvider.updateTransaction(transaction);
 
@@ -831,6 +841,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       invalidateAllData,
       scheduledTransactions,
       showUndoToast,
+      triggerExport,
     ],
   );
 

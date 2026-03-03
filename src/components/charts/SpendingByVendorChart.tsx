@@ -11,7 +11,7 @@ import {
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { ActivePieShape } from "./ActivePieShape";
+import { ActivePieShape, ActivePieShapeProps } from "./ActivePieShape";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
 
@@ -94,7 +94,7 @@ export function SpendingByVendorChart({
     (props: unknown) => {
       return (
         <ActivePieShape
-          {...(props as any)}
+          {...(props as ActivePieShapeProps)}
           formatCurrency={formatCurrency}
           onCenterClick={resetAll}
         />

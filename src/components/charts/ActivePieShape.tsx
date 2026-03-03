@@ -3,7 +3,7 @@
 import React from "react";
 import { Sector } from "recharts";
 
-interface ActivePieShapeProps {
+export interface ActivePieShapeProps {
   cx: number;
   cy: number;
   innerRadius: number;

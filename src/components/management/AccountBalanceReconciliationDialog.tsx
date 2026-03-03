@@ -134,8 +134,8 @@ const AccountBalanceReconciliationDialog: React.FC<
       showSuccess(`Reconciled ${adjustments.length} accounts successfully.`);
       await invalidateAllData();
       onClose();
-    } catch (error: any) {
-      showError(`Reconciliation failed: ${error.message}`);
+    } catch (error: unknown) {
+      showError(`Reconciliation failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsProcessing(false);
     }

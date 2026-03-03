@@ -5,7 +5,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { ActivePieShape } from "./ActivePieShape";
+import { ActivePieShape, ActivePieShapeProps } from "./ActivePieShape";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
@@ -135,7 +135,7 @@ const CategoryPieChart = () => {
     (props: unknown) => {
       return (
         <ActivePieShape
-          {...(props as any)}
+          {...(props as ActivePieShapeProps)}
           formatCurrency={formatCurrency}
           onCenterClick={resetActiveIndex}
         />
@@ -153,11 +153,8 @@ const CategoryPieChart = () => {
   if (!chartData || chartData.length === 0)
     return <div className="text-center py-4">No data to display.</div>;
 
-  const renderLabel: any = ({
-    name,
-    percent,
-  }: { name: string; percent: number } | Record<string, unknown>) => {
-    // @ts-expect-error type discrepancy
+  const renderLabel = (props: unknown) => {
+    const { name, percent } = props as { name: string; percent: number };
     return `${name} (${(percent * 100).toFixed(0)}%)`;
   };
 

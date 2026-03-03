@@ -104,8 +104,8 @@ const TransactionRow = React.memo(
     accountCurrencyMap?: Map<string, string>;
     selectedCurrency: string;
     today: Date;
-    navigate: any; // useNavigate return type is hard to import? It's `NavigateFunction`.
-    toast: any; // `useToast` return type.
+    navigate: ReturnType<typeof useNavigate>; // useNavigate return type is NavigateFunction.
+    toast: ReturnType<typeof useToast>["toast"]; // `useToast` return type.
     isValidTransfer: boolean;
   }) => {
     const isFuture = useMemo(() => {
@@ -119,12 +119,12 @@ const TransactionRow = React.memo(
         <span className="cursor-pointer">
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
-                style: "currency",
-                currency:
-                  accountCurrencyMap?.get(transaction.account) ||
-                  transaction.currency ||
-                  selectedCurrency,
-              })
+              style: "currency",
+              currency:
+                accountCurrencyMap?.get(transaction.account) ||
+                transaction.currency ||
+                selectedCurrency,
+            })
             : field === "date"
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
@@ -244,7 +244,7 @@ const TransactionRow = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => {})
+              onScheduleTransactions([transaction], () => { })
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}

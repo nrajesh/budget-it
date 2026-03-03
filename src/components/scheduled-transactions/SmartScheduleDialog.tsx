@@ -152,11 +152,11 @@ export function SmartScheduleDialog({
       });
       onSave();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       toast({
         title: "Error creating schedules",
-        description: error.message || "Something went wrong.",
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       });
     } finally {

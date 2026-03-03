@@ -76,7 +76,7 @@ export const CurrencyConversionDialog: React.FC<
           if (!res.ok) throw new Error("Failed to fetch");
           return res.json();
         })
-        .then((data: any) => {
+        .then((data: Record<string, string>) => {
           const formatted = Object.entries(data).map(([code, name]) => ({
             code,
             name: name as string,

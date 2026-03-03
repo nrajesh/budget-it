@@ -27,8 +27,8 @@ export const RecurrenceUpdateDialog: React.FC<RecurrenceUpdateDialogProps> = ({
   isMixedSelection = false,
   count = 1,
 }) => {
-  let title = "";
-  let description = "";
+  let title: string;
+  let description: string;
 
   if (actionType === "delete") {
     if (isMixedSelection) {

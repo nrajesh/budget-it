@@ -15,11 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Budget } from "@/data/finance-data";
+import { Budget, Transaction } from "@/data/finance-data";
 import { useNavigate } from "react-router-dom";
 
 interface IncomeExpenseSummaryProps {
-  transactions: any[];
+  transactions: Transaction[];
   budgets: Budget[];
 }
 
@@ -80,10 +80,10 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
         );
         const target = budget
           ? convertBetweenCurrencies(
-              budget.target_amount,
-              budget.currency,
-              selectedCurrency,
-            )
+            budget.target_amount,
+            budget.currency,
+            selectedCurrency,
+          )
           : null;
         const variance = target !== null ? target - amount : null;
         const percentSpent =

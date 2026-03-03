@@ -71,7 +71,9 @@ export async function decryptData(
     return dec.decode(decryptedContent);
   } catch (e) {
     console.error("Decryption failed:", e);
-    throw new Error("Invalid password or corrupted file.");
+    const error = new Error("Invalid password or corrupted file.");
+    (error as Error & { cause?: unknown }).cause = e;
+    throw error;
   }
 }
 
