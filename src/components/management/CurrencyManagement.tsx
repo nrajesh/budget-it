@@ -64,18 +64,24 @@ export const CurrencyManagement = () => {
   >([]);
   const [isComboboxOpen, setIsComboboxOpen] = React.useState(false);
 
-  // Fetch available currencies from Frankfurter API for the dropdown
+  // Fetch available currencies from jsDelivr API for the dropdown
   React.useEffect(() => {
-    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+    fetchWithTimeout(
+      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json",
+      {},
+      5000,
+    )
       .then((res: Response) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
       })
       .then((data: Record<string, string>) => {
-        const formatted = Object.entries(data).map(([code, name]) => ({
-          code,
-          name: name as string,
-        }));
+        const formatted = Object.entries(data)
+          .filter(([code]) => code.trim() !== "")
+          .map(([code, name]) => ({
+            code: code.toUpperCase(),
+            name: name as string,
+          }));
         setApiCurrencies(formatted);
       })
       .catch((err: unknown) => {
@@ -150,14 +156,14 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 text-xs text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://frankfurter.dev"
+                    href="https://github.com/fawazahmed0/exchange-api"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"
                   >
-                    Frankfurter API
+                    Currency API
                   </a>{" "}
-                  (Open Source, No API Key, No Tracking).
+                  (Open Source, No API Key).
                 </span>
               </ThemedCardDescription>
             </div>
@@ -268,7 +274,7 @@ export const CurrencyManagement = () => {
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
                                   fetchWithTimeout(
-                                    `https://api.frankfurter.app/latest?from=USD&to=${currency.code}`,
+                                    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json`,
                                     {},
                                     5000,
                                   )
@@ -279,10 +285,10 @@ export const CurrencyManagement = () => {
                                     })
                                     .then(
                                       (data: {
-                                        rates: Record<string, number>;
+                                        usd: Record<string, number>;
                                       }) => {
                                         const rateUSDToNew =
-                                          data.rates[currency.code];
+                                          data.usd[currency.code.toLowerCase()];
                                         if (rateUSDToNew) {
                                           // We want: 1 Selected = ? New
                                           // 1 USD = rateUSDToNew New

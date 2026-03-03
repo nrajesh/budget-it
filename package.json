@@ -108,7 +108,10 @@
   "pnpm": {
     "overrides": {
       "tar": ">=7.5.8"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "electron"
+    ]
   },
   "build": {
     "appId": "com.budgetit.app",
