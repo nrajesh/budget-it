@@ -194,7 +194,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     className={cn(
                       "text-xs sm:text-sm font-semibold w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full mb-0.5 sm:mb-1",
                       isSameDay(day, new Date()) &&
-                      "bg-primary text-primary-foreground",
+                        "bg-primary text-primary-foreground",
                     )}
                   >
                     {format(day, "d")}

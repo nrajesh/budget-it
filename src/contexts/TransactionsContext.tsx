@@ -299,10 +299,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-      | "DELETE_TRANSACTION"
-      | "DELETE_SCHEDULE"
-      | "DELETE_BUDGET"
-      | "DELETE_ENTITY";
+        | "DELETE_TRANSACTION"
+        | "DELETE_SCHEDULE"
+        | "DELETE_BUDGET"
+        | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];

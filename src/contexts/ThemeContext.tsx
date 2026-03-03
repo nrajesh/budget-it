@@ -15,8 +15,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [dashboardStyle, setDashboardStyleState] = useState<DashboardStyle>(
     () => {
-      return (localStorage.getItem("dashboardStyle") as DashboardStyle) || "standard";
-    }
+      return (
+        (localStorage.getItem("dashboardStyle") as DashboardStyle) || "standard"
+      );
+    },
   );
 
   const setDashboardStyle = (style: DashboardStyle) => {

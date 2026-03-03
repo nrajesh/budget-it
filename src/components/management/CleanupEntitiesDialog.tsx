@@ -28,7 +28,9 @@ const CleanupEntitiesDialog: React.FC<CleanupEntitiesDialogProps> = ({
   const dataProvider = useDataProvider();
   const { vendors, categories, invalidateAllData } = useTransactions();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [unusedEntities, setUnusedEntities] = useState<{ id: string; name: string; totalTransactions?: number }[]>([]);
+  const [unusedEntities, setUnusedEntities] = useState<
+    { id: string; name: string; totalTransactions?: number }[]
+  >([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -94,7 +96,9 @@ const CleanupEntitiesDialog: React.FC<CleanupEntitiesDialogProps> = ({
       await invalidateAllData();
       onClose();
     } catch (error: unknown) {
-      showError(`Failed to delete: ${error instanceof Error ? error.message : String(error)}`);
+      showError(
+        `Failed to delete: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       setIsProcessing(false);
     }

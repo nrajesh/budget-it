@@ -262,7 +262,8 @@ const SettingsPage = () => {
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? syncConfig.config.syncDirectoryHandle
-                            : (syncConfig.config.syncDirectoryHandle as any).name
+                            : (syncConfig.config.syncDirectoryHandle as any)
+                                .name
                           : "Select Folder"}
                       </span>
                     </Button>

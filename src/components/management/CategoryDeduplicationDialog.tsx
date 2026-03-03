@@ -72,7 +72,9 @@ const CategoryDeduplicationDialog: React.FC<
       await invalidateAllData();
       onClose();
     } catch (error: unknown) {
-      showError(`Merge failed: ${error instanceof Error ? error.message : String(error)}`);
+      showError(
+        `Merge failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       setIsProcessing(false);
     }

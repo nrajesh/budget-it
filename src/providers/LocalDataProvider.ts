@@ -74,7 +74,10 @@ export class LocalDataProvider implements DataProvider {
 
     // Ensure category exists
     if (transaction.category) {
-      const catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(
+        transaction.category,
+        userId,
+      );
 
       // Ensure sub-category exists if provided
       if (transaction.sub_category && catId) {
@@ -130,7 +133,10 @@ export class LocalDataProvider implements DataProvider {
 
     // Ensure category/sub-category exist
     if (transaction.category) {
-      const catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(
+        transaction.category,
+        userId,
+      );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -204,7 +210,10 @@ export class LocalDataProvider implements DataProvider {
 
     // Ensure category/sub-category exist
     if (transaction.category) {
-      const catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(
+        transaction.category,
+        userId,
+      );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -230,7 +239,10 @@ export class LocalDataProvider implements DataProvider {
 
     // Ensure category/sub-category exist
     if (transaction.category) {
-      const catId = await this.ensureCategoryExists(transaction.category, userId);
+      const catId = await this.ensureCategoryExists(
+        transaction.category,
+        userId,
+      );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
@@ -881,7 +893,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-            [],
+              [],
             userId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(

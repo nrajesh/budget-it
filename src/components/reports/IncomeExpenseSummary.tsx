@@ -80,10 +80,10 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
         );
         const target = budget
           ? convertBetweenCurrencies(
-            budget.target_amount,
-            budget.currency,
-            selectedCurrency,
-          )
+              budget.target_amount,
+              budget.currency,
+              selectedCurrency,
+            )
           : null;
         const variance = target !== null ? target - amount : null;
         const percentSpent =

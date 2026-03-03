@@ -300,7 +300,7 @@ export function ScheduledTransactionsTable({
                               badgeVariants({ variant: "outline" }),
                               "text-slate-700 dark:text-slate-300",
                               transaction.category !== "Transfer" &&
-                              "cursor-pointer hover:border-primary",
+                                "cursor-pointer hover:border-primary",
                             )}
                           >
                             {transaction.category || "Uncategorized"}

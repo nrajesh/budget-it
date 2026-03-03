@@ -316,8 +316,8 @@ const ScheduledBackups = () => {
       <Card
         className={
           !Capacitor.isNativePlatform() &&
-            !("showDirectoryPicker" in window) &&
-            !getElectronAPI()
+          !("showDirectoryPicker" in window) &&
+          !getElectronAPI()
             ? "opacity-60 pointer-events-none"
             : ""
         }

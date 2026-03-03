@@ -277,28 +277,33 @@ export const CurrencyManagement = () => {
                                         throw new Error("Failed to fetch rate");
                                       return res.json();
                                     })
-                                    .then((data: { rates: Record<string, number> }) => {
-                                      const rateUSDToNew =
-                                        data.rates[currency.code];
-                                      if (rateUSDToNew) {
-                                        // We want: 1 Selected = ? New
-                                        // 1 USD = rateUSDToNew New
-                                        // 1 USD = exchangeRates[selected] Selected
-                                        // => 1 Selected = (1/exchangeRates[selected]) USD
-                                        // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
-                                        // => rate = rateUSDToNew / exchangeRates[selected]
+                                    .then(
+                                      (data: {
+                                        rates: Record<string, number>;
+                                      }) => {
+                                        const rateUSDToNew =
+                                          data.rates[currency.code];
+                                        if (rateUSDToNew) {
+                                          // We want: 1 Selected = ? New
+                                          // 1 USD = rateUSDToNew New
+                                          // 1 USD = exchangeRates[selected] Selected
+                                          // => 1 Selected = (1/exchangeRates[selected]) USD
+                                          // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
+                                          // => rate = rateUSDToNew / exchangeRates[selected]
 
-                                        const selectedRate =
-                                          exchangeRates[selectedCurrency] || 1;
-                                        const finalRate =
-                                          rateUSDToNew / selectedRate;
-                                        setCustomRate(
-                                          parseFloat(
-                                            finalRate.toFixed(4),
-                                          ).toString(),
-                                        );
-                                      }
-                                    })
+                                          const selectedRate =
+                                            exchangeRates[selectedCurrency] ||
+                                            1;
+                                          const finalRate =
+                                            rateUSDToNew / selectedRate;
+                                          setCustomRate(
+                                            parseFloat(
+                                              finalRate.toFixed(4),
+                                            ).toString(),
+                                          );
+                                        }
+                                      },
+                                    )
                                     .catch((e: unknown) => {
                                       console.error(
                                         "Failed to fetch initial rate",

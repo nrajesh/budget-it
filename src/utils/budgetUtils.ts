@@ -119,7 +119,7 @@ export function calculateBudgetSpent(
         budget.sub_category_name &&
         (!t.sub_category ||
           t.sub_category.trim().toLowerCase() !==
-          budget.sub_category_name.trim().toLowerCase())
+            budget.sub_category_name.trim().toLowerCase())
       )
         return false;
     }
