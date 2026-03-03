@@ -22,6 +22,7 @@
     "electron:dev": "concurrently -k \"pnpm run dev\" \"pnpm run electron\""
   },
   "dependencies": {
+    "@capacitor/core": "^8.1.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@hookform/resolvers": "^3.9.0",
@@ -52,6 +53,7 @@
     "date-fns": "^3.6.0",
     "dexie": "^4.2.1",
     "html2canvas": "^1.4.1",
+    "idb-keyval": "^6.2.2",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.575.0",
