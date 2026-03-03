@@ -71,13 +71,9 @@ export const CurrencyConversionDialog: React.FC<
   // Fetch available currencies from Frankfurter API for the dropdown
   React.useEffect(() => {
     if (isOpen) {
-      fetchWithTimeout(
-        "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json",
-        {},
-        5000,
-      )
+      fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
         .then((res: Response) => {
-          if (!res.ok) throw new Error("Failed to fetch");
+          if (!res.ok) throw new Error("Failed to fetch currencies");
           return res.json();
         })
         .then((data: Record<string, string>) => {
