@@ -66,13 +66,9 @@ export const CurrencyManagement = () => {
 
   // Fetch available currencies from jsDelivr API for the dropdown
   React.useEffect(() => {
-    fetchWithTimeout(
-      "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies.json",
-      {},
-      5000,
-    )
+    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
       .then((res: Response) => {
-        if (!res.ok) throw new Error("Failed to fetch");
+        if (!res.ok) throw new Error("Failed to fetch currencies");
         return res.json();
       })
       .then((data: Record<string, string>) => {
@@ -274,7 +270,7 @@ export const CurrencyManagement = () => {
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
                                   fetchWithTimeout(
-                                    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json`,
+                                    `https://api.frankfurter.app/latest?from=USD`,
                                     {},
                                     5000,
                                   )
@@ -285,10 +281,16 @@ export const CurrencyManagement = () => {
                                     })
                                     .then(
                                       (data: {
-                                        usd: Record<string, number>;
+                                        rates: Record<string, number>;
                                       }) => {
-                                        const rateUSDToNew =
-                                          data.usd[currency.code.toLowerCase()];
+                                        let rateUSDToNew = 1;
+                                        if (currency.code !== "USD") {
+                                          rateUSDToNew =
+                                            data.rates[
+                                              currency.code.toUpperCase()
+                                            ];
+                                        }
+
                                         if (rateUSDToNew) {
                                           // We want: 1 Selected = ? New
                                           // 1 USD = rateUSDToNew New
