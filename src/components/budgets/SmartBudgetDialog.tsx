@@ -161,18 +161,26 @@ export function SmartBudgetDialog({
       const userId = activeLedger?.id;
       if (!userId) throw new Error("No active ledger selected");
 
+      // Fetch existing budgets to prevent duplicates
+      const existingBudgets = await dataProvider.getBudgetsWithSpending(userId);
+
       let createdCount = 0;
+      let skippedCount = 0;
 
       for (const item of selectedItems) {
-        // Prepare budget object
-        // We need category_id. We might need to look it up or let backend handle it?
-        // DataProvider.createBudget likely needs IDs if we are strict, or maybe it handles names.
-        // Let's check `dataProvider.ensureCategoryExists` or similar usage in AddTransaction.
-        // Budget interface in `budgets.ts` has category_id.
+        // Duplicate check: same category + sub_category + frequency + is_goal
+        const isDuplicate = existingBudgets.some(
+          (b) =>
+            b.category_name === item.category &&
+            (b.sub_category_name ?? null) === (item.subCategory ?? null) &&
+            b.frequency === "Monthly" &&
+            !b.is_goal,
+        );
 
-        // We need to resolve IDs.
-        // Assuming we have them in context or need to fetch/ensure.
-        // Let's use `dataProvider.ensureCategoryExists` which returns ID.
+        if (isDuplicate) {
+          skippedCount++;
+          continue;
+        }
 
         const catId = await dataProvider.ensureCategoryExists(
           item.category,
@@ -185,7 +193,6 @@ export function SmartBudgetDialog({
 
         let subCatId = null;
         if (item.subCategory) {
-          // We need category ID for subcategory
           subCatId = await dataProvider.ensureSubCategoryExists(
             item.subCategory as string,
             catId,
@@ -203,8 +210,8 @@ export function SmartBudgetDialog({
           sub_category_id: subCatId,
           sub_category_name: item.subCategory,
           target_amount: item.proposedAmount,
-          currency: activeLedger?.currency || "USD", // Default or fetch from user settings
-          start_date: new Date().toISOString().substring(0, 10), // Today
+          currency: activeLedger?.currency || "USD",
+          start_date: new Date().toISOString().substring(0, 10),
           end_date: null,
           frequency: "Monthly",
         };
@@ -213,11 +220,21 @@ export function SmartBudgetDialog({
         createdCount++;
       }
 
+      const parts: string[] = [];
+      if (createdCount > 0)
+        parts.push(
+          `Created ${createdCount} smart budget${createdCount !== 1 ? "s" : ""}.`,
+        );
+      if (skippedCount > 0)
+        parts.push(
+          `Skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}.`,
+        );
+
       toast({
-        title: "Budgets created",
-        description: `Successfully created ${createdCount} smart budgets.`,
+        title: createdCount > 0 ? "Budgets created" : "No new budgets",
+        description: parts.join(" "),
       });
-      onSave(); // Trigger refresh in parent
+      onSave();
       onClose();
     } catch (error: unknown) {
       console.error(error);

@@ -83,10 +83,11 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
             <div className="flex items-center gap-1 bg-muted/60 rounded-full p-1">
               <button
                 onClick={() => setChartMode("line")}
-                className={`p-2 rounded-full transition-all duration-200 ${chartMode === "line"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  chartMode === "line"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 aria-label="Line chart"
                 title="Line chart"
               >
@@ -105,10 +106,11 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
               </button>
               <button
                 onClick={() => setChartMode("bar")}
-                className={`p-2 rounded-full transition-all duration-200 ${chartMode === "bar"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  chartMode === "bar"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 aria-label="Bar chart"
                 title="Bar chart"
               >
@@ -129,10 +131,11 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
               </button>
               <button
                 onClick={() => setChartMode("pie")}
-                className={`p-2 rounded-full transition-all duration-200 ${chartMode === "pie"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  chartMode === "pie"
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
                 aria-label="Pie chart"
                 title="Pie chart"
               >

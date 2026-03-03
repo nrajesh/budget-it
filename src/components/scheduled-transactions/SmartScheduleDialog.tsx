@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useDataProvider } from "@/context/DataProviderContext";
-import { useSession } from "@/hooks/useSession";
+import { useLedger } from "@/contexts/LedgerContext";
 import { Loader2, Wand2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { ScheduledTransaction } from "@/types/dataProvider";
@@ -21,7 +21,7 @@ import { detectRecurringPatterns } from "@/utils/smartScheduler";
 interface SmartScheduleDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: () => Promise<void>;
 }
 
 interface SuggestedSchedule extends ScheduledTransaction {
@@ -37,7 +37,7 @@ export function SmartScheduleDialog({
 }: SmartScheduleDialogProps) {
   const { transactions, scheduledTransactions } = useTransactions();
   const dataProvider = useDataProvider();
-  const session = useSession();
+  const { activeLedger } = useLedger();
   const { toast } = useToast();
 
   const [suggestions, setSuggestions] = useState<SuggestedSchedule[]>([]);
@@ -132,10 +132,28 @@ export function SmartScheduleDialog({
     }
 
     try {
-      const userId = session?.user?.id || "local-user";
+      const userId = activeLedger?.id;
+      if (!userId) throw new Error("No active ledger selected");
+
       let createdCount = 0;
+      let skippedCount = 0;
 
       for (const item of selectedItems) {
+        // Duplicate check: same vendor + account + category + sub_category + frequency
+        const isDuplicate = scheduledTransactions.some(
+          (s) =>
+            s.vendor === item.vendor &&
+            s.account === item.account &&
+            s.category === item.category &&
+            (s.sub_category ?? null) === (item.sub_category ?? null) &&
+            s.frequency === item.frequency,
+        );
+
+        if (isDuplicate) {
+          skippedCount++;
+          continue;
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { isSelected, linkedWith, isPaired, id, ...payload } = item;
 
@@ -146,11 +164,22 @@ export function SmartScheduleDialog({
         createdCount++;
       }
 
+      const parts: string[] = [];
+      if (createdCount > 0)
+        parts.push(
+          `Scheduled ${createdCount} recurring transaction${createdCount !== 1 ? "s" : ""}.`,
+        );
+      if (skippedCount > 0)
+        parts.push(
+          `Skipped ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""}.`,
+        );
+
       toast({
-        title: "Schedules created",
-        description: `Successfully scheduled ${createdCount} recurring transactions.`,
+        title: createdCount > 0 ? "Schedules created" : "No new schedules",
+        description: parts.join(" "),
       });
-      onSave();
+      // Await onSave so the context refreshes before dialog closes
+      await onSave();
       onClose();
     } catch (error: unknown) {
       console.error(error);

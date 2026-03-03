@@ -253,14 +253,13 @@ export function SpendingPieChart({
             animationDuration={600}
           >
             {pieData.map((_entry, index) => {
-              const isActive = activeIndex === undefined || activeIndex === index;
+              const isActive =
+                activeIndex === undefined || activeIndex === index;
               return (
                 <Cell
                   key={`cell-${index}`}
                   fill={
-                    isActive
-                      ? PIE_COLORS[index % PIE_COLORS.length]
-                      : grayColor
+                    isActive ? PIE_COLORS[index % PIE_COLORS.length] : grayColor
                   }
                   opacity={isActive ? 1 : 0.35}
                   style={{ cursor: "pointer", transition: "all 0.3s ease" }}
@@ -275,8 +274,9 @@ export function SpendingPieChart({
       <div
         key={glowKey}
         onClick={activeItem ? resetSelection : undefined}
-        className={`absolute inset-0 flex flex-col items-center justify-center ${activeItem ? "cursor-pointer" : "pointer-events-none"
-          } ${activeItem ? "animate-pie-center-glow" : ""}`}
+        className={`absolute inset-0 flex flex-col items-center justify-center ${
+          activeItem ? "cursor-pointer" : "pointer-events-none"
+        } ${activeItem ? "animate-pie-center-glow" : ""}`}
       >
         <span
           className="font-medium text-muted-foreground leading-tight text-center px-2"

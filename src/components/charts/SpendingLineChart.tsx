@@ -48,7 +48,10 @@ function buildMonthlySpending(
 
   // Initialize all months in the range
   let monthStart = startOfMonth(range.from);
-  while (isBefore(monthStart, range.to) || monthStart.getTime() <= range.to.getTime()) {
+  while (
+    isBefore(monthStart, range.to) ||
+    monthStart.getTime() <= range.to.getTime()
+  ) {
     const key = format(monthStart, "MMM");
     monthlyMap.set(key, 0);
     monthStart = addMonths(monthStart, 1);
@@ -108,27 +111,36 @@ function buildChartData(
   previousRange: PeriodRange | null,
   period: PeriodType,
 ): DataPoint[] {
-  const isLongPeriod = period === "6M" || period === "1Y" ||
-    (period === "custom" && differenceInDays(currentRange.to, currentRange.from) > 62);
+  const isLongPeriod =
+    period === "6M" ||
+    period === "1Y" ||
+    (period === "custom" &&
+      differenceInDays(currentRange.to, currentRange.from) > 62);
 
   if (isLongPeriod) {
     // Monthly aggregation for 6M/1Y
-    const currentMonthly = buildMonthlySpending(currentTransactions, currentRange);
+    const currentMonthly = buildMonthlySpending(
+      currentTransactions,
+      currentRange,
+    );
     const previousMonthly = previousRange
       ? buildMonthlySpending(previousTransactions, previousRange)
       : null;
 
     const data: DataPoint[] = [];
     const currentKeys = Array.from(currentMonthly.keys());
-    const previousKeys = previousMonthly ? Array.from(previousMonthly.keys()) : [];
+    const previousKeys = previousMonthly
+      ? Array.from(previousMonthly.keys())
+      : [];
 
     currentKeys.forEach((label, index) => {
       data.push({
         label,
         current: currentMonthly.get(label) || 0,
-        previous: previousMonthly && previousKeys[index]
-          ? (previousMonthly.get(previousKeys[index]) || 0)
-          : null,
+        previous:
+          previousMonthly && previousKeys[index]
+            ? previousMonthly.get(previousKeys[index]) || 0
+            : null,
         currentDate: label,
         previousDate: previousKeys[index] || undefined,
       });
@@ -139,7 +151,10 @@ function buildChartData(
 
   // Daily cumulative for 1W/1M
   const totalDays = differenceInDays(currentRange.to, currentRange.from) + 1;
-  const currentCumulative = buildDailyCumulativeSpending(currentTransactions, currentRange);
+  const currentCumulative = buildDailyCumulativeSpending(
+    currentTransactions,
+    currentRange,
+  );
   const previousCumulative = previousRange
     ? buildDailyCumulativeSpending(previousTransactions, previousRange)
     : null;
@@ -158,7 +173,7 @@ function buildChartData(
     data.push({
       label,
       current: currentCumulative.get(i) || 0,
-      previous: previousCumulative ? (previousCumulative.get(i) || 0) : null,
+      previous: previousCumulative ? previousCumulative.get(i) || 0 : null,
       currentDate: format(date, "d MMM"),
       previousDate: previousRange
         ? format(addDays(previousRange.from, i), "d MMM")
@@ -204,7 +219,13 @@ export function SpendingLineChart({
         previousRange,
         period,
       ),
-    [currentTransactions, previousTransactions, currentRange, previousRange, period],
+    [
+      currentTransactions,
+      previousTransactions,
+      currentRange,
+      previousRange,
+      period,
+    ],
   );
 
   const maxValue = useMemo(() => {
@@ -267,7 +288,11 @@ export function SpendingLineChart({
     );
   };
 
-  if (chartData.every((d) => d.current === 0 && (d.previous === null || d.previous === 0))) {
+  if (
+    chartData.every(
+      (d) => d.current === 0 && (d.previous === null || d.previous === 0),
+    )
+  ) {
     return (
       <div className="w-full h-[220px] sm:h-[260px] flex items-center justify-center text-muted-foreground text-sm">
         No spending data for this period
@@ -282,10 +307,7 @@ export function SpendingLineChart({
           data={chartData}
           margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
         >
-          <CartesianGrid
-            vertical={false}
-            stroke={gridColor}
-          />
+          <CartesianGrid vertical={false} stroke={gridColor} />
           <XAxis
             dataKey="label"
             axisLine={false}

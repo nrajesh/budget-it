@@ -278,8 +278,9 @@ export function EntityBreakdownTable({
           <span>›</span>
           <button
             onClick={() => setSelectedSubCategory(null)}
-            className={`hover:text-foreground transition-colors ${!isTransactionView ? "text-foreground font-medium" : ""
-              }`}
+            className={`hover:text-foreground transition-colors ${
+              !isTransactionView ? "text-foreground font-medium" : ""
+            }`}
           >
             {selectedEntity}
           </button>

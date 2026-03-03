@@ -190,10 +190,7 @@ export function SpendingBarChart({
             data={barData}
             margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
-            <CartesianGrid
-              vertical={false}
-              stroke={gridColor}
-            />
+            <CartesianGrid vertical={false} stroke={gridColor} />
             <XAxis
               dataKey="label"
               axisLine={false}
