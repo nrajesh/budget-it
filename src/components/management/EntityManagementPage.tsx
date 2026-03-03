@@ -28,7 +28,11 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   data: T[];
   isLoading: boolean;
   columns: ColumnDefinition<T>[];
-  AddEditDialogComponent?: React.FC<any>;
+  AddEditDialogComponent?: React.FC<{
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    payee?: T | null;
+  }>;
   isDeletable?: (item: T) => boolean;
   customEditHandler?: (item: T) => void;
   isEditing?: (id: string) => boolean;
@@ -61,9 +65,15 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   refetch?: () => void;
   extraActions?: React.ReactNode;
   customFilter?: (data: T[], searchTerm: string) => T[];
-  DeduplicationDialogComponent?: React.FC<any>;
-  CleanupDialogComponent?: React.FC<any>;
-  BalanceReconciliationDialogComponent?: React.FC<any>;
+  DeduplicationDialogComponent?: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+  }>;
+  CleanupDialogComponent?: React.FC<{ isOpen: boolean; onClose: () => void }>;
+  BalanceReconciliationDialogComponent?: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+  }>;
   groupBy?: keyof T;
 }
 
@@ -116,7 +126,19 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   TableComponent = EntityTable,
 }: EntityManagementPageProps<T> & {
   disablePagination?: boolean;
-  TableComponent?: React.ComponentType<any>;
+  TableComponent?: React.ComponentType<{
+    data: T[];
+    columns: ColumnDefinition<T>[];
+    isLoading: boolean;
+    selectedRows: string[];
+    handleRowSelect: (id: string, checked: boolean) => void;
+    handleEditClick: (item: T) => void;
+    handleDeleteClick: (item: T) => void;
+    isDeletable: (item: T) => boolean;
+    isEditing: (id: string) => boolean;
+    isUpdating: boolean;
+    groupBy?: keyof T;
+  }>;
 }) => {
   const [isDeduplicateOpen, setIsDeduplicateOpen] = React.useState(false);
   const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);

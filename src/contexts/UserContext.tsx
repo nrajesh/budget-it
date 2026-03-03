@@ -27,19 +27,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const session = useSession();
-  const [user, setUser] = useState<Session["user"] | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-
-  const fetchUserProfile = React.useCallback(async () => {
-    // In local mode, we just use the session mock
-    setIsLoadingUser(false);
-  }, []);
-
-  useEffect(() => {
+  const user = session?.user || null;
+  const userProfile = React.useMemo(() => {
     if (session?.user) {
-      setUser(session.user);
-      setUserProfile({
+      return {
         id: session.user.id,
         first_name:
           session.user.user_metadata?.full_name?.split(" ")[0] || "Local",
@@ -48,8 +39,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         avatar_url: session.user.user_metadata?.avatar_url || null,
         email: session.user.email || null,
         updated_at: new Date().toISOString(),
-      });
+      };
     }
+    return null;
+  }, [session]);
+
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  const fetchUserProfile = React.useCallback(async () => {
+    // In local mode, we just use the session mock
+    setIsLoadingUser(false);
+  }, []);
+
+  useEffect(() => {
     setIsLoadingUser(false);
   }, [session]);
 

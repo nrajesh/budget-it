@@ -63,7 +63,7 @@ interface TransactionsContextType {
       recurrenceFrequency?: string;
       recurrenceEndDate?: string;
     },
-  ) => void;
+  ) => Promise<void>;
   /** Updates an existing transaction */
   updateTransaction: (transaction: Transaction) => void;
   /** Deletes a transaction by ID, or by transfer_id if provided */
@@ -144,7 +144,8 @@ const TransactionsContext = React.createContext<
   TransactionsContextType | undefined
 >(undefined);
 
-const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformPayeeData = (data: any[]): Payee[] => {
   if (!data) return [];
   return data
     .map((item) => ({
@@ -164,7 +165,8 @@ const transformPayeeData = (data: Record<string, any>[]): Payee[] => {
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
-const transformCategoryData = (data: Record<string, any>[]): Category[] => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const transformCategoryData = (data: any[]): Category[] => {
   if (!data) return [];
   return data
     .map((item) => ({
@@ -601,7 +603,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Implement basic add/update/delete using DataProvider directly
   // replacing transactionsService
   const addTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (
+      transaction: Omit<
+        Transaction,
+        | "id"
+        | "currency"
+        | "created_at"
+        | "transfer_id"
+        | "user_id"
+        | "is_scheduled_origin"
+      > & {
+        date: string;
+        receivingAmount?: number;
+        recurrenceFrequency?: string;
+        recurrenceEndDate?: string;
+      },
+    ) => {
       // Check if it's a transfer
       // In our app, a transfer is identified if the vendor name matches an account name
       const isTransfer = accounts.some(
@@ -618,14 +635,14 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           transfer_id: transferId,
           user_id: userId,
           category: "Transfer",
-          date: new Date(transaction.date).toISOString(),
+          date: new Date(transaction.date).toISOString() as any,
         };
         // Destructure receivingAmount as we don't store it in the source side amount field directly usually
         // but the dialog sends it.
         const { receivingAmount: _receivingAmount, ...cleanSource } =
           sourceTransaction;
 
-        await dataProvider.addTransaction(cleanSource);
+        await dataProvider.addTransaction(cleanSource as any);
 
         // Destination transaction
         const destTransaction = {
@@ -636,18 +653,20 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           transfer_id: transferId,
           user_id: userId,
           category: "Transfer",
-          date: new Date(transaction.date).toISOString(),
+          date: new Date(transaction.date).toISOString() as any,
         };
         const { receivingAmount: _receivingAmount2, ...cleanDest } =
           destTransaction;
 
-        await dataProvider.addTransaction(cleanDest);
+        await dataProvider.addTransaction(cleanDest as any);
         await dataProvider.ensureCategoryExists("Transfer", userId);
       } else {
         await dataProvider.addTransaction({
           ...transaction,
           user_id: userId,
-        });
+          date: new Date(transaction.date).toISOString(),
+          currency: (transaction as any).currency || "USD", // Ensure currency is present
+        } as any);
       }
 
       await invalidateAllData();
@@ -656,7 +675,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     [accounts, ledgerId, dataProvider, invalidateAllData, triggerExport],
   );
   const updateTransaction = React.useCallback(
-    async (transaction: any) => {
+    async (
+      transaction: Transaction & {
+        receivingAmount?: number;
+      },
+    ) => {
       // 1. Update the primary transaction
       await dataProvider.updateTransaction(transaction);
 
@@ -831,6 +854,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       invalidateAllData,
       scheduledTransactions,
       showUndoToast,
+      triggerExport,
     ],
   );
 

@@ -40,7 +40,7 @@ interface AddEditTransactionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSuccess?: (accountName?: string) => void;
-  transactionToEdit?: any;
+  transactionToEdit?: Record<string, unknown> | null;
 }
 
 const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
@@ -110,6 +110,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     };
 
     if (transactionToEdit) {
+      // @ts-expect-error - overriding properties makes TS think id is missing
       await updateTransaction(transactionData);
 
       if (updateFuture && transactionToEdit.recurrence_id) {
@@ -126,7 +127,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
             sub_category: values.sub_category || null,
             amount: values.amount,
             remarks: values.remarks || null,
-            frequency: values.recurrenceFrequency as any,
+            frequency: values.recurrenceFrequency as
+              | "None"
+              | "Daily"
+              | "Weekly"
+              | "Monthly"
+              | "Quarterly"
+              | "Yearly",
             end_date: values.recurrenceEndDate || null,
           });
         }

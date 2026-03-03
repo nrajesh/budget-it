@@ -98,6 +98,23 @@ const PinTrigger = () => {
   );
 };
 
+/**
+ * Auto-closes the mobile sidebar when the route changes.
+ * Must be rendered inside SidebarProvider.
+ */
+const MobileSidebarCloser = () => {
+  const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  React.useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [location.pathname, isMobile, setOpenMobile]);
+
+  return null;
+};
+
 const Layout = () => {
   const { setTheme, resolvedTheme } = useTheme();
   // const { user, userProfile, isLoadingUser } = useUser();
@@ -179,6 +196,7 @@ const Layout = () => {
 
   return (
     <SidebarProvider className="min-h-screen">
+      <MobileSidebarCloser />
       <Sidebar collapsible="icon">
         <SidebarHeader className="pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between gap-2 px-1">
@@ -570,14 +588,14 @@ const Layout = () => {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background p-4 sm:p-6">
           <Outlet />
         </main>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               onClick={() => setIsAddDialogOpen(true)}
-              className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
               aria-label="Add Transaction"
             >
               <Plus className="h-6 w-6" />

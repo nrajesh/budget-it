@@ -143,7 +143,7 @@ export function calculateBudgetSpent(
     // We want "Spent" to be positive.
     // Subtract amount: - (-10) = +10. - (+10) = -10.
     // Robust Currency Conversion
-    let convertedAmount = t.amount;
+    let convertedAmount: number;
     if (t.currency === targetCurrency) {
       convertedAmount = t.amount;
     } else {

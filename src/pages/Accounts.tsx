@@ -72,7 +72,7 @@ const AccountsPage = () => {
 
   return (
     <>
-      <EntityManagementPage
+      <EntityManagementPage<Payee>
         title="Accounts"
         subtitle="Manage your bank accounts and credit cards"
         entityName="Account"

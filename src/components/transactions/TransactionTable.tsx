@@ -104,8 +104,8 @@ const TransactionRow = React.memo(
     accountCurrencyMap?: Map<string, string>;
     selectedCurrency: string;
     today: Date;
-    navigate: any; // useNavigate return type is hard to import? It's `NavigateFunction`.
-    toast: any; // `useToast` return type.
+    navigate: ReturnType<typeof useNavigate>; // useNavigate return type is NavigateFunction.
+    toast: ReturnType<typeof useToast>["toast"]; // `useToast` return type.
     isValidTransfer: boolean;
   }) => {
     const isFuture = useMemo(() => {

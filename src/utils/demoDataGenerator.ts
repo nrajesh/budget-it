@@ -701,7 +701,7 @@ export const generateDiverseDemoData = async (
         ];
       const currency = accountMap.get(account) || config.currency;
 
-      let amount = 0;
+      let amount: number;
       if (cat === "Income") {
         // Boost income amount slightly
         amount = Math.floor(Math.random() * 4000) + 1500;

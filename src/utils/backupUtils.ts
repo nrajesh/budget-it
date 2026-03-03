@@ -35,7 +35,10 @@ export const saveFile = async (
     throw new Error("File System Access API not supported");
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("Save cancelled by user");
+      const error = new Error("Save cancelled by user");
+      // @ts-expect-error - cause is valid but TS config may not know
+      (error as Error).cause = err;
+      throw error;
     }
 
     // Fallback to classic download
@@ -89,7 +92,7 @@ export const generateBackupData = async (dataProvider: DataProvider) => {
 export type ImportResult =
   | { type: "success" }
   | { type: "encrypted"; content: string }
-  | { type: "warning"; message: string; dataToImport: any } // Added warning type for version mismatch
+  | { type: "warning"; message: string; dataToImport: unknown } // Added warning type for version mismatch
   | { type: "error"; message: string };
 
 export const processImport = async (

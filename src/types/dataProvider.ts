@@ -120,7 +120,7 @@ export interface BackupConfig {
   isActive: boolean;
   nextBackup: string; // ISO string
   lastBackup?: string; // ISO string
-  directoryHandle?: any;
+  directoryHandle?: unknown;
   path?: string; // Electron: Full file path
   encrypted?: boolean;
   passwordHash?: string;

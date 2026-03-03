@@ -13,15 +13,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [dashboardStyle, setDashboardStyleState] =
-    useState<DashboardStyle>("standard");
-
-  useEffect(() => {
-    const savedStyle = localStorage.getItem("dashboardStyle") as DashboardStyle;
-    if (savedStyle) {
-      setDashboardStyleState(savedStyle);
-    }
-  }, []);
+  const [dashboardStyle, setDashboardStyleState] = useState<DashboardStyle>(
+    () => {
+      return (
+        (localStorage.getItem("dashboardStyle") as DashboardStyle) || "standard"
+      );
+    },
+  );
 
   const setDashboardStyle = (style: DashboardStyle) => {
     setDashboardStyleState(style);

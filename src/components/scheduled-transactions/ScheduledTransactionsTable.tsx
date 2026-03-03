@@ -219,7 +219,7 @@ export function ScheduledTransactionsTable({
                 </TableCell>
               </TableRow>
             ) : (
-              currentTransactions.map((transaction) => {
+              currentTransactions.map((transaction, index) => {
                 // Defensive coding against incomplete data
                 if (!transaction) return null;
 
@@ -229,7 +229,7 @@ export function ScheduledTransactionsTable({
                   "USD";
 
                 return (
-                  <ContextMenu key={transaction.id || Math.random()}>
+                  <ContextMenu key={transaction.id || `sched-txn-${index}`}>
                     <ContextMenuTrigger asChild>
                       <TableRow
                         className={`group cursor-pointer hover:bg-muted/50 ${selectedIds.has(transaction.id) ? "bg-muted" : ""}`}

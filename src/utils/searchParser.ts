@@ -771,7 +771,6 @@ export const parseSearchQuery = (
             continue;
 
           remainingQuery = remainingQuery.replace(tokenRegex, "").trim();
-          matched = true;
           // Keep matching other tokens? Or break?
           // If "Primary Checking", and we matched "Primary", we are good.
           break;

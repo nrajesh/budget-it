@@ -19,7 +19,7 @@ import {
   writeCapacitorFile,
 } from "./fs-capacitor";
 
-export const selectSyncDirectory = async (): Promise<any> => {
+export const selectSyncDirectory = async (): Promise<unknown> => {
   if (Capacitor.isNativePlatform()) {
     return await getCapacitorDirectoryHandle();
   } else if (isElectron()) {
@@ -30,7 +30,7 @@ export const selectSyncDirectory = async (): Promise<any> => {
 };
 
 export const checkSyncPermission = async (
-  handleOrPath: any,
+  handleOrPath: unknown,
   withPrompt = true,
 ): Promise<boolean> => {
   if (!handleOrPath) return false;
@@ -48,7 +48,7 @@ export const checkSyncPermission = async (
 };
 
 export const readSyncFile = async (
-  handleOrPath: any,
+  handleOrPath: unknown,
   filename: string,
 ): Promise<string> => {
   if (Capacitor.isNativePlatform()) {
@@ -64,7 +64,7 @@ export const readSyncFile = async (
 };
 
 export const writeSyncFile = async (
-  handleOrPath: any,
+  handleOrPath: unknown,
   filename: string,
   content: string,
 ): Promise<void> => {

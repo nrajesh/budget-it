@@ -144,8 +144,10 @@ const CSVMappingDialog = ({
             if (amountHeader) {
               const sampleValues = results.data
                 .slice(0, 5)
-                .map((row: any) => row[amountHeader])
-                .filter(Boolean);
+                .map((row: Record<string, unknown>) =>
+                  String(row[amountHeader] || ""),
+                )
+                .filter(Boolean) as string[];
               const hasComma = sampleValues.some(
                 (val: string) => val.includes(",") && !val.includes("."),
               );

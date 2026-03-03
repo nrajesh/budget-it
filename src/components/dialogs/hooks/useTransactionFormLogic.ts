@@ -33,7 +33,18 @@ export type AddEditTransactionFormValues = z.infer<
 >;
 
 interface UseTransactionFormLogicProps {
-  transactionToEdit?: any;
+  transactionToEdit?: Partial<{
+    date: string;
+    account: string;
+    vendor: string;
+    category: string;
+    sub_category: string;
+    amount: number;
+    remarks: string;
+    receivingAmount: number;
+    recurrence_frequency: string;
+    recurrence_end_date: string;
+  }> | null;
   isOpen: boolean;
 }
 
@@ -112,7 +123,7 @@ export const useTransactionFormLogic = ({
             : "",
         });
         setTransactionType(
-          transactionToEdit.amount >= 0 ? "income" : "expense",
+          (transactionToEdit.amount ?? 0) >= 0 ? "income" : "expense",
         );
       } else {
         reset({

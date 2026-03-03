@@ -73,7 +73,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               onDateChange(newDate);
             }}
           >
-            <SelectTrigger className="w-[120px] font-bold text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-2">
+            <SelectTrigger className="w-[90px] sm:w-[120px] font-bold text-base sm:text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-1 sm:gap-2">
               <SelectValue>{format(currentDate, "MMMM")}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -93,7 +93,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               onDateChange(newDate);
             }}
           >
-            <SelectTrigger className="w-[80px] font-bold text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-2">
+            <SelectTrigger className="w-[70px] sm:w-[80px] font-bold text-base sm:text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-1 sm:gap-2">
               <SelectValue>{format(currentDate, "yyyy")}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -139,12 +139,12 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
         </div>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 flex flex-col">
-        <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-muted-foreground mb-2 shrink-0">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm font-medium text-muted-foreground mb-1 sm:mb-2 shrink-0">
           {weekDays.map((day) => (
             <div key={day}>{day}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-2 flex-1 min-h-0 grid-rows-6">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 min-h-0 grid-rows-6">
           {calendarDays.map((day) => {
             const dateKey = format(day, "yyyy-MM-dd");
             const data = dayData[dateKey] || {
@@ -192,7 +192,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                 <div className="flex justify-between w-full">
                   <div
                     className={cn(
-                      "text-sm font-semibold w-6 h-6 flex items-center justify-center rounded-full mb-1",
+                      "text-xs sm:text-sm font-semibold w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full mb-0.5 sm:mb-1",
                       isSameDay(day, new Date()) &&
                         "bg-primary text-primary-foreground",
                     )}
@@ -209,7 +209,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                 {count > 0 && (
                   <div className="mt-auto w-full">
-                    <div className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full w-fit">
+                    <div className="text-[10px] sm:text-xs font-medium text-primary bg-primary/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full w-fit">
                       {count} txns
                     </div>
                   </div>

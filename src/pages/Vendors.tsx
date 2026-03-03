@@ -102,7 +102,7 @@ const VendorsPage = () => {
 
   return (
     <>
-      <EntityManagementPage
+      <EntityManagementPage<Payee>
         title="Vendors"
         subtitle="Manage payees and merchants"
         entityName="Vendor"

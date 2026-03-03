@@ -15,11 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Budget } from "@/data/finance-data";
+import { Budget, Transaction } from "@/data/finance-data";
 import { useNavigate } from "react-router-dom";
 
 interface IncomeExpenseSummaryProps {
-  transactions: any[];
+  transactions: Transaction[];
   budgets: Budget[];
 }
 
