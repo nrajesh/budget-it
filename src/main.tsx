@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { CurrencyProvider } from "./contexts/CurrencyContext.tsx";
 
 // Suppress Recharts ResponsiveContainer annoying warning
 const originalWarn = console.warn;
@@ -24,9 +23,7 @@ createRoot(document.getElementById("root")!).render(
       defaultTheme="dark"
       storageKey="vite-ui-theme"
     >
-      <CurrencyProvider>
-        <App />
-      </CurrencyProvider>
+      <App />
     </ThemeProvider>
   </React.StrictMode>,
 );

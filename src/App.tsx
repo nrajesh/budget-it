@@ -13,6 +13,8 @@ import { FilterProvider } from "./contexts/FilterContext";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
+import { CurrencyProvider } from "./contexts/CurrencyContext";
+
 const queryClient = new QueryClient();
 
 // Lazy load page components
@@ -48,62 +50,64 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <DataProviderProvider>
         <ThemeProvider>
-          <FilterProvider>
-            <LedgerProvider>
-              <UserProvider>
-                <TransactionsProvider>
-                  <BackupManager />
-                  <Router>
-                    <Suspense fallback={<LoadingSpinner />}>
-                      <Routes>
-                        <Route path="/ledgers" element={<LedgerEntryPage />} />
-                        <Route path="/" element={<Layout />}>
-                          <Route index element={<Index />} />
-                          <Route path="calendar" element={<CalendarView />} />
-                          <Route
-                            path="/transactions"
-                            element={<Transactions />}
-                          />
-                          <Route path="/vendors" element={<Vendors />} />
-                          <Route path="/accounts" element={<Accounts />} />
-                          <Route path="/categories" element={<Categories />} />
-                          <Route
-                            path="/scheduled"
-                            element={<ScheduledTransactions />}
-                          />
-                          <Route path="/budgets" element={<Budgets />} />
-                          <Route path="/analytics" element={<Analytics />} />
-                          <Route
-                            path="/reports/essential"
-                            element={<EssentialReports />}
-                          />
-                          <Route
-                            path="/reports/advanced"
-                            element={<AdvancedReports />}
-                          />
-                          <Route path="/insights" element={<Insights />} />
-                          <Route path="/settings" element={<SettingsPage />} />
-                          <Route
-                            path="/data-management"
-                            element={<DataManagementPage />}
-                          />
-                          <Route path="/backup" element={<BackupPage />} />
-                          <Route
-                            path="/currencies"
-                            element={<CurrenciesPage />}
-                          />
-                          <Route path="/donate" element={<DonationPage />} />
+          <CurrencyProvider>
+            <FilterProvider>
+              <LedgerProvider>
+                <UserProvider>
+                  <TransactionsProvider>
+                    <BackupManager />
+                    <Router>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Routes>
+                          <Route path="/ledgers" element={<LedgerEntryPage />} />
+                          <Route path="/" element={<Layout />}>
+                            <Route index element={<Index />} />
+                            <Route path="calendar" element={<CalendarView />} />
+                            <Route
+                              path="/transactions"
+                              element={<Transactions />}
+                            />
+                            <Route path="/vendors" element={<Vendors />} />
+                            <Route path="/accounts" element={<Accounts />} />
+                            <Route path="/categories" element={<Categories />} />
+                            <Route
+                              path="/scheduled"
+                              element={<ScheduledTransactions />}
+                            />
+                            <Route path="/budgets" element={<Budgets />} />
+                            <Route path="/analytics" element={<Analytics />} />
+                            <Route
+                              path="/reports/essential"
+                              element={<EssentialReports />}
+                            />
+                            <Route
+                              path="/reports/advanced"
+                              element={<AdvancedReports />}
+                            />
+                            <Route path="/insights" element={<Insights />} />
+                            <Route path="/settings" element={<SettingsPage />} />
+                            <Route
+                              path="/data-management"
+                              element={<DataManagementPage />}
+                            />
+                            <Route path="/backup" element={<BackupPage />} />
+                            <Route
+                              path="/currencies"
+                              element={<CurrenciesPage />}
+                            />
+                            <Route path="/donate" element={<DonationPage />} />
 
-                          <Route path="*" element={<NotFound />} />
-                        </Route>
-                      </Routes>
-                    </Suspense>
-                  </Router>
-                  <ContinuitySyncManager />
-                </TransactionsProvider>
-              </UserProvider>
-            </LedgerProvider>
-          </FilterProvider>
+                            <Route path="*" element={<NotFound />} />
+                          </Route>
+                        </Routes>
+                      </Suspense>
+                    </Router>
+                    <ContinuitySyncManager />
+                  </TransactionsProvider>
+                </UserProvider>
+              </LedgerProvider>
+            </FilterProvider>
+          </CurrencyProvider>
         </ThemeProvider>
       </DataProviderProvider>
       <Toaster />
