@@ -188,7 +188,7 @@ const Layout = () => {
                 alt="Budget It!"
                 className={cn(
                   "size-8 shrink-0",
-                  resolvedTheme !== "dark" && "mix-blend-multiply"
+                  resolvedTheme !== "dark" && "mix-blend-multiply",
                 )}
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">

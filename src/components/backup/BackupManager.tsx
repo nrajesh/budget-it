@@ -6,8 +6,6 @@ import { generateBackupData } from "@/utils/backupUtils";
 import { encryptData } from "@/utils/crypto";
 import { writeSyncFile } from "@/utils/fs-adapter";
 
-
-
 const BackupManager = () => {
   const dataProvider = useDataProvider();
 
@@ -18,7 +16,6 @@ const BackupManager = () => {
         .where("nextBackup")
         .belowOrEqual(now.toISOString())
         .toArray();
-
 
       for (const backup of backups) {
         if (!backup.isActive || (!backup.directoryHandle && !backup.path))
@@ -49,7 +46,6 @@ const BackupManager = () => {
           }
 
           await writeSyncFile(handleOrPath, filename, content);
-
 
           isSuccess = true;
           showSuccess(`Scheduled backup completed (${filename})`);

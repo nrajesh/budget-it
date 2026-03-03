@@ -28,7 +28,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, FolderOpen, ShieldAlert } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { dashboardStyle, setDashboardStyle } = useTheme();
@@ -208,7 +207,9 @@ const SettingsPage = () => {
               </div>
               <Switch
                 checked={syncConfig.config.autoSyncEnabled}
-                onCheckedChange={(checked) => syncConfig.toggleAutoSync(checked)}
+                onCheckedChange={(checked) =>
+                  syncConfig.toggleAutoSync(checked)
+                }
               />
             </div>
           </ThemedCardHeader>
@@ -225,12 +226,16 @@ const SettingsPage = () => {
                     devices.
                     {!syncConfig.isElectron && !syncConfig.isCapacitor && (
                       <span className="block mt-2 font-medium">
-                        Note: Due to browser privacy controls, you must create this folder manually on your device before selecting it here.
+                        Note: Due to browser privacy controls, you must create
+                        this folder manually on your device before selecting it
+                        here.
                       </span>
                     )}
                     {syncConfig.isCapacitor && (
                       <span className="block mt-2 font-medium">
-                        Note: On mobile, synchronization occurs via the native App Documents folder to ensure reliable offline filesystem access.
+                        Note: On mobile, synchronization occurs via the native
+                        App Documents folder to ensure reliable offline
+                        filesystem access.
                       </span>
                     )}
                   </AlertDescription>
@@ -284,7 +289,6 @@ const SettingsPage = () => {
                     </p>
                   )}
                 </div>
-
               </div>
             )}
           </ThemedCardContent>

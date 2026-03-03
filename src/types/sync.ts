@@ -1,12 +1,12 @@
 export interface SyncPayloadEnvelope {
-    appVersion: string;
-    schemaVersion: number;
-    data: any;
-    exportTimestamp: string;
+  appVersion: string;
+  schemaVersion: number;
+  data: any;
+  exportTimestamp: string;
 }
 
 export interface SyncDirectoryConfig {
-    syncDirectoryHandle: any; // FileSystemDirectoryHandle (Web) or string (Electron)
-    autoSyncEnabled: boolean;
-    lastSyncTimestamp: number | null;
+  syncDirectoryHandle: any; // FileSystemDirectoryHandle (Web) or string (Electron)
+  autoSyncEnabled: boolean;
+  lastSyncTimestamp: number | null;
 }

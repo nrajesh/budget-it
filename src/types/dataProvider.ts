@@ -209,7 +209,11 @@ export interface DataProvider {
   deleteBudget(id: string): Promise<void>;
 
   // Maintenance
-  linkTransactionsAsTransfer(id1: string, id2: string, transferId?: string): Promise<void>;
+  linkTransactionsAsTransfer(
+    id1: string,
+    id2: string,
+    transferId?: string,
+  ): Promise<void>;
   unlinkTransactions(transferId: string): Promise<void>;
   clearAllData(): Promise<void>;
   exportData(userId?: string): Promise<unknown>;

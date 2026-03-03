@@ -297,10 +297,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-      | "DELETE_TRANSACTION"
-      | "DELETE_SCHEDULE"
-      | "DELETE_BUDGET"
-      | "DELETE_ENTITY";
+        | "DELETE_TRANSACTION"
+        | "DELETE_SCHEDULE"
+        | "DELETE_BUDGET"
+        | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -922,7 +922,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       await invalidateAllData();
       triggerExport();
     },
-    [ledgerId, scheduledTransactions, dataProvider, invalidateAllData, triggerExport],
+    [
+      ledgerId,
+      scheduledTransactions,
+      dataProvider,
+      invalidateAllData,
+      triggerExport,
+    ],
   );
 
   const updateScheduledTransaction = React.useCallback(
@@ -1100,7 +1106,13 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       // 4. Show Toast
       showUndoToast(finalIds.length, "scheduled transaction");
     },
-    [scheduledTransactions, dataProvider, invalidateAllData, showUndoToast, triggerExport],
+    [
+      scheduledTransactions,
+      dataProvider,
+      invalidateAllData,
+      showUndoToast,
+      triggerExport,
+    ],
   );
 
   const deleteScheduledTransaction = React.useCallback(
