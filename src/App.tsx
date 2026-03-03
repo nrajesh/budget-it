@@ -59,7 +59,10 @@ function App() {
                     <Router>
                       <Suspense fallback={<LoadingSpinner />}>
                         <Routes>
-                          <Route path="/ledgers" element={<LedgerEntryPage />} />
+                          <Route
+                            path="/ledgers"
+                            element={<LedgerEntryPage />}
+                          />
                           <Route path="/" element={<Layout />}>
                             <Route index element={<Index />} />
                             <Route path="calendar" element={<CalendarView />} />
@@ -69,7 +72,10 @@ function App() {
                             />
                             <Route path="/vendors" element={<Vendors />} />
                             <Route path="/accounts" element={<Accounts />} />
-                            <Route path="/categories" element={<Categories />} />
+                            <Route
+                              path="/categories"
+                              element={<Categories />}
+                            />
                             <Route
                               path="/scheduled"
                               element={<ScheduledTransactions />}
@@ -85,7 +91,10 @@ function App() {
                               element={<AdvancedReports />}
                             />
                             <Route path="/insights" element={<Insights />} />
-                            <Route path="/settings" element={<SettingsPage />} />
+                            <Route
+                              path="/settings"
+                              element={<SettingsPage />}
+                            />
                             <Route
                               path="/data-management"
                               element={<DataManagementPage />}
