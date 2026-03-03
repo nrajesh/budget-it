@@ -104,13 +104,20 @@ const PinTrigger = () => {
  */
 const MobileSidebarCloser = () => {
   const location = useLocation();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
 
   React.useEffect(() => {
-    if (isMobile) {
-      setOpenMobile(false);
+    // Robust check for mobile view (768px is the MOBILE_BREAKPOINT in use-mobile.tsx)
+    const isMobileViewport = window.innerWidth < 768;
+
+    if (isMobileViewport) {
+      // Use a small timeout to ensure navigation transition doesn't interfere with state update
+      const timer = setTimeout(() => {
+        setOpenMobile(false);
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [location.pathname, isMobile, setOpenMobile]);
+  }, [location.pathname, setOpenMobile]);
 
   return null;
 };
