@@ -20,7 +20,6 @@ import {
   Moon,
   Sun,
   Plus,
-  Bell,
   Pin,
   PinOff,
   Heart,
@@ -514,89 +513,22 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    setTheme(resolvedTheme === "light" ? "dark" : "light")
-                  }
-                  aria-label="Toggle theme"
-                  className="h-10 w-10"
-                >
-                  {resolvedTheme === "dark" ? (
-                    <Sun className="size-5" />
-                  ) : (
-                    <Moon className="size-5" />
-                  )}
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle theme</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Notifications text-muted-foreground hover:text-foreground"
-                  className="h-10 w-10"
-                >
-                  <Bell className="size-5" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
-            </Tooltip>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-10 rounded-full"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full text-primary border border-border">
-                    {typeof avatarFallback === "string"
-                      ? avatarFallback
-                      : avatarFallback}
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Ledgers</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {ledgers.map((l) => (
-                  <DropdownMenuItem
-                    key={l.id}
-                    onClick={() => switchLedger(l.id)}
-                  >
-                    <span
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center",
-                        activeLedger?.id === l.id ? "opacity-100" : "opacity-0",
-                      )}
-                    >
-                      ✓
-                    </span>
-                    <span>{l.name}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    localStorage.removeItem("activeLedgerId");
-                    localStorage.setItem("userLoggedOut", "true");
-                    window.location.href = "/ledgers";
-                  }}
-                >
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              onClick={() =>
+                setTheme(resolvedTheme === "light" ? "dark" : "light")
+              }
+              aria-label="Toggle theme"
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-5 w-5 text-amber-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
+              <span className="sr-only">Toggle theme</span>
+            </Button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background p-4 sm:p-6">

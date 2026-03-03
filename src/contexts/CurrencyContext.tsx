@@ -149,17 +149,18 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshExchangeRates = useCallback(async () => {
     try {
-      // Using jsDelivr open API logic for rates relative to USD
+      // Using Frankfurter open API logic for rates relative to USD
       const response = await fetchWithTimeout(
-        "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json",
+        "https://api.frankfurter.app/latest?from=USD",
         {},
         5000,
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch rates");
+        throw new Error("Failed to fetch rates from Frankfurter API");
       }
       const data = await response.json();
-      const rates = data.usd || {};
+      const rates = data.rates || {};
+      rates["USD"] = 1.0; // Frankfurter omits the base currency from the rates object
 
       // Filter only currencies we support
       const newRates: { [key: string]: number } = {};
@@ -167,9 +168,9 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
       // Check all active currencies
       currencies.forEach((curr) => {
-        const lowerCode = curr.code.toLowerCase();
-        if (rates[lowerCode]) {
-          newRates[curr.code] = rates[lowerCode];
+        const upperCode = curr.code.toUpperCase();
+        if (rates[upperCode]) {
+          newRates[curr.code] = rates[upperCode];
           hasUpdates = true;
         } else if (exchangeRatesState[curr.code]) {
           // Fallback to existing
