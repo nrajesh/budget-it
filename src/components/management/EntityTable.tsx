@@ -58,182 +58,312 @@ export const EntityTable = <T extends { id: string; name: string }>({
   groupBy,
 }: EntityTableProps<T>) => {
   return (
-    <div className="border rounded-md overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]">
-              <Checkbox
-                checked={
-                  data.length > 0 &&
-                  selectedRows.length ===
-                    data.filter((item) => isDeletable(item)).length
-                }
-                onCheckedChange={(checked) => {
-                  const selectableIds = data
-                    .filter((item) => isDeletable(item))
-                    .map((item) => item.id);
-                  if (selectableIds.length > 0) {
-                    handleRowSelect(selectableIds.join(","), !!checked);
-                  }
-                }}
-                aria-label="Select all"
-              />
-            </TableHead>
-            {columns.map((col) => (
-              <TableHead
-                key={String(col.header)}
-                className={`text-slate-800 dark:text-slate-200 font-semibold ${col.className || ""}`}
-              >
-                {col.header}
-              </TableHead>
-            ))}
-            <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={columns.length + 2} className="text-center">
-                Loading...
-              </TableCell>
-            </TableRow>
-          ) : data.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length + 2}
-                className="text-center py-4 text-muted-foreground"
-              >
-                No items found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            data.map((item, index) => {
-              const previousItem = data[index - 1];
-              const isNewGroup =
-                groupBy &&
-                (!previousItem ||
-                  String(item[groupBy]) !== String(previousItem[groupBy]));
+    <div className="w-full">
+      {/* Mobile View */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <div className="text-center p-4">Loading...</div>
+        ) : data.length === 0 ? (
+          <div className="text-center p-8 border rounded-lg text-muted-foreground bg-card">
+            No items found.
+          </div>
+        ) : (
+          data.map((item, index) => {
+            const previousItem = data[index - 1];
+            const isNewGroup =
+              groupBy &&
+              (!previousItem ||
+                String(item[groupBy]) !== String(previousItem[groupBy]));
 
-              return (
-                <React.Fragment key={item.id}>
-                  {isNewGroup && (
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableCell
-                        colSpan={columns.length + 2}
-                        className="font-semibold py-2 text-slate-900 dark:text-slate-100"
-                      >
-                        {String(item[groupBy] || "Uncategorized")}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  <ContextMenu>
-                    <ContextMenuTrigger asChild>
-                      <TableRow
-                        data-state={
-                          selectedRows.includes(item.id) && "selected"
-                        }
-                      >
-                        <TableCell>
+            return (
+              <React.Fragment key={item.id}>
+                {isNewGroup && (
+                  <div className="font-bold text-sm text-muted-foreground pt-2 pb-1 px-1">
+                    {String(item[groupBy] || "Uncategorized")}
+                  </div>
+                )}
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      className={`p-4 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col gap-3 transition-colors ${selectedRows.includes(item.id) ? "ring-2 ring-primary bg-muted/50" : ""
+                        }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
                           <Checkbox
                             checked={selectedRows.includes(item.id)}
                             onCheckedChange={(checked) =>
                               handleRowSelect(item.id, Boolean(checked))
                             }
-                            aria-label="Select row"
+                            aria-label="Select card"
                             disabled={!isDeletable(item)}
+                            className="mt-1"
                           />
-                        </TableCell>
-                        {columns.map((col) => (
-                          <TableCell
-                            key={String(col.header)}
-                            className={`text-slate-700 dark:text-slate-300 ${col.className || ""}`}
-                          >
-                            {col.cellRenderer
-                              ? col.cellRenderer(item)
-                              : typeof col.accessor === "function"
-                                ? col.accessor(item)
-                                : (item[
-                                    col.accessor as keyof T
-                                  ] as React.ReactNode) || "-"}
-                          </TableCell>
-                        ))}
-                        <TableCell className="text-right">
+                          <div>
+                            <div className="font-semibold text-base">{item.name}</div>
+                            {/* Render all other columns besides Name (which is often col 0) */}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                              {columns.filter(c => c.accessor !== 'name').map((col) => (
+                                <div key={String(col.header)} className="text-sm text-muted-foreground flex flex-col">
+                                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">{col.header}</span>
+                                  <span>
+                                    {col.cellRenderer
+                                      ? col.cellRenderer(item)
+                                      : typeof col.accessor === "function"
+                                        ? col.accessor(item)
+                                        : (item[
+                                          col.accessor as keyof T
+                                        ] as React.ReactNode) || "-"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 shrink-0">
                           {isUpdating && isEditing(item.id) ? (
-                            <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                            <Loader2 className="h-4 w-4 animate-spin m-2" />
                           ) : (
-                            <>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEditClick(item)}
-                                    disabled={!isDeletable(item)}
-                                    aria-label="Edit"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit</TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteClick(item)}
-                                    disabled={!isDeletable(item)}
-                                    aria-label="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete</TooltipContent>
-                              </Tooltip>
-                            </>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditClick(item)}
+                                disabled={!isDeletable(item)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteClick(item)}
+                                disabled={!isDeletable(item)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-48">
+                    <ContextMenuItem
+                      inset
+                      onClick={() =>
+                        handleRowSelect(
+                          item.id,
+                          !selectedRows.includes(item.id),
+                        )
+                      }
+                    >
+                      {selectedRows.includes(item.id) ? "Deselect" : "Select"}
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      inset
+                      onClick={() => handleEditClick(item)}
+                      disabled={!isDeletable(item)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" /> Edit
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      inset
+                      className="text-red-600"
+                      onClick={() => handleDeleteClick(item)}
+                      disabled={!isDeletable(item)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              </React.Fragment>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden md:block border rounded-md overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={
+                    data.length > 0 &&
+                    selectedRows.length ===
+                    data.filter((item) => isDeletable(item)).length
+                  }
+                  onCheckedChange={(checked) => {
+                    const selectableIds = data
+                      .filter((item) => isDeletable(item))
+                      .map((item) => item.id);
+                    if (selectableIds.length > 0) {
+                      handleRowSelect(selectableIds.join(","), !!checked);
+                    }
+                  }}
+                  aria-label="Select all"
+                />
+              </TableHead>
+              {columns.map((col) => (
+                <TableHead
+                  key={String(col.header)}
+                  className={`text-slate-800 dark:text-slate-200 font-semibold ${col.className || ""}`}
+                >
+                  {col.header}
+                </TableHead>
+              ))}
+              <TableHead className="text-right text-slate-800 dark:text-slate-200 font-semibold">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 2} className="text-center">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : data.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length + 2}
+                  className="text-center py-4 text-muted-foreground"
+                >
+                  No items found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              data.map((item, index) => {
+                const previousItem = data[index - 1];
+                const isNewGroup =
+                  groupBy &&
+                  (!previousItem ||
+                    String(item[groupBy]) !== String(previousItem[groupBy]));
+
+                return (
+                  <React.Fragment key={item.id}>
+                    {isNewGroup && (
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableCell
+                          colSpan={columns.length + 2}
+                          className="font-semibold py-2 text-slate-900 dark:text-slate-100"
+                        >
+                          {String(item[groupBy] || "Uncategorized")}
                         </TableCell>
                       </TableRow>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48">
-                      <ContextMenuItem
-                        inset
-                        onClick={() =>
-                          handleRowSelect(
-                            item.id,
-                            !selectedRows.includes(item.id),
-                          )
-                        }
-                      >
-                        {selectedRows.includes(item.id) ? "Deselect" : "Select"}
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        inset
-                        onClick={() => handleEditClick(item)}
-                        disabled={!isDeletable(item)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        inset
-                        className="text-red-600"
-                        onClick={() => handleDeleteClick(item)}
-                        disabled={!isDeletable(item)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                </React.Fragment>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                    )}
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <TableRow
+                          data-state={
+                            selectedRows.includes(item.id) && "selected"
+                          }
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedRows.includes(item.id)}
+                              onCheckedChange={(checked) =>
+                                handleRowSelect(item.id, Boolean(checked))
+                              }
+                              aria-label="Select row"
+                              disabled={!isDeletable(item)}
+                            />
+                          </TableCell>
+                          {columns.map((col) => (
+                            <TableCell
+                              key={String(col.header)}
+                              className={`text-slate-700 dark:text-slate-300 ${col.className || ""}`}
+                            >
+                              {col.cellRenderer
+                                ? col.cellRenderer(item)
+                                : typeof col.accessor === "function"
+                                  ? col.accessor(item)
+                                  : (item[
+                                    col.accessor as keyof T
+                                  ] as React.ReactNode) || "-"}
+                            </TableCell>
+                          ))}
+                          <TableCell className="text-right">
+                            {isUpdating && isEditing(item.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+                            ) : (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEditClick(item)}
+                                      disabled={!isDeletable(item)}
+                                      aria-label="Edit"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteClick(item)}
+                                      disabled={!isDeletable(item)}
+                                      aria-label="Delete"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete</TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className="w-48">
+                        <ContextMenuItem
+                          inset
+                          onClick={() =>
+                            handleRowSelect(
+                              item.id,
+                              !selectedRows.includes(item.id),
+                            )
+                          }
+                        >
+                          {selectedRows.includes(item.id) ? "Deselect" : "Select"}
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          inset
+                          onClick={() => handleEditClick(item)}
+                          disabled={!isDeletable(item)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" /> Edit
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          inset
+                          className="text-red-600"
+                          onClick={() => handleDeleteClick(item)}
+                          disabled={!isDeletable(item)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  </React.Fragment>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

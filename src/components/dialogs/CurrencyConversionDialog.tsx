@@ -161,12 +161,12 @@ export const CurrencyConversionDialog: React.FC<
             <span className="text-xs text-muted-foreground mt-1 block">
               Rates sourced from{" "}
               <a
-                href="https://github.com/fawazahmed0/exchange-api"
+                href="https://api.frankfurter.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold underline hover:text-foreground"
               >
-                Currency API
+                Frankfurter API
               </a>{" "}
               (Open Source). No tracking or API key involved. Cryptocurrencies
               are check manually.
