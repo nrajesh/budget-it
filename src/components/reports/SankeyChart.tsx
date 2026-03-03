@@ -131,6 +131,9 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
         <ThemedCardDescription>
           Visualizes the flow of money from income sources through accounts to
           expense categories.
+          <span className="md:hidden block mt-2 text-[10px] text-indigo-500 font-medium animate-pulse">
+            Tip: Rotate device to landscape for a better view
+          </span>
         </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent>

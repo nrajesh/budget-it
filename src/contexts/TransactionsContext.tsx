@@ -17,7 +17,7 @@ import { ScheduledTransaction } from "@/types/dataProvider";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
 import { calculateAccountStats } from "@/utils/accountUtils";
-// import { ToastAction } from '@/components/ui/toast'; // Kept for now if used elsewhere or remove if unused
+import { ToastAction } from "@/components/ui/toast";
 
 interface TransactionToDelete {
   id: string;
@@ -299,10 +299,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-        | "DELETE_TRANSACTION"
-        | "DELETE_SCHEDULE"
-        | "DELETE_BUDGET"
-        | "DELETE_ENTITY";
+      | "DELETE_TRANSACTION"
+      | "DELETE_SCHEDULE"
+      | "DELETE_BUDGET"
+      | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -545,53 +545,22 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ... (existing queries)
 
-  // Fading Undo Link Component
-  const FadingUndo: React.FC<{ onUndo: () => void }> = ({ onUndo }) => {
-    const [opacity, setOpacity] = React.useState(1);
-
-    React.useEffect(() => {
-      // Start fading immediately to 0 over 7 seconds
-      // We use a small timeout to ensure the initial render happens at opacity 1
-      const timer = setTimeout(() => setOpacity(0), 50);
-      return () => clearTimeout(timer);
-    }, []);
-
-    return (
-      <span
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onUndo();
-        }}
-        style={{
-          transition: "opacity 7000ms linear",
-          opacity: opacity,
-          cursor: "pointer",
-          textDecoration: "underline",
-          marginLeft: "8px",
-          fontWeight: 600,
-          color: "#3b82f6", // blue-500
-        }}
-        className="hover:underline"
-      >
-        Undo
-      </span>
-    );
-  };
-
   // Helper for Undo Toasts
   const showUndoToast = React.useCallback(
     (count: number, itemLabel: string) => {
       const { id } = toast({
         title: "Deleted",
-        description: (
-          <div className="flex items-center">
-            <span>
-              {count} {itemLabel}
-              {count > 1 ? "s" : ""} deleted.
-            </span>
-            <FadingUndo onUndo={undoLastAction} />
-          </div>
+        description: `${count} ${itemLabel}${count > 1 ? "s" : ""} deleted.`,
+        action: (
+          <ToastAction
+            altText="Undo"
+            onClick={(e) => {
+              e.preventDefault();
+              undoLastAction();
+            }}
+          >
+            Undo
+          </ToastAction>
         ),
         duration: 7000,
       });
