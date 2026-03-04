@@ -475,7 +475,7 @@ const LedgerEntryPage = () => {
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="text-center space-y-2">
           <LogoImage />
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-primary">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
             Budget It!
           </h1>
           <p className="text-lg text-muted-foreground">
@@ -550,16 +550,16 @@ const LedgerEntryPage = () => {
                 </div>
 
                 <ThemedCard
-                  className={`cursor-pointer hover:border-primary/50 transition-all hover:bg-accent/50 group bg-card h-full ${isSelected ? "border-primary bg-primary/5" : ""}`}
+                  className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
                   onClick={() => handleSelectLedger(ledger.id)}
                 >
                   <ThemedCardHeader className="flex flex-row items-center gap-4 pb-2 space-y-0 pr-10">
-                    <div className="text-primary group-hover:scale-110 transition-transform">
+                    <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                       {getIcon(ledger.icon)}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <ThemedCardTitle className="text-xl">
+                        <ThemedCardTitle className="text-xl text-emerald-800 dark:text-emerald-300">
                           {ledger.name}
                         </ThemedCardTitle>
                         {/* Delete Button (Visible on hover, if not selected mode maybe? Let's just put it next to title or separate) */}
@@ -597,9 +597,11 @@ const LedgerEntryPage = () => {
           })}
 
           <ThemedCard
-            className={`cursor-pointer border-dashed border-2 hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center p-6 min-h-[140px] ${
-              ledgers.length === 0 ? "max-w-md w-full" : ""
-            }`}
+            className={`cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+              filteredLedgers.length === 0 && ledgers.length > 0
+                ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
+                : ""
+            } border-emerald-300 dark:border-emerald-800 bg-emerald-50/10 dark:bg-emerald-950/10`}
             onClick={() => setIsCreateOpen(true)}
           >
             <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">

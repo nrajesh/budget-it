@@ -282,9 +282,11 @@ const DataManagementPage = () => {
         </ThemedCard>
 
         {/* Generate Demo Data Card */}
-        <ThemedCard>
+        <ThemedCard className="border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10">
           <ThemedCardHeader>
-            <ThemedCardTitle>Generate Demo Data</ThemedCardTitle>
+            <ThemedCardTitle className="text-indigo-600 dark:text-indigo-400">
+              Generate Demo Data
+            </ThemedCardTitle>
             <ThemedCardDescription>
               Generate diverse demo transactions. This will clear existing data
               first.

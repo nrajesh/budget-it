@@ -55,10 +55,9 @@ describe("ScheduledTransactionsTable", () => {
         <ScheduledTransactionsTable transactions={mockTransactions} />
       </BrowserRouter>,
     );
-
-    expect(screen.getByText("Test Vendor")).toBeInTheDocument();
-    expect(screen.getByText("Test Account")).toBeInTheDocument();
-    expect(screen.getByText("Utilities")).toBeInTheDocument();
+    expect(screen.getAllByText("Test Vendor")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Test Account")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("Utilities")[0]).toBeInTheDocument();
   });
 
   it("renders interactive elements as buttons", () => {
@@ -69,17 +68,23 @@ describe("ScheduledTransactionsTable", () => {
     );
 
     // Vendor should be a button
-    const vendorButton = screen.getByText("Test Vendor").closest("button");
+    const vendorButton = screen
+      .getAllByText("Test Vendor")
+      .find((el) => el.closest("button"))
+      ?.closest("button");
     expect(vendorButton).toBeInTheDocument();
     expect(vendorButton).toHaveAttribute("type", "button");
 
     // Account should be a button
-    const accountButton = screen.getByText("Test Account").closest("button");
+    const accountButton = screen
+      .getAllByText("Test Account")
+      .find((el) => el.closest("button"))
+      ?.closest("button");
     expect(accountButton).toBeInTheDocument();
     expect(accountButton).toHaveAttribute("type", "button");
 
-    // Category should be a button
-    const categoryButton = screen.getByText("Utilities").closest("button");
+    // Category should be a element
+    const categoryButton = screen.getAllByText("Utilities")[0];
     expect(categoryButton).toBeInTheDocument();
     // Badge variants apply classes, so we check if it is a button
   });
