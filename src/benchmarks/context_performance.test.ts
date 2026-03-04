@@ -63,7 +63,7 @@ const generateData = (transactionCount: number, accountCount: number) => {
 describe("Context Performance Benchmark", () => {
   const { accounts, accountDetails, transactions } = generateData(10000, 50);
   const accountMap = new Map(accountDetails.map((a) => [a.id, a]));
-  const nameToAccountMap = new Map<string, any>();
+  const nameToAccountMap = new Map<string, AccountDetails>();
   accounts.forEach((v) => {
     nameToAccountMap.set(
       v.name.trim().toLowerCase(),

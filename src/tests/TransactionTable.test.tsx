@@ -71,9 +71,11 @@ describe("TransactionTable", () => {
       </BrowserRouter>,
     );
 
-    const scheduleButton = screen.getByLabelText("Go to Scheduled Transaction");
-    expect(scheduleButton).toBeInTheDocument();
-    expect(scheduleButton.tagName).toBe("BUTTON");
+    const scheduleButtons = screen.getAllByLabelText(
+      "Go to Scheduled Transaction",
+    );
+    expect(scheduleButtons.length).toBeGreaterThan(0);
+    expect(scheduleButtons[0].tagName).toBe("BUTTON");
   });
 
   it("renders 'Unlink Transfer' button with aria-label", () => {
@@ -90,8 +92,8 @@ describe("TransactionTable", () => {
       </BrowserRouter>,
     );
 
-    const unlinkButton = screen.getByLabelText("Unlink Transfer");
-    expect(unlinkButton).toBeInTheDocument();
-    expect(unlinkButton.tagName).toBe("BUTTON");
+    const unlinkButtons = screen.getAllByLabelText("Unlink Transfer");
+    expect(unlinkButtons.length).toBeGreaterThan(0);
+    expect(unlinkButtons[0].tagName).toBe("BUTTON");
   });
 });

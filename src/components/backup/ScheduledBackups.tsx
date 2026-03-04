@@ -232,14 +232,26 @@ const ScheduledBackups = () => {
 
       // Check first
 
-      if ((await (handle as any).queryPermission(mode)) === "granted") {
+      if (
+        (await (
+          handle as unknown as {
+            queryPermission: (m: unknown) => Promise<string>;
+          }
+        ).queryPermission(mode)) === "granted"
+      ) {
         showSuccess("Permission is already granted.");
         return;
       }
 
       // Request
 
-      if ((await (handle as any).requestPermission(mode)) === "granted") {
+      if (
+        (await (
+          handle as unknown as {
+            requestPermission: (m: unknown) => Promise<string>;
+          }
+        ).requestPermission(mode)) === "granted"
+      ) {
         showSuccess("Permission granted! Backups will resume.");
       } else {
         showError("Permission denied. Backups cannot run.");
@@ -478,13 +490,18 @@ const ScheduledBackups = () => {
                             <div className="flex items-center gap-1 cursor-help underline decoration-dotted underline-offset-4 decoration-muted-foreground/30">
                               <FolderOpen className="h-3 w-3 text-muted-foreground" />
                               <span className="truncate max-w-[120px]">
-                                {(b.directoryHandle as any)?.name || "Unknown"}
+                                {(
+                                  b.directoryHandle as FileSystemDirectoryHandle
+                                )?.name || "Unknown"}
                               </span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="font-medium">
-                              {(b.directoryHandle as any)?.name}
+                              {
+                                (b.directoryHandle as FileSystemDirectoryHandle)
+                                  ?.name
+                              }
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Full path is hidden by browser security.

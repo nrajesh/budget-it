@@ -841,7 +841,7 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async importData(data: unknown, userId?: string): Promise<void> {
-    const importData = data as Record<string, any>;
+    const importData = data as Record<string, unknown>;
     if (!importData || !importData.transactions)
       throw new Error("Invalid data format");
 
@@ -852,7 +852,7 @@ export class LocalDataProvider implements DataProvider {
       overrideUserId?: string,
     ) =>
       items.map((item) => {
-        const typedItem = item as Record<string, any>;
+        const typedItem = item as Record<string, unknown>;
         // If we are importing into a specific scope (overrideUserId), we FORCE that ID.
         if (overrideUserId) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars

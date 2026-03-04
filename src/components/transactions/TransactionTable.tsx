@@ -283,6 +283,215 @@ const TransactionRow = React.memo(
 
 TransactionRow.displayName = "TransactionRow";
 
+// Mobile Memoized Card Component
+const TransactionMobileCard = React.memo(
+  ({
+    transaction,
+    isSelected,
+    onToggleSelect,
+    onRowDoubleClick,
+    onUnlinkTransaction,
+    onAddTransaction,
+    onScheduleTransactions,
+    onDeleteTransactions,
+    accountCurrencyMap,
+    selectedCurrency,
+    today,
+    navigate,
+    toast,
+    isValidTransfer,
+  }: {
+    transaction: Transaction;
+    isSelected: boolean;
+    onToggleSelect: (id: string) => void;
+    onRowDoubleClick?: (
+      transaction: Transaction,
+      event: React.MouseEvent,
+    ) => void;
+    onUnlinkTransaction?: (transferId: string) => void;
+    onAddTransaction: (
+      transaction: Omit<Transaction, "id" | "created_at">,
+    ) => void;
+    onScheduleTransactions?: (
+      transactions: Transaction[],
+      clearSelection: () => void,
+    ) => void;
+    onDeleteTransactions: (
+      transactions: { id: string; transfer_id?: string }[],
+    ) => void;
+    accountCurrencyMap?: Map<string, string>;
+    selectedCurrency: string;
+    today: Date;
+    navigate: ReturnType<typeof useNavigate>;
+    toast: ReturnType<typeof useToast>["toast"];
+    isValidTransfer: boolean;
+  }) => {
+    const isFuture = useMemo(() => {
+      const txnDate = new Date(transaction.date);
+      txnDate.setHours(0, 0, 0, 0);
+      return txnDate > today;
+    }, [transaction.date, today]);
+
+    const formattedAmount = transaction.amount.toLocaleString(undefined, {
+      style: "currency",
+      currency:
+        accountCurrencyMap?.get(transaction.account) ||
+        transaction.currency ||
+        selectedCurrency,
+    });
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            className={`flex flex-col gap-2 p-3 rounded-xl border bg-card text-card-foreground shadow-sm relative transition-colors ${isSelected ? "ring-2 ring-primary bg-muted/50" : ""} ${isFuture ? "opacity-70 italic bg-slate-50/50 dark:bg-slate-900/50" : ""}`}
+            onClick={(e) => {
+              if (onRowDoubleClick && !transaction.is_projected) {
+                onRowDoubleClick(transaction, e);
+              }
+            }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => onToggleSelect(transaction.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-1"
+                />
+                <div className="flex flex-col">
+                  <div className="font-semibold text-sm leading-tight">
+                    {transaction.vendor || "No Payee"}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {new Date(transaction.date).toLocaleDateString()} &middot;{" "}
+                    {transaction.account}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <div
+                  className={`font-semibold text-sm ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                >
+                  {formattedAmount}
+                </div>
+                {transaction.transfer_id && isValidTransfer && (
+                  <button
+                    className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    title="Unlink Transfer"
+                    aria-label="Unlink Transfer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onUnlinkTransaction && transaction.transfer_id)
+                        onUnlinkTransaction(transaction.transfer_id);
+                    }}
+                  >
+                    <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400 group-hover/link:text-red-500" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-end mt-1 pl-7">
+              <div className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">
+                  {transaction.category}
+                </span>
+                {transaction.sub_category && (
+                  <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider">
+                    {transaction.sub_category}
+                  </span>
+                )}
+                {transaction.remarks && (
+                  <span className="text-xs truncate max-w-[150px] italic">
+                    {transaction.remarks}
+                  </span>
+                )}
+              </div>
+
+              {transaction.is_scheduled_origin && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (transaction.recurrence_id) {
+                      navigate(`/scheduled?id=${transaction.recurrence_id}`);
+                    } else {
+                      toast({
+                        title: "Reference Missing",
+                        description:
+                          "Could not find the original scheduled transaction.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="p-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30"
+                >
+                  <CalendarClock className="h-3.5 w-3.5 text-blue-500" />
+                </button>
+              )}
+            </div>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="w-64">
+          <ContextMenuItem inset onClick={() => onToggleSelect(transaction.id)}>
+            {isSelected ? "Deselect" : "Select"}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          {!transaction.is_projected && (
+            <>
+              <ContextMenuItem
+                inset
+                onClick={(e) =>
+                  onRowDoubleClick && onRowDoubleClick(transaction, e)
+                }
+              >
+                <Pencil className="h-4 w-4 mr-2" /> Edit
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+            </>
+          )}
+          <ContextMenuItem
+            inset
+            onClick={() =>
+              onScheduleTransactions &&
+              onScheduleTransactions([transaction], () => {})
+            }
+          >
+            <CalendarClock className="h-4 w-4 mr-2" />{" "}
+            {transaction.recurrence_id ? "Edit Schedule" : "Schedule"}
+          </ContextMenuItem>
+          <ContextMenuItem
+            inset
+            onClick={() => {
+              const { id: _id, created_at: _created_at, ...rest } = transaction;
+              onAddTransaction({
+                ...rest,
+                remarks: transaction.remarks + " (Copy)",
+                recurrence_id: undefined,
+                is_scheduled_origin: undefined,
+                is_projected: undefined,
+                recurrence_frequency: undefined,
+                recurrence_end_date: undefined,
+              });
+            }}
+          >
+            <Copy className="h-4 w-4 mr-2" /> Duplicate
+          </ContextMenuItem>
+          <ContextMenuItem
+            inset
+            className="text-red-600"
+            onClick={() => onDeleteTransactions([{ id: transaction.id }])}
+          >
+            <Trash className="h-4 w-4 mr-2" /> Delete
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    );
+  },
+);
+TransactionMobileCard.displayName = "TransactionMobileCard";
+
 const TransactionTable = ({
   transactions,
   allData,
@@ -484,7 +693,42 @@ const TransactionTable = ({
         </div>
       )}
 
-      <div className="rounded-md border">
+      {/* Mobile View */}
+      <div className="block md:hidden space-y-3">
+        {sortedData.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground border rounded-md">
+            No transactions found.
+          </div>
+        ) : (
+          paginatedData.map((transaction) => (
+            <TransactionMobileCard
+              key={transaction.id}
+              transaction={transaction}
+              isSelected={selectedIds.has(transaction.id)}
+              onToggleSelect={toggleSelect}
+              onRowDoubleClick={onRowDoubleClick}
+              onUnlinkTransaction={onUnlinkTransaction}
+              onAddTransaction={onAddTransaction}
+              onScheduleTransactions={onScheduleTransactions}
+              onDeleteTransactions={onDeleteTransactions}
+              accountCurrencyMap={accountCurrencyMap}
+              selectedCurrency={selectedCurrency}
+              today={today}
+              navigate={navigate}
+              toast={toast}
+              isValidTransfer={
+                !!(
+                  transaction.transfer_id &&
+                  !transaction.transfer_id.startsWith("split-")
+                )
+              }
+            />
+          ))
+        )}
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

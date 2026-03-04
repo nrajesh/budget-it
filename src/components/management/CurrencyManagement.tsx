@@ -152,12 +152,12 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 text-xs text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://github.com/fawazahmed0/exchange-api"
+                    href="https://api.frankfurter.app"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"
                   >
-                    Currency API
+                    Frankfurter API
                   </a>{" "}
                   (Open Source, No API Key).
                 </span>
