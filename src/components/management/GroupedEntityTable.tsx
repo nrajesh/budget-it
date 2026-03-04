@@ -149,7 +149,10 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
             );
 
             return (
-              <div key={groupKey} className="border rounded-xl bg-card overflow-hidden shadow-sm transition-all text-card-foreground">
+              <div
+                key={groupKey}
+                className="border rounded-xl bg-card overflow-hidden shadow-sm transition-all text-card-foreground"
+              >
                 <div
                   className="bg-muted/30 hover:bg-muted/50 cursor-pointer p-4 py-3 flex items-center justify-between"
                   onClick={() => toggleGroup(groupKey)}
@@ -173,10 +176,11 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                       <ContextMenu key={item.id}>
                         <ContextMenuTrigger asChild>
                           <div
-                            className={`p-3 border rounded-lg shadow-sm flex flex-col gap-2 transition-colors ${selectedRows.includes(item.id)
-                              ? "ring-2 ring-primary bg-primary/5"
-                              : "bg-card"
-                              }`}
+                            className={`p-3 border rounded-lg shadow-sm flex flex-col gap-2 transition-colors ${
+                              selectedRows.includes(item.id)
+                                ? "ring-2 ring-primary bg-primary/5"
+                                : "bg-card"
+                            }`}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3">
@@ -190,22 +194,32 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                   className="mt-1"
                                 />
                                 <div>
-                                  <div className="font-semibold text-sm leading-tight">{item.name}</div>
+                                  <div className="font-semibold text-sm leading-tight">
+                                    {item.name}
+                                  </div>
                                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                                    {columns.filter(c => c.accessor !== 'name').map((col) => (
-                                      <div key={String(col.header)} className="text-sm text-muted-foreground flex flex-col">
-                                        <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">{col.header}</span>
-                                        <span className="leading-snug">
-                                          {col.cellRenderer
-                                            ? col.cellRenderer(item)
-                                            : typeof col.accessor === "function"
-                                              ? col.accessor(item)
-                                              : (item[
-                                                col.accessor as keyof T
-                                              ] as React.ReactNode) || "-"}
-                                        </span>
-                                      </div>
-                                    ))}
+                                    {columns
+                                      .filter((c) => c.accessor !== "name")
+                                      .map((col) => (
+                                        <div
+                                          key={String(col.header)}
+                                          className="text-sm text-muted-foreground flex flex-col"
+                                        >
+                                          <span className="text-[9px] uppercase font-bold tracking-wider opacity-70">
+                                            {col.header}
+                                          </span>
+                                          <span className="leading-snug">
+                                            {col.cellRenderer
+                                              ? col.cellRenderer(item)
+                                              : typeof col.accessor ===
+                                                  "function"
+                                                ? col.accessor(item)
+                                                : (item[
+                                                    col.accessor as keyof T
+                                                  ] as React.ReactNode) || "-"}
+                                          </span>
+                                        </div>
+                                      ))}
                                   </div>
                                 </div>
                               </div>
@@ -280,10 +294,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setPage(
-                              groupKey,
-                              Math.max(1, currentPage - 1),
-                            );
+                            setPage(groupKey, Math.max(1, currentPage - 1));
                           }}
                           disabled={currentPage === 1}
                           className="h-7 px-2"
@@ -328,7 +339,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                   checked={
                     data.length > 0 &&
                     selectedRows.length ===
-                    data.filter((item) => isDeletable(item)).length
+                      data.filter((item) => isDeletable(item)).length
                   }
                   onCheckedChange={(checked) => {
                     const selectableIds = data
@@ -439,8 +450,8 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                       : typeof col.accessor === "function"
                                         ? col.accessor(item)
                                         : (item[
-                                          col.accessor as keyof T
-                                        ] as React.ReactNode) || "-"}
+                                            col.accessor as keyof T
+                                          ] as React.ReactNode) || "-"}
                                   </TableCell>
                                 ))}
                                 <TableCell
@@ -456,7 +467,9 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                           <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleEditClick(item)}
+                                            onClick={() =>
+                                              handleEditClick(item)
+                                            }
                                             disabled={!isDeletable(item)}
                                             aria-label="Edit"
                                           >

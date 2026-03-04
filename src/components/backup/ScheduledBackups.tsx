@@ -233,9 +233,11 @@ const ScheduledBackups = () => {
       // Check first
 
       if (
-        (await ((handle as unknown) as { queryPermission: (m: unknown) => Promise<string> }).queryPermission(
-          mode,
-        )) === "granted"
+        (await (
+          handle as unknown as {
+            queryPermission: (m: unknown) => Promise<string>;
+          }
+        ).queryPermission(mode)) === "granted"
       ) {
         showSuccess("Permission is already granted.");
         return;
@@ -244,9 +246,11 @@ const ScheduledBackups = () => {
       // Request
 
       if (
-        (await ((handle as unknown) as { requestPermission: (m: unknown) => Promise<string> }).requestPermission(
-          mode,
-        )) === "granted"
+        (await (
+          handle as unknown as {
+            requestPermission: (m: unknown) => Promise<string>;
+          }
+        ).requestPermission(mode)) === "granted"
       ) {
         showSuccess("Permission granted! Backups will resume.");
       } else {
@@ -324,8 +328,8 @@ const ScheduledBackups = () => {
       <Card
         className={
           !Capacitor.isNativePlatform() &&
-            !("showDirectoryPicker" in window) &&
-            !getElectronAPI()
+          !("showDirectoryPicker" in window) &&
+          !getElectronAPI()
             ? "opacity-60 pointer-events-none"
             : ""
         }
@@ -486,13 +490,18 @@ const ScheduledBackups = () => {
                             <div className="flex items-center gap-1 cursor-help underline decoration-dotted underline-offset-4 decoration-muted-foreground/30">
                               <FolderOpen className="h-3 w-3 text-muted-foreground" />
                               <span className="truncate max-w-[120px]">
-                                {(b.directoryHandle as FileSystemDirectoryHandle)?.name || "Unknown"}
+                                {(
+                                  b.directoryHandle as FileSystemDirectoryHandle
+                                )?.name || "Unknown"}
                               </span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="font-medium">
-                              {(b.directoryHandle as FileSystemDirectoryHandle)?.name}
+                              {
+                                (b.directoryHandle as FileSystemDirectoryHandle)
+                                  ?.name
+                              }
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               Full path is hidden by browser security.

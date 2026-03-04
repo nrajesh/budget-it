@@ -170,9 +170,17 @@ export function BudgetDialog({
 
     try {
       if (isEditMode && budget) {
-        await dataProvider.updateBudget({ ...budget, ...budgetData } as unknown as import("@/types/dataProvider").Budget);
+        await dataProvider.updateBudget({
+          ...budget,
+          ...budgetData,
+        } as unknown as import("@/types/dataProvider").Budget);
       } else {
-        await dataProvider.addBudget(budgetData as unknown as Omit<import("@/types/dataProvider").Budget, 'id' | 'spent_amount'>);
+        await dataProvider.addBudget(
+          budgetData as unknown as Omit<
+            import("@/types/dataProvider").Budget,
+            "id" | "spent_amount"
+          >,
+        );
       }
 
       toast({

@@ -119,12 +119,12 @@ const TransactionRow = React.memo(
         <span className="cursor-pointer">
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
-              style: "currency",
-              currency:
-                accountCurrencyMap?.get(transaction.account) ||
-                transaction.currency ||
-                selectedCurrency,
-            })
+                style: "currency",
+                currency:
+                  accountCurrencyMap?.get(transaction.account) ||
+                  transaction.currency ||
+                  selectedCurrency,
+              })
             : field === "date"
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
@@ -244,7 +244,7 @@ const TransactionRow = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => { })
+              onScheduleTransactions([transaction], () => {})
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}
@@ -332,7 +332,7 @@ const TransactionMobileCard = React.memo(
       return txnDate > today;
     }, [transaction.date, today]);
 
-    const formattedAmount = (transaction.amount).toLocaleString(undefined, {
+    const formattedAmount = transaction.amount.toLocaleString(undefined, {
       style: "currency",
       currency:
         accountCurrencyMap?.get(transaction.account) ||
@@ -364,12 +364,15 @@ const TransactionMobileCard = React.memo(
                     {transaction.vendor || "No Payee"}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {new Date(transaction.date).toLocaleDateString()} &middot; {transaction.account}
+                    {new Date(transaction.date).toLocaleDateString()} &middot;{" "}
+                    {transaction.account}
                   </div>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <div className={`font-semibold text-sm ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                <div
+                  className={`font-semibold text-sm ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                >
                   {formattedAmount}
                 </div>
                 {transaction.transfer_id && isValidTransfer && (
@@ -391,9 +394,19 @@ const TransactionMobileCard = React.memo(
 
             <div className="flex justify-between items-end mt-1 pl-7">
               <div className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">{transaction.category}</span>
-                {transaction.sub_category && <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider">{transaction.sub_category}</span>}
-                {transaction.remarks && <span className="text-xs truncate max-w-[150px] italic">{transaction.remarks}</span>}
+                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">
+                  {transaction.category}
+                </span>
+                {transaction.sub_category && (
+                  <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider">
+                    {transaction.sub_category}
+                  </span>
+                )}
+                {transaction.remarks && (
+                  <span className="text-xs truncate max-w-[150px] italic">
+                    {transaction.remarks}
+                  </span>
+                )}
               </div>
 
               {transaction.is_scheduled_origin && (
@@ -406,7 +419,8 @@ const TransactionMobileCard = React.memo(
                     } else {
                       toast({
                         title: "Reference Missing",
-                        description: "Could not find the original scheduled transaction.",
+                        description:
+                          "Could not find the original scheduled transaction.",
                         variant: "destructive",
                       });
                     }
@@ -441,7 +455,7 @@ const TransactionMobileCard = React.memo(
             inset
             onClick={() =>
               onScheduleTransactions &&
-              onScheduleTransactions([transaction], () => { })
+              onScheduleTransactions([transaction], () => {})
             }
           >
             <CalendarClock className="h-4 w-4 mr-2" />{" "}
@@ -474,7 +488,7 @@ const TransactionMobileCard = React.memo(
         </ContextMenuContent>
       </ContextMenu>
     );
-  }
+  },
 );
 TransactionMobileCard.displayName = "TransactionMobileCard";
 

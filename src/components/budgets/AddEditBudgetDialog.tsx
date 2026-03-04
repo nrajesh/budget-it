@@ -438,14 +438,22 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
 
     try {
       if (budget) {
-        await dataProvider.updateBudget({ ...budget, ...dbPayload } as unknown as import("@/types/dataProvider").Budget);
+        await dataProvider.updateBudget({
+          ...budget,
+          ...dbPayload,
+        } as unknown as import("@/types/dataProvider").Budget);
         showSuccess(
           values.is_goal
             ? "Goal updated successfully!"
             : "Budget updated successfully!",
         );
       } else {
-        await dataProvider.addBudget(dbPayload as unknown as Omit<import("@/types/dataProvider").Budget, 'id' | 'spent_amount'>);
+        await dataProvider.addBudget(
+          dbPayload as unknown as Omit<
+            import("@/types/dataProvider").Budget,
+            "id" | "spent_amount"
+          >,
+        );
         showSuccess(
           values.is_goal
             ? "Goal created successfully!"

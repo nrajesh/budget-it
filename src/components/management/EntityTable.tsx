@@ -85,8 +85,11 @@ export const EntityTable = <T extends { id: string; name: string }>({
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
                     <div
-                      className={`p-4 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col gap-3 transition-colors ${selectedRows.includes(item.id) ? "ring-2 ring-primary bg-muted/50" : ""
-                        }`}
+                      className={`p-4 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col gap-3 transition-colors ${
+                        selectedRows.includes(item.id)
+                          ? "ring-2 ring-primary bg-muted/50"
+                          : ""
+                      }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3">
@@ -100,23 +103,32 @@ export const EntityTable = <T extends { id: string; name: string }>({
                             className="mt-1"
                           />
                           <div>
-                            <div className="font-semibold text-base">{item.name}</div>
+                            <div className="font-semibold text-base">
+                              {item.name}
+                            </div>
                             {/* Render all other columns besides Name (which is often col 0) */}
                             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                              {columns.filter(c => c.accessor !== 'name').map((col) => (
-                                <div key={String(col.header)} className="text-sm text-muted-foreground flex flex-col">
-                                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">{col.header}</span>
-                                  <span>
-                                    {col.cellRenderer
-                                      ? col.cellRenderer(item)
-                                      : typeof col.accessor === "function"
-                                        ? col.accessor(item)
-                                        : (item[
-                                          col.accessor as keyof T
-                                        ] as React.ReactNode) || "-"}
-                                  </span>
-                                </div>
-                              ))}
+                              {columns
+                                .filter((c) => c.accessor !== "name")
+                                .map((col) => (
+                                  <div
+                                    key={String(col.header)}
+                                    className="text-sm text-muted-foreground flex flex-col"
+                                  >
+                                    <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">
+                                      {col.header}
+                                    </span>
+                                    <span>
+                                      {col.cellRenderer
+                                        ? col.cellRenderer(item)
+                                        : typeof col.accessor === "function"
+                                          ? col.accessor(item)
+                                          : (item[
+                                              col.accessor as keyof T
+                                            ] as React.ReactNode) || "-"}
+                                    </span>
+                                  </div>
+                                ))}
                             </div>
                           </div>
                         </div>
@@ -196,7 +208,7 @@ export const EntityTable = <T extends { id: string; name: string }>({
                   checked={
                     data.length > 0 &&
                     selectedRows.length ===
-                    data.filter((item) => isDeletable(item)).length
+                      data.filter((item) => isDeletable(item)).length
                   }
                   onCheckedChange={(checked) => {
                     const selectableIds = data
@@ -285,8 +297,8 @@ export const EntityTable = <T extends { id: string; name: string }>({
                                 : typeof col.accessor === "function"
                                   ? col.accessor(item)
                                   : (item[
-                                    col.accessor as keyof T
-                                  ] as React.ReactNode) || "-"}
+                                      col.accessor as keyof T
+                                    ] as React.ReactNode) || "-"}
                             </TableCell>
                           ))}
                           <TableCell className="text-right">
@@ -337,7 +349,9 @@ export const EntityTable = <T extends { id: string; name: string }>({
                             )
                           }
                         >
-                          {selectedRows.includes(item.id) ? "Deselect" : "Select"}
+                          {selectedRows.includes(item.id)
+                            ? "Deselect"
+                            : "Select"}
                         </ContextMenuItem>
                         <ContextMenuSeparator />
                         <ContextMenuItem

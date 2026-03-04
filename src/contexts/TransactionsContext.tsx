@@ -299,10 +299,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     {
       id: string; // Action ID
       type:
-      | "DELETE_TRANSACTION"
-      | "DELETE_SCHEDULE"
-      | "DELETE_BUDGET"
-      | "DELETE_ENTITY";
+        | "DELETE_TRANSACTION"
+        | "DELETE_SCHEDULE"
+        | "DELETE_BUDGET"
+        | "DELETE_ENTITY";
       payload: {
         ids: string[];
         transferIds?: string[];
@@ -435,7 +435,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const allAccountsDetails = await dataProvider.getAllAccounts(ledgerId);
       const accountMap = new Map(allAccountsDetails.map((a) => [a.id, a]));
 
-      const nameToAccountMap = new Map<string, typeof allAccountsDetails[0]>();
+      const nameToAccountMap = new Map<
+        string,
+        (typeof allAccountsDetails)[0]
+      >();
       allVendors.forEach((v) => {
         if (v.is_account && v.account_id) {
           const acc = accountMap.get(v.account_id);
@@ -611,7 +614,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         const { receivingAmount: _receivingAmount, ...cleanSource } =
           sourceTransaction;
 
-        await dataProvider.addTransaction(cleanSource as unknown as Parameters<typeof dataProvider.addTransaction>[0]);
+        await dataProvider.addTransaction(
+          cleanSource as unknown as Parameters<
+            typeof dataProvider.addTransaction
+          >[0],
+        );
 
         // Destination transaction
         const destTransaction = {
@@ -627,14 +634,20 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         const { receivingAmount: _receivingAmount2, ...cleanDest } =
           destTransaction;
 
-        await dataProvider.addTransaction(cleanDest as unknown as Parameters<typeof dataProvider.addTransaction>[0]);
+        await dataProvider.addTransaction(
+          cleanDest as unknown as Parameters<
+            typeof dataProvider.addTransaction
+          >[0],
+        );
         await dataProvider.ensureCategoryExists("Transfer", userId);
       } else {
         await dataProvider.addTransaction({
           ...transaction,
           user_id: userId,
           date: new Date(transaction.date).toISOString(),
-          currency: (transaction as Record<string, unknown>).currency as string || "USD", // Ensure currency is present
+          currency:
+            ((transaction as Record<string, unknown>).currency as string) ||
+            "USD", // Ensure currency is present
         } as unknown as Parameters<typeof dataProvider.addTransaction>[0]);
       }
 

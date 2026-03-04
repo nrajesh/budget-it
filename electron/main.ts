@@ -1,109 +1,134 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as Security from './security';
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import * as path from "path";
+import * as fs from "fs";
+import * as Security from "./security";
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 let authorizedBackupFolders = new Set<string>();
 
 function createWindow() {
-    mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false,
-            contextIsolation: true,
-            backgroundThrottling: false,
-        },
-    });
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+      backgroundThrottling: false,
+    },
+  });
 
-    if (process.env.VITE_DEV_SERVER_URL) {
-        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-        mainWindow.webContents.openDevTools();
-    } else {
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+  }
+
+  mainWindow.on("close", (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow?.hide();
+      return false;
     }
-
-    mainWindow.on('close', (event) => {
-        if (!isQuitting) {
-            event.preventDefault();
-            mainWindow?.hide();
-            return false;
-        }
-    });
+  });
 }
 
-app.on('before-quit', () => {
-    isQuitting = true;
+app.on("before-quit", () => {
+  isQuitting = true;
 });
 
 app.whenReady().then(() => {
-    createWindow();
+  createWindow();
 
-    // Initialize authorized folders from config
-    const backupConfigPath = path.join(app.getPath('userData'), 'backup-config.json');
-    authorizedBackupFolders = Security.loadAuthorizedFolders(backupConfigPath);
+  // Initialize authorized folders from config
+  const backupConfigPath = path.join(
+    app.getPath("userData"),
+    "backup-config.json",
+  );
+  authorizedBackupFolders = Security.loadAuthorizedFolders(backupConfigPath);
 
-    ipcMain.handle('select-folder', async () => {
-        const result = await dialog.showOpenDialog(mainWindow!, {
-            properties: ['openDirectory', 'createDirectory'],
-        });
-        if (result.canceled) return null;
-
-        const selectedPath = result.filePaths[0];
-        // SECURITY: Authorize the selected folder
-        authorizedBackupFolders.add(selectedPath);
-        Security.saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
-
-        return selectedPath;
+  ipcMain.handle("select-folder", async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ["openDirectory", "createDirectory"],
     });
+    if (result.canceled) return null;
 
-    ipcMain.handle('write-backup-file', async (_event, folder: string, filename: string, content: string) => {
-        try {
-            // SECURITY: Prevent path traversal
-            if (path.basename(filename) !== filename || filename === '..' || filename === '.') {
-                console.error("Security alert: Attempted path traversal in filename", filename);
-                throw new Error("Invalid filename: Path traversal detected");
-            }
+    const selectedPath = result.filePaths[0];
+    // SECURITY: Authorize the selected folder
+    authorizedBackupFolders.add(selectedPath);
+    Security.saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
 
-            // SECURITY: Enforce file extension to prevent arbitrary file write
-            if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
-                console.error("Security alert: Invalid file extension", filename);
-                throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
-            }
+    return selectedPath;
+  });
 
-            // SECURITY: Validate folder authorization
-            // Prevent arbitrary file writes to unauthorized locations
-            if (!Security.isFolderAuthorized(folder, authorizedBackupFolders)) {
-                console.error("Security alert: Unauthorized backup folder attempt", folder);
-                throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
-            }
-
-            // Ensure directory exists
-            if (!fs.existsSync(folder)) {
-                fs.mkdirSync(folder, { recursive: true });
-            }
-            const filePath = path.join(folder, filename);
-            await fs.promises.writeFile(filePath, content, 'utf-8');
-            return { success: true };
-        } catch (error: unknown) {
-            console.error("Backup write failed:", error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            return { success: false, error: errorMessage };
+  ipcMain.handle(
+    "write-backup-file",
+    async (_event, folder: string, filename: string, content: string) => {
+      try {
+        // SECURITY: Prevent path traversal
+        if (
+          path.basename(filename) !== filename ||
+          filename === ".." ||
+          filename === "."
+        ) {
+          console.error(
+            "Security alert: Attempted path traversal in filename",
+            filename,
+          );
+          throw new Error("Invalid filename: Path traversal detected");
         }
-    });
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
-        } else if (mainWindow) {
-            mainWindow.show();
+        // SECURITY: Enforce file extension to prevent arbitrary file write
+        if (
+          !filename.endsWith(".json") &&
+          !filename.endsWith(".lock") &&
+          !filename.endsWith(".csv")
+        ) {
+          console.error("Security alert: Invalid file extension", filename);
+          throw new Error(
+            "Invalid filename: Only .json, .csv, and .lock files are allowed",
+          );
         }
-    });
+
+        // SECURITY: Validate folder authorization
+        // Prevent arbitrary file writes to unauthorized locations
+        if (!Security.isFolderAuthorized(folder, authorizedBackupFolders)) {
+          console.error(
+            "Security alert: Unauthorized backup folder attempt",
+            folder,
+          );
+          throw new Error(
+            "Unauthorized backup folder. Please re-select the folder in settings.",
+          );
+        }
+
+        // Ensure directory exists
+        if (!fs.existsSync(folder)) {
+          fs.mkdirSync(folder, { recursive: true });
+        }
+        const filePath = path.join(folder, filename);
+        await fs.promises.writeFile(filePath, content, "utf-8");
+        return { success: true };
+      } catch (error: unknown) {
+        console.error("Backup write failed:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return { success: false, error: errorMessage };
+      }
+    },
+  );
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    } else if (mainWindow) {
+      mainWindow.show();
+    }
+  });
 });
 
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
 });

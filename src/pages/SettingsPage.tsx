@@ -261,9 +261,12 @@ const SettingsPage = () => {
                       <span className="truncate">
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
-                            ? (syncConfig.config.syncDirectoryHandle as unknown as string)
-                            : (syncConfig.config.syncDirectoryHandle as FileSystemDirectoryHandle)
-                              .name
+                            ? (syncConfig.config
+                                .syncDirectoryHandle as unknown as string)
+                            : (
+                                syncConfig.config
+                                  .syncDirectoryHandle as FileSystemDirectoryHandle
+                              ).name
                           : "Select Folder"}
                       </span>
                     </Button>
