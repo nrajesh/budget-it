@@ -198,6 +198,6 @@
 
   /* Centralized container dimensions based on Analytics base */
   .page-container {
-    @apply space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-background overflow-x-hidden;
+    @apply w-full max-w-full min-w-0 space-y-6 p-3 sm:p-6 min-h-[calc(100vh-[env(safe-area-inset-top)])] transition-all duration-500 bg-background overflow-x-hidden;
   }
 }

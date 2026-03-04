@@ -219,7 +219,7 @@ const DataManagementPage = () => {
           </Alert>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={handleExportPlain}
                 variant="outline"
