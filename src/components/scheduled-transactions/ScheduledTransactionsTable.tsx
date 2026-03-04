@@ -173,7 +173,138 @@ export function ScheduledTransactionsTable({
         </div>
       )}
 
-      <div className="rounded-md border bg-white/50 dark:bg-black/20 backdrop-blur-sm overflow-hidden">
+      {/* Mobile View */}
+      <div className="block md:hidden space-y-4">
+        {transactions.length === 0 ? (
+          <div className="text-center py-8 text-slate-500 bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-md border">
+            No scheduled transactions found.
+          </div>
+        ) : (
+          currentTransactions.map((transaction, index) => {
+            if (!transaction) return null;
+            const currentAccountCurrency =
+              accountCurrencyMap.get(transaction.account) ||
+              transaction.currency ||
+              "USD";
+
+            return (
+              <div
+                key={transaction.id || `sched-txn-${index}`}
+                className={`p-4 border rounded-xl bg-white/50 dark:bg-black/20 backdrop-blur-sm shadow-sm flex flex-col gap-3 transition-colors ${
+                  selectedIds.has(transaction.id)
+                    ? "ring-2 ring-primary bg-primary/5"
+                    : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <Checkbox
+                      checked={selectedIds.has(transaction.id)}
+                      onCheckedChange={() => toggleSelect(transaction.id)}
+                      aria-label={`Select scheduled transaction for ${transaction.vendor}`}
+                      className="mt-1 flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-base truncate text-slate-800 dark:text-slate-100">
+                          {transaction.vendor || "Unknown"}
+                        </span>
+                        {transaction.transfer_id && (
+                          <Link className="h-3.5 w-3.5 text-blue-500" />
+                        )}
+                      </div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400 mb-2 truncate">
+                        {transaction.account || "Unknown"}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mt-1">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase font-bold tracking-wider opacity-70 text-slate-500">
+                            Date
+                          </span>
+                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                            {formatDateToDDMMYYYY(transaction.date)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase font-bold tracking-wider opacity-70 text-slate-500">
+                            Freq
+                          </span>
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {transaction.frequency || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex flex-col col-span-2 mt-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={cn(
+                                badgeVariants({ variant: "outline" }),
+                                "text-xs",
+                              )}
+                            >
+                              {transaction.category || "Uncategorized"}
+                            </span>
+                            {transaction.sub_category && (
+                              <Badge variant="secondary" className="text-xs">
+                                {transaction.sub_category}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end shrink-0 gap-2">
+                    <span
+                      className={`font-bold text-lg ${transaction.amount > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                    >
+                      {formatCurrency(
+                        transaction.amount,
+                        currentAccountCurrency,
+                      )}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        {onProcessToday && (
+                          <DropdownMenuItem
+                            onClick={() => onProcessToday(transaction)}
+                          >
+                            <PlayCircle className="mr-2 h-4 w-4" /> Make happen
+                            today
+                          </DropdownMenuItem>
+                        )}
+                        {onEdit && (
+                          <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                        )}
+                        {onDelete && (
+                          <DropdownMenuItem
+                            onClick={() => onDelete(transaction.id)}
+                            className="text-destructive"
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden md:block rounded-md border bg-white/50 dark:bg-black/20 backdrop-blur-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

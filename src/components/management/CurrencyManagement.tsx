@@ -287,7 +287,7 @@ export const CurrencyManagement = () => {
                                         if (currency.code !== "USD") {
                                           rateUSDToNew =
                                             data.rates[
-                                            currency.code.toUpperCase()
+                                              currency.code.toUpperCase()
                                             ];
                                         }
 

@@ -183,7 +183,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                             }`}
                           >
                             <div className="flex items-start justify-between">
-                              <div className="flex items-start gap-3">
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
                                 <Checkbox
                                   checked={selectedRows.includes(item.id)}
                                   onCheckedChange={(checked) =>
@@ -191,13 +191,13 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                                   }
                                   aria-label="Select card"
                                   disabled={!isDeletable(item)}
-                                  className="mt-1"
+                                  className="mt-1 flex-shrink-0"
                                 />
-                                <div>
-                                  <div className="font-semibold text-sm leading-tight">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-semibold text-sm leading-tight truncate">
                                     {item.name}
                                   </div>
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                  <div className="flex flex-wrap gap-x-3 gap-y-2 mt-1">
                                     {columns
                                       .filter((c) => c.accessor !== "name")
                                       .map((col) => (
