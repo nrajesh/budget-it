@@ -155,14 +155,14 @@ export function BudgetDialog({
       ? subCategories.find((s) => s.id === values.sub_category_id)?.name
       : null;
 
-    const budgetData: any = {
+    const budgetData = {
       user_id: userId,
       category_id: values.category_id,
       category_name: selectedCategory?.name || "",
       sub_category_id: values.sub_category_id || null,
       sub_category_name: subCatName,
       target_amount: values.target_amount,
-      frequency: values.frequency as any,
+      frequency: values.frequency,
       start_date: values.start_date.toISOString(),
       end_date: values.end_date?.toISOString() || null,
       currency: defaultCurrency,
@@ -170,9 +170,9 @@ export function BudgetDialog({
 
     try {
       if (isEditMode && budget) {
-        await dataProvider.updateBudget({ ...budget, ...budgetData });
+        await dataProvider.updateBudget({ ...budget, ...budgetData } as unknown as import("@/types/dataProvider").Budget);
       } else {
-        await dataProvider.addBudget(budgetData);
+        await dataProvider.addBudget(budgetData as unknown as Omit<import("@/types/dataProvider").Budget, 'id' | 'spent_amount'>);
       }
 
       toast({
@@ -181,10 +181,10 @@ export function BudgetDialog({
       });
       onSave();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error saving budget",
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       });
     }

@@ -450,7 +450,7 @@ const TransactionMobileCard = React.memo(
           <ContextMenuItem
             inset
             onClick={() => {
-              const { id, created_at, ...rest } = transaction;
+              const { id: _id, created_at: _created_at, ...rest } = transaction;
               onAddTransaction({
                 ...rest,
                 remarks: transaction.remarks + " (Copy)",

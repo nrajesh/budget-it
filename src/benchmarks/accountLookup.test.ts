@@ -21,7 +21,7 @@ describe("Account Lookup Performance Benchmark", () => {
 
     const accountText =
       selectedAccounts.length > 0
-        ? `Accounts: ${selectedAccounts.map((slug) => accounts.find((a: any) => slugify(a.name) === slug)?.name || slug).join(", ")}`
+        ? `Accounts: ${selectedAccounts.map((slug) => accounts.find((a) => slugify(a.name) === slug)?.name || slug).join(", ")}`
         : "All Accounts";
 
     const end = performance.now();
@@ -39,7 +39,7 @@ describe("Account Lookup Performance Benchmark", () => {
     const start = performance.now();
 
     const accountNameMap = new Map(
-      accounts.map((a: any) => [slugify(a.name), a.name]),
+      accounts.map((a) => [slugify(a.name), a.name]),
     );
 
     const accountText =

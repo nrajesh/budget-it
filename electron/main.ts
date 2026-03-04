@@ -77,8 +77,8 @@ app.whenReady().then(() => {
             // SECURITY: Validate folder authorization
             // Prevent arbitrary file writes to unauthorized locations
             if (!Security.isFolderAuthorized(folder, authorizedBackupFolders)) {
-                 console.error("Security alert: Unauthorized backup folder attempt", folder);
-                 throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
+                console.error("Security alert: Unauthorized backup folder attempt", folder);
+                throw new Error("Unauthorized backup folder. Please re-select the folder in settings.");
             }
 
             // Ensure directory exists
@@ -88,9 +88,10 @@ app.whenReady().then(() => {
             const filePath = path.join(folder, filename);
             await fs.promises.writeFile(filePath, content, 'utf-8');
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Backup write failed:", error);
-            return { success: false, error: error.message };
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
         }
     });
 

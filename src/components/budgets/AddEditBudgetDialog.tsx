@@ -394,8 +394,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       categoryName = values.budget_scope_name || "";
       categoryId = "";
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dbPayload: any = {
+    const dbPayload = {
       user_id: activeLedger.id,
       category_id: categoryId,
       category_name: categoryName,
@@ -407,7 +406,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       target_amount: values.target_amount,
       currency: values.currency,
       start_date: new Date(values.start_date).toISOString(),
-      frequency: frequency as any,
+      frequency: frequency,
       end_date: values.is_goal
         ? resolvedTargetDate
         : values.end_date
@@ -439,14 +438,14 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
 
     try {
       if (budget) {
-        await dataProvider.updateBudget({ ...budget, ...dbPayload });
+        await dataProvider.updateBudget({ ...budget, ...dbPayload } as unknown as import("@/types/dataProvider").Budget);
         showSuccess(
           values.is_goal
             ? "Goal updated successfully!"
             : "Budget updated successfully!",
         );
       } else {
-        await dataProvider.addBudget(dbPayload);
+        await dataProvider.addBudget(dbPayload as unknown as Omit<import("@/types/dataProvider").Budget, 'id' | 'spent_amount'>);
         showSuccess(
           values.is_goal
             ? "Goal created successfully!"
