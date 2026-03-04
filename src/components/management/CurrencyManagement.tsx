@@ -66,7 +66,7 @@ export const CurrencyManagement = () => {
 
   // Fetch available currencies from jsDelivr API for the dropdown
   React.useEffect(() => {
-    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+    fetchWithTimeout("https://frankfurter.dev/currencies", {}, 5000)
       .then((res: Response) => {
         if (!res.ok) throw new Error("Failed to fetch currencies");
         return res.json();
@@ -152,7 +152,7 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 text-xs text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://api.frankfurter.app"
+                    href="https://frankfurter.dev"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"
@@ -270,7 +270,7 @@ export const CurrencyManagement = () => {
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
                                   fetchWithTimeout(
-                                    `https://api.frankfurter.app/latest?from=USD`,
+                                    `https://frankfurter.dev/latest?from=USD`,
                                     {},
                                     5000,
                                   )

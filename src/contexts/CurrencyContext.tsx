@@ -151,7 +151,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Using Frankfurter open API logic for rates relative to USD
       const response = await fetchWithTimeout(
-        "https://api.frankfurter.app/latest?from=USD",
+        "https://frankfurter.dev/latest?from=USD",
         {},
         5000,
       );
