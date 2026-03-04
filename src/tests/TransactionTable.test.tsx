@@ -71,7 +71,9 @@ describe("TransactionTable", () => {
       </BrowserRouter>,
     );
 
-    const scheduleButtons = screen.getAllByLabelText("Go to Scheduled Transaction");
+    const scheduleButtons = screen.getAllByLabelText(
+      "Go to Scheduled Transaction",
+    );
     expect(scheduleButtons.length).toBeGreaterThan(0);
     expect(scheduleButtons[0].tagName).toBe("BUTTON");
   });
