@@ -152,7 +152,7 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 text-xs text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://api.frankfurter.app"
+                    href="https://frankfurter.dev"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"

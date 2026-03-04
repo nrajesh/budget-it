@@ -531,7 +531,7 @@ const Layout = () => {
             </Button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background p-4 sm:p-6">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background">
           <Outlet />
         </main>
         <Tooltip>

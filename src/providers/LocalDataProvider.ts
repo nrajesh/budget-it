@@ -606,79 +606,13 @@ export class LocalDataProvider implements DataProvider {
       ? await db.budgets.where("user_id").equals(userId).toArray()
       : await db.budgets.toArray();
 
-    const budgetsWithSpending: Budget[] = [];
-
-    // Fetch accounts to map Name -> Type for this user
-    // Optimization: Only fetch needed accounts/vendors
-    const allAccounts = userId
-      ? await db.accounts.where("user_id").equals(userId).toArray()
-      : await db.accounts.toArray();
-
-    const allVendors = userId
-      ? await db.vendors.where("user_id").equals(userId).toArray()
-      : await db.vendors.toArray();
-
-    // Create Map: AccountName -> Type
-    const accountTypeMap = new Map<string, string>();
-    allVendors
-      .filter((v) => v.is_account)
-      .forEach((v) => {
-        const acc = allAccounts.find((a) => a.id === v.account_id);
-        if (acc && v.name) {
-          accountTypeMap.set(
-            v.name.trim().toLowerCase(),
-            acc.type || "Checking",
-          );
-        }
-      });
-
-    for (const budget of budgets) {
-      const transactions = await db.transactions
-        .where("date")
-        .aboveOrEqual(budget.start_date)
-        .and((t) => {
-          if (budget.end_date && t.date > budget.end_date) return false;
-          if (t.category !== budget.category_name) return false;
-          if (
-            budget.sub_category_name &&
-            t.sub_category !== budget.sub_category_name
-          )
-            return false;
-          if (t.user_id !== userId && userId) return false; // Safety check
-
-          // Account Scope Logic
-          if (
-            budget.account_scope === "GROUP" &&
-            budget.account_scope_values &&
-            budget.account_scope_values.length > 0
-          ) {
-            const accountName = (t.account || "").trim().toLowerCase();
-            const accountType = accountTypeMap.get(accountName);
-
-            if (
-              !accountType ||
-              !budget.account_scope_values.includes(accountType)
-            ) {
-              return false;
-            }
-          }
-
-          return true;
-        })
-        .toArray();
-
-      const total = transactions.reduce((acc, t) => {
-        if (t.amount < 0) return acc + Math.abs(t.amount);
-        return acc;
-      }, 0);
-
-      budgetsWithSpending.push({
-        ...budget,
-        spent_amount: total,
-      });
-    }
-
-    return budgetsWithSpending;
+    // Workaround for WKWebView Mobile Freeze:
+    // We completely bypass recalculating the spent amount via Dexie async loops
+    // because standard UI components efficiently calculate spending directly via the `useTransactions` context.
+    return budgets.map((budget) => ({
+      ...budget,
+      spent_amount: 0,
+    }));
   }
 
   async addBudget(budget: Omit<Budget, "id" | "spent_amount">): Promise<void> {

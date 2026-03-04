@@ -170,7 +170,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const numSelected = selectedRows.length;
 
   return (
-    <div className="flex-1 space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+    <div className="page-container">
       <LoadingOverlay
         isLoading={isLoading || isImporting || isLoadingMutation}
         message={
@@ -181,7 +181,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
       />
       <div className="flex flex-col md:flex-row items-center justify-between space-y-2 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <div>
-          <h2 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
             {title}
           </h2>
           {subtitle && (
@@ -190,7 +190,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             </p>
           )}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
           {numSelected > 0 && (
             <Button
               variant="destructive"
@@ -283,7 +283,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
               }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
+              className="w-full sm:max-w-md"
             />
           </div>
         </CardHeader>

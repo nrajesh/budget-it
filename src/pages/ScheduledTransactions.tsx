@@ -267,18 +267,18 @@ const ScheduledTransactionsPage = () => {
   };
 
   return (
-    <div className="space-y-6 p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+    <div className="page-container">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <div className="flex flex-col md:flex-row items-center justify-between">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
               Scheduled Transactions
             </h1>
             <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
-              Manage recurring payments & subscriptions
+              Manage recurring payments and transfers
             </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <Button
               onClick={handleSmartSchedule}
               variant="outline"

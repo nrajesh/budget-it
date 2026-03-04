@@ -17,7 +17,7 @@ const Analytics = () => {
   }, [transactions]);
 
   return (
-    <div className="space-y-2 p-3 sm:p-6 min-h-[calc(100vh-100px)] transition-all duration-500 bg-background">
+    <div className="page-container space-y-2">
       <AnalyticsChartView transactions={currentTransactions} />
     </div>
   );

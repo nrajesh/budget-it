@@ -161,7 +161,7 @@ export const CurrencyConversionDialog: React.FC<
             <span className="text-xs text-muted-foreground mt-1 block">
               Rates sourced from{" "}
               <a
-                href="https://api.frankfurter.app"
+                href="https://frankfurter.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold underline hover:text-foreground"
