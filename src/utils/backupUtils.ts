@@ -1,5 +1,8 @@
 import { DataProvider } from "@/types/dataProvider";
 import { decryptData } from "./crypto";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
+import { showSuccess } from "./toast";
 
 /**
  * Save content to a file, using File System Access API if available,
@@ -11,6 +14,18 @@ export const saveFile = async (
   description: string,
 ): Promise<boolean> => {
   try {
+    // Native Mobile Save Route (Bypasses Blob URLs)
+    if (Capacitor.isNativePlatform()) {
+      await Filesystem.writeFile({
+        path: filename,
+        data: content,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+      });
+      showSuccess(`Saved to Documents: ${filename}`);
+      return true;
+    }
+
     // Try File System Access API first (Chrome/Edge/Desktop)
     // @ts-expect-error - showSaveFilePicker is not yet in all TS definitions
     if (window.showSaveFilePicker) {

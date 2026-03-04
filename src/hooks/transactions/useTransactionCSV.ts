@@ -13,6 +13,8 @@ import {
   sanitizeCSVField,
   CSVRow,
 } from "@/utils/csvUtils";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 
 export const useTransactionCSV = () => {
   const {
@@ -250,17 +252,34 @@ export const useTransactionCSV = () => {
     const csv = Papa.unparse(dataToExport, {
       delimiter: ";",
     });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
+
     const fileName = activeLedger
       ? `${activeLedger.name.replace(/\s+/g, "_")}_transactions_export.csv`
       : "transactions_export.csv";
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    if (Capacitor.isNativePlatform()) {
+      Filesystem.writeFile({
+        path: fileName,
+        data: csv,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+      })
+        .then((result) => {
+          showSuccess(`Exported to Documents folder: ${result.uri}`);
+        })
+        .catch((err) => {
+          showError(`Native export failed: ${err.message}`);
+        });
+    } else {
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }, [transactions, activeLedger]);
 
   return {
