@@ -426,7 +426,7 @@ const Transactions = () => {
   );
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black overflow-x-hidden">
+    <div className="page-container">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
         <TransactionPageHeader
           onImportClick={handleImportClick}

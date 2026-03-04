@@ -195,4 +195,9 @@
   [data-dashboard-style="financial-pulse"] .bg-budget-bar {
     background-color: #4f46e5;
   }
+
+  /* Centralized container dimensions based on Analytics base */
+  .page-container {
+    @apply space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-background overflow-x-hidden;
+  }
 }

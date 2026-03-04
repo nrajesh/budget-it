@@ -170,7 +170,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const numSelected = selectedRows.length;
 
   return (
-    <div className="flex-1 space-y-6 p-4 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black overflow-x-hidden">
+    <div className="page-container">
       <LoadingOverlay
         isLoading={isLoading || isImporting || isLoadingMutation}
         message={
