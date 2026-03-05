@@ -23,6 +23,9 @@ import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 import { MissingCurrencyDialog } from "@/components/dialogs/MissingCurrencyDialog";
+import { useAutoCategorize } from "@/hooks/useAutoCategorize";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Transactions = () => {
   //   const session = useSession();
@@ -41,8 +44,11 @@ const Transactions = () => {
     linkTransactions,
     accountCurrencyMap,
     cleanUpDuplicates,
+    updateTransaction,
+    setOperationProgress,
   } = useTransactions();
   const { activeLedger } = useLedger();
+  const { autoCategorizeBulk, getHistoricalMapping } = useAutoCategorize();
 
   const {
     selectedAccounts,
@@ -142,6 +148,8 @@ const Transactions = () => {
 
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+
+  const [isBulkCategorizing, setIsBulkCategorizing] = useState(false);
 
   const { toast } = useToast();
 
@@ -389,6 +397,147 @@ const Transactions = () => {
     }
   };
 
+  const handleBulkCategorize = async () => {
+    // 1. Get all uncategorized or missing categories transactions
+    const uncategorizedItems = allTransactions.filter(
+      (t) =>
+        !t.category ||
+        t.category.toLowerCase() === "uncategorized" ||
+        t.category.trim() === "",
+    );
+
+    // 2. Get unique vendors
+    const allUniqueVendors = Array.from(
+      new Set(uncategorizedItems.map((t) => t.vendor?.trim()).filter(Boolean)),
+    );
+
+    if (allUniqueVendors.length === 0) {
+      toast({
+        title: "Nothing to categorize",
+        description: "No uncategorized vendors found.",
+      });
+      return;
+    }
+
+    // 3. Try to resolve vendors locally first using historical data
+    const localMappings: Record<string, any> = {};
+    const unknownVendors: string[] = [];
+
+    // Sort transactions by date descending so we find the most recent category mapping
+    const sortedHistory = [...allTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+
+    for (const vendor of allUniqueVendors) {
+      if (!vendor) continue;
+      const cached = getHistoricalMapping(vendor, sortedHistory);
+      if (cached) {
+        localMappings[vendor] = cached;
+      } else {
+        unknownVendors.push(vendor);
+      }
+    }
+
+    let aiMappings: Record<string, any> = {};
+
+    // Only call AI if there are strictly unknown vendors left
+    if (unknownVendors.length > 0) {
+      setIsBulkCategorizing(true);
+      setOperationProgress({
+        title: "Auto-Categorizing",
+        description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""})...`,
+        stage: "Calling AI",
+        progress: 50,
+        totalStages: 100,
+      });
+
+      try {
+        aiMappings = await autoCategorizeBulk(
+          unknownVendors,
+          categories,
+          subCategories,
+        );
+      } catch (e) {
+        // If AI fails but we have some local mappings, we can proceed with just the local matches.
+        // Otherwise, throw the error as usual.
+        if (Object.keys(localMappings).length === 0) {
+          throw e;
+        }
+      }
+    } else {
+      setIsBulkCategorizing(true);
+      setOperationProgress({
+        title: "Auto-Categorizing locally",
+        description: `Matched ${allUniqueVendors.length} vendors from your history!`,
+        stage: "Applying updates",
+        progress: 90,
+        totalStages: 100,
+      });
+    }
+
+    try {
+      const combinedMappings = { ...localMappings, ...aiMappings };
+
+      const updates = [];
+      for (const t of uncategorizedItems) {
+        if (!t.vendor) continue;
+        const vendorKey = Object.keys(combinedMappings).find(
+          (k) => k.toLowerCase() === t.vendor.toLowerCase(),
+        );
+        const suggestion = vendorKey ? combinedMappings[vendorKey] : null;
+
+        if (suggestion && suggestion.categoryName) {
+          updates.push({
+            ...t,
+            category: suggestion.categoryName,
+            sub_category: suggestion.subCategoryName || t.sub_category,
+          });
+        }
+      }
+
+      if (updates.length > 0) {
+        for (let i = 0; i < updates.length; i++) {
+          await updateTransaction(updates[i]);
+        }
+        toast({
+          title: "Bulk Categorization",
+          description: `Categorized ${updates.length} transactions successfully.`,
+        });
+        invalidateAllData();
+      } else {
+        toast({
+          title: "No changes",
+          description:
+            "The AI could not confidently categorize any items or no valid mappings were returned.",
+        });
+      }
+    } catch (e) {
+      const errorMessage = (e as Error).message;
+      toast({
+        title: "Categorization Failed",
+        description: (
+          <div className="flex flex-col gap-2">
+            <span>{errorMessage}</span>
+            {errorMessage.includes("API Key is not configured") && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
+                <Link to="/settings">Go to AI Settings</Link>
+              </Button>
+            )}
+          </div>
+        ),
+        variant: "destructive",
+      });
+    } finally {
+      setOperationProgress(null);
+      setIsBulkCategorizing(false);
+    }
+  };
+
   const handleUnlinkTransaction = React.useCallback(
     async (transferId: string) => {
       console.log("handleUnlinkTransaction called with:", transferId);
@@ -437,6 +586,8 @@ const Transactions = () => {
             setIsDialogOpen(true);
           }}
           onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
+          onBulkCategorize={handleBulkCategorize}
+          isBulkCategorizeEnabled={!isBulkCategorizing}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
         />

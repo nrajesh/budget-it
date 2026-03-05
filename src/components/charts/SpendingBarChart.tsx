@@ -143,13 +143,22 @@ export function SpendingBarChart({
   );
 
   const { meanValue, maxValue, avgLabel } = useMemo(() => {
-    const nonZero = barData.filter((d) => d.amount > 0);
-    if (nonZero.length === 0)
-      return { meanValue: 0, maxValue: 0, avgLabel: "" };
+    let total = 0;
+    let max = 0;
+    let count = 0;
 
-    const total = nonZero.reduce((sum, d) => sum + d.amount, 0);
-    const mean = total / nonZero.length;
-    const max = Math.max(...nonZero.map((d) => d.amount));
+    for (let i = 0; i < barData.length; i++) {
+      const amount = barData[i].amount;
+      if (amount > 0) {
+        total += amount;
+        if (amount > max) max = amount;
+        count++;
+      }
+    }
+
+    if (count === 0) return { meanValue: 0, maxValue: 0, avgLabel: "" };
+
+    const mean = total / count;
 
     // Determine label for the avg
     let periodUnit = "per period";
@@ -164,10 +173,7 @@ export function SpendingBarChart({
     };
   }, [barData, period, formatCurrency]);
 
-  const yMax = useMemo(
-    () => Math.max(...barData.map((d) => d.amount), maxValue, 1) * 1.15,
-    [barData, maxValue],
-  );
+  const yMax = useMemo(() => Math.max(maxValue, 1) * 1.15, [maxValue]);
 
   if (barData.every((d) => d.amount === 0)) {
     return (

@@ -110,6 +110,7 @@ function App() {
                           </Route>
                         </Routes>
                       </Suspense>
+                      <ShadcnToaster />
                     </Router>
                     <ContinuitySyncManager />
                   </TransactionsProvider>
@@ -120,7 +121,6 @@ function App() {
         </ThemeProvider>
       </DataProviderProvider>
       <Toaster />
-      <ShadcnToaster />
       <VercelAnalytics />
       <SpeedInsights />
     </QueryClientProvider>

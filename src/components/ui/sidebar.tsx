@@ -250,9 +250,11 @@ const Sidebar = React.forwardRef<
             "duration-200 relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
+            collapsible === "offcanvas"
+              ? "w-0"
+              : variant === "floating" || variant === "inset"
+                ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+                : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
             // Fix: Enforce collapsed width when state is collapsed, preventing shift on hover
             state === "collapsed" &&
               (variant === "floating" || variant === "inset"

@@ -9,6 +9,8 @@ interface TransactionPageHeaderProps {
   onDetectTransfers: () => void;
   onAddTransaction: () => void;
   onCleanUpDuplicates: () => void;
+  onBulkCategorize?: () => void;
+  isBulkCategorizeEnabled?: boolean;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -19,6 +21,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
   onDetectTransfers,
   onAddTransaction,
   onCleanUpDuplicates,
+  onBulkCategorize,
+  isBulkCategorizeEnabled,
   fileInputRef,
   onFileChange,
 }) => {
@@ -72,6 +76,17 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           <Sparkles className="mr-2 h-4 w-4" />
           Cleanup Duplicates
         </Button>
+        {onBulkCategorize && (
+          <Button
+            variant="outline"
+            onClick={onBulkCategorize}
+            disabled={!isBulkCategorizeEnabled}
+            className="flex-1 sm:flex-none text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
+          >
+            <Sparkles className="mr-2 h-4 w-4" />
+            Categorize Missing
+          </Button>
+        )}
         <Button
           onClick={onAddTransaction}
           className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white"

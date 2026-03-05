@@ -44,6 +44,7 @@
 | 📈 **Analytics** | Visual breakdowns of income, expenses, and savings trends. |
 | 🫀 **Financial Pulse** | Premium dashboard for high-level financial health monitoring. |
 | 💬 **Smart Search** | Natural language filtering for transactions, categories, and dates. |
+| 🤖 **Optional AI** | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, or Perplexity. |
 | 💾 **Backup & Restore** | Encrypted or plain JSON backups — import instantly without page reloads. |
 | ⏰ **Auto-Backup** | Scheduled backups via File System Access API (web) or direct filesystem (Electron). |
 
@@ -290,7 +291,7 @@ Since the app is fully client-side, it works on any static host: **Vercel**, **N
 
 ## 🛡️ Privacy Note
 
-> This application runs entirely in your browser (or local Electron instance). **No data is ever sent to a server.** Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
+> This application runs entirely in your browser (or local Electron instance). **No data is ever sent to a server** unless you explicitly configure and trigger the completely optional AI auto-categorization feature using your own API key. Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
 
 ---
 

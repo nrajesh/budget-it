@@ -80,7 +80,12 @@ export function Combobox({
                 // Give time for item selection to register
                 setTimeout(() => {
                   setOpen(false);
-                  if (selectedOption) {
+                  if (inputValue.trim() === "") {
+                    if (value !== "") {
+                      onChange("");
+                    }
+                    setInputValue("");
+                  } else if (selectedOption) {
                     setInputValue(selectedOption.label);
                   } else if (value) {
                     setInputValue(value);

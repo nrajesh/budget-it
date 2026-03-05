@@ -22,6 +22,11 @@ import { useTransactions } from "@/contexts/TransactionsContext";
 import { Combobox } from "@/components/ui/combobox";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Loader2 } from "lucide-react";
+import { useAIConfig } from "@/hooks/useAIConfig";
+import { useAutoCategorize } from "@/hooks/useAutoCategorize";
+import { showError, showSuccess } from "@/utils/toast";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -60,13 +65,17 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     isLoadingVendors,
     isLoadingCategories,
     allSubCategories,
+    subCategories,
     accountCurrencyMap,
+    transactions: allTransactions,
   } = useTransactions();
   const { currencySymbols, formatCurrency } = useCurrency();
 
   const [recurrenceDialogOpen, setRecurrenceDialogOpen] = React.useState(false);
   const [pendingValues, setPendingValues] =
     React.useState<AddEditTransactionFormValues | null>(null);
+
+  const { toast } = useToast();
 
   // Use the custom hook for form logic
   const {
@@ -85,6 +94,97 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   const vendorValue = form.watch("vendor");
   const recurrenceFrequency = form.watch("recurrenceFrequency");
 
+  const { config } = useAIConfig();
+  const { autoCategorize, getHistoricalMapping } = useAutoCategorize();
+  const [isAiLoading, setIsAiLoading] = React.useState(false);
+
+  const handleAutoCategorize = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!vendorValue) return;
+
+    // 1. Try resolving locally first to save tokens
+    const sortedHistory = [...allTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+    const cached = getHistoricalMapping(vendorValue, sortedHistory);
+
+    if (cached) {
+      let updated = false;
+      if (cached.categoryName) {
+        form.setValue("category", cached.categoryName, {
+          shouldValidate: true,
+        });
+        updated = true;
+      }
+      if (cached.subCategoryName) {
+        form.setValue("sub_category", cached.subCategoryName, {
+          shouldValidate: true,
+        });
+        updated = true;
+      }
+
+      if (updated) {
+        showSuccess(`Categorized as ${cached.categoryName} from your history!`);
+        return; // Break early so we don't hit the AI
+      }
+    }
+
+    // 2. Fallback to pinging the AI if not found locally
+    setIsAiLoading(true);
+    try {
+      const result = await autoCategorize(
+        vendorValue,
+        allCategories,
+        subCategories,
+      );
+
+      let updated = false;
+      if (result.categoryName) {
+        form.setValue("category", result.categoryName, {
+          shouldValidate: true,
+        });
+        updated = true;
+      }
+      if (result.subCategoryName) {
+        form.setValue("sub_category", result.subCategoryName, {
+          shouldValidate: true,
+        });
+        updated = true;
+      }
+
+      if (updated) {
+        showSuccess("Categorized magically! ✨");
+      } else {
+        showError("AI couldn't map to a category.");
+      }
+    } catch (error: unknown) {
+      const errorMessage = (error as Error).message || "Auto-categorize failed";
+      toast({
+        title: "Categorization Failed",
+        description: (
+          <div className="flex flex-col gap-2">
+            <span>{errorMessage}</span>
+            {errorMessage.includes("configured") && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
+                <Link to="/settings" onClick={() => onOpenChange(false)}>
+                  Go to AI Settings
+                </Link>
+              </Button>
+            )}
+          </div>
+        ),
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const handleTransactionSave = async (
     values: AddEditTransactionFormValues,
     updateFuture: boolean = false,
@@ -99,7 +199,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       date: values.date,
       account: values.account,
       vendor: values.vendor,
-      category: values.category,
+      category: values.category || "",
       sub_category: values.sub_category,
       amount: finalAmount,
       remarks: values.remarks,
@@ -123,7 +223,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
             ...originalSchedule,
             account: values.account,
             vendor: values.vendor,
-            category: values.category,
+            category: values.category || "",
             sub_category: values.sub_category || null,
             amount: values.amount,
             remarks: values.remarks || null,
@@ -274,7 +374,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     <FormItem>
                       <FormLabel>Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" className="text-sm" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -314,6 +414,27 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                         searchPlaceholder="Search..."
                         emptyPlaceholder="No results found."
                       />
+                      {!isTransfer &&
+                        field.value &&
+                        config.provider !== "NONE" && (
+                          <div className="flex justify-end mt-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs px-2 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={handleAutoCategorize}
+                              disabled={isAiLoading}
+                            >
+                              {isAiLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                "✨ "
+                              )}
+                              Auto-Categorize
+                            </Button>
+                          </div>
+                        )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -326,7 +447,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                       <FormLabel>Category</FormLabel>
                       <Combobox
                         options={categoryOptions}
-                        value={field.value}
+                        value={field.value || ""}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
                         placeholder="Select a category..."
