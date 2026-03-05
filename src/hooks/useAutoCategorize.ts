@@ -10,7 +10,10 @@ export interface CategorizeResult {
 /**
  * Builds a robust Gemini API URL, handling various user misconfigurations.
  */
-export const buildGeminiUrl = (provider: AIProvider, apiKey: string): string => {
+export const buildGeminiUrl = (
+  provider: AIProvider,
+  apiKey: string,
+): string => {
   const baseUrl = provider.baseUrl.replace(/\/$/, "");
 
   // If the user already provided a full URL with a query string, just append the key
@@ -158,12 +161,14 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model || (provider.type === "OPENAI" ? "gpt-4o" : undefined),
+              model:
+                provider.model ||
+                (provider.type === "OPENAI" ? "gpt-4o" : undefined),
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format:
                 provider.type === "OPENAI" ||
-                  provider.baseUrl.includes("openai")
+                provider.baseUrl.includes("openai")
                   ? { type: "json_object" }
                   : undefined,
             }),
@@ -193,7 +198,9 @@ export const useAutoCategorize = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`);
+          throw new Error(
+            `Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`,
+          );
         }
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;
@@ -309,12 +316,14 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model || (provider.type === "OPENAI" ? "gpt-4o" : undefined),
+              model:
+                provider.model ||
+                (provider.type === "OPENAI" ? "gpt-4o" : undefined),
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format:
                 provider.type === "OPENAI" ||
-                  provider.baseUrl.includes("openai")
+                provider.baseUrl.includes("openai")
                   ? { type: "json_object" }
                   : undefined,
             }),
@@ -344,7 +353,9 @@ export const useAutoCategorize = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`);
+          throw new Error(
+            `Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`,
+          );
         }
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;

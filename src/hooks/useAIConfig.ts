@@ -19,8 +19,7 @@ export const useAIConfig = () => {
     setIsLoading(true);
     try {
       const providers = await dataProvider.getAIProviders();
-      const activeProvider =
-        providers.find((p) => p.isDefault) || null;
+      const activeProvider = providers.find((p) => p.isDefault) || null;
 
       let apiKey = "";
       if (activeProvider) {

@@ -124,10 +124,13 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
 
   const handleTestConnection = async () => {
     const values = form.getValues();
-    const apiKey = localStorage.getItem(`budgetit_ai_apiKey_${provider?.id}`) || "";
+    const apiKey =
+      localStorage.getItem(`budgetit_ai_apiKey_${provider?.id}`) || "";
 
     if (!apiKey) {
-      showError("Please save the provider and set an API key in Settings first to test.");
+      showError(
+        "Please save the provider and set an API key in Settings first to test.",
+      );
       return;
     }
 
@@ -135,7 +138,10 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
     try {
       let url = values.baseUrl;
       if (values.type === "GEMINI") {
-        url = buildGeminiUrl({ ...values, id: provider?.id || "temp" } as AIProvider, apiKey);
+        url = buildGeminiUrl(
+          { ...values, id: provider?.id || "temp" } as AIProvider,
+          apiKey,
+        );
       } else if (values.type === "OPENAI" || values.type === "CUSTOM") {
         url = `${values.baseUrl.replace(/\/$/, "")}/chat/completions`;
       }
@@ -144,26 +150,43 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(values.type !== "GEMINI" ? { Authorization: `Bearer ${apiKey}` } : {}),
+          ...(values.type !== "GEMINI"
+            ? { Authorization: `Bearer ${apiKey}` }
+            : {}),
         },
         body: JSON.stringify(
           values.type === "GEMINI"
-            ? { contents: [{ parts: [{ text: "Say 'Success' if you can read this." }] }] }
+            ? {
+                contents: [
+                  { parts: [{ text: "Say 'Success' if you can read this." }] },
+                ],
+              }
             : {
-              model: values.model || (values.type === "OPENAI" ? "gpt-4o" : undefined),
-              messages: [{ role: "user", content: "Say 'Success' if you can read this." }],
-            }
+                model:
+                  values.model ||
+                  (values.type === "OPENAI" ? "gpt-4o" : undefined),
+                messages: [
+                  {
+                    role: "user",
+                    content: "Say 'Success' if you can read this.",
+                  },
+                ],
+              },
         ),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`${response.status} ${response.statusText}${errorData.error?.message ? `: ${errorData.error.message}` : ""}`);
+        throw new Error(
+          `${response.status} ${response.statusText}${errorData.error?.message ? `: ${errorData.error.message}` : ""}`,
+        );
       }
 
       showSuccess("Connection test successful!");
     } catch (error: unknown) {
-      showError(`Connection failed: ${error instanceof Error ? error.message : String(error)}`);
+      showError(
+        `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       setIsTesting(false);
     }
@@ -231,14 +254,20 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={field.value}
                       onChange={(e) => {
-                        const newType = e.target.value as keyof typeof PROVIDER_DOCS;
+                        const newType = e.target
+                          .value as keyof typeof PROVIDER_DOCS;
                         field.onChange(newType);
 
                         // Auto-fill endpoint if current is empty or matches another provider's default
                         const currentUrl = form.getValues("baseUrl");
-                        const isDefaultUrl = Object.values(PROVIDER_DOCS).some(d => d.endpoint === currentUrl);
+                        const isDefaultUrl = Object.values(PROVIDER_DOCS).some(
+                          (d) => d.endpoint === currentUrl,
+                        );
                         if (!currentUrl || isDefaultUrl) {
-                          form.setValue("baseUrl", PROVIDER_DOCS[newType].endpoint);
+                          form.setValue(
+                            "baseUrl",
+                            PROVIDER_DOCS[newType].endpoint,
+                          );
                         }
                       }}
                     >
@@ -249,9 +278,14 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                       <option value="PERPLEXITY">Perplexity</option>
                       <option value="CUSTOM">Custom (OpenAI Compatible)</option>
                     </select>
-                    {PROVIDER_DOCS[field.value as keyof typeof PROVIDER_DOCS]?.url && (
+                    {PROVIDER_DOCS[field.value as keyof typeof PROVIDER_DOCS]
+                      ?.url && (
                       <a
-                        href={PROVIDER_DOCS[field.value as keyof typeof PROVIDER_DOCS].url}
+                        href={
+                          PROVIDER_DOCS[
+                            field.value as keyof typeof PROVIDER_DOCS
+                          ].url
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[10px] text-indigo-500 hover:underline inline-block mt-1"

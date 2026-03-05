@@ -204,12 +204,8 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         description: (
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
-              <span className="font-semibold text-sm">
-                {errorMessage}
-              </span>
-              <span className="text-xs opacity-90 italic">
-                {errorHint}
-              </span>
+              <span className="font-semibold text-sm">{errorMessage}</span>
+              <span className="text-xs opacity-90 italic">{errorHint}</span>
             </div>
             {(isApiKeyIssue || errorMessage.length > 0) && (
               <Button

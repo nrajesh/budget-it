@@ -289,11 +289,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 
@@ -467,8 +467,9 @@ const Transactions = () => {
         setIsBulkCategorizing(true);
         setOperationProgress({
           title: "Auto-Categorizing",
-          description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""
-            })...`,
+          description: `Categorizing ${allUniqueVendors.length} unique vendors (${
+            Object.keys(localMappings).length ? "Some locally matched" : ""
+          })...`,
           stage: "Calling AI",
           progress: 50,
           totalStages: 100,
@@ -557,12 +558,8 @@ const Transactions = () => {
         description: (
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
-              <span className="font-semibold text-sm">
-                {errorStr}
-              </span>
-              <span className="text-xs opacity-90 italic">
-                {errorHint}
-              </span>
+              <span className="font-semibold text-sm">{errorStr}</span>
+              <span className="text-xs opacity-90 italic">{errorHint}</span>
             </div>
             {(isApiKeyIssue || errorStr.length > 0) && (
               <Button
