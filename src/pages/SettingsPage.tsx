@@ -24,7 +24,7 @@ import { useSyncConfig } from "@/hooks/useSyncConfig";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, FolderOpen, ShieldAlert, BrainCircuit } from "lucide-react";
+import { Info, FolderOpen, ShieldAlert, Brain } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useDataProvider } from "@/context/DataProviderContext";
@@ -216,7 +216,7 @@ const SettingsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <ThemedCardTitle className="flex items-center gap-2">
-                  <BrainCircuit className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  <Brain className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   AI Integrations (BYOK)
                 </ThemedCardTitle>
                 <ThemedCardDescription>
@@ -231,7 +231,7 @@ const SettingsPage = () => {
                 className="hidden sm:flex border-indigo-200 dark:border-indigo-800"
               >
                 <Link to="/ai-providers" className="flex items-center gap-2">
-                  <BrainCircuit className="h-4 w-4" />
+                  <Brain className="h-4 w-4" />
                   Manage Providers
                 </Link>
               </Button>
@@ -252,7 +252,7 @@ const SettingsPage = () => {
                     <SelectItem value="NONE">None (Disabled)</SelectItem>
                     {providers.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.model})
+                        {p.name} ({p.model || "None"})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -361,7 +361,7 @@ const SettingsPage = () => {
                         <span className="opacity-60 uppercase font-bold">
                           Model
                         </span>
-                        <span>{aiConfig.provider.model}</span>
+                        <span>{aiConfig.provider.model || "(None)"}</span>
                         <span className="opacity-60 uppercase font-bold">
                           Endpoint
                         </span>
@@ -439,11 +439,11 @@ const SettingsPage = () => {
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? (syncConfig.config
-                                .syncDirectoryHandle as unknown as string)
+                              .syncDirectoryHandle as unknown as string)
                             : (
-                                syncConfig.config
-                                  .syncDirectoryHandle as FileSystemDirectoryHandle
-                              ).name
+                              syncConfig.config
+                                .syncDirectoryHandle as FileSystemDirectoryHandle
+                            ).name
                           : "Select Folder"}
                       </span>
                     </Button>

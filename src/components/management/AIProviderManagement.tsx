@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import EntityManagementPage from "./EntityManagementPage";
 import { ColumnDefinition } from "./EntityTable";
 import { AIProvider } from "@/types/dataProvider";
@@ -43,6 +44,11 @@ const AIProviderManagement = () => {
     {
       header: "Model",
       accessor: "model",
+      cellRenderer: (item) => (
+        <span className={!item.model ? "text-muted-foreground italic" : ""}>
+          {item.model || "(None)"}
+        </span>
+      ),
     },
     {
       header: "Endpoint",
@@ -58,7 +64,17 @@ const AIProviderManagement = () => {
   return (
     <EntityManagementPage<AIProvider>
       title="AI Providers"
-      subtitle="Manage your AI model endpoints and configurations"
+      subtitle={
+        <div className="flex flex-col gap-1">
+          <span>Manage your AI model endpoints and configurations.</span>
+          <Link
+            to="/settings"
+            className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
+          >
+            Go to Settings to manage API keys →
+          </Link>
+        </div>
+      }
       entityName="AI Provider"
       entityNamePlural="AI providers"
       data={managementProps.providers}
