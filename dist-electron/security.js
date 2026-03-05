@@ -43,7 +43,7 @@ function loadAuthorizedFolders(configPath) {
         if (!fs.existsSync(configPath)) {
             return new Set();
         }
-        const data = fs.readFileSync(configPath, 'utf-8');
+        const data = fs.readFileSync(configPath, "utf-8");
         const config = JSON.parse(data);
         if (Array.isArray(config.authorizedFolders)) {
             return new Set(config.authorizedFolders.map((f) => path.normalize(f)));
@@ -58,14 +58,14 @@ function loadAuthorizedFolders(configPath) {
 function saveAuthorizedFolders(configPath, folders) {
     try {
         const config = {
-            authorizedFolders: Array.from(folders).map(f => path.normalize(f))
+            authorizedFolders: Array.from(folders).map((f) => path.normalize(f)),
         };
         // Ensure directory exists
         const dir = path.dirname(configPath);
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
     }
     catch (error) {
         console.error("Failed to save backup config:", error);

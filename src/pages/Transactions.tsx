@@ -23,6 +23,9 @@ import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 import { MissingCurrencyDialog } from "@/components/dialogs/MissingCurrencyDialog";
+import { useAutoCategorize } from "@/hooks/useAutoCategorize";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Transactions = () => {
   //   const session = useSession();
@@ -41,8 +44,11 @@ const Transactions = () => {
     linkTransactions,
     accountCurrencyMap,
     cleanUpDuplicates,
+    updateTransaction,
+    setOperationProgress,
   } = useTransactions();
   const { activeLedger } = useLedger();
+  const { autoCategorizeBulk } = useAutoCategorize();
 
   const {
     selectedAccounts,
@@ -142,6 +148,8 @@ const Transactions = () => {
 
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+
+  const [isBulkCategorizing, setIsBulkCategorizing] = useState(false);
 
   const { toast } = useToast();
 
@@ -279,11 +287,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-              ...i,
-              ...full,
-              transfer_id: full.transfer_id || undefined,
-              recurrence_id: full.recurrence_id || undefined,
-            }
+            ...i,
+            ...full,
+            transfer_id: full.transfer_id || undefined,
+            recurrence_id: full.recurrence_id || undefined,
+          }
           : i;
       });
 
@@ -389,6 +397,103 @@ const Transactions = () => {
     }
   };
 
+  const handleBulkCategorize = async () => {
+    // 1. Get all uncategorized or missing categories transactions
+    const uncategorizedItems = allTransactions.filter(
+      (t) => !t.category || t.category.toLowerCase() === "uncategorized" || t.category.trim() === "",
+    );
+
+    // 2. Get unique vendors
+    const uniqueVendors = Array.from(
+      new Set(
+        uncategorizedItems
+          .map((t) => t.vendor?.trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (uniqueVendors.length === 0) {
+      toast({
+        title: "Nothing to categorize",
+        description: "No uncategorized vendors found.",
+      });
+      return;
+    }
+
+    // 3. Batch Categorize
+    setIsBulkCategorizing(true);
+    setOperationProgress({
+      title: "Auto-Categorizing",
+      description: `Categorizing ${uniqueVendors.length} unique vendors...`,
+      stage: "Calling AI",
+      progress: 50,
+      totalStages: 100,
+    });
+
+    try {
+      const resultMap = await autoCategorizeBulk(
+        uniqueVendors,
+        categories,
+        subCategories,
+      );
+
+      // 4. Create update payloads
+      const updates = [];
+      for (const t of uncategorizedItems) {
+        if (!t.vendor) continue;
+        const vendorKey = Object.keys(resultMap).find(
+          (k) => k.toLowerCase() === t.vendor.toLowerCase(),
+        );
+        const suggestion = vendorKey ? resultMap[vendorKey] : null;
+
+        if (suggestion && suggestion.categoryName) {
+          updates.push({
+            ...t,
+            category: suggestion.categoryName,
+            sub_category: suggestion.subCategoryName || t.sub_category,
+          });
+        }
+      }
+
+      if (updates.length > 0) {
+        for (let i = 0; i < updates.length; i++) {
+          await updateTransaction(updates[i]);
+        }
+        toast({
+          title: "Bulk Categorization",
+          description: `Categorized ${updates.length} transactions successfully.`,
+        });
+        invalidateAllData();
+      } else {
+        toast({
+          title: "No changes",
+          description:
+            "The AI could not confidently categorize any items or no valid mappings were returned.",
+        });
+      }
+    } catch (e) {
+      const errorMessage = (e as Error).message;
+      toast({
+        title: "Categorization Failed",
+        description: (
+          <div className="flex flex-col gap-2">
+            <span>{errorMessage}</span>
+            {errorMessage.includes("API Key is not configured") && (
+              <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+                <Link to="/settings">Go to AI Settings</Link>
+              </Button>
+            )}
+          </div>
+        ),
+        variant: "destructive",
+      });
+    } finally {
+      setOperationProgress(null);
+      setIsBulkCategorizing(false);
+    }
+  };
+
+
   const handleUnlinkTransaction = React.useCallback(
     async (transferId: string) => {
       console.log("handleUnlinkTransaction called with:", transferId);
@@ -437,6 +542,8 @@ const Transactions = () => {
             setIsDialogOpen(true);
           }}
           onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
+          onBulkCategorize={handleBulkCategorize}
+          isBulkCategorizeEnabled={!isBulkCategorizing}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
         />

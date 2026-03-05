@@ -54,7 +54,7 @@ function createWindow() {
         width: 1200,
         height: 800,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, "preload.js"),
             nodeIntegration: false,
             contextIsolation: true,
             backgroundThrottling: false,
@@ -65,9 +65,9 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     }
     else {
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
     }
-    mainWindow.on('close', (event) => {
+    mainWindow.on("close", (event) => {
         if (!isQuitting) {
             event.preventDefault();
             mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.hide();
@@ -75,17 +75,17 @@ function createWindow() {
         }
     });
 }
-electron_1.app.on('before-quit', () => {
+electron_1.app.on("before-quit", () => {
     isQuitting = true;
 });
 electron_1.app.whenReady().then(() => {
     createWindow();
     // Initialize authorized folders from config
-    const backupConfigPath = path.join(electron_1.app.getPath('userData'), 'backup-config.json');
+    const backupConfigPath = path.join(electron_1.app.getPath("userData"), "backup-config.json");
     authorizedBackupFolders = Security.loadAuthorizedFolders(backupConfigPath);
-    electron_1.ipcMain.handle('select-folder', () => __awaiter(void 0, void 0, void 0, function* () {
+    electron_1.ipcMain.handle("select-folder", () => __awaiter(void 0, void 0, void 0, function* () {
         const result = yield electron_1.dialog.showOpenDialog(mainWindow, {
-            properties: ['openDirectory', 'createDirectory'],
+            properties: ["openDirectory", "createDirectory"],
         });
         if (result.canceled)
             return null;
@@ -95,15 +95,19 @@ electron_1.app.whenReady().then(() => {
         Security.saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
         return selectedPath;
     }));
-    electron_1.ipcMain.handle('write-backup-file', (_event, folder, filename, content) => __awaiter(void 0, void 0, void 0, function* () {
+    electron_1.ipcMain.handle("write-backup-file", (_event, folder, filename, content) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             // SECURITY: Prevent path traversal
-            if (path.basename(filename) !== filename || filename === '..' || filename === '.') {
+            if (path.basename(filename) !== filename ||
+                filename === ".." ||
+                filename === ".") {
                 console.error("Security alert: Attempted path traversal in filename", filename);
                 throw new Error("Invalid filename: Path traversal detected");
             }
             // SECURITY: Enforce file extension to prevent arbitrary file write
-            if (!filename.endsWith('.json') && !filename.endsWith('.lock') && !filename.endsWith('.csv')) {
+            if (!filename.endsWith(".json") &&
+                !filename.endsWith(".lock") &&
+                !filename.endsWith(".csv")) {
                 console.error("Security alert: Invalid file extension", filename);
                 throw new Error("Invalid filename: Only .json, .csv, and .lock files are allowed");
             }
@@ -118,15 +122,16 @@ electron_1.app.whenReady().then(() => {
                 fs.mkdirSync(folder, { recursive: true });
             }
             const filePath = path.join(folder, filename);
-            yield fs.promises.writeFile(filePath, content, 'utf-8');
+            yield fs.promises.writeFile(filePath, content, "utf-8");
             return { success: true };
         }
         catch (error) {
             console.error("Backup write failed:", error);
-            return { success: false, error: error.message };
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { success: false, error: errorMessage };
         }
     }));
-    electron_1.app.on('activate', () => {
+    electron_1.app.on("activate", () => {
         if (electron_1.BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
@@ -135,7 +140,7 @@ electron_1.app.whenReady().then(() => {
         }
     });
 });
-electron_1.app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin')
+electron_1.app.on("window-all-closed", () => {
+    if (process.platform !== "darwin")
         electron_1.app.quit();
 });

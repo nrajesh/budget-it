@@ -23,6 +23,7 @@ import { showSuccess } from "@/utils/toast";
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useSyncConfig } from "@/hooks/useSyncConfig";
+import { useAIConfig, AIProvider } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, FolderOpen, ShieldAlert } from "lucide-react";
@@ -33,6 +34,7 @@ const SettingsPage = () => {
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const { activeLedger, updateLedgerDetails } = useLedger();
   const syncConfig = useSyncConfig();
+  const { config: aiConfig, saveConfig: saveAiConfig } = useAIConfig();
 
   const [isManageLedgerOpen, setIsManageLedgerOpen] = React.useState(false);
   const [isCreateLedgerOpen, setIsCreateLedgerOpen] = React.useState(false);
@@ -190,6 +192,94 @@ const SettingsPage = () => {
                 className="w-[100px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
               />
               <span className="text-sm text-muted-foreground">months</span>
+            </div>
+          </ThemedCardContent>
+        </ThemedCard>
+
+        {/* AI Integrations Settings Card */}
+        <ThemedCard className="md:col-span-2 lg:col-span-3">
+          <ThemedCardHeader>
+            <ThemedCardTitle>AI Integrations (BYOK)</ThemedCardTitle>
+            <ThemedCardDescription>
+              Bring your own API key to enable smart Auto-Categorization. Keys
+              are stored safely and locally on your device.
+            </ThemedCardDescription>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <div className="space-y-4 max-w-xl">
+              <div className="space-y-2">
+                <Label>AI Provider</Label>
+                <Select
+                  value={aiConfig.provider}
+                  onValueChange={(value) => {
+                    saveAiConfig(value as AIProvider, aiConfig.apiKey);
+                    if (value !== "NONE")
+                      showSuccess(`AI Provider set to ${value}.`);
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-[250px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                    <SelectValue placeholder="Select an AI Provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">None (Disabled)</SelectItem>
+                    <SelectItem value="OPENAI">OpenAI (ChatGPT)</SelectItem>
+                    <SelectItem value="GEMINI">Google Gemini</SelectItem>
+                    <SelectItem value="PERPLEXITY">Perplexity AI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {aiConfig.provider !== "NONE" && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <Label>API Key</Label>
+                  <Input
+                    type="password"
+                    placeholder={`Enter your ${aiConfig.provider} API key`}
+                    value={aiConfig.apiKey}
+                    onChange={(e) =>
+                      saveAiConfig(aiConfig.provider, e.target.value)
+                    }
+                    onBlur={() => {
+                      if (aiConfig.apiKey)
+                        showSuccess("API Key saved locally.");
+                    }}
+                    className="w-full bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get your key here:{" "}
+                    {aiConfig.provider === "OPENAI" && (
+                      <a
+                        href="https://platform.openai.com/api-keys"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        platform.openai.com
+                      </a>
+                    )}
+                    {aiConfig.provider === "GEMINI" && (
+                      <a
+                        href="https://aistudio.google.com/app/apikey"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Google AI Studio
+                      </a>
+                    )}
+                    {aiConfig.provider === "PERPLEXITY" && (
+                      <a
+                        href="https://www.perplexity.ai/settings/api"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Perplexity Settings
+                      </a>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </ThemedCardContent>
         </ThemedCard>

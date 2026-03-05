@@ -13,7 +13,7 @@ export const transactionFormSchema = z
     date: z.string().min(1, "Date is required"),
     account: z.string().min(1, "Account is required"),
     vendor: z.string().min(1, "Vendor is required"),
-    category: z.string().min(1, "Category is required"),
+    category: z.string().optional(),
     sub_category: z.string().optional(),
     amount: z.coerce
       .number()
@@ -118,8 +118,8 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-                new Date(transactionToEdit.recurrence_end_date),
-              )
+              new Date(transactionToEdit.recurrence_end_date),
+            )
             : "",
         });
         setTransactionType(
