@@ -126,7 +126,38 @@ sequenceDiagram
     TQ-->>UI: Render updated view
 ```
 
+### AI Auto-Categorization Flow (BYOK)
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 User
+    participant UI as React UI (useAutoCategorize)
+    participant Dex as Dexie.js (IndexedDB)
+    participant API as AI Provider API (Gemini/OpenAI/etc)
+
+    U->>UI: Triggers Auto-Categorize (Single or Bulk)
+    UI->>Dex: Fetch API Key & Provider Config
+    Dex-->>UI: Return Local Key & URL
+    Note over UI,API: HTTPS Request sent directly from Browser to Provider
+    UI->>API: Send Prompt with Categories & Vendor Names
+    API-->>UI: Return AI generated text (often messy JSON)
+    
+    Note over UI: parseAIResponse()<br/>1. Strips markdown<br/>2. Finds first { and last }<br/>3. Parses safely to JSON
+    
+    UI->>U: Display Categorized Results
+```
+
 ## Architectural Decisions
+- [2024-03-XX] [Direct Browser-to-AI Provider Communication]
+    - **Context**: We want users to be able to use AI features without creating a centralized backend that could store their API keys or financial data, maintaining the "local-first" privacy ethos.
+    - **Decision**: Implemented BYOK (Bring Your Own Key) where the React app communicates directly with AI provider APIs (Gemini, Anthropic, Mistral, etc.).
+    - **Consequences**:
+        - **Pros**: Complete privacy for the user. No backend infrastructure required. Zero server costs.
+        - **Cons**: Susceptible to CORS issues with certain providers if they don't allow browser requests, requiring users to sometimes handle configuration quirks.
+- [2024-03-XX] [Robust client-side JSON parsing for AI outputs]
+    - **Context**: Different AI models have wildly varying tendencies to wrap requested JSON in markdown or add conversational fluff ("Sure, here is your JSON:").
+    - **Decision**: Added a central `parseAIResponse` utility that manually extracts substrings between `{` and `}` if standard `JSON.parse` fails.
+    - **Consequences**: Reduces the rate of categorization failures significantly across different LLM providers without needing complex prompt engineering for every single model type.
 - [Date] [Decision Title]
     - **Context**: [Why was this decision made?]
     - **Decision**: [What was decided?]

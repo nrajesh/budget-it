@@ -44,7 +44,7 @@
 | 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                        |
 | 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                     |
 | 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                               |
-| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, or Perplexity. |
+| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, Anthropic, Mistral, Perplexity, or Custom endpoints. |
 | 💾 **Backup & Restore** | Encrypted or plain JSON backups - import instantly without page reloads.                          |
 | ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).               |
 
@@ -264,9 +264,9 @@ You can manage AI providers directly in the application without touching the cod
 2.  **Add/Edit Provider**:
     *   Click **Add AI Provider** to add a new endpoint.
     *   Set the **Name**, **Model ID**, and **Base URL**.
-    *   **Provider Type**: Choose Gemini, OpenAI, Anthropic, or Custom (OpenAI compatible).
-3.  **Configure API Key**: Go to **Settings**, select your new provider as the default, and enter your API key. Keys are stored locally in your browser.
-4.  **Local LLMs**: Add a provider with Type `Custom` and Base URL `http://localhost:11434/v1` (for Ollama) to use local models.
+    *   **Provider Type**: Choose Gemini, OpenAI, Anthropic, Mistral, Perplexity, or Custom (OpenAI compatible).
+3.  **Configure API Key**: Go to **Settings**, select your new provider as the default, and enter your API key. Keys are stored safely and locally in your browser's IndexedDB.
+4.  **Local LLMs**: Add a provider with Type `Custom` and Base URL `http://localhost:11434/v1` (for Ollama) to use local models securely without any internet access required.
 
 > [!NOTE]
 > AI providers are stored in the database and included in exports, but **API keys are never exported** for security reasons. You must re-enter keys on new devices.
