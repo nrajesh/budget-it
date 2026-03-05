@@ -147,10 +147,10 @@ export const useAutoCategorize = () => {
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
         const baseUrl = provider.baseUrl.replace(/\/$/, "");
-        const isV1Beta = baseUrl.includes("/v1beta");
+        const hasVersion = baseUrl.includes("/v1") || baseUrl.includes("/v1beta");
         const url = baseUrl.includes("?")
           ? `${baseUrl}&key=${apiKey}`
-          : `${baseUrl}${isV1Beta ? "" : "/v1beta"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+          : `${baseUrl}${hasVersion ? "" : "/v1"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
@@ -300,10 +300,10 @@ export const useAutoCategorize = () => {
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
         const baseUrl = provider.baseUrl.replace(/\/$/, "");
-        const isV1Beta = baseUrl.includes("/v1beta");
+        const hasVersion = baseUrl.includes("/v1");
         const url = baseUrl.includes("?")
           ? `${baseUrl}&key=${apiKey}`
-          : `${baseUrl}${isV1Beta ? "" : "/v1beta"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+          : `${baseUrl}${hasVersion ? "" : "/v1"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
