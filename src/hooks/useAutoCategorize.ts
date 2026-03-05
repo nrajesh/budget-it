@@ -146,9 +146,10 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
+        const isV1Beta = provider.baseUrl.includes("/v1beta");
         const url = provider.baseUrl.includes("?")
           ? `${provider.baseUrl}&key=${apiKey}`
-          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+          : `${provider.baseUrl.replace(/\/$/, "")}${isV1Beta ? "" : "/v1beta"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
@@ -297,9 +298,10 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
+        const isV1Beta = provider.baseUrl.includes("/v1beta");
         const url = provider.baseUrl.includes("?")
           ? `${provider.baseUrl}&key=${apiKey}`
-          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+          : `${provider.baseUrl.replace(/\/$/, "")}${isV1Beta ? "" : "/v1beta"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
