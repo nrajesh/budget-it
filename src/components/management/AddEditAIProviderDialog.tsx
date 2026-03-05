@@ -120,14 +120,24 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      let finalBaseUrl = values.baseUrl;
+      if (values.type === "GEMINI" && finalBaseUrl.includes("api.gemini.com")) {
+        finalBaseUrl = finalBaseUrl.replace("api.gemini.com", "generativelanguage.googleapis.com");
+      }
+
+      const submissionData = {
+        ...values,
+        baseUrl: finalBaseUrl,
+      };
+
       if (provider) {
         await dataProvider.updateAIProvider({
-          ...values,
+          ...submissionData,
           id: provider.id,
         });
         showSuccess("AI Provider updated successfully!");
       } else {
-        await dataProvider.addAIProvider(values);
+        await dataProvider.addAIProvider(submissionData);
         showSuccess("AI Provider added successfully!");
       }
       onSuccess?.();
