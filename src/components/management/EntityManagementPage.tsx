@@ -185,9 +185,9 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             {title}
           </h2>
           {subtitle && (
-            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+            <div className="mt-2 text-lg text-slate-500 dark:text-slate-400">
               {subtitle}
-            </p>
+            </div>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">

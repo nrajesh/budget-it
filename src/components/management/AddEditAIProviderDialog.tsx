@@ -142,16 +142,33 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
           { ...values, id: provider?.id || "temp" } as AIProvider,
           apiKey,
         );
-      } else if (values.type === "OPENAI" || values.type === "CUSTOM") {
+      } else if (
+        values.type === "OPENAI" ||
+        values.type === "CUSTOM" ||
+        values.type === "MISTRAL" ||
+        values.type === "PERPLEXITY"
+      ) {
         url = `${values.baseUrl.replace(/\/$/, "")}/chat/completions`;
+      } else if (values.type === "ANTHROPIC") {
+        url = values.baseUrl; // Anthropic is usually a full URL
       }
 
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(values.type !== "GEMINI"
+          ...(values.type === "OPENAI" ||
+          values.type === "CUSTOM" ||
+          values.type === "PERPLEXITY" ||
+          values.type === "MISTRAL"
             ? { Authorization: `Bearer ${apiKey}` }
+            : {}),
+          ...(values.type === "ANTHROPIC"
+            ? {
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01",
+                "dangerously-allow-browser": "true",
+              }
             : {}),
         },
         body: JSON.stringify(
@@ -161,17 +178,28 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                   { parts: [{ text: "Say 'Success' if you can read this." }] },
                 ],
               }
-            : {
-                model:
-                  values.model ||
-                  (values.type === "OPENAI" ? "gpt-4o" : undefined),
-                messages: [
-                  {
-                    role: "user",
-                    content: "Say 'Success' if you can read this.",
-                  },
-                ],
-              },
+            : values.type === "ANTHROPIC"
+              ? {
+                  model: values.model || "claude-3-haiku-20240307",
+                  max_tokens: 10,
+                  messages: [
+                    {
+                      role: "user",
+                      content: "Say 'Success' if you can read this.",
+                    },
+                  ],
+                }
+              : {
+                  model:
+                    values.model ||
+                    (values.type === "OPENAI" ? "gpt-4o" : undefined),
+                  messages: [
+                    {
+                      role: "user",
+                      content: "Say 'Success' if you can read this.",
+                    },
+                  ],
+                },
         ),
       });
 
@@ -184,9 +212,18 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
 
       showSuccess("Connection test successful!");
     } catch (error: unknown) {
-      showError(
-        `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes("Failed to fetch") ||
+        errorMessage.includes("ERR_FAILED")
+      ) {
+        showError(
+          `Connection failed: Likely a CORS block. Some providers restricted direct browser access. Consider a proxy or another provider.`,
+        );
+      } else {
+        showError(`Connection failed: ${errorMessage}`);
+      }
     } finally {
       setIsTesting(false);
     }
