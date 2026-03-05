@@ -34,19 +34,19 @@
 
 ## 🌟 Key Features
 
-| Category | Feature |
-|----------|---------|
-| 🔒 **Privacy** | 100% local — data lives in your browser's IndexedDB. No cloud, no servers. |
-| 📚 **Multi-Ledger** | Separate ledgers for Personal, Business, Joint finances. |
-| 💳 **Transactions** | Track with categories, sub-categories, vendors, and account groups. |
-| 📊 **Budgets** | Monthly, quarterly, yearly, or one-time budgets with progress tracking. |
-| 🔁 **Scheduled** | Recurring transactions with smart deduplication on import. |
-| 📈 **Analytics** | Visual breakdowns of income, expenses, and savings trends. |
-| 🫀 **Financial Pulse** | Premium dashboard for high-level financial health monitoring. |
-| 💬 **Smart Search** | Natural language filtering for transactions, categories, and dates. |
-| 🤖 **Optional AI** | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, or Perplexity. |
-| 💾 **Backup & Restore** | Encrypted or plain JSON backups — import instantly without page reloads. |
-| ⏰ **Auto-Backup** | Scheduled backups via File System Access API (web) or direct filesystem (Electron). |
+| Category                | Feature                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| 🔒 **Privacy**          | 100% local — data lives in your browser's IndexedDB. No cloud, no servers.                        |
+| 📚 **Multi-Ledger**     | Separate ledgers for Personal, Business, Joint finances.                                          |
+| 💳 **Transactions**     | Track with categories, sub-categories, vendors, and account groups.                               |
+| 📊 **Budgets**          | Monthly, quarterly, yearly, or one-time budgets with progress tracking.                           |
+| 🔁 **Scheduled**        | Recurring transactions with smart deduplication on import.                                        |
+| 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                        |
+| 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                     |
+| 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                               |
+| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, or Perplexity. |
+| 💾 **Backup & Restore** | Encrypted or plain JSON backups — import instantly without page reloads.                          |
+| ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).               |
 
 ---
 
@@ -63,11 +63,11 @@ For a detailed view of the system architecture, including web and desktop compon
 > [!IMPORTANT]
 > Before you begin, make sure you have the following installed:
 
-| Requirement | Version | How to Install |
-|-------------|---------|----------------|
-| **Node.js** | v18+ | [Download](https://nodejs.org/) or use `nvm install 18` |
-| **pnpm** | v8+ | `npm install -g pnpm` |
-| **Git** | Any | [Download](https://git-scm.com/) |
+| Requirement | Version | How to Install                                          |
+| ----------- | ------- | ------------------------------------------------------- |
+| **Node.js** | v18+    | [Download](https://nodejs.org/) or use `nvm install 18` |
+| **pnpm**    | v8+     | `npm install -g pnpm`                                   |
+| **Git**     | Any     | [Download](https://git-scm.com/)                        |
 
 > [!NOTE]
 > **pnpm** is strongly recommended. The project uses `pnpm-lock.yaml`, and all scripts are configured for it.
@@ -88,6 +88,7 @@ pnpm lint && pnpm build
 
 > [!TIP]
 > If `pnpm install` fails, try deleting `node_modules` and running `pnpm install` again:
+>
 > ```bash
 > rm -rf node_modules && pnpm install
 > ```
@@ -111,6 +112,7 @@ pnpm run electron:dev
 ```
 
 This single command does everything:
+
 1. Starts the Vite dev server on port `8081`
 2. Waits for the server to be ready (`wait-on`)
 3. Compiles Electron main & preload TypeScript
@@ -127,12 +129,12 @@ This single command does everything:
 
 ### 📱 Mobile Support
 
-| Platform | Supported? | How |
-|----------|-----------|-----|
-| **macOS** | ✅ | Electron desktop app or browser |
-| **Windows** | ✅ | Electron desktop app or browser |
-| **Linux** | ✅ | Electron desktop app or browser |
-| **iOS / Android** | ✅ Native | Run natively via Capacitor (`npx cap sync`) |
+| Platform          | Supported? | How                                         |
+| ----------------- | ---------- | ------------------------------------------- |
+| **macOS**         | ✅         | Electron desktop app or browser             |
+| **Windows**       | ✅         | Electron desktop app or browser             |
+| **Linux**         | ✅         | Electron desktop app or browser             |
+| **iOS / Android** | ✅ Native  | Run natively via Capacitor (`npx cap sync`) |
 
 > Electron cannot run on mobile devices. For mobile access, either host the web version or build the native apps using the provided Capactior iOS/Android targets for local continuity features.
 
@@ -140,14 +142,15 @@ This single command does everything:
 
 ### 🔨 Building for Production
 
-| Target | Command | Output |
-|--------|---------|--------|
-| Web | `pnpm build` | `dist/` |
+| Target                  | Command                   | Output                          |
+| ----------------------- | ------------------------- | ------------------------------- |
+| Web                     | `pnpm build`              | `dist/`                         |
 | Desktop (all platforms) | `pnpm run electron:build` | `release/` (DMG, EXE, AppImage) |
 
 ---
 
 ## 🔗 Live Demo
+
 Try the latest version of the app here: **[budget-it-nine.vercel.app](https://budget-it-nine.vercel.app)**
 
 ---
@@ -190,14 +193,14 @@ budget-it/
 
 We enforce high code quality standards using a strict **CircleCI** pipeline. Every pull request must pass the following checks before merging:
 
-| Check | Command | Description |
-|-------|---------|-------------|
-| **Linting** | `pnpm lint` | ESLint checks for code quality and best practices. |
-| **Type Safe** | `tsc --noEmit` | Full TypeScript strict mode check. |
-| **Formatting** | `pnpm format:check` | Prettier verification to ensure consistent style. |
-| **Testing** | `pnpm test:coverage` | Vitest unit tests with coverage reporting. |
-| **Security** | `pnpm audit` | Checks dependencies for known vulnerabilities. |
-| **Build** | `pnpm build` | Verifies that the production bundle compiles correctly. |
+| Check          | Command              | Description                                             |
+| -------------- | -------------------- | ------------------------------------------------------- |
+| **Linting**    | `pnpm lint`          | ESLint checks for code quality and best practices.      |
+| **Type Safe**  | `tsc --noEmit`       | Full TypeScript strict mode check.                      |
+| **Formatting** | `pnpm format:check`  | Prettier verification to ensure consistent style.       |
+| **Testing**    | `pnpm test:coverage` | Vitest unit tests with coverage reporting.              |
+| **Security**   | `pnpm audit`         | Checks dependencies for known vulnerabilities.          |
+| **Build**      | `pnpm build`         | Verifies that the production bundle compiles correctly. |
 
 > [!TIP]
 > You can run `pnpm validate` locally to run TypeScript and ESLint checks in one go.
@@ -210,18 +213,19 @@ We enforce high code quality standards using a strict **CircleCI** pipeline. Eve
 
 The `documentation/` folder serves as the "Constitution" and "Operating System" for the project.
 
-| File | Purpose |
-|------|---------|
+| File                                                                         | Purpose                                                                                                             |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
-| **[`AGENTS.md`](documentation/AGENTS.md)** | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind"). |
-| **[`SUPPORT.md`](documentation/SUPPORT.md)** | **Support Policy**. How to get help and file issues. |
-| **[`SECURITY.md`](documentation/SECURITY.md)** | **Security Policy**. Reporting vulnerabilities and privacy details. |
+| **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |
+| **[`SUPPORT.md`](documentation/SUPPORT.md)**                                 | **Support Policy**. How to get help and file issues.                                                                |
+| **[`SECURITY.md`](documentation/SECURITY.md)**                               | **Security Policy**. Reporting vulnerabilities and privacy details.                                                 |
 
 ### 2. How to Work with Speckit
 
 > **Note**: For a deep dive into the workflow, read the [**Spec-Driven Development Guide**](documentation/SPEC_DRIVEN_DEVELOPMENT.md).
 
 #### Quick Start
+
 1.  **Specify**: `/speckit.specify "Build a new feature"`
 2.  **Plan**: `/speckit.plan`
 3.  **Task**: `/speckit.tasks`
@@ -231,11 +235,11 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 This project includes three specialized AI agents that can be invoked via slash commands in a compatible AI-powered IDE. Each agent focuses on a specific area of code quality and runs a self-contained workflow: it scans the codebase, identifies improvements, implements changes, and verifies them — all from a single command.
 
-| Command | Agent | What It Does |
-|---------|-------|--------------|
-| `/agent.palette` | 🎨 Palette | Finds and fixes **UX and accessibility** issues — missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
-| `/agent.bolt` | ⚡ Bolt | Finds and fixes **performance** issues — unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries. |
-| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues — XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks. |
+| Command           | Agent       | What It Does                                                                                                                             |
+| ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `/agent.palette`  | 🎨 Palette  | Finds and fixes **UX and accessibility** issues — missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
+| `/agent.bolt`     | ⚡ Bolt     | Finds and fixes **performance** issues — unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries.       |
+| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues — XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks.         |
 
 #### How do they work?
 
@@ -252,23 +256,41 @@ The slash commands (e.g., `/agent.palette`) work automatically in IDEs that supp
 
 ## 🛠️ Development Guide
 
+### Adding New AI Providers
+
+1. **Update Types**: Add the new provider's name to the `AIProvider` type in `src/hooks/useAIConfig.ts`.
+2. **Implement Hook Logic**: Update the `autoCategorize` function in `src/hooks/useAutoCategorize.ts` to include the API calling logic for the new provider.
+3. **Update Security Policy (CSP)**:
+
+   > [!IMPORTANT]
+   > You **must** add the new provider's API domain to the `connect-src` directive in `vite.config.ts`. If you skip this, the browser will block all outgoing requests to that provider in production builds.
+
+   ```typescript
+   // Example: Adding a new provider domain in vite.config.ts
+   connect-src 'self' ... https://api.new-provider.com;
+   ```
+
 ### Adding New Components
+
 1. `src/components/ui/` — Generic, reusable UI primitives
 2. `src/components/<feature>/` — Feature-specific components
 3. `src/components/layout/` — Layout wrappers
 
 **Guidelines:**
+
 - Use **functional components** with TypeScript interfaces
 - Style with **Tailwind CSS** utility classes
 - Ensure **responsive design** (mobile-first)
 - Add JSDoc comments for complex logic
 
 ### State Management
+
 - `useTransactions()` — global financial data
 - `useState` — UI-only state (dialog open/close)
 - `useQuery` — async data fetching with TanStack Query
 
 ### Testing
+
 ```bash
 pnpm test              # Run unit tests (Vitest)
 pnpm test:coverage     # Run with coverage report
@@ -281,10 +303,12 @@ pnpm validate          # TypeScript + ESLint in one shot
 ## 📦 Deployment
 
 ### Deploy to Vercel (Recommended)
+
 ```bash
 npm i -g vercel
 vercel deploy
 ```
+
 Since the app is fully client-side, it works on any static host: **Vercel**, **Netlify**, **GitHub Pages**, or **Cloudflare Pages**.
 
 ---

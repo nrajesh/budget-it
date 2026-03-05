@@ -23,7 +23,7 @@ export default defineConfig(() => ({
         return html.replace(
           "<head>",
           `<head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.app wss://ws-us3.pusher.com https://vercel.live; frame-src 'self' https://vercel.live; font-src 'self' data:;">`,
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.frankfurter.app wss://ws-us3.pusher.com https://vercel.live https://generativelanguage.googleapis.com https://api.openai.com https://api.perplexity.ai https://api.anthropic.com http://localhost:* http://127.0.0.1:*; frame-src 'self' https://vercel.live; font-src 'self' data:;">`,
         );
       },
     },
