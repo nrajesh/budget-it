@@ -148,7 +148,7 @@ export const useAutoCategorize = () => {
       } else if (provider.type === "GEMINI") {
         const url = provider.baseUrl.includes("?")
           ? `${provider.baseUrl}&key=${apiKey}`
-          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model}:generateContent?key=${apiKey}`;
+          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
@@ -178,7 +178,7 @@ export const useAutoCategorize = () => {
             "dangerously-allow-browser": "true",
           },
           body: JSON.stringify({
-            model: provider.model,
+            model: provider.model || "claude-3-haiku-20240307",
             max_tokens: 1024,
             messages: [{ role: "user", content: prompt }],
           }),
@@ -198,7 +198,7 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model,
+              model: provider.model || "llama-3.1-8b-instruct",
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
             }),
@@ -219,7 +219,7 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model,
+              model: provider.model || "mistral-tiny",
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format: { type: "json_object" },
@@ -280,7 +280,7 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model,
+              model: provider.model || (provider.type === "OPENAI" ? "gpt-4o" : undefined),
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format:
@@ -299,7 +299,7 @@ export const useAutoCategorize = () => {
       } else if (provider.type === "GEMINI") {
         const url = provider.baseUrl.includes("?")
           ? `${provider.baseUrl}&key=${apiKey}`
-          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model}:generateContent?key=${apiKey}`;
+          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
           method: "POST",
@@ -329,7 +329,7 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model,
+              model: provider.model || "llama-3.1-8b-instruct",
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
             }),
