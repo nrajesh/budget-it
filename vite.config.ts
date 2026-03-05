@@ -4,7 +4,6 @@ import path from "path";
 
 const aiDomains = [
   "https://generativelanguage.googleapis.com",
-  "https://generativelanguage.googleapis.com/*",
   "https://api.openai.com",
   "https://api.perplexity.ai",
   "https://api.anthropic.com",
