@@ -256,9 +256,9 @@ The slash commands (e.g., `/agent.palette`) work automatically in IDEs that supp
 
 ## 🛠️ Development Guide
 
-### AI Providers Guide (Dynamic)
+### AI Provider Configuration
 
-You can manage AI providers directly in the application without touching the code.
+Budget It supports "Bring Your Own Key" (BYOK) AI categorization. You can manage AI providers directly in the application.
 
 1.  **AI Provider Management**: Navigate to **Management > AI Providers** in the sidebar.
 2.  **Add/Edit Provider**:
@@ -271,25 +271,33 @@ You can manage AI providers directly in the application without touching the cod
 > [!NOTE]
 > AI providers are stored in the database and included in exports, but **API keys are never exported** for security reasons. You must re-enter keys on new devices.
 
-### Adding New AI Providers (via Code)
+### ⚠️ Important: Content Security Policy (CSP)
 
-If you need to add a completely new *type* of AI provider (e.g. a new API architecture):
+Because Budget It is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default. 
 
-1.  **Update `useAutoCategorize.ts`**: Add logic to handle the new provider type's API structure.
-2.  **Update `AddEditAIProviderDialog.tsx`**: Add the new type to the `type` selection field.
-3.  **Update Security Policy (CSP)**:
-    > [!IMPORTANT]
-    > To add a new provider's API domain to the CSP, add it to the `aiDomains` array in `vite.config.ts`. This list is designed for easy management - simply add one domain per line.
+**If you add a completely new API domain via the UI (e.g. `https://api.my-new-ai.com`), you MUST add it to the allowed domains list in the code.**
 
-    ```typescript
-    // vite.config.ts
-    const aiDomains = [
-      "https://generativelanguage.googleapis.com",
-      "https://api.openai.com",
-      // Add your new domain here:
-      "https://api.new-provider.com",
-    ];
-    ```
+1. Open `vite.config.ts`.
+2. Add your new domain to the `aiDomains` array:
+
+```typescript
+// vite.config.ts
+const aiDomains = [
+  "https://generativelanguage.googleapis.com",
+  "https://api.openai.com",
+  "https://api.anthropic.com",
+  "https://api.mistral.ai",
+  "https://api.perplexity.ai",
+  // Add your new domain here:
+  "https://api.your-custom-ai-provider.com",
+];
+```
+
+3. Restart the development server (`pnpm dev`) or rebuild the app.
+
+> [!TIP]
+> You rarely need to write new code to support a new AI provider! Simply select `Custom` as the Provider Type in the UI. Our robust JSON parser handles OpenAI-compatible JSON responses automatically. You only need to edit `useAutoCategorize.ts` if the new provider has a completely unique request structure (like Anthropic).
+
 
 ### Adding New Components
 
