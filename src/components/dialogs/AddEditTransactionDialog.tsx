@@ -190,13 +190,18 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
-            <span>
-              {errorMessage.toLowerCase().includes("failed") ||
-              errorMessage.toLowerCase().includes("unauthorized") ||
-              errorMessage.toLowerCase().includes("invalid")
-                ? "Verify if your API key is valid"
-                : errorMessage}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{errorMessage}</span>
+              {(errorMessage.toLowerCase().includes("unauthorized") ||
+                errorMessage.toLowerCase().includes("invalid") ||
+                errorMessage.toLowerCase().includes("401") ||
+                errorMessage.toLowerCase().includes("403") ||
+                errorMessage.toLowerCase().includes("key")) && (
+                <span className="text-xs opacity-90">
+                  Note: Verify if your API key is valid in settings
+                </span>
+              )}
+            </div>
             {errorMessage.includes("configured") && (
               <Button
                 variant="outline"

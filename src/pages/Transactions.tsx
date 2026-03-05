@@ -544,13 +544,18 @@ const Transactions = () => {
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
-            <span>
-              {errorStr.toLowerCase().includes("failed") ||
-              errorStr.toLowerCase().includes("unauthorized") ||
-              errorStr.toLowerCase().includes("invalid")
-                ? "Verify if your API key is valid"
-                : errorStr}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{errorStr}</span>
+              {(errorStr.toLowerCase().includes("unauthorized") ||
+                errorStr.toLowerCase().includes("invalid") ||
+                errorStr.toLowerCase().includes("401") ||
+                errorStr.toLowerCase().includes("403") ||
+                errorStr.toLowerCase().includes("key")) && (
+                <span className="text-xs opacity-90">
+                  Note: Verify if your API key is valid in settings
+                </span>
+              )}
+            </div>
             {(errorStr.includes("configured") ||
               errorStr.includes("API Key")) && (
               <Button
