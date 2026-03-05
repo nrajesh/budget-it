@@ -138,7 +138,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         title: "AI Not Configured",
         description: (
           <div className="flex flex-col gap-2">
-            <span>Please configure your AI provider and API key first.</span>
+            <span>Please configure your AI provider and API key</span>
             <Button
               variant="secondary"
               size="sm"
@@ -190,7 +190,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
-            <span>{errorMessage}</span>
+            <span>
+              {errorMessage.toLowerCase().includes("failed") ||
+              errorMessage.toLowerCase().includes("unauthorized") ||
+              errorMessage.toLowerCase().includes("invalid")
+                ? "Verify if your API key is valid"
+                : errorMessage}
+            </span>
             {errorMessage.includes("configured") && (
               <Button
                 variant="outline"

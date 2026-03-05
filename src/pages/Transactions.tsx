@@ -428,7 +428,7 @@ const Transactions = () => {
           title: "AI Not Configured",
           description: (
             <div className="flex flex-col gap-2">
-              <span>Please configure your AI provider and API key first.</span>
+              <span>Please configure your AI provider and API key</span>
               <Button
                 variant="secondary"
                 size="sm"
@@ -544,7 +544,13 @@ const Transactions = () => {
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
-            <span>{errorStr}</span>
+            <span>
+              {errorStr.toLowerCase().includes("failed") ||
+              errorStr.toLowerCase().includes("unauthorized") ||
+              errorStr.toLowerCase().includes("invalid")
+                ? "Verify if your API key is valid"
+                : errorStr}
+            </span>
             {(errorStr.includes("configured") ||
               errorStr.includes("API Key")) && (
               <Button
