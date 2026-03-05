@@ -89,7 +89,7 @@ jobs:
           destination: build-artifacts
 
   # Sync built web assets into iOS & Android Capacitor projects
-  # Runs only on pre-prod and main — keeps mobile bundles always current
+  # Runs only on pre-prod and main - keeps mobile bundles always current
   cap-sync:
     executor: node-executor
     steps:
@@ -149,7 +149,7 @@ jobs:
       - run:
           name: Security Audit
           command: |
-            pnpm audit --audit-level=moderate || echo "Security vulnerabilities found — review above output"
+            pnpm audit --audit-level=moderate || echo "Security vulnerabilities found - review above output"
 
 
 workflows:

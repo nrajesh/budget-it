@@ -62,15 +62,15 @@ For this change, we'll use `aria-label` directly on the `<Button>` element for a
 ### Backup Component
 
 #### [MODIFY] [ScheduledBackups.tsx](file:///Users/nrajesh/Github/budget-it/src/components/backup/ScheduledBackups.tsx)
-- Add `aria-label="Verify permission"` to shield icon button (line 541–549) — already has `title`, add `aria-label` for screen readers
-- Add `aria-label="Delete schedule"` to delete icon button (line 551–558) — already has `title`, add `aria-label` for screen readers
+- Add `aria-label="Verify permission"` to shield icon button (line 541–549) - already has `title`, add `aria-label` for screen readers
+- Add `aria-label="Delete schedule"` to delete icon button (line 551–558) - already has `title`, add `aria-label` for screen readers
 
 ## Verification Plan
 
 ### Automated Tests
-1. **Lint**: `pnpm lint` — ensure no ESLint errors
-2. **Type check**: `pnpm exec tsc --noEmit` — ensure no TypeScript errors
-3. **Build**: `pnpm build` — ensure production build succeeds
+1. **Lint**: `pnpm lint` - ensure no ESLint errors
+2. **Type check**: `pnpm exec tsc --noEmit` - ensure no TypeScript errors
+3. **Build**: `pnpm build` - ensure production build succeeds
 
 ### Manual Verification
 - Verify no visual changes by launching the app with `pnpm dev` and checking budget cards, calendar, entity tables, and backup pages

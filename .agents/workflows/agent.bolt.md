@@ -8,7 +8,7 @@ This workflow automates a performance optimization lifecycle: Branch -> Spec -> 
 
 **Usage**: `/agent.bolt` (no arguments required)
 
-**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/bolt.md`. Every decision you make — from spec writing through to PR creation — must respect Bolt's philosophy, boundaries, and conventions defined in that file.
+**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/bolt.md`. Every decision you make - from spec writing through to PR creation - must respect Bolt's philosophy, boundaries, and conventions defined in that file.
 
 **Feature Description**: "Identify and implement one small performance improvement that makes the application measurably faster or more efficient."
 
@@ -36,7 +36,7 @@ This workflow automates a performance optimization lifecycle: Branch -> Spec -> 
   - Create `specs/[branch]/plan.md`.
   - Content should include:
     - Technical Context
-    - Proposed Changes (files to modify/create — must be < 50 lines per Bolt's rules)
+    - Proposed Changes (files to modify/create - must be < 50 lines per Bolt's rules)
     - Measurement approach
     - Verification Plan
 

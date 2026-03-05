@@ -12,7 +12,7 @@ These rules are **normative**. The AI agent that designs and implements the Andr
   - Target the latest stable Android SDK version and support a reasonable `minSdk` specified in the project spec.
   - Prefer modern Android libraries (Jetpack, Material 3, etc.) and avoid deprecated APIs.
 - The AI MUST design for:
-  - **Security and privacy first**, then correctness, usability, and performance—in that order.[cite:10]
+  - **Security and privacy first**, then correctness, usability, and performance-in that order.[cite:10]
   - Accessibility, internationalization, and different screen sizes/densities.
 
 ---

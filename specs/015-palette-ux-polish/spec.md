@@ -13,7 +13,7 @@ Many interactive icon-only buttons across the application lack `aria-label` attr
 
 ## Non-Goals
 
-- No visual changes — this is purely an accessibility enhancement
+- No visual changes - this is purely an accessibility enhancement
 - No new dependencies
 - No backend logic changes
 - No page redesigns or component restructuring
@@ -28,7 +28,7 @@ Many interactive icon-only buttons across the application lack `aria-label` attr
 A screen reader user navigating the budget cards footer hears: "button… button…" with no indication of what each button does.
 
 ### After
-The same user hears: "Edit budget, button… Delete budget, button…" — immediately clear and actionable.
+The same user hears: "Edit budget, button… Delete budget, button…" - immediately clear and actionable.
 
 ## Functional Requirements
 

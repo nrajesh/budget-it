@@ -12,7 +12,7 @@ Replace the existing two-panel analytics layout (`BalanceOverTimeChart` + `Spend
 **Primary Dependencies**: React 18, Recharts 3.7, date-fns 3.6, Tailwind CSS 4, Vite 7  
 **Testing**: Vitest 4, React Testing Library  
 **Target Platform**: Web, Electron, Capacitor (iOS/Android)  
-**Constraints**: Fully offline, local-first. No new dependencies needed — all charting via existing Recharts.
+**Constraints**: Fully offline, local-first. No new dependencies needed - all charting via existing Recharts.
 
 ## Constitution Check
 
@@ -128,7 +128,7 @@ Replace the existing two-panel grid layout with the new `AnalyticsChartView`:
 
 ---
 
-### 4. Existing Components — No Deletion
+### 4. Existing Components - No Deletion
 
 The existing `BalanceOverTimeChart.tsx`, `SpendingCategoriesChart.tsx`, and `CategoryPieChart.tsx` will **not be deleted** as they may be used on other pages (dashboard, reports). The Analytics page will simply stop importing them.
 
@@ -141,8 +141,8 @@ Analytics.tsx
   └── AnalyticsChartView
         ├── useSwipeNavigation → navigateBack/Forward
         ├── Chart Type Toggle (line | bar | pie)
-        ├── SpendingLineChart(currentData, previousData) — or —
-        │   SpendingBarChart(currentData) — or —
+        ├── SpendingLineChart(currentData, previousData) - or -
+        │   SpendingBarChart(currentData) - or -
         │   SpendingPieChart(currentData, entityType)
         ├── PeriodSelector(period, setPeriod)
         └── EntityBreakdownTable(transactions, entityType)
@@ -164,7 +164,7 @@ Analytics.tsx
    - Verify keyboard arrow key handling
    - **Run**: `pnpm exec vitest run src/tests/useSwipeNavigation.test.ts`
 
-3. **Existing `ChartSecurity.test.tsx`** — verify it still passes (no regressions):
+3. **Existing `ChartSecurity.test.tsx`** - verify it still passes (no regressions):
    - **Run**: `pnpm exec vitest run src/tests/ChartSecurity.test.tsx`
 
 ### Build Verification

@@ -4,7 +4,7 @@
 
 - [ ] All modified buttons have ARIA labels present
 - [ ] Labels are concise and action-oriented  
-- [ ] Keyboard navigable — no regressions (buttons remain focusable)
+- [ ] Keyboard navigable - no regressions (buttons remain focusable)
 - [ ] Existing design patterns followed (`aria-label` consistent with existing `Checkbox` usage)
 - [ ] No backend logic changes
 - [ ] No new UI dependencies added

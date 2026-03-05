@@ -126,6 +126,16 @@ export interface BackupConfig {
   passwordHash?: string;
 }
 
+export interface AIProvider {
+  id: string;
+  name: string;
+  type: "OPENAI" | "GEMINI" | "ANTHROPIC" | "MISTRAL" | "PERPLEXITY" | "CUSTOM";
+  baseUrl: string;
+  model: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
 export interface DataProvider {
   // Ledgers
   // Ledgers
@@ -137,7 +147,7 @@ export interface DataProvider {
   deleteLedger(id: string): Promise<void>;
 
   // Transactions
-  getTransactions(userId: string): Promise<Transaction[]>;
+  getTransactions(ledgerId: string): Promise<Transaction[]>;
   addTransaction(
     transaction: Omit<Transaction, "id" | "created_at">,
   ): Promise<Transaction>;
@@ -148,12 +158,12 @@ export interface DataProvider {
   deleteTransaction(id: string): Promise<void>;
   deleteMultipleTransactions(ids: string[]): Promise<void>;
   deleteTransactionByTransferId(transferId: string): Promise<void>;
-  clearTransactions(userId: string): Promise<void>;
-  clearBudgets(userId: string): Promise<void>;
-  clearScheduledTransactions(userId: string): Promise<void>;
+  clearTransactions(ledgerId: string): Promise<void>;
+  clearBudgets(ledgerId: string): Promise<void>;
+  clearScheduledTransactions(ledgerId: string): Promise<void>;
 
   // Scheduled Transactions
-  getScheduledTransactions(userId: string): Promise<ScheduledTransaction[]>;
+  getScheduledTransactions(ledgerId: string): Promise<ScheduledTransaction[]>;
   addScheduledTransaction(
     transaction: Omit<ScheduledTransaction, "id" | "created_at">,
   ): Promise<ScheduledTransaction>;
@@ -165,7 +175,7 @@ export interface DataProvider {
   ensurePayeeExists(
     name: string,
     isAccount: boolean,
-    userId: string,
+    ledgerId: string,
     options?: {
       currency?: string;
       startingBalance?: number;
@@ -174,36 +184,36 @@ export interface DataProvider {
       creditLimit?: number;
     },
   ): Promise<string | null>;
-  checkIfPayeeIsAccount(name: string, userId: string): Promise<boolean>;
-  getAccountCurrency(accountName: string, userId: string): Promise<string>;
-  getAllVendors(userId: string): Promise<Vendor[]>;
-  getVendorByName(name: string, userId: string): Promise<Vendor | undefined>;
+  checkIfPayeeIsAccount(name: string, ledgerId: string): Promise<boolean>;
+  getAccountCurrency(accountName: string, ledgerId: string): Promise<string>;
+  getAllVendors(ledgerId: string): Promise<Vendor[]>;
+  getVendorByName(name: string, ledgerId: string): Promise<Vendor | undefined>;
   mergePayees(
     targetName: string,
     sourceNames: string[],
-    userId: string,
+    ledgerId: string,
   ): Promise<void>;
   deletePayee(id: string): Promise<void>;
-  getAllAccounts(userId: string): Promise<Account[]>;
+  getAllAccounts(ledgerId: string): Promise<Account[]>;
 
   // Categories
-  ensureCategoryExists(name: string, userId: string): Promise<string | null>;
+  ensureCategoryExists(name: string, ledgerId: string): Promise<string | null>;
   ensureSubCategoryExists(
     name: string,
     categoryId: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<string | null>;
-  getUserCategories(userId: string): Promise<Category[]>;
-  getSubCategories(userId: string): Promise<SubCategory[]>;
+  getUserCategories(ledgerId: string): Promise<Category[]>;
+  getSubCategories(ledgerId: string): Promise<SubCategory[]>;
   mergeCategories(
     targetName: string,
     sourceNames: string[],
-    userId: string,
+    ledgerId: string,
   ): Promise<void>;
   deleteCategory(id: string): Promise<void>;
 
   // Budgets
-  getBudgetsWithSpending(userId: string): Promise<Budget[]>;
+  getBudgetsWithSpending(ledgerId: string): Promise<Budget[]>;
   addBudget(budget: Omit<Budget, "id" | "spent_amount">): Promise<void>;
   updateBudget(budget: Budget): Promise<void>;
   deleteBudget(id: string): Promise<void>;
@@ -216,6 +226,13 @@ export interface DataProvider {
   ): Promise<void>;
   unlinkTransactions(transferId: string): Promise<void>;
   clearAllData(): Promise<void>;
-  exportData(userId?: string): Promise<unknown>;
-  importData(data: unknown, userId?: string): Promise<void>;
+  exportData(ledgerId?: string): Promise<unknown>;
+  importData(data: unknown, ledgerId?: string): Promise<void>;
+
+  // AI Providers
+  getAIProviders(): Promise<AIProvider[]>;
+  addAIProvider(provider: Omit<AIProvider, "id">): Promise<AIProvider>;
+  updateAIProvider(provider: AIProvider): Promise<void>;
+  deleteAIProvider(id: string): Promise<void>;
+  setDefaultAIProvider(id: string): Promise<void>;
 }

@@ -104,7 +104,7 @@ export const useAutoCategorize = () => {
     categories: Category[],
     subCategories: SubCategory[],
   ): Promise<CategorizeResult> => {
-    if (!config.apiKey || config.provider === "NONE") {
+    if (!config.apiKey || !config.provider) {
       throw new Error("AI Provider or API Key is not configured.");
     }
 
@@ -112,65 +112,91 @@ export const useAutoCategorize = () => {
       throw new Error("You must be online to use Auto-Categorize.");
     }
 
+    const { provider, apiKey } = config;
     const prompt = buildPrompt(vendorName, categories, subCategories);
     let resultJson = "";
 
     try {
-      if (config.provider === "OPENAI") {
+      if (provider.type === "OPENAI" || provider.type === "CUSTOM") {
         const response = await fetch(
-          "https://api.openai.com/v1/chat/completions",
+          provider.baseUrl.endsWith("/chat/completions")
+            ? provider.baseUrl
+            : `${provider.baseUrl.replace(/\/$/, "")}/chat/completions`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o-mini", // Using a fast, cheap model
+              model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
-              response_format: { type: "json_object" },
+              response_format: provider.type === "OPENAI" || provider.baseUrl.includes("openai")
+                ? { type: "json_object" }
+                : undefined,
             }),
           },
         );
 
         if (!response.ok)
-          throw new Error(`OpenAI Error: ${response.statusText}`);
+          throw new Error(`${provider.name} Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
-      } else if (config.provider === "GEMINI") {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${config.apiKey}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
-            }),
+      } else if (provider.type === "GEMINI") {
+        const url = provider.baseUrl.includes("?")
+          ? `${provider.baseUrl}&key=${apiKey}`
+          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model}:generateContent?key=${apiKey}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+            },
+          }),
+        });
 
         if (!response.ok)
           throw new Error(`Gemini Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;
-      } else if (config.provider === "PERPLEXITY") {
+      } else if (provider.type === "ANTHROPIC") {
+        const response = await fetch(provider.baseUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "dangerously-allow-browser": "true",
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            max_tokens: 1024,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
+
+        if (!response.ok)
+          throw new Error(`Anthropic Error: ${response.statusText}`);
+        const data = await response.json();
+        resultJson = data.content[0].text;
+      } else if (provider.type === "PERPLEXITY") {
         const response = await fetch(
-          "https://api.perplexity.ai/chat/completions",
+          provider.baseUrl.replace(/\/$/, "") + "/chat/completions",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "sonar-reasoning-pro",
+              model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
             }),
@@ -181,26 +207,17 @@ export const useAutoCategorize = () => {
           throw new Error(`Perplexity Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
-
-        // Perplexity doesn't force JSON, so we strip markdown if present
-        if (resultJson.startsWith("```json")) {
-          resultJson = resultJson
-            .replace(/^```json\s*/, "")
-            .replace(/\s*```$/, "");
-        } else if (resultJson.startsWith("```")) {
-          resultJson = resultJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
-        }
-      } else if (config.provider === "MISTRAL") {
+      } else if (provider.type === "MISTRAL") {
         const response = await fetch(
-          "https://api.mistral.ai/v1/chat/completions",
+          provider.baseUrl.replace(/\/$/, "") + "/chat/completions",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "mistral-small-latest",
+              model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format: { type: "json_object" },
@@ -212,6 +229,13 @@ export const useAutoCategorize = () => {
           throw new Error(`Mistral Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
+      }
+
+      // Strip markdown if present (common for non-json-forcing models)
+      if (resultJson.includes("```json")) {
+        resultJson = resultJson.split("```json")[1].split("```")[0].trim();
+      } else if (resultJson.includes("```")) {
+        resultJson = resultJson.split("```")[1].split("```")[0].trim();
       }
 
       const parsed = JSON.parse(resultJson);
@@ -232,72 +256,76 @@ export const useAutoCategorize = () => {
     categories: Category[],
     subCategories: SubCategory[],
   ): Promise<BulkCategorizeResult> => {
-    if (!config.apiKey || config.provider === "NONE") {
+    if (!config.apiKey || !config.provider) {
       throw new Error("AI Provider or API Key is not configured.");
     }
     if (!navigator.onLine) {
       throw new Error("You must be online to use Auto-Categorize.");
     }
 
+    const { provider, apiKey } = config;
     const prompt = buildBulkPrompt(vendorNames, categories, subCategories);
     let resultJson = "";
 
     try {
-      if (config.provider === "OPENAI") {
+      if (provider.type === "OPENAI" || provider.type === "CUSTOM") {
         const response = await fetch(
-          "https://api.openai.com/v1/chat/completions",
+          provider.baseUrl.replace(/\/$/, "") + "/chat/completions",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "gpt-4o-mini",
+              model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
-              response_format: { type: "json_object" },
+              response_format: provider.type === "OPENAI" || provider.baseUrl.includes("openai")
+                ? { type: "json_object" }
+                : undefined,
             }),
           },
         );
 
         if (!response.ok)
-          throw new Error(`OpenAI Error: ${response.statusText}`);
+          throw new Error(`${provider.name} Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
-      } else if (config.provider === "GEMINI") {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${config.apiKey}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
-            }),
+      } else if (provider.type === "GEMINI") {
+        const url = provider.baseUrl.includes("?")
+          ? `${provider.baseUrl}&key=${apiKey}`
+          : `${provider.baseUrl.replace(/\/$/, "")}/models/${provider.model}:generateContent?key=${apiKey}`;
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+            },
+          }),
+        });
 
         if (!response.ok)
           throw new Error(`Gemini Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;
-      } else if (config.provider === "PERPLEXITY") {
+      } else if (provider.type === "PERPLEXITY") {
         const response = await fetch(
-          "https://api.perplexity.ai/chat/completions",
+          provider.baseUrl.replace(/\/$/, "") + "/chat/completions",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${config.apiKey}`,
+              Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "sonar-reasoning-pro",
+              model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
             }),
@@ -308,14 +336,12 @@ export const useAutoCategorize = () => {
           throw new Error(`Perplexity Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
+      }
 
-        if (resultJson.startsWith("```json")) {
-          resultJson = resultJson
-            .replace(/^```json\s*/, "")
-            .replace(/\s*```$/, "");
-        } else if (resultJson.startsWith("```")) {
-          resultJson = resultJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
-        }
+      if (resultJson.includes("```json")) {
+        resultJson = resultJson.split("```json")[1].split("```")[0].trim();
+      } else if (resultJson.includes("```")) {
+        resultJson = resultJson.split("```")[1].split("```")[0].trim();
       }
 
       const parsed = JSON.parse(resultJson);

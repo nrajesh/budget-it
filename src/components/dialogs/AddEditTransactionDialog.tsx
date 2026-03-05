@@ -133,7 +133,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     }
 
     // 2. Pre-flight check before pinging AI
-    if (!config.apiKey || config.provider === "NONE") {
+    if (!config.apiKey || !config.provider) {
       toast({
         title: "AI Not Configured",
         description: (
@@ -197,10 +197,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                 errorMessage.toLowerCase().includes("401") ||
                 errorMessage.toLowerCase().includes("403") ||
                 errorMessage.toLowerCase().includes("key")) && (
-                <span className="text-xs opacity-90">
-                  Note: Verify if your API key is valid in settings
-                </span>
-              )}
+                  <span className="text-xs opacity-90">
+                    Note: Verify if your API key is valid in settings
+                  </span>
+                )}
             </div>
             {errorMessage.includes("configured") && (
               <Button
@@ -454,7 +454,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                       />
                       {!isTransfer &&
                         field.value &&
-                        config.provider !== "NONE" && (
+                        config.provider && (
                           <div className="flex justify-end mt-1">
                             <Button
                               type="button"

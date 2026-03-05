@@ -158,11 +158,11 @@ export function SmartBudgetDialog({
     }
 
     try {
-      const userId = activeLedger?.id;
-      if (!userId) throw new Error("No active ledger selected");
+      const ledgerId = activeLedger?.id;
+      if (!ledgerId) throw new Error("No active ledger selected");
 
       // Fetch existing budgets to prevent duplicates
-      const existingBudgets = await dataProvider.getBudgetsWithSpending(userId);
+      const existingBudgets = await dataProvider.getBudgetsWithSpending(ledgerId);
 
       let createdCount = 0;
       let skippedCount = 0;
@@ -184,7 +184,7 @@ export function SmartBudgetDialog({
 
         const catId = await dataProvider.ensureCategoryExists(
           item.category,
-          userId,
+          ledgerId,
         );
 
         if (!catId) {
@@ -196,7 +196,7 @@ export function SmartBudgetDialog({
           subCatId = await dataProvider.ensureSubCategoryExists(
             item.subCategory as string,
             catId,
-            userId,
+            ledgerId,
           );
         }
 
@@ -204,7 +204,7 @@ export function SmartBudgetDialog({
           import("@/types/dataProvider").Budget,
           "id" | "spent_amount"
         > = {
-          user_id: userId,
+          user_id: ledgerId,
           category_id: catId,
           category_name: item.category,
           sub_category_id: subCatId,

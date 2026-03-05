@@ -9,6 +9,7 @@ import {
   SubCategory,
   Ledger,
   BackupConfig,
+  AIProvider,
 } from "../types/dataProvider";
 import { db } from "@/lib/dexieDB";
 import { v4 as uuidv4 } from "uuid";
@@ -54,29 +55,28 @@ export class LocalDataProvider implements DataProvider {
   }
 
   // Transactions
-  async getTransactions(userId: string): Promise<Transaction[]> {
-    // userId is now strictly required (it's the Ledger ID)
-    if (userId) {
+  async getTransactions(ledgerId: string): Promise<Transaction[]> {
+    if (ledgerId) {
       return await db.transactions
         .where("user_id")
-        .equals(userId)
+        .equals(ledgerId)
         .reverse()
         .sortBy("date");
     }
-    // Fallback for migration/empty state - shouldn't happen normally in new logic
+    // Fallback for migration/empty state
     return await db.transactions.orderBy("date").reverse().toArray();
   }
 
   async addTransaction(
     transaction: Omit<Transaction, "id" | "created_at">,
   ): Promise<Transaction> {
-    const userId = transaction.user_id || "local-user";
+    const ledgerId = transaction.user_id || "local-user";
 
     // Ensure category exists
     if (transaction.category) {
       const catId = await this.ensureCategoryExists(
         transaction.category,
-        userId,
+        ledgerId,
       );
 
       // Ensure sub-category exists if provided
@@ -84,21 +84,21 @@ export class LocalDataProvider implements DataProvider {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
           catId,
-          userId,
+          ledgerId,
         );
       }
     }
 
     // Ensure Vendor/Payee exists
     if (transaction.vendor) {
-      await this.ensurePayeeExists(transaction.vendor, false, userId, {
+      await this.ensurePayeeExists(transaction.vendor, false, ledgerId, {
         currency: transaction.currency,
       });
     }
 
     // Ensure Account exists
     if (transaction.account) {
-      await this.ensurePayeeExists(transaction.account, true, userId, {
+      await this.ensurePayeeExists(transaction.account, true, ledgerId, {
         currency: transaction.currency,
       });
     }
@@ -121,27 +121,24 @@ export class LocalDataProvider implements DataProvider {
       created_at: new Date().toISOString(),
     }));
 
-    // We assume caller (e.g. CSV import) has already ensured categories/payees exist
-    // to avoid N+1 reads here.
-
     await db.transactions.bulkAdd(newTransactions);
     return newTransactions;
   }
 
   async updateTransaction(transaction: Transaction): Promise<void> {
-    const userId = transaction.user_id || "local-user";
+    const ledgerId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
     if (transaction.category) {
       const catId = await this.ensureCategoryExists(
         transaction.category,
-        userId,
+        ledgerId,
       );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
           catId,
-          userId,
+          ledgerId,
         );
       }
     }
@@ -165,60 +162,45 @@ export class LocalDataProvider implements DataProvider {
     await db.transactions.bulkDelete(transactionsToDelete.map((t) => t.id));
   }
 
-  async clearTransactions(userId: string): Promise<void> {
-    if (userId) {
-      await db.transactions.where("user_id").equals(userId).delete();
-    } else {
-      await db.transactions.clear();
-    }
+  async clearTransactions(ledgerId: string): Promise<void> {
+    await db.transactions.where("user_id").equals(ledgerId).delete();
   }
 
-  async clearBudgets(userId: string): Promise<void> {
-    if (userId) {
-      await db.budgets.where("user_id").equals(userId).delete();
-    } else {
-      await db.budgets.clear();
-    }
+  async clearBudgets(ledgerId: string): Promise<void> {
+    await db.budgets.where("user_id").equals(ledgerId).delete();
   }
 
-  async clearScheduledTransactions(userId: string): Promise<void> {
-    if (userId) {
-      await db.scheduled_transactions.where("user_id").equals(userId).delete();
-    } else {
-      await db.scheduled_transactions.clear();
-    }
+  async clearScheduledTransactions(ledgerId: string): Promise<void> {
+    await db.scheduled_transactions.where("user_id").equals(ledgerId).delete();
   }
 
   // Scheduled Transactions
   async getScheduledTransactions(
-    userId: string,
+    ledgerId: string,
   ): Promise<ScheduledTransaction[]> {
-    if (userId) {
-      return await db.scheduled_transactions
-        .where("user_id")
-        .equals(userId)
-        .reverse()
-        .sortBy("date");
-    }
-    return await db.scheduled_transactions.orderBy("date").reverse().toArray();
+    return await db.scheduled_transactions
+      .where("user_id")
+      .equals(ledgerId)
+      .reverse()
+      .sortBy("date");
   }
 
   async addScheduledTransaction(
     transaction: Omit<ScheduledTransaction, "id" | "created_at">,
   ): Promise<ScheduledTransaction> {
-    const userId = transaction.user_id || "local-user";
+    const ledgerId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
     if (transaction.category) {
       const catId = await this.ensureCategoryExists(
         transaction.category,
-        userId,
+        ledgerId,
       );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
           catId,
-          userId,
+          ledgerId,
         );
       }
     }
@@ -235,19 +217,19 @@ export class LocalDataProvider implements DataProvider {
   async updateScheduledTransaction(
     transaction: ScheduledTransaction,
   ): Promise<void> {
-    const userId = transaction.user_id || "local-user";
+    const ledgerId = transaction.user_id || "local-user";
 
     // Ensure category/sub-category exist
     if (transaction.category) {
       const catId = await this.ensureCategoryExists(
         transaction.category,
-        userId,
+        ledgerId,
       );
       if (transaction.sub_category && catId) {
         await this.ensureSubCategoryExists(
           transaction.sub_category,
           catId,
-          userId,
+          ledgerId,
         );
       }
     }
@@ -265,9 +247,9 @@ export class LocalDataProvider implements DataProvider {
 
   // Payees/Vendors/Accounts
   async ensurePayeeExists(
-    rawName: string,
+    name: string,
     isAccount: boolean,
-    userId: string,
+    ledgerId: string,
     options?: {
       currency?: string;
       startingBalance?: number;
@@ -276,71 +258,50 @@ export class LocalDataProvider implements DataProvider {
       creditLimit?: number;
     },
   ): Promise<string | null> {
-    if (!rawName) return null;
-    const name = rawName.trim();
+    if (!name) return null;
+    const trimmedName = name.trim();
 
-    // Scope check to userId
     const vendor = await db.vendors
       .where("[user_id+name]")
-      .equals([userId, name])
+      .equals([ledgerId, trimmedName])
       .first();
 
     if (vendor) {
       if (isAccount) {
-        // Ensure it's an account
         let accountId = vendor.account_id;
-
         if (!accountId) {
-          // Create account entry
           accountId = uuidv4();
           await db.accounts.add({
             id: accountId,
-            user_id: userId,
+            user_id: ledgerId,
             currency: options?.currency || "USD",
             starting_balance: options?.startingBalance || 0,
             remarks:
-              options?.remarks || `Auto-created account for vendor: ${name}`,
+              options?.remarks ||
+              `Auto-created account for vendor: ${trimmedName}`,
             created_at: new Date().toISOString(),
             type: options?.type || "Checking",
             credit_limit: options?.creditLimit,
           });
-
-          // Update vendor
           await db.vendors.update(vendor.id, {
             is_account: true,
             account_id: accountId,
           });
-        } else {
-          // Ensure account exists (data integrity)
-          const account = await db.accounts.get(accountId);
-          if (!account) {
-            await db.accounts.add({
-              id: accountId,
-              user_id: userId,
-              currency: options?.currency || "USD",
-              starting_balance: options?.startingBalance || 0,
-              remarks:
-                options?.remarks || `Auto-created account for vendor: ${name}`,
-              created_at: new Date().toISOString(),
-              type: options?.type || "Checking",
-              credit_limit: options?.creditLimit,
-            });
-          }
         }
       }
       return vendor.id;
     } else {
-      // Create new vendor
       let accountId: string | null = null;
       if (isAccount) {
         accountId = uuidv4();
         await db.accounts.add({
           id: accountId,
-          user_id: userId,
+          user_id: ledgerId,
           currency: options?.currency || "USD",
           starting_balance: options?.startingBalance || 0,
           remarks:
-            options?.remarks || `Auto-created account for vendor: ${name}`,
+            options?.remarks ||
+            `Auto-created account for vendor: ${trimmedName}`,
           created_at: new Date().toISOString(),
           type: options?.type || "Checking",
           credit_limit: options?.creditLimit,
@@ -350,8 +311,8 @@ export class LocalDataProvider implements DataProvider {
       const newVendorId = uuidv4();
       await db.vendors.add({
         id: newVendorId,
-        user_id: userId,
-        name: name,
+        user_id: ledgerId,
+        name: trimmedName,
         is_account: isAccount,
         account_id: accountId,
       });
@@ -359,50 +320,38 @@ export class LocalDataProvider implements DataProvider {
     }
   }
 
-  async checkIfPayeeIsAccount(name: string, userId: string): Promise<boolean> {
+  async checkIfPayeeIsAccount(name: string, ledgerId: string): Promise<boolean> {
     const vendor = await db.vendors
-      .where("[user_id+name]")
-      .equals([userId, name])
+      .where({ user_id: ledgerId, name: name })
       .first();
-    return vendor?.is_account || false;
+    return !!vendor?.is_account;
   }
 
   async getAccountCurrency(
     accountName: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<string> {
-    const vendor = await db.vendors
-      .where("[user_id+name]")
-      .equals([userId, accountName])
+    const account = await db.accounts
+      .where({ user_id: ledgerId, remarks: accountName })
       .first();
-    if (vendor && vendor.account_id) {
-      const account = await db.accounts.get(vendor.account_id);
-      return account?.currency || "USD";
-    }
-    return "USD";
+    return account?.currency || "USD";
   }
 
-  async getAllVendors(userId: string): Promise<Vendor[]> {
-    if (userId) {
-      return await db.vendors.where("user_id").equals(userId).toArray();
-    }
-    return await db.vendors.toArray();
+  async getAllVendors(ledgerId: string): Promise<Vendor[]> {
+    return await db.vendors.where("user_id").equals(ledgerId).toArray();
   }
 
   async getVendorByName(
     name: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<Vendor | undefined> {
-    return await db.vendors
-      .where("[user_id+name]")
-      .equals([userId, name])
-      .first();
+    return await db.vendors.where({ user_id: ledgerId, name: name }).first();
   }
 
   async mergePayees(
     targetName: string,
     sourceNames: string[],
-    userId: string,
+    ledgerId: string,
   ): Promise<void> {
     await db.transaction(
       "rw",
@@ -410,35 +359,27 @@ export class LocalDataProvider implements DataProvider {
       db.vendors,
       db.accounts,
       async () => {
-        // 1. Update Transactions
-        // Find transactions where account is in sourceNames
         await db.transactions
           .where("user_id")
-          .equals(userId)
+          .equals(ledgerId)
           .and((t) => sourceNames.includes(t.account))
           .modify({ account: targetName });
 
-        // Find transactions where vendor is in sourceNames
         await db.transactions
           .where("user_id")
-          .equals(userId)
+          .equals(ledgerId)
           .and((t) => sourceNames.includes(t.vendor))
           .modify({ vendor: targetName });
 
-        // 2. Delete source vendors/accounts
-        // Get IDs of source vendors to delete accounts if linked
         const sourceVendors = await db.vendors
           .where("[user_id+name]")
-          .anyOf(sourceNames.map((name) => [userId, name]))
+          .anyOf(sourceNames.map((name) => [ledgerId, name]))
           .toArray();
         const accountIdsToDelete = sourceVendors
           .map((v) => v.account_id)
           .filter((id) => id != null) as string[];
 
-        // Delete from vendors
         await db.vendors.bulkDelete(sourceVendors.map((v) => v.id));
-
-        // Delete from accounts
         if (accountIdsToDelete.length > 0) {
           await db.accounts.bulkDelete(accountIdsToDelete);
         }
@@ -449,33 +390,26 @@ export class LocalDataProvider implements DataProvider {
   async deletePayee(id: string): Promise<void> {
     const vendor = await db.vendors.get(id);
     if (!vendor) return;
-
     await db.vendors.delete(id);
     if (vendor.account_id) {
-      // Also delete the account record? Or just leave it?
-      // Usually safe to delete if it's 1:1 map
       await db.accounts.delete(vendor.account_id);
     }
   }
 
-  async getAllAccounts(userId: string): Promise<Account[]> {
-    if (userId) {
-      return await db.accounts.where("user_id").equals(userId).toArray();
-    }
-    return await db.accounts.toArray();
+  async getAllAccounts(ledgerId: string): Promise<Account[]> {
+    return await db.accounts.where("user_id").equals(ledgerId).toArray();
   }
 
   // Categories
   async ensureCategoryExists(
     rawName: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<string | null> {
     if (!rawName) return null;
     const name = rawName.trim();
-    // Scope to userId
     const category = await db.categories
       .where("[user_id+name]")
-      .equals([userId, name])
+      .equals([ledgerId, name])
       .first();
 
     if (category) return category.id;
@@ -483,7 +417,7 @@ export class LocalDataProvider implements DataProvider {
     const newId = uuidv4();
     await db.categories.add({
       id: newId,
-      user_id: userId,
+      user_id: ledgerId,
       name: name,
       created_at: new Date().toISOString(),
     });
@@ -493,12 +427,11 @@ export class LocalDataProvider implements DataProvider {
   async ensureSubCategoryExists(
     rawName: string,
     categoryId: string,
-    userId: string,
+    ledgerId: string,
   ): Promise<string | null> {
     if (!rawName || !categoryId) return null;
     const name = rawName.trim();
 
-    // Scope to userId implicitly via category_id (which is scoped) but also explicit user_id field
     const sub = await db.sub_categories
       .where("category_id")
       .equals(categoryId)
@@ -510,7 +443,7 @@ export class LocalDataProvider implements DataProvider {
     const newId = uuidv4();
     await db.sub_categories.add({
       id: newId,
-      user_id: userId,
+      user_id: ledgerId,
       category_id: categoryId,
       name: name,
       created_at: new Date().toISOString(),
@@ -518,27 +451,21 @@ export class LocalDataProvider implements DataProvider {
     return newId;
   }
 
-  async getUserCategories(userId: string): Promise<Category[]> {
-    if (userId) {
-      return await db.categories.where("user_id").equals(userId).sortBy("name");
-    }
-    return await db.categories.orderBy("name").toArray();
+  async getUserCategories(ledgerId: string): Promise<Category[]> {
+    return await db.categories.where("user_id").equals(ledgerId).sortBy("name");
   }
 
-  async getSubCategories(userId: string): Promise<SubCategory[]> {
-    if (userId) {
-      return await db.sub_categories
-        .where("user_id")
-        .equals(userId)
-        .sortBy("name");
-    }
-    return await db.sub_categories.orderBy("name").toArray();
+  async getSubCategories(ledgerId: string): Promise<SubCategory[]> {
+    return await db.sub_categories
+      .where("user_id")
+      .equals(ledgerId)
+      .sortBy("name");
   }
 
   async mergeCategories(
     targetName: string,
     sourceNames: string[],
-    userId: string,
+    ledgerId: string,
   ): Promise<void> {
     await db.transaction(
       "rw",
@@ -547,46 +474,39 @@ export class LocalDataProvider implements DataProvider {
       db.sub_categories,
       db.budgets,
       async () => {
-        // 1. Update Transactions
-        // Filter by userId
         await db.transactions
           .where("user_id")
-          .equals(userId)
+          .equals(ledgerId)
           .and((t) => sourceNames.includes(t.category))
           .modify({ category: targetName });
 
-        // 2. Update Budgets?
         await db.budgets
           .where("user_id")
-          .equals(userId)
+          .equals(ledgerId)
           .and((b) => sourceNames.includes(b.category_name))
           .modify({ category_name: targetName });
 
-        // 3. Move Sub-categories?
         const targetCategory = await db.categories
           .where("[user_id+name]")
-          .equals([userId, targetName])
+          .equals([ledgerId, targetName])
           .first();
 
         if (targetCategory) {
           const sourceCategories = await db.categories
             .where("[user_id+name]")
-            .anyOf(sourceNames.map((name) => [userId, name]))
+            .anyOf(sourceNames.map((name) => [ledgerId, name]))
             .toArray();
           const sourceIds = sourceCategories.map((c) => c.id);
 
-          // Move sub-categories
           await db.sub_categories
             .where("category_id")
             .anyOf(sourceIds)
             .modify({ category_id: targetCategory.id });
         }
 
-        // 4. Delete source categories
-        // Need IDs to delete safely or use exact match
         const sourceCategories = await db.categories
           .where("[user_id+name]")
-          .anyOf(sourceNames.map((name) => [userId, name]))
+          .anyOf(sourceNames.map((name) => [ledgerId, name]))
           .toArray();
         await db.categories.bulkDelete(sourceCategories.map((c) => c.id));
       },
@@ -595,20 +515,12 @@ export class LocalDataProvider implements DataProvider {
 
   async deleteCategory(id: string): Promise<void> {
     await db.categories.delete(id);
-    // Cascade delete sub-categories?
     await db.sub_categories.where("category_id").equals(id).delete();
   }
 
   // Budgets
-  async getBudgetsWithSpending(userId: string): Promise<Budget[]> {
-    // Replicating RPC 'get_budgets_with_spending'
-    const budgets = userId
-      ? await db.budgets.where("user_id").equals(userId).toArray()
-      : await db.budgets.toArray();
-
-    // Workaround for WKWebView Mobile Freeze:
-    // We completely bypass recalculating the spent amount via Dexie async loops
-    // because standard UI components efficiently calculate spending directly via the `useTransactions` context.
+  async getBudgetsWithSpending(ledgerId: string): Promise<Budget[]> {
+    const budgets = await db.budgets.where("user_id").equals(ledgerId).toArray();
     return budgets.map((budget) => ({
       ...budget,
       spent_amount: 0,
@@ -619,7 +531,7 @@ export class LocalDataProvider implements DataProvider {
     await db.budgets.add({
       ...budget,
       id: uuidv4(),
-      spent_amount: 0, // Initial
+      spent_amount: 0,
       is_active: budget.is_active ?? true,
       is_goal: budget.is_goal ?? false,
       created_at: budget.created_at || new Date().toISOString(),
@@ -643,8 +555,8 @@ export class LocalDataProvider implements DataProvider {
 
       if (!t1 || !t2) return;
 
-      const userId = t1.user_id || t2.user_id || "local-user";
-      await this.ensureCategoryExists("Transfer", userId);
+      const ledgerId = t1.user_id || t2.user_id || "local-user";
+      await this.ensureCategoryExists("Transfer", ledgerId);
 
       await db.transactions.update(id1, {
         transfer_id: transferId,
@@ -658,75 +570,65 @@ export class LocalDataProvider implements DataProvider {
   }
 
   async unlinkTransactions(transferId: string): Promise<void> {
-    console.log("[LocalDataProvider] Unlinking transfer:", transferId);
-    const count = await db.transactions
+    await db.transactions
       .where("transfer_id")
       .equals(transferId)
-      .modify({ transfer_id: null }); // Use explicit null
-    console.log("[LocalDataProvider] Unlinked count:", count);
+      .modify({ transfer_id: null });
   }
 
   async clearAllData(): Promise<void> {
-    console.log("[LocalDataProvider] clearAllData: Starting Hard Reset...");
     try {
       if (!db.isOpen()) await db.open();
       await db.transaction("rw", db.tables, async () => {
-        // Clear all tables dynamically
         for (const table of db.tables) {
-          console.log(`[LocalDataProvider] Clearing table: ${table.name}`);
           await table.clear();
         }
       });
-      console.log("[LocalDataProvider] Clear Complete.");
-    } catch (fallbackError) {
-      console.error("[LocalDataProvider] Clear FAILED:", fallbackError);
-      throw fallbackError; // Re-throw to show error to user
+    } catch (error) {
+      console.error("[LocalDataProvider] clearAllData FAILED:", error);
+      throw error;
     }
   }
 
   // Migration Utils
-  async exportData(userId?: string): Promise<unknown> {
-    // Helper to rename user_id to ledger_id
+  async exportData(ledgerId?: string): Promise<unknown> {
     const mapToLedgerId = <T extends { user_id?: string }>(items: T[]) =>
       items.map((item) => {
         const { user_id, ...rest } = item;
         return { ...rest, ledger_id: user_id };
       });
 
-    if (userId) {
-      // Export scoped data
+    if (ledgerId) {
       return {
         transactions: mapToLedgerId(
-          await db.transactions.where("user_id").equals(userId).toArray(),
+          await db.transactions.where("user_id").equals(ledgerId).toArray(),
         ),
         scheduled_transactions: mapToLedgerId(
           await db.scheduled_transactions
             .where("user_id")
-            .equals(userId)
+            .equals(ledgerId)
             .toArray(),
         ),
         budgets: mapToLedgerId(
-          await db.budgets.where("user_id").equals(userId).toArray(),
+          await db.budgets.where("user_id").equals(ledgerId).toArray(),
         ),
         vendors: mapToLedgerId(
-          await db.vendors.where("user_id").equals(userId).toArray(),
+          await db.vendors.where("user_id").equals(ledgerId).toArray(),
         ),
         accounts: mapToLedgerId(
-          await db.accounts.where("user_id").equals(userId).toArray(),
+          await db.accounts.where("user_id").equals(ledgerId).toArray(),
         ),
         categories: mapToLedgerId(
-          await db.categories.where("user_id").equals(userId).toArray(),
+          await db.categories.where("user_id").equals(ledgerId).toArray(),
         ),
         sub_categories: mapToLedgerId(
-          await db.sub_categories.where("user_id").equals(userId).toArray(),
+          await db.sub_categories.where("user_id").equals(ledgerId).toArray(),
         ),
-        version: 2, // Bump version
+        version: 2,
         exportedAt: new Date().toISOString(),
       };
     }
 
-    // Full export (legacy or admin)
-    // Fetch backup configs and strip non-serializable fields (directoryHandle)
     const backupConfigs = await db.backup_configs.toArray();
     const cleanBackupConfigs = backupConfigs.map((config) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -734,7 +636,6 @@ export class LocalDataProvider implements DataProvider {
       return rest;
     });
 
-    // Active Currencies from LocalStorage (Unified)
     let parsedActiveCurrencies = [];
     try {
       const activeCurrencies = localStorage.getItem("active_currencies");
@@ -753,7 +654,7 @@ export class LocalDataProvider implements DataProvider {
       console.error("Failed to parse currency_exchange_rates", e);
     }
 
-    const data = {
+    return {
       transactions: mapToLedgerId(await db.transactions.toArray()),
       scheduled_transactions: mapToLedgerId(
         await db.scheduled_transactions.toArray(),
@@ -767,34 +668,29 @@ export class LocalDataProvider implements DataProvider {
       backup_configs: cleanBackupConfigs,
       active_currencies: parsedActiveCurrencies,
       currency_exchange_rates: parsedExchangeRates,
+      ai_providers: await db.ai_providers.toArray(),
       theme: localStorage.getItem("theme") || "system",
       version: 2,
       exportedAt: new Date().toISOString(),
     };
-    return data;
   }
 
-  async importData(data: unknown, userId?: string): Promise<void> {
+  async importData(data: unknown, ledgerId?: string): Promise<void> {
     const importData = data as Record<string, unknown>;
     if (!importData || !importData.transactions)
       throw new Error("Invalid data format");
 
-    // Helper to map ledger_id back to user_id (for internal DB compatibility)
-    // If incoming data has user_id, keep it (legacy backup). If ledger_id, map it.
     const mapToUserId = (
       items: Record<string, unknown>[],
       overrideUserId?: string,
     ) =>
       items.map((item) => {
         const typedItem = item as Record<string, unknown>;
-        // If we are importing into a specific scope (overrideUserId), we FORCE that ID.
         if (overrideUserId) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { ledger_id, user_id, ...rest } = typedItem;
           return { ...rest, user_id: overrideUserId };
         }
-
-        // Otherwise, we restore the ID from the file (ledger_id or user_id)
         const { ledger_id, user_id, ...rest } = typedItem;
         const finalId = ledger_id || user_id;
         return { ...rest, user_id: finalId };
@@ -812,55 +708,48 @@ export class LocalDataProvider implements DataProvider {
         db.sub_categories,
         db.ledgers,
         db.backup_configs,
+        db.ai_providers,
       ],
       async () => {
-        if (userId) {
-          // Import into specific ledger. Remove existing data for this ledger first?
-          // Maybe user wants to merge?
-          // "Imports/exports (transactions + backups) will be scoped to a ledger."
-          // Let's assume replace or we just add. For safety let's just add new IDs if not merging?
-          // For now, let's implement simple atomic import:
-
-          // 1. Prepare data with userId override
+        if (ledgerId) {
           const transactions = mapToUserId(
             (importData.transactions as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-              [],
-            userId,
+            [],
+            ledgerId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(
             (importData.budgets as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as Budget[];
           const vendors = mapToUserId(
             (importData.vendors as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as Vendor[];
           const accounts = mapToUserId(
             (importData.accounts as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as Account[];
           const categories = mapToUserId(
             (importData.categories as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as Category[];
           const subCategories = mapToUserId(
             (importData.sub_categories as Record<string, unknown>[]) || [],
-            userId,
+            ledgerId,
           ) as SubCategory[];
 
-          // 2. Clear existing for this ledger
-          await this.clearTransactions(userId);
-          await this.clearScheduledTransactions(userId);
-          await this.clearBudgets(userId);
+          await this.clearTransactions(ledgerId);
+          await this.clearScheduledTransactions(ledgerId);
+          await this.clearBudgets(ledgerId);
 
-          await db.vendors.where("user_id").equals(userId).delete();
-          await db.accounts.where("user_id").equals(userId).delete();
-          await db.categories.where("user_id").equals(userId).delete();
-          await db.sub_categories.where("user_id").equals(userId).delete();
+          await db.vendors.where("user_id").equals(ledgerId).delete();
+          await db.accounts.where("user_id").equals(ledgerId).delete();
+          await db.categories.where("user_id").equals(ledgerId).delete();
+          await db.sub_categories.where("user_id").equals(ledgerId).delete();
 
           await db.transactions.bulkPut(transactions);
           await db.scheduled_transactions.bulkPut(scheduled);
@@ -870,7 +759,6 @@ export class LocalDataProvider implements DataProvider {
           await db.categories.bulkPut(categories);
           await db.sub_categories.bulkPut(subCategories);
         } else {
-          // Full Restore (Dangerous)
           await db.transactions.clear();
           await db.scheduled_transactions.clear();
           await db.budgets.clear();
@@ -880,12 +768,17 @@ export class LocalDataProvider implements DataProvider {
           await db.sub_categories.clear();
           await db.ledgers.clear();
           await db.backup_configs.clear();
+          await db.ai_providers.clear();
 
           if (importData.ledgers)
             await db.ledgers.bulkAdd(importData.ledgers as Ledger[]);
           if (importData.backup_configs)
             await db.backup_configs.bulkAdd(
               importData.backup_configs as BackupConfig[],
+            );
+          if (importData.ai_providers)
+            await db.ai_providers.bulkAdd(
+              importData.ai_providers as AIProvider[],
             );
 
           if (importData.transactions)
@@ -931,7 +824,6 @@ export class LocalDataProvider implements DataProvider {
               ) as SubCategory[],
             );
 
-          // Import Active Currencies (Unified)
           if (
             importData.active_currencies &&
             Array.isArray(importData.active_currencies)
@@ -944,20 +836,7 @@ export class LocalDataProvider implements DataProvider {
             } catch (e) {
               console.error("Failed to import active currencies", e);
             }
-          } else if (
-            importData.custom_currencies &&
-            Array.isArray(importData.custom_currencies)
-          ) {
-            try {
-              localStorage.setItem(
-                "custom_currencies",
-                JSON.stringify(importData.custom_currencies),
-              );
-            } catch (e) {
-              console.error("Failed to import legacy custom currencies", e);
-            }
           }
-          // Import Exchange Rates
           if (importData.currency_exchange_rates) {
             try {
               const existingRates = JSON.parse(
@@ -978,7 +857,6 @@ export class LocalDataProvider implements DataProvider {
               console.error("Failed to import exchange rates", e);
             }
           }
-          // Import theme preference
           if (importData.theme && typeof importData.theme === "string") {
             try {
               localStorage.setItem("theme", importData.theme);
@@ -989,5 +867,34 @@ export class LocalDataProvider implements DataProvider {
         }
       },
     );
+  }
+
+  // AI Provider Management
+  async getAIProviders() {
+    return db.ai_providers.toArray();
+  }
+
+  async addAIProvider(provider: Omit<AIProvider, "id">) {
+    const id = crypto.randomUUID();
+    const newProvider = { ...provider, id };
+    await db.ai_providers.add(newProvider);
+    return newProvider;
+  }
+
+  async updateAIProvider(provider: AIProvider) {
+    await db.ai_providers.put(provider);
+  }
+
+  async deleteAIProvider(id: string) {
+    await db.ai_providers.delete(id);
+  }
+
+  async setDefaultAIProvider(id: string) {
+    await db.transaction("rw", db.ai_providers, async () => {
+      const providers = await db.ai_providers.toArray();
+      for (const p of providers) {
+        await db.ai_providers.put({ ...p, isDefault: p.id === id });
+      }
+    });
   }
 }

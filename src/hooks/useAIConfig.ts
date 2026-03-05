@@ -1,52 +1,55 @@
-import { useState, useEffect } from "react";
-
-export type AIProvider =
-  | "OPENAI"
-  | "GEMINI"
-  | "PERPLEXITY"
-  | "ANTHROPIC"
-  | "MISTRAL"
-  | "LOCALHOST"
-  | "NONE";
+import { useState, useEffect, useCallback } from "react";
+import { AIProvider } from "@/types/dataProvider";
+import { useDataProvider } from "@/context/DataProviderContext";
 
 export interface AIConfig {
-  provider: AIProvider;
+  provider: AIProvider | null;
   apiKey: string;
 }
 
 export const useAIConfig = () => {
+  const dataProvider = useDataProvider();
   const [config, setConfig] = useState<AIConfig>({
-    provider: "NONE",
+    provider: null,
     apiKey: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshConfig = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const providers = await dataProvider.getAIProviders();
+      const activeProvider = providers.find((p) => p.isDefault) || providers[0] || null;
+
+      let apiKey = "";
+      if (activeProvider) {
+        apiKey = localStorage.getItem(`budgetit_ai_apiKey_${activeProvider.id}`) || "";
+      }
+
+      setConfig({
+        provider: activeProvider,
+        apiKey,
+      });
+    } catch (error) {
+      console.error("Failed to load AI config", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dataProvider]);
 
   useEffect(() => {
-    // Load config from localStorage on mount
-    const storedProvider = localStorage.getItem("budgetit_ai_provider");
-    const storedApiKey = localStorage.getItem("budgetit_ai_apiKey");
+    refreshConfig();
+  }, [refreshConfig]);
 
-    if (storedProvider) {
-      setConfig((prev) => ({
-        ...prev,
-        provider: storedProvider as AIProvider,
-      }));
-    }
-    if (storedApiKey) {
-      setConfig((prev) => ({
-        ...prev,
-        apiKey: storedApiKey,
-      }));
-    }
-  }, []);
-
-  const saveConfig = (newProvider: AIProvider, newApiKey: string) => {
-    localStorage.setItem("budgetit_ai_provider", newProvider);
-    localStorage.setItem("budgetit_ai_apiKey", newApiKey);
-    setConfig({ provider: newProvider, apiKey: newApiKey });
+  const saveConfig = async (providerId: string, newApiKey: string) => {
+    localStorage.setItem(`budgetit_ai_apiKey_${providerId}`, newApiKey);
+    await refreshConfig();
   };
 
   return {
     config,
     saveConfig,
+    refreshConfig,
+    isLoading,
   };
 };

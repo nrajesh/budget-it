@@ -8,6 +8,7 @@ import {
   Account,
   SubCategory,
   BackupConfig,
+  AIProvider,
 } from "@/types/dataProvider";
 
 // Extend the interfaces to include Dexie-specific keys (optional, but good for TS)
@@ -36,13 +37,14 @@ export class FinanceDatabase extends Dexie {
   sub_categories!: Table<SubCategory>;
   ledgers!: Table<Ledger>;
   backup_configs!: Table<BackupConfig>;
+  ai_providers!: Table<AIProvider>;
 
   constructor() {
     super("FinanceTrackerDB");
 
     // Schema definition
     // Note: ++id is not used because we use UUIDs (strings) for compatibility
-    this.version(8).stores({
+    this.version(9).stores({
       transactions:
         "id, user_id, date, account, vendor, category, transfer_id, recurrence_id",
       scheduled_transactions: "id, user_id, date, account, vendor",
@@ -53,6 +55,7 @@ export class FinanceDatabase extends Dexie {
       sub_categories: "id, user_id, category_id, name",
       ledgers: "id, name, last_accessed",
       backup_configs: "id, isActive, nextBackup", // Added for scheduled backups
+      ai_providers: "id, name, type",
     });
   }
 }

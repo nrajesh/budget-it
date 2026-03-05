@@ -1,4 +1,4 @@
-# Import Progress Modal — Implementation Plan
+# Import Progress Modal - Implementation Plan
 
 ## Problem
 
@@ -61,7 +61,7 @@ Since this is a UX feature (visual progress modal), the primary verification is 
 2. **Navigate** to `http://localhost:5173/ledgers`
 3. **Test Demo Data Generation**:
    - Click "Generate Data" → confirm
-   - Verify: A modal popup should appear with "Generating Demo Data" title, a spinning loader, stage text, progress bar, and percentage counter — matching the screenshot the user shared
+   - Verify: A modal popup should appear with "Generating Demo Data" title, a spinning loader, stage text, progress bar, and percentage counter - matching the screenshot the user shared
    - The modal should auto-close when complete
 4. **Test CSV Import** (if a test CSV file is available):
    - Click "Import Transactions CSV" → select file → fill ledger details → map columns → confirm

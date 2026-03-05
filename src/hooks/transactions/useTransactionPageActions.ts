@@ -273,15 +273,15 @@ export const useTransactionPageActions = (
     newAccountCurrencies?: Record<string, string>,
   ) => {
     try {
-      const userId = activeLedger?.id;
-      if (!userId) return;
+      const ledgerId = activeLedger?.id;
+      if (!ledgerId) return;
 
       const isReplace = config?.importMode === "replace";
 
       if (isReplace) {
-        await dataProvider.clearTransactions(userId);
-        await dataProvider.clearBudgets(userId);
-        await dataProvider.clearScheduledTransactions(userId);
+        await dataProvider.clearTransactions(ledgerId);
+        await dataProvider.clearBudgets(ledgerId);
+        await dataProvider.clearScheduledTransactions(ledgerId);
       }
 
       const totalSteps = 4;
@@ -298,14 +298,14 @@ export const useTransactionPageActions = (
       const knownCategoryIds = new Set<string>();
       const knownSubCategoryIds = new Set<string>();
 
-      const existingVendors = await dataProvider.getAllVendors(userId);
+      const existingVendors = await dataProvider.getAllVendors(ledgerId);
       existingVendors.forEach((v) => {
         if (v.is_account) knownAccountIds.add(v.id);
         else knownVendorIds.add(v.id);
       });
-      const existingCategories = await dataProvider.getUserCategories(userId);
+      const existingCategories = await dataProvider.getUserCategories(ledgerId);
       existingCategories.forEach((c) => knownCategoryIds.add(c.id));
-      const existingSubCategories = await dataProvider.getSubCategories(userId);
+      const existingSubCategories = await dataProvider.getSubCategories(ledgerId);
       existingSubCategories.forEach((s) => knownSubCategoryIds.add(s.id));
 
       // 1. Process Accounts
@@ -342,7 +342,7 @@ export const useTransactionPageActions = (
         const row = data.find((r) => (r.Account || "").trim() === name);
         const type = row?.["Account Type"] as AccountType | undefined;
 
-        const id = await dataProvider.ensurePayeeExists(name, true, userId, {
+        const id = await dataProvider.ensurePayeeExists(name, true, ledgerId, {
           currency,
           type,
         });
@@ -367,7 +367,7 @@ export const useTransactionPageActions = (
         ),
       ];
       for (const name of uniquePayees) {
-        const id = await dataProvider.ensurePayeeExists(name, false, userId);
+        const id = await dataProvider.ensurePayeeExists(name, false, ledgerId);
         if (id && !knownVendorIds.has(id) && !knownAccountIds.has(id)) {
           newVendorsCount++;
           knownVendorIds.add(id);
@@ -392,7 +392,7 @@ export const useTransactionPageActions = (
         ...new Set(data.map((r) => (r.Category || "").trim()).filter(Boolean)),
       ];
       for (const name of uniqueCategories) {
-        const id = await dataProvider.ensureCategoryExists(name, userId);
+        const id = await dataProvider.ensureCategoryExists(name, ledgerId);
         if (id) {
           if (!knownCategoryIds.has(id)) {
             newCategoriesCount++;
@@ -418,7 +418,7 @@ export const useTransactionPageActions = (
           const id = await dataProvider.ensureSubCategoryExists(
             subName,
             catId,
-            userId,
+            ledgerId,
           );
           if (id && !knownSubCategoryIds.has(id)) {
             newSubCategoriesCount++;
@@ -471,7 +471,7 @@ export const useTransactionPageActions = (
         ).trim();
 
         const baseTx: Omit<Transaction, "id" | "created_at" | "updated_at"> = {
-          user_id: userId,
+          user_id: ledgerId,
           date: date,
           account: (
             row.Account ||
@@ -540,9 +540,9 @@ export const useTransactionPageActions = (
           // Transaction 2: To Receiving Account (Invert sign if no specific amount provided)
           const amountTo = transferAmountRaw
             ? parseRobustAmount(
-                transferAmountRaw as string,
-                config?.decimalSeparator,
-              )
+              transferAmountRaw as string,
+              config?.decimalSeparator,
+            )
             : -amount;
 
           // Resolve currency
@@ -550,7 +550,7 @@ export const useTransactionPageActions = (
           if (!currencyTo) {
             currencyTo = await dataProvider.getAccountCurrency(
               transferAccount,
-              userId,
+              ledgerId,
             );
           }
           if (!currencyTo) currencyTo = "USD";
@@ -670,8 +670,8 @@ export const useTransactionPageActions = (
    */
   const startImport = async (data: ImportRow[], config?: ImportConfig) => {
     try {
-      const userId = activeLedger?.id;
-      if (!userId) {
+      const ledgerId = activeLedger?.id;
+      if (!ledgerId) {
         showError("No active ledger selected.");
         return;
       }
@@ -688,7 +688,7 @@ export const useTransactionPageActions = (
       });
 
       if (transferAccounts.size > 0) {
-        const existingVendors = await dataProvider.getAllVendors(userId);
+        const existingVendors = await dataProvider.getAllVendors(ledgerId);
         const existingAccountNames = new Set(
           existingVendors.filter((p) => p.is_account).map((p) => p.name),
         );

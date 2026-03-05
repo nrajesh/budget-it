@@ -8,7 +8,7 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 — Three-Graph Analytics View with Period Comparison (Priority: P1)
+### User Story 1 - Three-Graph Analytics View with Period Comparison (Priority: P1)
 
 The user opens the Analytics page and sees three swipable graph types (line, bar, pie) displayed one at a time via icon toggles at the top. Each graph compares the **current period** to the **previous period** of the same duration when data exists.
 
@@ -16,7 +16,7 @@ The user opens the Analytics page and sees three swipable graph types (line, bar
 - **Bar graph**: Solid bars show the average spending values per sub-period. Dotted horizontal lines mark **max** and **mean** values for the period.
 - **Pie chart**: Colorful segments representing only the selected entity (category by default). Clicking a segment highlights it (all other segments gray out) and filters the bottom transaction table to that category. Clicking the already-selected segment **or the center** resets/zooms out.
 
-**Why this priority**: This is the core analytics experience — the user must see and switch between chart types easily.
+**Why this priority**: This is the core analytics experience - the user must see and switch between chart types easily.
 
 **Independent Test**: Can be fully tested by navigating to Analytics, toggling between the three chart types, and verifying each renders correctly with appropriate data.
 
@@ -28,11 +28,11 @@ The user opens the Analytics page and sees three swipable graph types (line, bar
 
 ---
 
-### User Story 2 — Period Selector (1W, 1M, 6M, 1Y, Custom) (Priority: P1)
+### User Story 2 - Period Selector (1W, 1M, 6M, 1Y, Custom) (Priority: P1)
 
 Below the x-axis of any chart, the user sees period buttons: **1W**, **1M**, **6M**, **1Y**. These are clearly visible pill-style buttons. Next to **1Y** is a **"…"** button that opens a date picker for custom start and end dates. Selecting a period recalculates all charts, the summary header, and the bottom table.
 
-**Why this priority**: Period selection is fundamental — all data and comparisons depend on it.
+**Why this priority**: Period selection is fundamental - all data and comparisons depend on it.
 
 **Independent Test**: Tap each period button and verify the chart redraws with correct date-filtered data. Tap "…" and enter custom dates.
 
@@ -43,7 +43,7 @@ Below the x-axis of any chart, the user sees period buttons: **1W**, **1M**, **6
 
 ---
 
-### User Story 3 — Interactive Line Chart Tooltip with Period Comparison (Priority: P1)
+### User Story 3 - Interactive Line Chart Tooltip with Period Comparison (Priority: P1)
 
 When the user touches/clicks on a data point on the line chart, a tooltip appears showing:
 - The date label (e.g., "Today" or "Mon")
@@ -51,7 +51,7 @@ When the user touches/clicks on a data point on the line chart, a tooltip appear
 - Previous period amount on the corresponding day (e.g., € 28)
 - Delta indicator: green ▼ if spending decreased, red ▲ if spending increased, with the difference amount.
 
-**Why this priority**: This is the primary way users compare spending at a glance — the reference screenshots heavily emphasize this interaction.
+**Why this priority**: This is the primary way users compare spending at a glance - the reference screenshots heavily emphasize this interaction.
 
 **Independent Test**: Touch/click data points on the line chart and verify the tooltip displays correct comparison data.
 
@@ -62,14 +62,14 @@ When the user touches/clicks on a data point on the line chart, a tooltip appear
 
 ---
 
-### User Story 4 — Entity Toggle for Bottom Table with Three-Level Drill-Down (Priority: P2)
+### User Story 4 - Entity Toggle for Bottom Table with Three-Level Drill-Down (Priority: P2)
 
 Below the charts, the user sees a section header like "By Category ▾". Tapping this dropdown toggles the bottom table view between: **Category** (includes sub-categories when drilled), **Vendor**, **Currency**, and **Account**. Each row shows the entity name, transaction count, the contributing amount, and the percentage of total for the selected period.
 
 When the **category** entity type is active and a category is selected (either via pie click or table row click):
-- Level 1: **Category list** — clicking a row selects it and syncs the pie chart
-- Level 2: **Sub-category list** — clicking a sub-category drills into transactions
-- Level 3: **Transaction list** — shows vendor, date, amount for individual transactions
+- Level 1: **Category list** - clicking a row selects it and syncs the pie chart
+- Level 2: **Sub-category list** - clicking a sub-category drills into transactions
+- Level 3: **Transaction list** - shows vendor, date, amount for individual transactions
 
 A **breadcrumb** (`All › Housing › Coffee`) and **← back** + **Clear** buttons are provided for navigation.
 
@@ -84,7 +84,7 @@ A **breadcrumb** (`All › Housing › Coffee`) and **← back** + **Clear** but
 
 ---
 
-### User Story 5 — Swipeable Month Navigation (Priority: P2)
+### User Story 5 - Swipeable Month Navigation (Priority: P2)
 
 The main chart area is swipeable:
 - **Swipe right** moves to the previous month (or period).
@@ -93,7 +93,7 @@ The main chart area is swipeable:
 
 The header label updates to show the active period (e.g., "February 2026", "This week").
 
-**Why this priority**: Quick temporal navigation is essential for mobile-first design — users should compare months effortlessly.
+**Why this priority**: Quick temporal navigation is essential for mobile-first design - users should compare months effortlessly.
 
 **Independent Test**: Swipe left/right on the chart area and verify the period changes. Use arrow keys on desktop.
 
@@ -105,12 +105,12 @@ The header label updates to show the active period (e.g., "February 2026", "This
 
 ---
 
-### User Story 6 — Spending Summary Header with Comparison (Priority: P2)
+### User Story 6 - Spending Summary Header with Comparison (Priority: P2)
 
 At the top of the analytics page, a summary header shows:
 - **"Spent"** label
 - **Total amount** for the current period (e.g., € 5,81)
-- **Delta** from the previous period (e.g., "▼ € 22 · This week") — green if lower, red if higher
+- **Delta** from the previous period (e.g., "▼ € 22 · This week") - green if lower, red if higher
 - Period label (e.g., "This week", "This month", "Jan – Jun")
 
 **Why this priority**: Gives the user an instant glance summary before they even look at the charts.
