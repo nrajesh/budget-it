@@ -44,17 +44,17 @@ export class FinanceDatabase extends Dexie {
 
     // Schema definition
     // Note: ++id is not used because we use UUIDs (strings) for compatibility
-    this.version(9).stores({
+    this.version(10).stores({
       transactions:
         "id, user_id, date, account, vendor, category, transfer_id, recurrence_id",
       scheduled_transactions: "id, user_id, date, account, vendor",
       budgets: "id, user_id, category_name, is_goal",
-      vendors: "id, [user_id+name], name, is_account, account_id, user_id", // Added user_id to indexes
-      accounts: "id, user_id, type", // Added user_id
+      vendors: "id, [user_id+name], name, is_account, account_id, user_id",
+      accounts: "id, user_id, [user_id+remarks], type",
       categories: "id, [user_id+name], user_id, name",
       sub_categories: "id, user_id, category_id, name",
       ledgers: "id, name, last_accessed",
-      backup_configs: "id, isActive, nextBackup", // Added for scheduled backups
+      backup_configs: "id, isActive, nextBackup",
       ai_providers: "id, name, type",
     });
   }

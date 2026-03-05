@@ -105,6 +105,38 @@ Example Output: { "Starbucks": { "categoryName": "Dining Out", "subCategoryName"
   `.trim();
 };
 
+/**
+ * Extracts and parses JSON from a potentially messy AI response string.
+ */
+const parseAIResponse = <T>(text: string): T => {
+  let resultJson = text.trim();
+
+  // Strip markdown if present
+  if (resultJson.includes("```json")) {
+    resultJson = resultJson.split("```json")[1].split("```")[0].trim();
+  } else if (resultJson.includes("```")) {
+    resultJson = resultJson.split("```")[1].split("```")[0].trim();
+  }
+
+  // If it's still not valid JSON, try to find the first { and last }
+  if (!resultJson.startsWith("{") || !resultJson.endsWith("}")) {
+    const startIdx = resultJson.indexOf("{");
+    const endIdx = resultJson.lastIndexOf("}");
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      resultJson = resultJson.substring(startIdx, endIdx + 1);
+    }
+  }
+
+  try {
+    return JSON.parse(resultJson);
+  } catch (e) {
+    console.error("Failed to parse AI response as JSON:", resultJson);
+    throw new Error(
+      `Unexpected AI response format: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+};
+
 export const useAutoCategorize = () => {
   const { config } = useAIConfig();
 
@@ -269,14 +301,7 @@ export const useAutoCategorize = () => {
         resultJson = data.choices[0].message.content;
       }
 
-      // Strip markdown if present (common for non-json-forcing models)
-      if (resultJson.includes("```json")) {
-        resultJson = resultJson.split("```json")[1].split("```")[0].trim();
-      } else if (resultJson.includes("```")) {
-        resultJson = resultJson.split("```")[1].split("```")[0].trim();
-      }
-
-      const parsed = JSON.parse(resultJson);
+      const parsed = parseAIResponse<CategorizeResult>(resultJson);
       return {
         categoryName: parsed.categoryName || "",
         subCategoryName: parsed.subCategoryName || "",
@@ -380,16 +405,31 @@ export const useAutoCategorize = () => {
           throw new Error(`Perplexity Error: ${response.statusText}`);
         const data = await response.json();
         resultJson = data.choices[0].message.content;
+      } else if (provider.type === "MISTRAL") {
+        const response = await fetch(
+          provider.baseUrl.replace(/\/$/, "") + "/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+              model: provider.model || "mistral-tiny",
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+            }),
+          },
+        );
+
+        if (!response.ok)
+          throw new Error(`Mistral Error: ${response.statusText}`);
+        const data = await response.json();
+        resultJson = data.choices[0].message.content;
       }
 
-      if (resultJson.includes("```json")) {
-        resultJson = resultJson.split("```json")[1].split("```")[0].trim();
-      } else if (resultJson.includes("```")) {
-        resultJson = resultJson.split("```")[1].split("```")[0].trim();
-      }
-
-      const parsed = JSON.parse(resultJson);
-      return parsed as BulkCategorizeResult;
+      return parseAIResponse<BulkCategorizeResult>(resultJson);
     } catch (error: unknown) {
       console.error("AutoCategorizeBulk Error:", error);
       throw new Error(
