@@ -37,10 +37,37 @@ const formSchema = z.object({
     "CUSTOM",
   ]),
   baseUrl: z.string().url("Must be a valid URL"),
-  model: z.string().min(1, "Model name is required"),
+  model: z.string().optional(),
   description: z.string().optional(),
   isDefault: z.boolean().optional(),
 });
+
+const PROVIDER_DOCS: Record<string, { url: string; endpoint: string }> = {
+  OPENAI: {
+    url: "https://platform.openai.com/docs/models",
+    endpoint: "https://api.openai.com/v1",
+  },
+  GEMINI: {
+    url: "https://ai.google.dev/gemini-api/docs/models/gemini",
+    endpoint: "https://generativelanguage.googleapis.com",
+  },
+  ANTHROPIC: {
+    url: "https://docs.anthropic.com/en/docs/about-claude/models",
+    endpoint: "https://api.anthropic.com/v1/messages",
+  },
+  MISTRAL: {
+    url: "https://docs.mistral.ai/platform/endpoints/",
+    endpoint: "https://api.mistral.ai/v1",
+  },
+  PERPLEXITY: {
+    url: "https://docs.perplexity.ai/docs/model-cards",
+    endpoint: "https://api.perplexity.ai",
+  },
+  CUSTOM: {
+    url: "https://platform.openai.com/docs/api-reference",
+    endpoint: "",
+  },
+};
 
 interface AddEditAIProviderDialogProps {
   isOpen: boolean;
@@ -152,7 +179,17 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                     <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        const newType = e.target.value as keyof typeof PROVIDER_DOCS;
+                        field.onChange(newType);
+
+                        // Auto-fill endpoint if current is empty or matches another provider's default
+                        const currentUrl = form.getValues("baseUrl");
+                        const isDefaultUrl = Object.values(PROVIDER_DOCS).some(d => d.endpoint === currentUrl);
+                        if (!currentUrl || isDefaultUrl) {
+                          form.setValue("baseUrl", PROVIDER_DOCS[newType].endpoint);
+                        }
+                      }}
                     >
                       <option value="OPENAI">OpenAI</option>
                       <option value="GEMINI">Google Gemini</option>
@@ -161,6 +198,16 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                       <option value="PERPLEXITY">Perplexity</option>
                       <option value="CUSTOM">Custom (OpenAI Compatible)</option>
                     </select>
+                    {PROVIDER_DOCS[field.value as keyof typeof PROVIDER_DOCS]?.url && (
+                      <a
+                        href={PROVIDER_DOCS[field.value as keyof typeof PROVIDER_DOCS].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-indigo-500 hover:underline inline-block mt-1"
+                      >
+                        View Documentation & Models →
+                      </a>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -171,7 +218,7 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
                 name="model"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Model ID</FormLabel>
+                    <FormLabel>Model ID (Optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., gpt-4o, llama3" {...field} />
                     </FormControl>
