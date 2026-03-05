@@ -289,11 +289,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 
@@ -467,8 +467,9 @@ const Transactions = () => {
         setIsBulkCategorizing(true);
         setOperationProgress({
           title: "Auto-Categorizing",
-          description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""
-            })...`,
+          description: `Categorizing ${allUniqueVendors.length} unique vendors (${
+            Object.keys(localMappings).length ? "Some locally matched" : ""
+          })...`,
           stage: "Calling AI",
           progress: 50,
           totalStages: 100,
@@ -550,22 +551,22 @@ const Transactions = () => {
                 errorStr.toLowerCase().includes("401") ||
                 errorStr.toLowerCase().includes("403") ||
                 errorStr.toLowerCase().includes("key")) && (
-                  <span className="text-xs opacity-90">
-                    Note: Verify if your API key is valid in settings
-                  </span>
-                )}
+                <span className="text-xs opacity-90">
+                  Note: Verify if your API key is valid in settings
+                </span>
+              )}
             </div>
             {(errorStr.includes("configured") ||
               errorStr.includes("API Key")) && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  asChild
-                  className="w-fit mt-1"
-                >
-                  <Link to="/settings">Go to AI Settings</Link>
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
+                <Link to="/settings">Go to AI Settings</Link>
+              </Button>
+            )}
           </div>
         ),
         variant: "destructive",

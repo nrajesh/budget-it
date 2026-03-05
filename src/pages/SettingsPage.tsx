@@ -24,12 +24,7 @@ import { useSyncConfig } from "@/hooks/useSyncConfig";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Info,
-  FolderOpen,
-  ShieldAlert,
-  BrainCircuit,
-} from "lucide-react";
+import { Info, FolderOpen, ShieldAlert, BrainCircuit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useDataProvider } from "@/context/DataProviderContext";
@@ -44,7 +39,7 @@ const SettingsPage = () => {
   const {
     config: aiConfig,
     saveConfig: saveAiConfig,
-    refreshConfig: refreshAiConfig
+    refreshConfig: refreshAiConfig,
   } = useAIConfig();
 
   const [providers, setProviders] = React.useState<AIProvider[]>([]);
@@ -96,7 +91,8 @@ const SettingsPage = () => {
     if (providerId === "NONE") {
       const allProviders = await dataProvider.getAIProviders();
       for (const p of allProviders) {
-        if (p.isDefault) await dataProvider.updateAIProvider({ ...p, isDefault: false });
+        if (p.isDefault)
+          await dataProvider.updateAIProvider({ ...p, isDefault: false });
       }
     } else {
       await dataProvider.setDefaultAIProvider(providerId);
@@ -224,10 +220,16 @@ const SettingsPage = () => {
                   AI Integrations (BYOK)
                 </ThemedCardTitle>
                 <ThemedCardDescription>
-                  Manage your AI model providers. Keys are stored safely and locally in your browser.
+                  Manage your AI model providers. Keys are stored safely and
+                  locally in your browser.
                 </ThemedCardDescription>
               </div>
-              <Button variant="outline" size="sm" asChild className="hidden sm:flex border-indigo-200 dark:border-indigo-800">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="hidden sm:flex border-indigo-200 dark:border-indigo-800"
+              >
                 <Link to="/ai-providers" className="flex items-center gap-2">
                   <BrainCircuit className="h-4 w-4" />
                   Manage Providers
@@ -255,7 +257,10 @@ const SettingsPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <Link to="/ai-providers" className="sm:hidden text-xs text-indigo-600 hover:underline block mt-1">
+                <Link
+                  to="/ai-providers"
+                  className="sm:hidden text-xs text-indigo-600 hover:underline block mt-1"
+                >
                   Manage Providers →
                 </Link>
               </div>
@@ -263,7 +268,9 @@ const SettingsPage = () => {
               {aiConfig.provider ? (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                   <div className="space-y-2">
-                    <Label htmlFor="ai-api-key">API Key for {aiConfig.provider.name}</Label>
+                    <Label htmlFor="ai-api-key">
+                      API Key for {aiConfig.provider.name}
+                    </Label>
                     <Input
                       id="ai-api-key"
                       type="password"
@@ -280,19 +287,69 @@ const SettingsPage = () => {
                     />
                     <p className="text-xs text-muted-foreground">
                       {aiConfig.provider.type === "OPENAI" && (
-                        <span>Get your key: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">OpenAI Dashboard</a></span>
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://platform.openai.com/api-keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            OpenAI Dashboard
+                          </a>
+                        </span>
                       )}
                       {aiConfig.provider.type === "GEMINI" && (
-                        <span>Get your key: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google AI Studio</a></span>
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Google AI Studio
+                          </a>
+                        </span>
                       )}
                       {aiConfig.provider.type === "ANTHROPIC" && (
-                        <span>Get your key: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">Anthropic Console</a></span>
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://console.anthropic.com/settings/keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Anthropic Console
+                          </a>
+                        </span>
                       )}
                       {aiConfig.provider.type === "MISTRAL" && (
-                        <span>Get your key: <a href="https://console.mistral.ai/api-keys/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Mistral Console</a></span>
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://console.mistral.ai/api-keys/"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Mistral Console
+                          </a>
+                        </span>
                       )}
                       {aiConfig.provider.type === "PERPLEXITY" && (
-                        <span>Get your key: <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline">Perplexity Settings</a></span>
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://www.perplexity.ai/settings/api"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Perplexity Settings
+                          </a>
+                        </span>
                       )}
                     </p>
                   </div>
@@ -301,10 +358,16 @@ const SettingsPage = () => {
                     <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     <AlertDescription className="text-xs font-mono">
                       <div className="grid grid-cols-[80px_1fr] gap-x-2">
-                        <span className="opacity-60 uppercase font-bold">Model</span>
+                        <span className="opacity-60 uppercase font-bold">
+                          Model
+                        </span>
                         <span>{aiConfig.provider.model}</span>
-                        <span className="opacity-60 uppercase font-bold">Endpoint</span>
-                        <span className="truncate">{aiConfig.provider.baseUrl}</span>
+                        <span className="opacity-60 uppercase font-bold">
+                          Endpoint
+                        </span>
+                        <span className="truncate">
+                          {aiConfig.provider.baseUrl}
+                        </span>
                       </div>
                     </AlertDescription>
                   </Alert>
@@ -313,7 +376,8 @@ const SettingsPage = () => {
                 <Alert className="bg-slate-50 dark:bg-slate-900/50">
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-sm">
-                    Select a provider from the list or add a custom one in the management module to enable AI-powered features.
+                    Select a provider from the list or add a custom one in the
+                    management module to enable AI-powered features.
                   </AlertDescription>
                 </Alert>
               )}
@@ -375,11 +439,11 @@ const SettingsPage = () => {
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? (syncConfig.config
-                              .syncDirectoryHandle as unknown as string)
+                                .syncDirectoryHandle as unknown as string)
                             : (
-                              syncConfig.config
-                                .syncDirectoryHandle as FileSystemDirectoryHandle
-                            ).name
+                                syncConfig.config
+                                  .syncDirectoryHandle as FileSystemDirectoryHandle
+                              ).name
                           : "Select Folder"}
                       </span>
                     </Button>

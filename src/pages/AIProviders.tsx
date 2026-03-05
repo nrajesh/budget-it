@@ -1,7 +1,7 @@
 import AIProviderManagement from "@/components/management/AIProviderManagement";
 
 const AIProvidersPage = () => {
-    return <AIProviderManagement />;
+  return <AIProviderManagement />;
 };
 
 export default AIProvidersPage;

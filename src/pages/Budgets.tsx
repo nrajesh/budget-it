@@ -262,7 +262,7 @@ export default function BudgetsPage() {
             className="animate-in fade-in zoom-in duration-300"
           >
             {selectedBudgetIds.size === filteredBudgets.length &&
-              filteredBudgets.length > 0
+            filteredBudgets.length > 0
               ? "Deselect All"
               : "Select All"}
           </Button>

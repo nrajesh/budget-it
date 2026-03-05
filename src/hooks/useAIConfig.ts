@@ -19,11 +19,13 @@ export const useAIConfig = () => {
     setIsLoading(true);
     try {
       const providers = await dataProvider.getAIProviders();
-      const activeProvider = providers.find((p) => p.isDefault) || providers[0] || null;
+      const activeProvider =
+        providers.find((p) => p.isDefault) || providers[0] || null;
 
       let apiKey = "";
       if (activeProvider) {
-        apiKey = localStorage.getItem(`budgetit_ai_apiKey_${activeProvider.id}`) || "";
+        apiKey =
+          localStorage.getItem(`budgetit_ai_apiKey_${activeProvider.id}`) || "";
       }
 
       setConfig({

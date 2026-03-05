@@ -305,7 +305,8 @@ export const useTransactionPageActions = (
       });
       const existingCategories = await dataProvider.getUserCategories(ledgerId);
       existingCategories.forEach((c) => knownCategoryIds.add(c.id));
-      const existingSubCategories = await dataProvider.getSubCategories(ledgerId);
+      const existingSubCategories =
+        await dataProvider.getSubCategories(ledgerId);
       existingSubCategories.forEach((s) => knownSubCategoryIds.add(s.id));
 
       // 1. Process Accounts
@@ -540,9 +541,9 @@ export const useTransactionPageActions = (
           // Transaction 2: To Receiving Account (Invert sign if no specific amount provided)
           const amountTo = transferAmountRaw
             ? parseRobustAmount(
-              transferAmountRaw as string,
-              config?.decimalSeparator,
-            )
+                transferAmountRaw as string,
+                config?.decimalSeparator,
+              )
             : -amount;
 
           // Resolve currency

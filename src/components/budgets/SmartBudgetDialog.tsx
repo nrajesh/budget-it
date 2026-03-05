@@ -162,7 +162,8 @@ export function SmartBudgetDialog({
       if (!ledgerId) throw new Error("No active ledger selected");
 
       // Fetch existing budgets to prevent duplicates
-      const existingBudgets = await dataProvider.getBudgetsWithSpending(ledgerId);
+      const existingBudgets =
+        await dataProvider.getBudgetsWithSpending(ledgerId);
 
       let createdCount = 0;
       let skippedCount = 0;

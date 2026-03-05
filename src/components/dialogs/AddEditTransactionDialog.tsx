@@ -197,10 +197,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                 errorMessage.toLowerCase().includes("401") ||
                 errorMessage.toLowerCase().includes("403") ||
                 errorMessage.toLowerCase().includes("key")) && (
-                  <span className="text-xs opacity-90">
-                    Note: Verify if your API key is valid in settings
-                  </span>
-                )}
+                <span className="text-xs opacity-90">
+                  Note: Verify if your API key is valid in settings
+                </span>
+              )}
             </div>
             {errorMessage.includes("configured") && (
               <Button
@@ -452,27 +452,25 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                         searchPlaceholder="Search..."
                         emptyPlaceholder="No results found."
                       />
-                      {!isTransfer &&
-                        field.value &&
-                        config.provider && (
-                          <div className="flex justify-end mt-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 text-xs px-2 text-primary hover:text-primary hover:bg-primary/10"
-                              onClick={handleAutoCategorize}
-                              disabled={isAiLoading}
-                            >
-                              {isAiLoading ? (
-                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                              ) : (
-                                "✨ "
-                              )}
-                              Auto-Categorize
-                            </Button>
-                          </div>
-                        )}
+                      {!isTransfer && field.value && config.provider && (
+                        <div className="flex justify-end mt-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs px-2 text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={handleAutoCategorize}
+                            disabled={isAiLoading}
+                          >
+                            {isAiLoading ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              "✨ "
+                            )}
+                            Auto-Categorize
+                          </Button>
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

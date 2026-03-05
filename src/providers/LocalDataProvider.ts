@@ -320,7 +320,10 @@ export class LocalDataProvider implements DataProvider {
     }
   }
 
-  async checkIfPayeeIsAccount(name: string, ledgerId: string): Promise<boolean> {
+  async checkIfPayeeIsAccount(
+    name: string,
+    ledgerId: string,
+  ): Promise<boolean> {
     const vendor = await db.vendors
       .where({ user_id: ledgerId, name: name })
       .first();
@@ -520,7 +523,10 @@ export class LocalDataProvider implements DataProvider {
 
   // Budgets
   async getBudgetsWithSpending(ledgerId: string): Promise<Budget[]> {
-    const budgets = await db.budgets.where("user_id").equals(ledgerId).toArray();
+    const budgets = await db.budgets
+      .where("user_id")
+      .equals(ledgerId)
+      .toArray();
     return budgets.map((budget) => ({
       ...budget,
       spent_amount: 0,
@@ -718,7 +724,7 @@ export class LocalDataProvider implements DataProvider {
           ) as Transaction[];
           const scheduled = mapToUserId(
             (importData.scheduled_transactions as Record<string, unknown>[]) ||
-            [],
+              [],
             ledgerId,
           ) as ScheduledTransaction[];
           const budgets = mapToUserId(

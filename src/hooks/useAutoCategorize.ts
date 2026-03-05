@@ -132,9 +132,11 @@ export const useAutoCategorize = () => {
               model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
-              response_format: provider.type === "OPENAI" || provider.baseUrl.includes("openai")
-                ? { type: "json_object" }
-                : undefined,
+              response_format:
+                provider.type === "OPENAI" ||
+                provider.baseUrl.includes("openai")
+                  ? { type: "json_object" }
+                  : undefined,
             }),
           },
         );
@@ -281,9 +283,11 @@ export const useAutoCategorize = () => {
               model: provider.model,
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
-              response_format: provider.type === "OPENAI" || provider.baseUrl.includes("openai")
-                ? { type: "json_object" }
-                : undefined,
+              response_format:
+                provider.type === "OPENAI" ||
+                provider.baseUrl.includes("openai")
+                  ? { type: "json_object" }
+                  : undefined,
             }),
           },
         );
