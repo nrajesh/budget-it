@@ -96,9 +96,9 @@ flowchart TD
 
     A -->|"cross-platform calls"| B
 
-    B -->|isElectron() === true| C
-    B -->|Capacitor.isNativePlatform()| D
-    B -->|Fallback| E
+    B -->|"isElectron() === true"| C
+    B -->|"Capacitor.isNativePlatform()"| D
+    B -->|"Fallback"| E
 
     C --> F
     D --> G
