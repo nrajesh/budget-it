@@ -430,7 +430,7 @@ const Transactions = () => {
             <div className="flex flex-col gap-2">
               <span>Please configure your AI provider and API key first.</span>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 asChild
                 className="w-fit mt-1"
@@ -548,7 +548,7 @@ const Transactions = () => {
             {(errorStr.includes("configured") ||
               errorStr.includes("API Key")) && (
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 asChild
                 className="w-fit mt-1"

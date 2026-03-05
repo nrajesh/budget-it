@@ -139,7 +139,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         description: (
           <div className="flex flex-col gap-2">
             <span>Please configure your AI provider and API key first.</span>
-            <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              asChild
+              className="w-fit mt-1"
+            >
               <Link to="/settings" onClick={() => onOpenChange(false)}>
                 Go to AI Settings
               </Link>
