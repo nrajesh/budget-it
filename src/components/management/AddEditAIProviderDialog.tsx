@@ -49,7 +49,7 @@ const PROVIDER_DOCS: Record<string, { url: string; endpoint: string }> = {
   },
   GEMINI: {
     url: "https://ai.google.dev/gemini-api/docs/models/gemini",
-    endpoint: "https://generativelanguage.googleapis.com/v1beta",
+    endpoint: "https://generativelanguage.googleapis.com/v1",
   },
   ANTHROPIC: {
     url: "https://docs.anthropic.com/en/docs/about-claude/models",
