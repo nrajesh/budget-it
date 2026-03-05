@@ -104,18 +104,22 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
 
     // 1. Try resolving locally first to save tokens
     const sortedHistory = [...allTransactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
     const cached = getHistoricalMapping(vendorValue, sortedHistory);
 
     if (cached) {
       let updated = false;
       if (cached.categoryName) {
-        form.setValue("category", cached.categoryName, { shouldValidate: true });
+        form.setValue("category", cached.categoryName, {
+          shouldValidate: true,
+        });
         updated = true;
       }
       if (cached.subCategoryName) {
-        form.setValue("sub_category", cached.subCategoryName, { shouldValidate: true });
+        form.setValue("sub_category", cached.subCategoryName, {
+          shouldValidate: true,
+        });
         updated = true;
       }
 

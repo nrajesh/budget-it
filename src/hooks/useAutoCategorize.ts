@@ -78,7 +78,7 @@ export const useAutoCategorize = () => {
 
   const getHistoricalMapping = (
     vendorName: string,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): CategorizeResult | null => {
     if (!vendorName || !vendorName.trim()) return null;
 
@@ -87,7 +87,7 @@ export const useAutoCategorize = () => {
       (t) =>
         t.vendor?.toLowerCase() === vendorName.toLowerCase() &&
         t.category &&
-        t.category.toLowerCase() !== "uncategorized"
+        t.category.toLowerCase() !== "uncategorized",
     );
 
     if (match) {

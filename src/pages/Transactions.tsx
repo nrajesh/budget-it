@@ -287,11 +287,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 
@@ -425,7 +425,7 @@ const Transactions = () => {
 
     // Sort transactions by date descending so we find the most recent category mapping
     const sortedHistory = [...allTransactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
 
     for (const vendor of allUniqueVendors) {
@@ -445,7 +445,7 @@ const Transactions = () => {
       setIsBulkCategorizing(true);
       setOperationProgress({
         title: "Auto-Categorizing",
-        description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? 'Some locally matched' : ''})...`,
+        description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""})...`,
         stage: "Calling AI",
         progress: 50,
         totalStages: 100,
