@@ -1,5 +1,6 @@
 import { useAIConfig } from "./useAIConfig";
 import { Category, SubCategory } from "@/types/dataProvider";
+import { Transaction } from "@/data/finance-data";
 
 export interface CategorizeResult {
   categoryName: string;
@@ -74,6 +75,29 @@ Example Output: { "Starbucks": { "categoryName": "Dining Out", "subCategoryName"
 
 export const useAutoCategorize = () => {
   const { config } = useAIConfig();
+
+  const getHistoricalMapping = (
+    vendorName: string,
+    transactions: Transaction[]
+  ): CategorizeResult | null => {
+    if (!vendorName || !vendorName.trim()) return null;
+
+    // Find the most recent transaction with this vendor that has a category
+    const match = transactions.find(
+      (t) =>
+        t.vendor?.toLowerCase() === vendorName.toLowerCase() &&
+        t.category &&
+        t.category.toLowerCase() !== "uncategorized"
+    );
+
+    if (match) {
+      return {
+        categoryName: match.category,
+        subCategoryName: match.sub_category || "",
+      };
+    }
+    return null;
+  };
 
   const autoCategorize = async (
     vendorName: string,
@@ -282,5 +306,5 @@ export const useAutoCategorize = () => {
     }
   };
 
-  return { autoCategorize, autoCategorizeBulk };
+  return { autoCategorize, autoCategorizeBulk, getHistoricalMapping };
 };

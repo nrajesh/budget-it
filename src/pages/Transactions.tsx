@@ -48,7 +48,7 @@ const Transactions = () => {
     setOperationProgress,
   } = useTransactions();
   const { activeLedger } = useLedger();
-  const { autoCategorizeBulk } = useAutoCategorize();
+  const { autoCategorizeBulk, getHistoricalMapping } = useAutoCategorize();
 
   const {
     selectedAccounts,
@@ -287,11 +287,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-              ...i,
-              ...full,
-              transfer_id: full.transfer_id || undefined,
-              recurrence_id: full.recurrence_id || undefined,
-            }
+            ...i,
+            ...full,
+            transfer_id: full.transfer_id || undefined,
+            recurrence_id: full.recurrence_id || undefined,
+          }
           : i;
       });
 
@@ -407,11 +407,11 @@ const Transactions = () => {
     );
 
     // 2. Get unique vendors
-    const uniqueVendors = Array.from(
+    const allUniqueVendors = Array.from(
       new Set(uncategorizedItems.map((t) => t.vendor?.trim()).filter(Boolean)),
     );
 
-    if (uniqueVendors.length === 0) {
+    if (allUniqueVendors.length === 0) {
       toast({
         title: "Nothing to categorize",
         description: "No uncategorized vendors found.",
@@ -419,31 +419,72 @@ const Transactions = () => {
       return;
     }
 
-    // 3. Batch Categorize
-    setIsBulkCategorizing(true);
-    setOperationProgress({
-      title: "Auto-Categorizing",
-      description: `Categorizing ${uniqueVendors.length} unique vendors...`,
-      stage: "Calling AI",
-      progress: 50,
-      totalStages: 100,
-    });
+    // 3. Try to resolve vendors locally first using historical data
+    const localMappings: Record<string, any> = {};
+    const unknownVendors: string[] = [];
+
+    // Sort transactions by date descending so we find the most recent category mapping
+    const sortedHistory = [...allTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    for (const vendor of allUniqueVendors) {
+      if (!vendor) continue;
+      const cached = getHistoricalMapping(vendor, sortedHistory);
+      if (cached) {
+        localMappings[vendor] = cached;
+      } else {
+        unknownVendors.push(vendor);
+      }
+    }
+
+    let aiMappings: Record<string, any> = {};
+
+    // Only call AI if there are strictly unknown vendors left
+    if (unknownVendors.length > 0) {
+      setIsBulkCategorizing(true);
+      setOperationProgress({
+        title: "Auto-Categorizing",
+        description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? 'Some locally matched' : ''})...`,
+        stage: "Calling AI",
+        progress: 50,
+        totalStages: 100,
+      });
+
+      try {
+        aiMappings = await autoCategorizeBulk(
+          unknownVendors,
+          categories,
+          subCategories,
+        );
+      } catch (e) {
+        // If AI fails but we have some local mappings, we can proceed with just the local matches.
+        // Otherwise, throw the error as usual.
+        if (Object.keys(localMappings).length === 0) {
+          throw e;
+        }
+      }
+    } else {
+      setIsBulkCategorizing(true);
+      setOperationProgress({
+        title: "Auto-Categorizing locally",
+        description: `Matched ${allUniqueVendors.length} vendors from your history!`,
+        stage: "Applying updates",
+        progress: 90,
+        totalStages: 100,
+      });
+    }
 
     try {
-      const resultMap = await autoCategorizeBulk(
-        uniqueVendors,
-        categories,
-        subCategories,
-      );
+      const combinedMappings = { ...localMappings, ...aiMappings };
 
-      // 4. Create update payloads
       const updates = [];
       for (const t of uncategorizedItems) {
         if (!t.vendor) continue;
-        const vendorKey = Object.keys(resultMap).find(
+        const vendorKey = Object.keys(combinedMappings).find(
           (k) => k.toLowerCase() === t.vendor.toLowerCase(),
         );
-        const suggestion = vendorKey ? resultMap[vendorKey] : null;
+        const suggestion = vendorKey ? combinedMappings[vendorKey] : null;
 
         if (suggestion && suggestion.categoryName) {
           updates.push({

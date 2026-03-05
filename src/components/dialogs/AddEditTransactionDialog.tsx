@@ -67,6 +67,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     allSubCategories,
     subCategories,
     accountCurrencyMap,
+    transactions: allTransactions,
   } = useTransactions();
   const { currencySymbols, formatCurrency } = useCurrency();
 
@@ -94,13 +95,37 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
   const recurrenceFrequency = form.watch("recurrenceFrequency");
 
   const { config } = useAIConfig();
-  const { autoCategorize } = useAutoCategorize();
+  const { autoCategorize, getHistoricalMapping } = useAutoCategorize();
   const [isAiLoading, setIsAiLoading] = React.useState(false);
 
   const handleAutoCategorize = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!vendorValue) return;
 
+    // 1. Try resolving locally first to save tokens
+    const sortedHistory = [...allTransactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const cached = getHistoricalMapping(vendorValue, sortedHistory);
+
+    if (cached) {
+      let updated = false;
+      if (cached.categoryName) {
+        form.setValue("category", cached.categoryName, { shouldValidate: true });
+        updated = true;
+      }
+      if (cached.subCategoryName) {
+        form.setValue("sub_category", cached.subCategoryName, { shouldValidate: true });
+        updated = true;
+      }
+
+      if (updated) {
+        showSuccess(`Categorized as ${cached.categoryName} from your history!`);
+        return; // Break early so we don't hit the AI
+      }
+    }
+
+    // 2. Fallback to pinging the AI if not found locally
     setIsAiLoading(true);
     try {
       const result = await autoCategorize(
