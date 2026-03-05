@@ -146,10 +146,7 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
-        let baseUrl = provider.baseUrl.replace(/\/$/, "");
-        if (baseUrl.includes("api.gemini.com")) {
-          baseUrl = baseUrl.replace("api.gemini.com", "generativelanguage.googleapis.com");
-        }
+        const baseUrl = provider.baseUrl.replace(/\/$/, "");
         const isV1Beta = baseUrl.includes("/v1beta");
         const url = baseUrl.includes("?")
           ? `${baseUrl}&key=${apiKey}`
@@ -302,10 +299,7 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
-        let baseUrl = provider.baseUrl.replace(/\/$/, "");
-        if (baseUrl.includes("api.gemini.com")) {
-          baseUrl = baseUrl.replace("api.gemini.com", "generativelanguage.googleapis.com");
-        }
+        const baseUrl = provider.baseUrl.replace(/\/$/, "");
         const isV1Beta = baseUrl.includes("/v1beta");
         const url = baseUrl.includes("?")
           ? `${baseUrl}&key=${apiKey}`
