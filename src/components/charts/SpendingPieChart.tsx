@@ -33,8 +33,8 @@ const PIE_COLORS = [
 ];
 
 /** Desaturated gray for non-selected segments */
-const GRAY_COLOR = "#3f3f46"; // zinc-700 — subtle dark gray
-const GRAY_COLOR_LIGHT = "#d4d4d8"; // zinc-300 — for light mode
+const GRAY_COLOR = "#3f3f46"; // zinc-700 - subtle dark gray
+const GRAY_COLOR_LIGHT = "#d4d4d8"; // zinc-300 - for light mode
 
 interface PieDataItem {
   name: string;
@@ -270,7 +270,7 @@ export function SpendingPieChart({
         </PieChart>
       </ResponsiveContainer>
 
-      {/* Center label — clickable to reset when segment is active */}
+      {/* Center label - clickable to reset when segment is active */}
       <div
         key={glowKey}
         onClick={activeItem ? resetSelection : undefined}

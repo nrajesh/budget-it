@@ -72,7 +72,7 @@ interface TransactionsContextType {
   deleteMultipleTransactions: (
     transactionsToDelete: TransactionToDelete[],
   ) => void;
-  /** Wipes ALL data for the user */
+  /** Wipes ALL data for the ledger */
   clearAllTransactions: () => void;
   /** Generates random demo data for testing */
   generateDiverseDemoData: () => void;
@@ -596,7 +596,6 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       const isTransfer = accounts.some(
         (acc) => acc.name === transaction.vendor,
       );
-      const userId = ledgerId;
 
       if (isTransfer) {
         const transferId = uuidv4();
@@ -605,7 +604,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
         const sourceTransaction = {
           ...transaction,
           transfer_id: transferId,
-          user_id: userId,
+          user_id: ledgerId,
           category: "Transfer",
           date: new Date(transaction.date).toISOString(),
         };
@@ -627,7 +626,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
           vendor: transaction.account,
           amount: transaction.receivingAmount || -transaction.amount, // Use receiving amount (positive usually)
           transfer_id: transferId,
-          user_id: userId,
+          user_id: ledgerId,
           category: "Transfer",
           date: new Date(transaction.date).toISOString(),
         };
@@ -639,11 +638,11 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
             typeof dataProvider.addTransaction
           >[0],
         );
-        await dataProvider.ensureCategoryExists("Transfer", userId);
+        await dataProvider.ensureCategoryExists("Transfer", ledgerId);
       } else {
         await dataProvider.addTransaction({
           ...transaction,
-          user_id: userId,
+          user_id: ledgerId,
           date: new Date(transaction.date).toISOString(),
           currency:
             ((transaction as Record<string, unknown>).currency as string) ||

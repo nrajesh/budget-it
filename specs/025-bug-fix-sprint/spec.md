@@ -1,4 +1,4 @@
-# Bug Fixes Spec — 014-carry-out-bug-fixes
+# Bug Fixes Spec - 014-carry-out-bug-fixes
 
 ## Problem Statement
 Six user-reported bugs across the Budget It! application need to be resolved.

@@ -31,6 +31,7 @@ import {
   Clock,
   BookOpen,
   PiggyBank,
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -170,6 +171,8 @@ const Layout = () => {
         return "Scheduled Transactions";
       case "/budgets":
         return "Budgets";
+      case "/ai-providers":
+        return "AI Providers";
       case "/backup":
         return "Backup";
       case "/donate":
@@ -327,6 +330,17 @@ const Layout = () => {
                   <Link to="/currencies">
                     <Coins />
                     <span>Currencies</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/ai-providers"}
+                >
+                  <Link to="/ai-providers">
+                    <Brain />
+                    <span>AI Providers</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

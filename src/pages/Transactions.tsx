@@ -423,7 +423,7 @@ const Transactions = () => {
       }
 
       // Check for config before starting progress modal
-      if (!config.apiKey || config.provider === "NONE") {
+      if (!config.apiKey || !config.provider) {
         toast({
           title: "AI Not Configured",
           description: (
@@ -540,24 +540,28 @@ const Transactions = () => {
 
       const errorStr = String(errorMessage || "");
 
+      const isApiKeyIssue =
+        errorStr.toLowerCase().includes("unauthorized") ||
+        errorStr.toLowerCase().includes("invalid") ||
+        errorStr.toLowerCase().includes("401") ||
+        errorStr.toLowerCase().includes("403") ||
+        errorStr.toLowerCase().includes("key") ||
+        errorStr.toLowerCase().includes("configured") ||
+        errorStr.toLowerCase().includes("failed to fetch");
+
+      const errorHint = isApiKeyIssue
+        ? "Please check your API key or endpoint configuration."
+        : "An unexpected error occurred during categorization.";
+
       toast({
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
-              <span className="font-medium">{errorStr}</span>
-              {(errorStr.toLowerCase().includes("unauthorized") ||
-                errorStr.toLowerCase().includes("invalid") ||
-                errorStr.toLowerCase().includes("401") ||
-                errorStr.toLowerCase().includes("403") ||
-                errorStr.toLowerCase().includes("key")) && (
-                <span className="text-xs opacity-90">
-                  Note: Verify if your API key is valid in settings
-                </span>
-              )}
+              <span className="font-semibold text-sm">{errorStr}</span>
+              <span className="text-xs opacity-90 italic">{errorHint}</span>
             </div>
-            {(errorStr.includes("configured") ||
-              errorStr.includes("API Key")) && (
+            {(isApiKeyIssue || errorStr.length > 0) && (
               <Button
                 variant="secondary"
                 size="sm"

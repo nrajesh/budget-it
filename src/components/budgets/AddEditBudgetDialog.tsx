@@ -361,6 +361,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
 
   const onSubmit = async (values: BudgetFormData) => {
     if (!activeLedger) return;
+    const ledgerId = activeLedger.id;
     setIsSubmitting(true);
 
     const frequency = values.is_goal
@@ -395,7 +396,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
       categoryId = "";
     }
     const dbPayload = {
-      user_id: activeLedger.id,
+      user_id: ledgerId,
       category_id: categoryId,
       category_name: categoryName,
       sub_category_id:
@@ -534,7 +535,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             {isGoal
-              ? "Set a savings target — we'll track your progress."
+              ? "Set a savings target - we'll track your progress."
               : "Set a spending limit for a category, account, or vendor."}
           </DialogDescription>
         </DialogHeader>

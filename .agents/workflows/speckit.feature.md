@@ -76,7 +76,7 @@ Execution steps:
   - **If all clear**: Automatically proceed to verify step.
 
 ## 8. Local Verification Gate (NON-NEGOTIABLE)
-- **Goal**: Catch lint, formatting, type, and build errors BEFORE merging — mirroring the CI pipeline locally.
+- **Goal**: Catch lint, formatting, type, and build errors BEFORE merging - mirroring the CI pipeline locally.
 - **Trigger**: Only proceed after cross-artifact analysis passes.
 - **Action**: Run the following checks sequentially. ALL must pass before merging.
   
@@ -96,7 +96,7 @@ Execution steps:
   - **If ALL pass**: Proceed to merge.
 - **Notify**: Report verification results to user, e.g. "✅ All local checks passed (format, lint, types, build)."
 
-## 9. Mobile Sync (iOS & Android) — REQUIRED before merge
+## 9. Mobile Sync (iOS & Android) - REQUIRED before merge
 - **Goal**: Ensure iOS and Android Capacitor bundles include the latest web assets.
 - **Trigger**: Only after Step 8 (all local checks pass).
 - **Action**:

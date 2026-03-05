@@ -1,7 +1,7 @@
-<h1 align="center">💰 Budget It — Personal Finance Tracker</h1>
+<h1 align="center">💰 Budget It - Personal Finance Tracker</h1>
 
 <p align="center">
-  <i>A privacy-focused, local-first personal finance app. Track spending, manage budgets, and gain insights — without sending your data to the cloud.</i>
+  <i>A privacy-focused, local-first personal finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud.</i>
 </p>
 
 <!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
@@ -36,7 +36,7 @@
 
 | Category                | Feature                                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------------------- |
-| 🔒 **Privacy**          | 100% local — data lives in your browser's IndexedDB. No cloud, no servers.                        |
+| 🔒 **Privacy**          | 100% local - data lives in your browser's IndexedDB. No cloud, no servers.                        |
 | 📚 **Multi-Ledger**     | Separate ledgers for Personal, Business, Joint finances.                                          |
 | 💳 **Transactions**     | Track with categories, sub-categories, vendors, and account groups.                               |
 | 📊 **Budgets**          | Monthly, quarterly, yearly, or one-time budgets with progress tracking.                           |
@@ -44,8 +44,8 @@
 | 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                        |
 | 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                     |
 | 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                               |
-| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, or Perplexity. |
-| 💾 **Backup & Restore** | Encrypted or plain JSON backups — import instantly without page reloads.                          |
+| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, Anthropic, Mistral, Perplexity, or Custom endpoints. |
+| 💾 **Backup & Restore** | Encrypted or plain JSON backups - import instantly without page reloads.                          |
 | ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).               |
 
 ---
@@ -233,48 +233,77 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 ### 3. AI Agent Workflows
 
-This project includes three specialized AI agents that can be invoked via slash commands in a compatible AI-powered IDE. Each agent focuses on a specific area of code quality and runs a self-contained workflow: it scans the codebase, identifies improvements, implements changes, and verifies them — all from a single command.
+This project includes three specialized AI agents that can be invoked via slash commands in a compatible AI-powered IDE. Each agent focuses on a specific area of code quality and runs a self-contained workflow: it scans the codebase, identifies improvements, implements changes, and verifies them - all from a single command.
 
 | Command           | Agent       | What It Does                                                                                                                             |
 | ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `/agent.palette`  | 🎨 Palette  | Finds and fixes **UX and accessibility** issues — missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
-| `/agent.bolt`     | ⚡ Bolt     | Finds and fixes **performance** issues — unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries.       |
-| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues — XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks.         |
+| `/agent.palette`  | 🎨 Palette  | Finds and fixes **UX and accessibility** issues - missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
+| `/agent.bolt`     | ⚡ Bolt     | Finds and fixes **performance** issues - unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries.       |
+| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues - XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks.         |
 
 #### How do they work?
 
 Each agent has two parts:
 
-1. **Ruleset** (`scheduled-agents/*.md`) — A detailed personality and checklist that tells the agent what to look for and how to behave. Think of it as the agent's "mission brief".
-2. **Workflow** (`.agent/workflows/agent.*.md`) — The step-by-step process the agent follows: create a branch → scan the codebase → implement fixes → run all quality checks → merge.
+1. **Ruleset** (`scheduled-agents/*.md`) - A detailed personality and checklist that tells the agent what to look for and how to behave. Think of it as the agent's "mission brief".
+2. **Workflow** (`.agent/workflows/agent.*.md`) - The step-by-step process the agent follows: create a branch → scan the codebase → implement fixes → run all quality checks → merge.
 
 #### Do I need a specific IDE?
 
-The slash commands (e.g., `/agent.palette`) work automatically in IDEs that support the `.agent/workflows/` convention. Even if your IDE doesn't support slash commands, the ruleset files in `scheduled-agents/` are plain markdown — you can read them and follow the instructions manually, or paste them as context for any AI assistant.
+The slash commands (e.g., `/agent.palette`) work automatically in IDEs that support the `.agent/workflows/` convention. Even if your IDE doesn't support slash commands, the ruleset files in `scheduled-agents/` are plain markdown - you can read them and follow the instructions manually, or paste them as context for any AI assistant.
 
 ---
 
 ## 🛠️ Development Guide
 
-### Adding New AI Providers
+### AI Provider Configuration
 
-1. **Update Types**: Add the new provider's name to the `AIProvider` type in `src/hooks/useAIConfig.ts`.
-2. **Implement Hook Logic**: Update the `autoCategorize` function in `src/hooks/useAutoCategorize.ts` to include the API calling logic for the new provider.
-3. **Update Security Policy (CSP)**:
+Budget It supports "Bring Your Own Key" (BYOK) AI categorization. You can manage AI providers directly in the application.
 
-   > [!IMPORTANT]
-   > You **must** add the new provider's API domain to the `connect-src` directive in `vite.config.ts`. If you skip this, the browser will block all outgoing requests to that provider in production builds.
+1.  **AI Provider Management**: Navigate to **Management > AI Providers** in the sidebar.
+2.  **Add/Edit Provider**:
+    *   Click **Add AI Provider** to add a new endpoint.
+    *   Set the **Name**, **Model ID**, and **Base URL**.
+    *   **Provider Type**: Choose Gemini, OpenAI, Anthropic, Mistral, Perplexity, or Custom (OpenAI compatible).
+3.  **Configure API Key**: Go to **Settings**, select your new provider as the default, and enter your API key. Keys are stored safely and locally in your browser's IndexedDB.
+4.  **Local LLMs**: Add a provider with Type `Custom` and Base URL `http://localhost:11434/v1` (for Ollama) to use local models securely without any internet access required.
 
-   ```typescript
-   // Example: Adding a new provider domain in vite.config.ts
-   connect-src 'self' ... https://api.new-provider.com;
-   ```
+> [!NOTE]
+> AI providers are stored in the database and included in exports, but **API keys are never exported** for security reasons. You must re-enter keys on new devices.
+
+### ⚠️ Important: Content Security Policy (CSP)
+
+Because Budget It is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default. 
+
+**If you add a completely new API domain via the UI (e.g. `https://api.my-new-ai.com`), you MUST add it to the allowed domains list in the code.**
+
+1. Open `vite.config.ts`.
+2. Add your new domain to the `aiDomains` array:
+
+```typescript
+// vite.config.ts
+const aiDomains = [
+  "https://generativelanguage.googleapis.com",
+  "https://api.openai.com",
+  "https://api.anthropic.com",
+  "https://api.mistral.ai",
+  "https://api.perplexity.ai",
+  // Add your new domain here:
+  "https://api.your-custom-ai-provider.com",
+];
+```
+
+3. Restart the development server (`pnpm dev`) or rebuild the app.
+
+> [!TIP]
+> You rarely need to write new code to support a new AI provider! Simply select `Custom` as the Provider Type in the UI. Our robust JSON parser handles OpenAI-compatible JSON responses automatically. You only need to edit `useAutoCategorize.ts` if the new provider has a completely unique request structure (like Anthropic).
+
 
 ### Adding New Components
 
-1. `src/components/ui/` — Generic, reusable UI primitives
-2. `src/components/<feature>/` — Feature-specific components
-3. `src/components/layout/` — Layout wrappers
+1. `src/components/ui/` - Generic, reusable UI primitives
+2. `src/components/<feature>/` - Feature-specific components
+3. `src/components/layout/` - Layout wrappers
 
 **Guidelines:**
 
@@ -285,9 +314,9 @@ The slash commands (e.g., `/agent.palette`) work automatically in IDEs that supp
 
 ### State Management
 
-- `useTransactions()` — global financial data
-- `useState` — UI-only state (dialog open/close)
-- `useQuery` — async data fetching with TanStack Query
+- `useTransactions()` - global financial data
+- `useState` - UI-only state (dialog open/close)
+- `useQuery` - async data fetching with TanStack Query
 
 ### Testing
 

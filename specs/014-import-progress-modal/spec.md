@@ -11,7 +11,7 @@
 
 A new user on the Ledger Select screen clicks "Generate Data". Currently, the `generateDiverseDemoData` function fires and updates `operationProgress` in `TransactionsContext`, but because `LedgerEntryPage` renders **outside** the `Layout` component (which hosts `GlobalProgressDialog`), the progress modal never appears. The user sees no feedback and may think the app has frozen.
 
-**Why this priority**: This is the most common first-time user action and the most confusing without feedback — the generation takes several seconds.
+**Why this priority**: This is the most common first-time user action and the most confusing without feedback - the generation takes several seconds.
 
 **Independent Test**: Navigate to `/ledgers`, click "Generate Data" → confirm. A progress modal (matching the existing Data screen modal) should appear with title, stage description, progress bar, and percentage.
 
@@ -77,7 +77,7 @@ A user imports a JSON backup file on the Ledger Select screen. This is typically
 ### Component Impact
 - **Modified Components**: `src/pages/LedgerEntryPage.tsx` (add `GlobalProgressDialog` + progress calls)
 - **Reused Components**: `src/components/dialogs/GlobalProgressDialog.tsx` (no changes needed)
-- **Context Used**: `src/contexts/TransactionsContext.tsx` (existing `setOperationProgress` — no changes needed)
+- **Context Used**: `src/contexts/TransactionsContext.tsx` (existing `setOperationProgress` - no changes needed)
 
 ### Key Entities
 - No new entities introduced. This feature is purely a UX enhancement.

@@ -8,7 +8,7 @@ This workflow automates a UX improvement lifecycle: Branch -> Spec -> Plan -> Ch
 
 **Usage**: `/agent.palette` (no arguments required)
 
-**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/palette.md`. Every decision you make — from spec writing through to PR creation — must respect Palette's philosophy, boundaries, and conventions defined in that file.
+**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/palette.md`. Every decision you make - from spec writing through to PR creation - must respect Palette's philosophy, boundaries, and conventions defined in that file.
 
 **Feature Description**: "Find and implement one micro-UX improvement that makes the interface more intuitive, accessible, or pleasant to use."
 
@@ -37,7 +37,7 @@ This workflow automates a UX improvement lifecycle: Branch -> Spec -> Plan -> Ch
   - Create `specs/[branch]/plan.md`.
   - Content should include:
     - Technical Context
-    - Proposed Changes (files to modify/create — must be < 50 lines per Palette's rules)
+    - Proposed Changes (files to modify/create - must be < 50 lines per Palette's rules)
     - Accessibility verification approach
     - Verification Plan
 

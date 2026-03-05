@@ -8,7 +8,7 @@ description: "Deploy web + mobile (iOS/Android) builds to pre-prod or main."
 $ARGUMENTS
 ```
 
-Target branch: `pre-prod` (default) or `main` — override via `$ARGUMENTS`.
+Target branch: `pre-prod` (default) or `main` - override via `$ARGUMENTS`.
 
 ## Outline
 
@@ -56,7 +56,7 @@ Verify `dist/` is non-empty. Fix any build errors before continuing.
 
 ---
 
-### 5. Mobile Sync — iOS & Android
+### 5. Mobile Sync - iOS & Android
 // turbo
 ```bash
 npx cap sync ios

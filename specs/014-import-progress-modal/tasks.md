@@ -15,5 +15,5 @@
 - [x] Render `<GlobalProgressDialog />` in JSX return
 
 ## Phase 3: Verification
-- [x] TypeScript compilation passes (`tsc --noEmit` — zero errors)
+- [x] TypeScript compilation passes (`tsc --noEmit` - zero errors)
 - [x] Browser testing: Progress modal appears during demo data generation on `/ledgers`

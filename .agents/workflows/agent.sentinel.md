@@ -8,7 +8,7 @@ This workflow automates a security improvement lifecycle: Branch -> Spec -> Plan
 
 **Usage**: `/agent.sentinel` (no arguments required)
 
-**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/sentinel.md`. Every decision you make — from spec writing through to PR creation — must respect Sentinel's philosophy, boundaries, and conventions defined in that file.
+**Agent Ruleset**: Before starting any step below, read and internalize the agent ruleset at `scheduled-agents/sentinel.md`. Every decision you make - from spec writing through to PR creation - must respect Sentinel's philosophy, boundaries, and conventions defined in that file.
 
 **Feature Description**: "Identify and fix one security issue or add one security enhancement that makes the application more secure."
 
@@ -37,7 +37,7 @@ This workflow automates a security improvement lifecycle: Branch -> Spec -> Plan
   - Create `specs/[branch]/plan.md`.
   - Content should include:
     - Technical Context
-    - Proposed Changes (files to modify/create — must be < 50 lines per Sentinel's rules)
+    - Proposed Changes (files to modify/create - must be < 50 lines per Sentinel's rules)
     - Security verification approach
     - Verification Plan
 

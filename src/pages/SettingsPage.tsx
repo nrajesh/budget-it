@@ -16,31 +16,44 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
-
 import { useTheme, DashboardStyle } from "@/contexts/ThemeContext";
 import { showSuccess } from "@/utils/toast";
-
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useSyncConfig } from "@/hooks/useSyncConfig";
-import { useAIConfig, AIProvider } from "@/hooks/useAIConfig";
+import { useAIConfig } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, FolderOpen, ShieldAlert } from "lucide-react";
+import { Info, FolderOpen, ShieldAlert, Brain } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
+import { useDataProvider } from "@/context/DataProviderContext";
+import { AIProvider } from "@/types/dataProvider";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { dashboardStyle, setDashboardStyle } = useTheme();
   const { activeLedger, updateLedgerDetails } = useLedger();
+  const dataProvider = useDataProvider();
   const syncConfig = useSyncConfig();
-  const { config: aiConfig, saveConfig: saveAiConfig } = useAIConfig();
+  const {
+    config: aiConfig,
+    saveConfig: saveAiConfig,
+    refreshConfig: refreshAiConfig,
+  } = useAIConfig();
 
+  const [providers, setProviders] = React.useState<AIProvider[]>([]);
   const [isManageLedgerOpen, setIsManageLedgerOpen] = React.useState(false);
   const [isCreateLedgerOpen, setIsCreateLedgerOpen] = React.useState(false);
   const [futureMonths, setFutureMonths] = React.useState<number>(2);
 
-  // Data Management State moved to DataManagementPage
+  React.useEffect(() => {
+    const fetchProviders = async () => {
+      const data = await dataProvider.getAIProviders();
+      setProviders(data);
+    };
+    fetchProviders();
+  }, [dataProvider, aiConfig.provider]);
 
   React.useEffect(() => {
     const savedMonths = localStorage.getItem("futureMonths");
@@ -51,8 +64,6 @@ const SettingsPage = () => {
 
   const handleCurrencyChange = async (value: string) => {
     setCurrency(value);
-
-    // Also update the active ledger's currency so it persists in exports
     if (activeLedger) {
       try {
         await updateLedgerDetails(activeLedger.id, { currency: value });
@@ -60,7 +71,6 @@ const SettingsPage = () => {
         console.error("Failed to update ledger currency:", error);
       }
     }
-
     showSuccess(`Default currency set to ${value}.`);
   };
 
@@ -72,14 +82,24 @@ const SettingsPage = () => {
     }
   };
 
-  // ...
-
   const handleDashboardStyleChange = (value: string) => {
     setDashboardStyle(value as DashboardStyle);
     showSuccess(`Dashboard style set to ${value}.`);
   };
 
-  // Data Management Logic moved to DataManagementPage
+  const handleProviderChange = async (providerId: string) => {
+    if (providerId === "NONE") {
+      const allProviders = await dataProvider.getAIProviders();
+      for (const p of allProviders) {
+        if (p.isDefault)
+          await dataProvider.updateAIProvider({ ...p, isDefault: false });
+      }
+    } else {
+      await dataProvider.setDefaultAIProvider(providerId);
+    }
+    await refreshAiConfig();
+    showSuccess("AI Provider preference updated.");
+  };
 
   return (
     <div className="page-container">
@@ -94,9 +114,6 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Data Management Section Moved to /data-management */}
-
-      {/* Ledger Settings Card */}
       <ThemedCard>
         <ThemedCardHeader>
           <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
@@ -118,7 +135,6 @@ const SettingsPage = () => {
       </ThemedCard>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
-        {/* Currency Selection Card */}
         <ThemedCard>
           <ThemedCardHeader>
             <ThemedCardTitle>Default Currency</ThemedCardTitle>
@@ -145,7 +161,6 @@ const SettingsPage = () => {
           </ThemedCardContent>
         </ThemedCard>
 
-        {/* Dashboard Style Selection Card */}
         <ThemedCard>
           <ThemedCardHeader>
             <ThemedCardTitle>Dashboard Style</ThemedCardTitle>
@@ -169,7 +184,6 @@ const SettingsPage = () => {
           </ThemedCardContent>
         </ThemedCard>
 
-        {/* Future Transactions Card */}
         <ThemedCard>
           <ThemedCardHeader>
             <ThemedCardTitle>Future Transactions</ThemedCardTitle>
@@ -197,88 +211,175 @@ const SettingsPage = () => {
         </ThemedCard>
 
         {/* AI Integrations Settings Card */}
-        <ThemedCard className="md:col-span-2 lg:col-span-3">
+        <ThemedCard className="md:col-span-2 lg:col-span-3 border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/10 dark:bg-indigo-950/5">
           <ThemedCardHeader>
-            <ThemedCardTitle>AI Integrations (BYOK)</ThemedCardTitle>
-            <ThemedCardDescription>
-              Bring your own API key to enable smart Auto-Categorization. Keys
-              are stored safely and locally on your device.
-            </ThemedCardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <ThemedCardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  AI Integrations (BYOK)
+                </ThemedCardTitle>
+                <ThemedCardDescription>
+                  Manage your AI model providers. Keys are stored safely and
+                  locally in your browser.
+                </ThemedCardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="hidden sm:flex border-indigo-200 dark:border-indigo-800"
+              >
+                <Link to="/ai-providers" className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  Manage Providers
+                </Link>
+              </Button>
+            </div>
           </ThemedCardHeader>
           <ThemedCardContent>
-            <div className="space-y-4 max-w-xl">
+            <div className="space-y-6 max-w-xl">
               <div className="space-y-2">
-                <Label>AI Provider</Label>
+                <Label>Default AI Provider</Label>
                 <Select
-                  value={aiConfig.provider}
-                  onValueChange={(value) => {
-                    saveAiConfig(value as AIProvider, aiConfig.apiKey);
-                    if (value !== "NONE")
-                      showSuccess(`AI Provider set to ${value}.`);
-                  }}
+                  value={aiConfig.provider?.id || "NONE"}
+                  onValueChange={handleProviderChange}
                 >
-                  <SelectTrigger className="w-full sm:w-[250px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                  <SelectTrigger className="w-full sm:w-[300px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                     <SelectValue placeholder="Select an AI Provider" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NONE">None (Disabled)</SelectItem>
-                    <SelectItem value="OPENAI">OpenAI (ChatGPT)</SelectItem>
-                    <SelectItem value="GEMINI">Google Gemini</SelectItem>
-                    <SelectItem value="PERPLEXITY">Perplexity AI</SelectItem>
+                    {providers.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.model || "None"})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <Link
+                  to="/ai-providers"
+                  className="sm:hidden text-xs text-indigo-600 hover:underline block mt-1"
+                >
+                  Manage Providers →
+                </Link>
               </div>
 
-              {aiConfig.provider !== "NONE" && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label>API Key</Label>
-                  <Input
-                    type="password"
-                    placeholder={`Enter your ${aiConfig.provider} API key`}
-                    value={aiConfig.apiKey}
-                    onChange={(e) =>
-                      saveAiConfig(aiConfig.provider, e.target.value)
-                    }
-                    onBlur={() => {
-                      if (aiConfig.apiKey)
-                        showSuccess("API Key saved locally.");
-                    }}
-                    className="w-full bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get your key here:{" "}
-                    {aiConfig.provider === "OPENAI" && (
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        platform.openai.com
-                      </a>
-                    )}
-                    {aiConfig.provider === "GEMINI" && (
-                      <a
-                        href="https://aistudio.google.com/app/apikey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Google AI Studio
-                      </a>
-                    )}
-                    {aiConfig.provider === "PERPLEXITY" && (
-                      <a
-                        href="https://www.perplexity.ai/settings/api"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Perplexity Settings
-                      </a>
-                    )}
-                  </p>
+              {aiConfig.provider ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-api-key">
+                      API Key for {aiConfig.provider.name}
+                    </Label>
+                    <Input
+                      id="ai-api-key"
+                      type="password"
+                      placeholder={`Enter your ${aiConfig.provider.name} API key`}
+                      value={aiConfig.apiKey}
+                      onChange={(e) =>
+                        saveAiConfig(aiConfig.provider!.id, e.target.value)
+                      }
+                      onBlur={() => {
+                        if (aiConfig.apiKey)
+                          showSuccess("API Key saved locally.");
+                      }}
+                      className="w-full bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {aiConfig.provider.type === "OPENAI" && (
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://platform.openai.com/api-keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            OpenAI Dashboard
+                          </a>
+                        </span>
+                      )}
+                      {aiConfig.provider.type === "GEMINI" && (
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Google AI Studio
+                          </a>
+                        </span>
+                      )}
+                      {aiConfig.provider.type === "ANTHROPIC" && (
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://console.anthropic.com/settings/keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Anthropic Console
+                          </a>
+                        </span>
+                      )}
+                      {aiConfig.provider.type === "MISTRAL" && (
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://console.mistral.ai/api-keys/"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Mistral Console
+                          </a>
+                        </span>
+                      )}
+                      {aiConfig.provider.type === "PERPLEXITY" && (
+                        <span>
+                          Get your key:{" "}
+                          <a
+                            href="https://www.perplexity.ai/settings/api"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Perplexity Settings
+                          </a>
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <Alert className="bg-white/50 dark:bg-black/20 border-indigo-100 dark:border-indigo-900/30">
+                    <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    <AlertDescription className="text-xs font-mono">
+                      <div className="grid grid-cols-[80px_1fr] gap-x-2">
+                        <span className="opacity-60 uppercase font-bold">
+                          Model
+                        </span>
+                        <span>{aiConfig.provider.model || "(None)"}</span>
+                        <span className="opacity-60 uppercase font-bold">
+                          Endpoint
+                        </span>
+                        <span className="truncate">
+                          {aiConfig.provider.baseUrl}
+                        </span>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
                 </div>
+              ) : (
+                <Alert className="bg-slate-50 dark:bg-slate-900/50">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Select a provider from the list or add a custom one in the
+                    management module to enable AI-powered features.
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
           </ThemedCardContent>
@@ -314,20 +415,6 @@ const SettingsPage = () => {
                     cloud provider like iCloud, Google Drive, or Dropbox. Any
                     local folder works, but won't sync automatically to other
                     devices.
-                    {!syncConfig.isElectron && !syncConfig.isCapacitor && (
-                      <span className="block mt-2 font-medium">
-                        Note: Due to browser privacy controls, you must create
-                        this folder manually on your device before selecting it
-                        here.
-                      </span>
-                    )}
-                    {syncConfig.isCapacitor && (
-                      <span className="block mt-2 font-medium">
-                        Note: On mobile, synchronization occurs via the native
-                        App Documents folder to ensure reliable offline
-                        filesystem access.
-                      </span>
-                    )}
                   </AlertDescription>
                 </Alert>
 
@@ -376,12 +463,6 @@ const SettingsPage = () => {
                       </Button>
                     )}
                   </div>
-                  {syncConfig.needsPermission && (
-                    <p className="text-xs text-red-500 font-medium flex items-center gap-1 mt-1">
-                      <ShieldAlert className="h-3 w-3" />
-                      Browser permission required to access this folder.
-                    </p>
-                  )}
                 </div>
               </div>
             )}

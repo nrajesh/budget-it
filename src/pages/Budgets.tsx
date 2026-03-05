@@ -39,7 +39,7 @@ export default function BudgetsPage() {
 
   // Use Ledger Context
   const { activeLedger } = useLedger();
-  const userId = activeLedger?.id || null;
+  const ledgerId = activeLedger?.id || null;
 
   // Contexts for real-time calculation
   const { transactions, accounts, vendors, deleteBudget, hiddenBudgetIds } =
@@ -47,12 +47,12 @@ export default function BudgetsPage() {
   const { convertBetweenCurrencies } = useCurrency();
 
   const fetchBudgets = useCallback(
-    async (currentUserId: string) => {
+    async (currentLedgerId: string) => {
       setIsLoading(true);
       try {
         // We still fetch budgets to get the configuration, but we might ignore the returned 'spent_amount'
         // in favor of client-side calculation to match Alerts logic.
-        const data = await dataProvider.getBudgetsWithSpending(currentUserId);
+        const data = await dataProvider.getBudgetsWithSpending(currentLedgerId);
         setBudgets(data || []);
       } catch (error: unknown) {
         toast({
@@ -67,12 +67,12 @@ export default function BudgetsPage() {
   );
 
   useEffect(() => {
-    if (userId) {
-      fetchBudgets(userId);
+    if (ledgerId) {
+      fetchBudgets(ledgerId);
     } else {
       setIsLoading(false);
     }
-  }, [userId, fetchBudgets]);
+  }, [ledgerId, fetchBudgets]);
 
   // Recalculate spent amounts using shared logic
   const processedBudgets = useMemo(() => {
@@ -140,8 +140,8 @@ export default function BudgetsPage() {
   };
 
   const handleSave = () => {
-    if (userId) {
-      fetchBudgets(userId);
+    if (ledgerId) {
+      fetchBudgets(ledgerId);
     }
   };
 
@@ -312,7 +312,7 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      {userId && (
+      {ledgerId && (
         <AddEditBudgetDialog
           isOpen={isDialogOpen}
           onOpenChange={(open) => {

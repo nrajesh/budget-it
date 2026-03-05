@@ -65,7 +65,7 @@ interface BudgetDialogProps {
   onClose: () => void;
   onSave: () => void;
   budget?: Budget | null;
-  userId: string;
+  ledgerId: string;
 }
 
 export function BudgetDialog({
@@ -73,7 +73,7 @@ export function BudgetDialog({
   onClose,
   onSave,
   budget,
-  userId,
+  ledgerId,
 }: BudgetDialogProps) {
   const { selectedCurrency } = useCurrency();
   const { toast } = useToast();
@@ -105,17 +105,17 @@ export function BudgetDialog({
   useEffect(() => {
     async function fetchUserData() {
       // Fetch categories
-      const categoryData = await dataProvider.getUserCategories(userId);
+      const categoryData = await dataProvider.getUserCategories(ledgerId);
       setCategories(categoryData || []);
 
       // Fetch sub-categories
-      const subCategoryData = await dataProvider.getSubCategories(userId);
+      const subCategoryData = await dataProvider.getSubCategories(ledgerId);
       setSubCategories(subCategoryData || []);
     }
-    if (userId) {
+    if (ledgerId) {
       fetchUserData();
     }
-  }, [userId, dataProvider]);
+  }, [ledgerId, dataProvider]);
 
   useEffect(() => {
     if (budget) {
@@ -156,7 +156,7 @@ export function BudgetDialog({
       : null;
 
     const budgetData = {
-      user_id: userId,
+      user_id: ledgerId,
       category_id: values.category_id,
       category_name: selectedCategory?.name || "",
       sub_category_id: values.sub_category_id || null,

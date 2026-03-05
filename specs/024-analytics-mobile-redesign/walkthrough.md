@@ -1,4 +1,4 @@
-# Walkthrough — Analytics Module Reimagine (013)
+# Walkthrough - Analytics Module Reimagine (013)
 
 **Branch**: `013-analytics-mobile-reimagine` → merged to `pre-prod`  
 **Date**: 2026-03-03  
@@ -14,7 +14,7 @@ The Analytics page was completely reimagined for mobile-first use. Nine new comp
 
 | File | Purpose |
 |------|---------|
-| `AnalyticsChartView.tsx` | Top-level container — chart type toggles, swipe nav, period selector, table |
+| `AnalyticsChartView.tsx` | Top-level container - chart type toggles, swipe nav, period selector, table |
 | `SpendingLineChart.tsx` | Line chart with current vs previous period, green/red delta markers |
 | `SpendingBarChart.tsx` | Bar chart with avg/max/mean dotted lines, dark-mode-aware labels |
 | `SpendingPieChart.tsx` | Pie chart with focus mode, center display, gray-out, and reset |
@@ -31,7 +31,7 @@ The Analytics page was completely reimagined for mobile-first use. Nine new comp
 
 ---
 
-## Pie Chart — Focus Mode
+## Pie Chart - Focus Mode
 
 When clicking a pie segment:
 - **Selected segment** stays coloured at full opacity
@@ -49,18 +49,18 @@ Dark mode detection uses `useTheme` from `next-themes` (respects user toggle).
 
 ---
 
-## Table — Three-Level Drill-Down
+## Table - Three-Level Drill-Down
 
 ```
-Level 1  By Category ▾         (default — all categories; clicking syncs pie chart)
+Level 1  By Category ▾         (default - all categories; clicking syncs pie chart)
          └─ Level 2  Housing   (sub-categories of selected category)
                 └─ Level 3  Rent · Mar 1 · € 1,200   (individual transactions)
 ```
 
 Navigation controls:
-- **‹ back** button — goes one level up
-- **Clear** button (top-right) — resets to Level 1 and deselects pie
-- **Breadcrumb** row (`All › Housing › Rent`) — click any node to jump to it
+- **‹ back** button - goes one level up
+- **Clear** button (top-right) - resets to Level 1 and deselects pie
+- **Breadcrumb** row (`All › Housing › Rent`) - click any node to jump to it
 - Table row chevron (›) indicates the row is clickable
 
 ---
@@ -76,7 +76,7 @@ Pie category labels have a contrasted fill, readable on any background.
 
 - Pills: **1W · 1M · 6M · 1Y** with active highlight
 - **Custom** (`...`) opens a `react-day-picker` v9 range calendar
-- Calendar layout fix: weekday headers were jumbled — corrected via `formatters` prop
+- Calendar layout fix: weekday headers were jumbled - corrected via `formatters` prop
 
 ---
 
@@ -90,9 +90,9 @@ Pie category labels have a contrasted fill, readable on any background.
 
 ## What Was Tested
 
-- ✅ `pnpm exec tsc --noEmit` — 0 type errors
-- ✅ `pnpm lint` — 0 errors (29 pre-existing warnings only, unrelated to analytics)
-- ✅ `pnpm build` — clean production build in 12.58 s
+- ✅ `pnpm exec tsc --noEmit` - 0 type errors
+- ✅ `pnpm lint` - 0 errors (29 pre-existing warnings only, unrelated to analytics)
+- ✅ `pnpm build` - clean production build in 12.58 s
 - ✅ Verified visual states in browser (dark & light mode)
 - ✅ Pie click → category filter → sub-category list → transaction list end-to-end
 - ✅ Pie reset via center click and segment re-click
