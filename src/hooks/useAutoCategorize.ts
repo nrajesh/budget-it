@@ -190,6 +190,28 @@ export const useAutoCategorize = () => {
         } else if (resultJson.startsWith("```")) {
           resultJson = resultJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
         }
+      } else if (config.provider === "MISTRAL") {
+        const response = await fetch(
+          "https://api.mistral.ai/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${config.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: "mistral-small-latest",
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.1,
+              response_format: { type: "json_object" },
+            }),
+          },
+        );
+
+        if (!response.ok)
+          throw new Error(`Mistral Error: ${response.statusText}`);
+        const data = await response.json();
+        resultJson = data.choices[0].message.content;
       }
 
       const parsed = JSON.parse(resultJson);

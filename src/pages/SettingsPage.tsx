@@ -225,57 +225,98 @@ const SettingsPage = () => {
                     <SelectItem value="OPENAI">OpenAI (ChatGPT)</SelectItem>
                     <SelectItem value="GEMINI">Google Gemini</SelectItem>
                     <SelectItem value="PERPLEXITY">Perplexity AI</SelectItem>
+                    <SelectItem value="ANTHROPIC">Anthropic (Claude)</SelectItem>
+                    <SelectItem value="MISTRAL">Mistral AI</SelectItem>
+                    <SelectItem value="LOCALHOST">Local LLM (OpenAI Compatible)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {aiConfig.provider !== "NONE" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label>API Key</Label>
+                  <Label>
+                    {aiConfig.provider === "LOCALHOST"
+                      ? "Base URL"
+                      : "API Key"}
+                  </Label>
                   <Input
-                    type="password"
-                    placeholder={`Enter your ${aiConfig.provider} API key`}
+                    type={aiConfig.provider === "LOCALHOST" ? "text" : "password"}
+                    placeholder={
+                      aiConfig.provider === "LOCALHOST"
+                        ? "e.g. http://localhost:11434/v1"
+                        : `Enter your ${aiConfig.provider} API key`
+                    }
                     value={aiConfig.apiKey}
                     onChange={(e) =>
                       saveAiConfig(aiConfig.provider, e.target.value)
                     }
                     onBlur={() => {
                       if (aiConfig.apiKey)
-                        showSuccess("API Key saved locally.");
+                        showSuccess(
+                          aiConfig.provider === "LOCALHOST"
+                            ? "Connection URL saved."
+                            : "API Key saved locally.",
+                        );
                     }}
                     className="w-full bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Get your key here:{" "}
-                    {aiConfig.provider === "OPENAI" && (
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        platform.openai.com
-                      </a>
-                    )}
-                    {aiConfig.provider === "GEMINI" && (
-                      <a
-                        href="https://aistudio.google.com/app/apikey"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Google AI Studio
-                      </a>
-                    )}
-                    {aiConfig.provider === "PERPLEXITY" && (
-                      <a
-                        href="https://www.perplexity.ai/settings/api"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Perplexity Settings
-                      </a>
+                    {aiConfig.provider === "LOCALHOST" ? (
+                      "Point to your local OpenAI-compatible endpoint (Ollama, LM Studio, etc.)"
+                    ) : (
+                      <>
+                        Get your key here:{" "}
+                        {aiConfig.provider === "OPENAI" && (
+                          <a
+                            href="https://platform.openai.com/api-keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            platform.openai.com
+                          </a>
+                        )}
+                        {aiConfig.provider === "GEMINI" && (
+                          <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Google AI Studio
+                          </a>
+                        )}
+                        {aiConfig.provider === "PERPLEXITY" && (
+                          <a
+                            href="https://www.perplexity.ai/settings/api"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Perplexity Settings
+                          </a>
+                        )}
+                        {aiConfig.provider === "ANTHROPIC" && (
+                          <a
+                            href="https://console.anthropic.com/settings/keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Anthropic Console
+                          </a>
+                        )}
+                        {aiConfig.provider === "MISTRAL" && (
+                          <a
+                            href="https://console.mistral.ai/api-keys/"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Mistral Console
+                          </a>
+                        )}
+                      </>
                     )}
                   </p>
                 </div>
@@ -352,11 +393,11 @@ const SettingsPage = () => {
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? (syncConfig.config
-                                .syncDirectoryHandle as unknown as string)
+                              .syncDirectoryHandle as unknown as string)
                             : (
-                                syncConfig.config
-                                  .syncDirectoryHandle as FileSystemDirectoryHandle
-                              ).name
+                              syncConfig.config
+                                .syncDirectoryHandle as FileSystemDirectoryHandle
+                            ).name
                           : "Select Folder"}
                       </span>
                     </Button>

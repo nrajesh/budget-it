@@ -260,7 +260,8 @@ The slash commands (e.g., `/agent.palette`) work automatically in IDEs that supp
 
 1. **Update Types**: Add the new provider's name to the `AIProvider` type in `src/hooks/useAIConfig.ts`.
 2. **Implement Hook Logic**: Update the `autoCategorize` function in `src/hooks/useAutoCategorize.ts` to include the API calling logic for the new provider.
-3. **Update Security Policy (CSP)**:
+3. **Update Settings UI**: Add the new provider to the `Select` dropdown and helper link logic in `src/pages/SettingsPage.tsx`.
+4. **Update Security Policy (CSP)**:
 
    > [!IMPORTANT]
    > You **must** add the new provider's API domain to the `connect-src` directive in `vite.config.ts`. If you skip this, the browser will block all outgoing requests to that provider in production builds.

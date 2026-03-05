@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export type AIProvider = "OPENAI" | "GEMINI" | "PERPLEXITY" | "NONE";
+export type AIProvider = "OPENAI" | "GEMINI" | "PERPLEXITY" | "ANTHROPIC" | "MISTRAL" | "LOCALHOST" | "NONE";
 
 export interface AIConfig {
   provider: AIProvider;
