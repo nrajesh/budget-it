@@ -186,23 +186,32 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       }
     } catch (error: unknown) {
       const errorMessage = (error as Error).message || "Auto-categorize failed";
+      const isApiKeyIssue =
+        errorMessage.toLowerCase().includes("unauthorized") ||
+        errorMessage.toLowerCase().includes("invalid") ||
+        errorMessage.toLowerCase().includes("401") ||
+        errorMessage.toLowerCase().includes("403") ||
+        errorMessage.toLowerCase().includes("key") ||
+        errorMessage.toLowerCase().includes("configured") ||
+        errorMessage.toLowerCase().includes("failed to fetch");
+
+      const errorHint = isApiKeyIssue
+        ? "Please check your API key or endpoint configuration."
+        : "An unexpected error occurred during categorization.";
+
       toast({
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
-              <span className="font-medium">{errorMessage}</span>
-              {(errorMessage.toLowerCase().includes("unauthorized") ||
-                errorMessage.toLowerCase().includes("invalid") ||
-                errorMessage.toLowerCase().includes("401") ||
-                errorMessage.toLowerCase().includes("403") ||
-                errorMessage.toLowerCase().includes("key")) && (
-                <span className="text-xs opacity-90">
-                  Note: Verify if your API key is valid in settings
-                </span>
-              )}
+              <span className="font-semibold text-sm">
+                {errorMessage}
+              </span>
+              <span className="text-xs opacity-90 italic">
+                {errorHint}
+              </span>
             </div>
-            {errorMessage.includes("configured") && (
+            {(isApiKeyIssue || errorMessage.length > 0) && (
               <Button
                 variant="outline"
                 size="sm"
