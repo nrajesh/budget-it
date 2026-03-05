@@ -131,7 +131,7 @@ export interface AIProvider {
   name: string;
   type: "OPENAI" | "GEMINI" | "ANTHROPIC" | "MISTRAL" | "PERPLEXITY" | "CUSTOM";
   baseUrl: string;
-  model: string;
+  model?: string;
   description?: string;
   isDefault?: boolean;
 }

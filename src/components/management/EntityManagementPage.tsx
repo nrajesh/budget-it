@@ -22,7 +22,7 @@ import { EntityTable, ColumnDefinition } from "./EntityTable";
 
 interface EntityManagementPageProps<T extends { id: string; name: string }> {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   entityName: string;
   entityNamePlural: string;
   data: T[];
@@ -160,9 +160,9 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const currentData = disablePagination
     ? filteredData
     : filteredData.slice(
-        (currentPage - 1) * itemsPerPage,
-        (currentPage - 1) * itemsPerPage + itemsPerPage,
-      );
+      (currentPage - 1) * itemsPerPage,
+      (currentPage - 1) * itemsPerPage + itemsPerPage,
+    );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;

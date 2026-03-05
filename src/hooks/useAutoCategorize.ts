@@ -129,12 +129,12 @@ export const useAutoCategorize = () => {
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: provider.model,
+              model: provider.model || (provider.type === "OPENAI" ? "gpt-4o" : undefined),
               messages: [{ role: "user", content: prompt }],
               temperature: 0.1,
               response_format:
                 provider.type === "OPENAI" ||
-                provider.baseUrl.includes("openai")
+                  provider.baseUrl.includes("openai")
                   ? { type: "json_object" }
                   : undefined,
             }),
@@ -285,7 +285,7 @@ export const useAutoCategorize = () => {
               temperature: 0.1,
               response_format:
                 provider.type === "OPENAI" ||
-                provider.baseUrl.includes("openai")
+                  provider.baseUrl.includes("openai")
                   ? { type: "json_object" }
                   : undefined,
             }),
