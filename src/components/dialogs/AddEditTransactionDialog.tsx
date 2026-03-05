@@ -106,7 +106,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       const result = await autoCategorize(
         vendorValue,
         allCategories,
-        subCategories
+        subCategories,
       );
 
       let updated = false;
@@ -136,7 +136,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
           <div className="flex flex-col gap-2">
             <span>{errorMessage}</span>
             {errorMessage.includes("configured") && (
-              <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
                 <Link to="/settings" onClick={() => onOpenChange(false)}>
                   Go to AI Settings
                 </Link>
@@ -380,21 +385,27 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                         searchPlaceholder="Search..."
                         emptyPlaceholder="No results found."
                       />
-                      {!isTransfer && field.value && config.provider !== "NONE" && (
-                        <div className="flex justify-end mt-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-xs px-2 text-primary hover:text-primary hover:bg-primary/10"
-                            onClick={handleAutoCategorize}
-                            disabled={isAiLoading}
-                          >
-                            {isAiLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : "✨ "}
-                            Auto-Categorize
-                          </Button>
-                        </div>
-                      )}
+                      {!isTransfer &&
+                        field.value &&
+                        config.provider !== "NONE" && (
+                          <div className="flex justify-end mt-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-xs px-2 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={handleAutoCategorize}
+                              disabled={isAiLoading}
+                            >
+                              {isAiLoading ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                "✨ "
+                              )}
+                              Auto-Categorize
+                            </Button>
+                          </div>
+                        )}
                       <FormMessage />
                     </FormItem>
                   )}

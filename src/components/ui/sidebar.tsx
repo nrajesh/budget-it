@@ -250,16 +250,16 @@ const Sidebar = React.forwardRef<
             "duration-200 relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
-            (collapsible === "offcanvas"
+            collapsible === "offcanvas"
               ? "w-0"
               : variant === "floating" || variant === "inset"
                 ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-                : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]"),
+                : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]",
             // Fix: Enforce collapsed width when state is collapsed, preventing shift on hover
             state === "collapsed" &&
-            (variant === "floating" || variant === "inset"
-              ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "w-[var(--sidebar-width-icon)]"),
+              (variant === "floating" || variant === "inset"
+                ? "w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+                : "w-[var(--sidebar-width-icon)]"),
           )}
         />
         <div
@@ -273,8 +273,8 @@ const Sidebar = React.forwardRef<
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[side=left]:border-r group-data-[side=right]:border-l",
             state === "collapsed" &&
-            isHovered &&
-            "w-[var(--sidebar-width)] shadow-lg z-50",
+              isHovered &&
+              "w-[var(--sidebar-width)] shadow-lg z-50",
             className,
           )}
           onMouseEnter={() => setIsHovered(true)}
@@ -650,7 +650,7 @@ const SidebarMenuAction = React.forwardRef<
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
         showOnHover &&
-        "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
+          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0",
         className,
       )}
       {...props}

@@ -287,11 +287,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 
@@ -400,16 +400,15 @@ const Transactions = () => {
   const handleBulkCategorize = async () => {
     // 1. Get all uncategorized or missing categories transactions
     const uncategorizedItems = allTransactions.filter(
-      (t) => !t.category || t.category.toLowerCase() === "uncategorized" || t.category.trim() === "",
+      (t) =>
+        !t.category ||
+        t.category.toLowerCase() === "uncategorized" ||
+        t.category.trim() === "",
     );
 
     // 2. Get unique vendors
     const uniqueVendors = Array.from(
-      new Set(
-        uncategorizedItems
-          .map((t) => t.vendor?.trim())
-          .filter(Boolean),
-      ),
+      new Set(uncategorizedItems.map((t) => t.vendor?.trim()).filter(Boolean)),
     );
 
     if (uniqueVendors.length === 0) {
@@ -479,7 +478,12 @@ const Transactions = () => {
           <div className="flex flex-col gap-2">
             <span>{errorMessage}</span>
             {errorMessage.includes("API Key is not configured") && (
-              <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
                 <Link to="/settings">Go to AI Settings</Link>
               </Button>
             )}
@@ -492,7 +496,6 @@ const Transactions = () => {
       setIsBulkCategorizing(false);
     }
   };
-
 
   const handleUnlinkTransaction = React.useCallback(
     async (transferId: string) => {
