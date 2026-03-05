@@ -25,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/utils/toast";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { AIProvider } from "@/types/dataProvider";
+import { buildGeminiUrl } from "@/hooks/useAutoCategorize";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -117,6 +119,55 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
       });
     }
   }, [provider, form, isOpen]);
+
+  const [isTesting, setIsTesting] = React.useState(false);
+
+  const handleTestConnection = async () => {
+    const values = form.getValues();
+    const apiKey = localStorage.getItem(`budgetit_ai_apiKey_${provider?.id}`) || "";
+
+    if (!apiKey) {
+      showError("Please save the provider and set an API key in Settings first to test.");
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      let url = values.baseUrl;
+      if (values.type === "GEMINI") {
+        url = buildGeminiUrl({ ...values, id: provider?.id || "temp" } as AIProvider, apiKey);
+      } else if (values.type === "OPENAI" || values.type === "CUSTOM") {
+        url = `${values.baseUrl.replace(/\/$/, "")}/chat/completions`;
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(values.type !== "GEMINI" ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
+        body: JSON.stringify(
+          values.type === "GEMINI"
+            ? { contents: [{ parts: [{ text: "Say 'Success' if you can read this." }] }] }
+            : {
+              model: values.model || (values.type === "OPENAI" ? "gpt-4o" : undefined),
+              messages: [{ role: "user", content: "Say 'Success' if you can read this." }],
+            }
+        ),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`${response.status} ${response.statusText}${errorData.error?.message ? `: ${errorData.error.message}` : ""}`);
+      }
+
+      showSuccess("Connection test successful!");
+    } catch (error: unknown) {
+      showError(`Connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -280,7 +331,25 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="flex justify-between items-center sm:justify-between">
+              <div className="flex gap-2">
+                {provider && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleTestConnection}
+                    disabled={isTesting}
+                    className="gap-2"
+                  >
+                    {isTesting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                    Test Connection
+                  </Button>
+                )}
+              </div>
               <Button type="submit">Save Provider</Button>
             </DialogFooter>
           </form>

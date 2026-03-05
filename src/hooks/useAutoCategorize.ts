@@ -1,11 +1,40 @@
 import { useAIConfig } from "./useAIConfig";
-import { Category, SubCategory } from "@/types/dataProvider";
+import { Category, SubCategory, AIProvider } from "@/types/dataProvider";
 import { Transaction } from "@/data/finance-data";
 
 export interface CategorizeResult {
   categoryName: string;
   subCategoryName: string;
 }
+
+/**
+ * Builds a robust Gemini API URL, handling various user misconfigurations.
+ */
+export const buildGeminiUrl = (provider: AIProvider, apiKey: string): string => {
+  const baseUrl = provider.baseUrl.replace(/\/$/, "");
+
+  // If the user already provided a full URL with a query string, just append the key
+  if (baseUrl.includes("?")) {
+    return `${baseUrl}&key=${apiKey}`;
+  }
+
+  // Handle versioning and path construction
+  // We want: {baseUrl}/{version}/models/{model}:generateContent?key={apiKey}
+
+  const hasVersion = baseUrl.includes("/v1") || baseUrl.includes("/v1beta");
+  const versionPath = hasVersion ? "" : "/v1beta"; // Default to v1beta for AI Studio keys
+
+  // Ensure we don't double up on /models if the user included it
+  const modelPart = baseUrl.includes("/models") ? "" : "/models";
+
+  // If the baseUrl itself looks like a complete path ending in :generateContent
+  if (baseUrl.includes(":generateContent")) {
+    return `${baseUrl}?key=${apiKey}`;
+  }
+
+  const modelId = provider.model || "gemini-1.5-flash";
+  return `${baseUrl}${versionPath}${modelPart}/${modelId}:generateContent?key=${apiKey}`;
+};
 
 const buildPrompt = (
   vendorName: string,
@@ -146,11 +175,7 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
-        const baseUrl = provider.baseUrl.replace(/\/$/, "");
-        const hasVersion = baseUrl.includes("/v1") || baseUrl.includes("/v1beta");
-        const url = baseUrl.includes("?")
-          ? `${baseUrl}&key=${apiKey}`
-          : `${baseUrl}${hasVersion ? "" : "/v1"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+        const url = buildGeminiUrl(provider, apiKey);
 
         const response = await fetch(url, {
           method: "POST",
@@ -166,8 +191,10 @@ export const useAutoCategorize = () => {
           }),
         });
 
-        if (!response.ok)
-          throw new Error(`Gemini Error: ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`);
+        }
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;
       } else if (provider.type === "ANTHROPIC") {
@@ -299,11 +326,7 @@ export const useAutoCategorize = () => {
         const data = await response.json();
         resultJson = data.choices[0].message.content;
       } else if (provider.type === "GEMINI") {
-        const baseUrl = provider.baseUrl.replace(/\/$/, "");
-        const hasVersion = baseUrl.includes("/v1");
-        const url = baseUrl.includes("?")
-          ? `${baseUrl}&key=${apiKey}`
-          : `${baseUrl}${hasVersion ? "" : "/v1"}/models/${provider.model || "gemini-1.5-flash"}:generateContent?key=${apiKey}`;
+        const url = buildGeminiUrl(provider, apiKey);
 
         const response = await fetch(url, {
           method: "POST",
@@ -319,8 +342,10 @@ export const useAutoCategorize = () => {
           }),
         });
 
-        if (!response.ok)
-          throw new Error(`Gemini Error: ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Gemini Error: ${response.status} ${response.statusText}${errorData.error?.message ? ` - ${errorData.error.message}` : ""}`);
+        }
         const data = await response.json();
         resultJson = data.candidates[0].content.parts[0].text;
       } else if (provider.type === "PERPLEXITY") {
