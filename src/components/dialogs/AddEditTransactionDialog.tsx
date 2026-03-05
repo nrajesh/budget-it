@@ -124,12 +124,34 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
       }
 
       if (updated) {
-        showSuccess(`Categorized as ${cached.categoryName} from your history!`);
+        toast({
+          title: "Categorized from History",
+          description: `Automatically mapped to ${cached.categoryName}`,
+        });
         return; // Break early so we don't hit the AI
       }
     }
 
-    // 2. Fallback to pinging the AI if not found locally
+    // 2. Pre-flight check before pinging AI
+    if (!config.apiKey || config.provider === "NONE") {
+      toast({
+        title: "AI Not Configured",
+        description: (
+          <div className="flex flex-col gap-2">
+            <span>Please configure your AI provider and API key first.</span>
+            <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+              <Link to="/settings" onClick={() => onOpenChange(false)}>
+                Go to AI Settings
+              </Link>
+            </Button>
+          </div>
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 3. Fallback to pinging the AI if not found locally
     setIsAiLoading(true);
     try {
       const result = await autoCategorize(

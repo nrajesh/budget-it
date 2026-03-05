@@ -24,6 +24,7 @@ import { TransactionPageHeader } from "@/components/transactions/TransactionPage
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 import { MissingCurrencyDialog } from "@/components/dialogs/MissingCurrencyDialog";
 import { useAutoCategorize } from "@/hooks/useAutoCategorize";
+import { useAIConfig } from "@/hooks/useAIConfig";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -49,6 +50,7 @@ const Transactions = () => {
   } = useTransactions();
   const { activeLedger } = useLedger();
   const { autoCategorizeBulk, getHistoricalMapping } = useAutoCategorize();
+  const { config } = useAIConfig();
 
   const {
     selectedAccounts,
@@ -398,87 +400,107 @@ const Transactions = () => {
   };
 
   const handleBulkCategorize = async () => {
-    // 1. Get all uncategorized or missing categories transactions
-    const uncategorizedItems = allTransactions.filter(
-      (t) =>
-        !t.category ||
-        t.category.toLowerCase() === "uncategorized" ||
-        t.category.trim() === "",
-    );
+    try {
+      const uncategorizedItems = allTransactions.filter(
+        (t) =>
+          !t.category ||
+          t.category.toLowerCase() === "uncategorized" ||
+          t.category.trim() === "",
+      );
 
-    // 2. Get unique vendors
-    const allUniqueVendors = Array.from(
-      new Set(uncategorizedItems.map((t) => t.vendor?.trim()).filter(Boolean)),
-    );
+      const allUniqueVendors = Array.from(
+        new Set(
+          uncategorizedItems.map((t) => t.vendor?.trim()).filter(Boolean),
+        ),
+      );
 
-    if (allUniqueVendors.length === 0) {
-      toast({
-        title: "Nothing to categorize",
-        description: "No uncategorized vendors found.",
-      });
-      return;
-    }
-
-    // 3. Try to resolve vendors locally first using historical data
-    const localMappings: Record<string, any> = {};
-    const unknownVendors: string[] = [];
-
-    // Sort transactions by date descending so we find the most recent category mapping
-    const sortedHistory = [...allTransactions].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
-
-    for (const vendor of allUniqueVendors) {
-      if (!vendor) continue;
-      const cached = getHistoricalMapping(vendor, sortedHistory);
-      if (cached) {
-        localMappings[vendor] = cached;
-      } else {
-        unknownVendors.push(vendor);
+      if (allUniqueVendors.length === 0) {
+        toast({
+          title: "Nothing to categorize",
+          description: "No uncategorized vendors found.",
+        });
+        return;
       }
-    }
 
-    let aiMappings: Record<string, any> = {};
+      // Check for config before starting progress modal
+      if (!config.apiKey || config.provider === "NONE") {
+        toast({
+          title: "AI Not Configured",
+          description: (
+            <div className="flex flex-col gap-2">
+              <span>Please configure your AI provider and API key first.</span>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="w-fit mt-1"
+              >
+                <Link to="/settings">Go to AI Settings</Link>
+              </Button>
+            </div>
+          ),
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Only call AI if there are strictly unknown vendors left
-    if (unknownVendors.length > 0) {
-      setIsBulkCategorizing(true);
-      setOperationProgress({
-        title: "Auto-Categorizing",
-        description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""})...`,
-        stage: "Calling AI",
-        progress: 50,
-        totalStages: 100,
-      });
+      const localMappings: Record<string, any> = {};
+      const unknownVendors: string[] = [];
 
-      try {
-        aiMappings = await autoCategorizeBulk(
-          unknownVendors,
-          categories,
-          subCategories,
-        );
-      } catch (e) {
-        // If AI fails but we have some local mappings, we can proceed with just the local matches.
-        // Otherwise, throw the error as usual.
-        if (Object.keys(localMappings).length === 0) {
-          throw e;
+      const sortedHistory = [...allTransactions].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
+
+      for (const vendor of allUniqueVendors) {
+        if (!vendor) continue;
+        const cached = getHistoricalMapping(vendor, sortedHistory);
+        if (cached) {
+          localMappings[vendor] = cached;
+        } else {
+          unknownVendors.push(vendor);
         }
       }
-    } else {
-      setIsBulkCategorizing(true);
-      setOperationProgress({
-        title: "Auto-Categorizing locally",
-        description: `Matched ${allUniqueVendors.length} vendors from your history!`,
-        stage: "Applying updates",
-        progress: 90,
-        totalStages: 100,
-      });
-    }
 
-    try {
+      let aiMappings: Record<string, any> = {};
+
+      if (unknownVendors.length > 0) {
+        setIsBulkCategorizing(true);
+        setOperationProgress({
+          title: "Auto-Categorizing",
+          description: `Categorizing ${allUniqueVendors.length} unique vendors (${
+            Object.keys(localMappings).length ? "Some locally matched" : ""
+          })...`,
+          stage: "Calling AI",
+          progress: 50,
+          totalStages: 100,
+        });
+
+        try {
+          aiMappings = await autoCategorizeBulk(
+            unknownVendors,
+            categories,
+            subCategories,
+          );
+        } catch (e) {
+          if (Object.keys(localMappings).length === 0) {
+            throw e;
+          }
+          // If we have some local mappings, we ignore the AI error and let it proceed
+        }
+      } else {
+        setIsBulkCategorizing(true);
+        setOperationProgress({
+          title: "Auto-Categorizing locally",
+          description: `Matched ${allUniqueVendors.length} vendors from your history!`,
+          stage: "Applying updates",
+          progress: 90,
+          totalStages: 100,
+        });
+      }
+
       const combinedMappings = { ...localMappings, ...aiMappings };
-
       const updates = [];
+
       for (const t of uncategorizedItems) {
         if (!t.vendor) continue;
         const vendorKey = Object.keys(combinedMappings).find(
@@ -512,13 +534,19 @@ const Transactions = () => {
         });
       }
     } catch (e) {
-      const errorMessage = (e as Error).message;
+      console.error("Bulk categorization error:", e);
+      const errorMessage =
+        e instanceof Error ? e.message : "Bulk categorization failed";
+
+      const errorStr = String(errorMessage || "");
+
       toast({
         title: "Categorization Failed",
         description: (
           <div className="flex flex-col gap-2">
-            <span>{errorMessage}</span>
-            {errorMessage.includes("API Key is not configured") && (
+            <span>{errorStr}</span>
+            {(errorStr.includes("configured") ||
+              errorStr.includes("API Key")) && (
               <Button
                 variant="outline"
                 size="sm"
