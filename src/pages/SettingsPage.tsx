@@ -225,9 +225,13 @@ const SettingsPage = () => {
                     <SelectItem value="OPENAI">OpenAI (ChatGPT)</SelectItem>
                     <SelectItem value="GEMINI">Google Gemini</SelectItem>
                     <SelectItem value="PERPLEXITY">Perplexity AI</SelectItem>
-                    <SelectItem value="ANTHROPIC">Anthropic (Claude)</SelectItem>
+                    <SelectItem value="ANTHROPIC">
+                      Anthropic (Claude)
+                    </SelectItem>
                     <SelectItem value="MISTRAL">Mistral AI</SelectItem>
-                    <SelectItem value="LOCALHOST">Local LLM (OpenAI Compatible)</SelectItem>
+                    <SelectItem value="LOCALHOST">
+                      Local LLM (OpenAI Compatible)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -235,12 +239,12 @@ const SettingsPage = () => {
               {aiConfig.provider !== "NONE" && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
                   <Label>
-                    {aiConfig.provider === "LOCALHOST"
-                      ? "Base URL"
-                      : "API Key"}
+                    {aiConfig.provider === "LOCALHOST" ? "Base URL" : "API Key"}
                   </Label>
                   <Input
-                    type={aiConfig.provider === "LOCALHOST" ? "text" : "password"}
+                    type={
+                      aiConfig.provider === "LOCALHOST" ? "text" : "password"
+                    }
                     placeholder={
                       aiConfig.provider === "LOCALHOST"
                         ? "e.g. http://localhost:11434/v1"
@@ -393,11 +397,11 @@ const SettingsPage = () => {
                         {syncConfig.config.syncDirectoryHandle
                           ? syncConfig.isElectron || syncConfig.isCapacitor
                             ? (syncConfig.config
-                              .syncDirectoryHandle as unknown as string)
+                                .syncDirectoryHandle as unknown as string)
                             : (
-                              syncConfig.config
-                                .syncDirectoryHandle as FileSystemDirectoryHandle
-                            ).name
+                                syncConfig.config
+                                  .syncDirectoryHandle as FileSystemDirectoryHandle
+                              ).name
                           : "Select Folder"}
                       </span>
                     </Button>
