@@ -31,7 +31,7 @@ import {
   Clock,
   BookOpen,
   PiggyBank,
-  BrainCircuit,
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -339,7 +339,7 @@ const Layout = () => {
                   isActive={location.pathname === "/ai-providers"}
                 >
                   <Link to="/ai-providers">
-                    <BrainCircuit />
+                    <Brain />
                     <span>AI Providers</span>
                   </Link>
                 </SidebarMenuButton>

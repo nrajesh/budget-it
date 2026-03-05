@@ -39,6 +39,7 @@ import { LedgerProvider } from "./contexts/LedgerContext";
 const DataManagementPage = lazy(() => import("@/pages/DataManagementPage"));
 const BackupPage = lazy(() => import("@/pages/BackupPage"));
 const CurrenciesPage = lazy(() => import("@/pages/CurrenciesPage"));
+const AIProviders = lazy(() => import("@/pages/AIProviders"));
 import BackupManager from "@/components/backup/BackupManager";
 const DonationPage = lazy(() => import("@/pages/DonationPage"));
 import { ContinuitySyncManager } from "@/components/ContinuitySyncManager";
@@ -103,6 +104,10 @@ function App() {
                             <Route
                               path="/currencies"
                               element={<CurrenciesPage />}
+                            />
+                            <Route
+                              path="/ai-providers"
+                              element={<AIProviders />}
                             />
                             <Route path="/donate" element={<DonationPage />} />
 
