@@ -195,8 +195,7 @@ const DataManagementPage = () => {
         </div>
       </div>
 
-      {/* Manual Backup Section */}
-      <ThemedCard className="border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
+      <ThemedCard className="tour-data-export border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
         <ThemedCardHeader>
           <ThemedCardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
             Manual Backup & Restore
@@ -261,7 +260,7 @@ const DataManagementPage = () => {
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Reset Data Card */}
-        <ThemedCard className="border-red-200/50 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10">
+        <ThemedCard className="tour-data-reset border-red-200/50 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10">
           <ThemedCardHeader>
             <ThemedCardTitle className="text-red-600 dark:text-red-400">
               Reset All Data
@@ -282,7 +281,7 @@ const DataManagementPage = () => {
         </ThemedCard>
 
         {/* Generate Demo Data Card */}
-        <ThemedCard className="border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10">
+        <ThemedCard className="tour-data-demo border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/20 dark:bg-indigo-950/10">
           <ThemedCardHeader>
             <ThemedCardTitle className="text-indigo-600 dark:text-indigo-400">
               Generate Demo Data

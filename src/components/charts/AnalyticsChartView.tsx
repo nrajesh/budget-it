@@ -56,13 +56,15 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
   return (
     <div className="space-y-2">
       {/* Summary Header */}
-      <SpendingSummaryHeader
-        totalSpent={analytics.totalSpent}
-        previousTotalSpent={analytics.previousTotalSpent}
-        spentDelta={analytics.spentDelta}
-        periodLabel={analytics.periodLabel}
-        hasPreviousPeriod={analytics.previousRange !== null}
-      />
+      <div className="tour-analytics-summary">
+        <SpendingSummaryHeader
+          totalSpent={analytics.totalSpent}
+          previousTotalSpent={analytics.previousTotalSpent}
+          spentDelta={analytics.spentDelta}
+          periodLabel={analytics.periodLabel}
+          hasPreviousPeriod={analytics.previousRange !== null}
+        />
+      </div>
 
       {/* Main Chart Card */}
       <ThemedCard className="overflow-hidden">
@@ -80,7 +82,7 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
             </button>
 
             {/* Chart type toggles */}
-            <div className="flex items-center gap-1 bg-muted/60 rounded-full p-1">
+            <div className="tour-analytics-toggles flex items-center gap-1 bg-muted/60 rounded-full p-1">
               <button
                 onClick={() => setChartMode("line")}
                 className={`p-2 rounded-full transition-all duration-200 ${
@@ -200,26 +202,30 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
           </div>
 
           {/* Period Selector */}
-          <PeriodSelector
-            period={analytics.period}
-            onPeriodChange={analytics.setPeriod}
-            onCustomRange={analytics.setCustomRange}
-          />
+          <div className="tour-analytics-period pt-4">
+            <PeriodSelector
+              period={analytics.period}
+              onPeriodChange={analytics.setPeriod}
+              onCustomRange={analytics.setCustomRange}
+            />
+          </div>
         </ThemedCardContent>
       </ThemedCard>
 
       {/* Entity Breakdown Table */}
-      <ThemedCard>
-        <ThemedCardContent className="p-4 sm:p-6">
-          <EntityBreakdownTable
-            transactions={analytics.currentPeriodTransactions}
-            entityType={entityType}
-            onEntityTypeChange={handleEntityTypeChange}
-            selectedEntity={selectedEntity}
-            onEntitySelect={handleEntitySelect}
-          />
-        </ThemedCardContent>
-      </ThemedCard>
+      <div className="tour-analytics-breakdown">
+        <ThemedCard>
+          <ThemedCardContent className="p-4 sm:p-6">
+            <EntityBreakdownTable
+              transactions={analytics.currentPeriodTransactions}
+              entityType={entityType}
+              onEntityTypeChange={handleEntityTypeChange}
+              selectedEntity={selectedEntity}
+              onEntitySelect={handleEntitySelect}
+            />
+          </ThemedCardContent>
+        </ThemedCard>
+      </div>
     </div>
   );
 }

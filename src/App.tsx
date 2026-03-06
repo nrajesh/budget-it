@@ -43,6 +43,8 @@ const AIProviders = lazy(() => import("@/pages/AIProviders"));
 import BackupManager from "@/components/backup/BackupManager";
 const DonationPage = lazy(() => import("@/pages/DonationPage"));
 import { ContinuitySyncManager } from "@/components/ContinuitySyncManager";
+import { TourProvider } from "./contexts/TourContext";
+import HelpTour from "./components/ui/help-tour";
 
 // ... existing imports
 
@@ -58,64 +60,76 @@ function App() {
                   <TransactionsProvider>
                     <BackupManager />
                     <Router>
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <Routes>
-                          <Route
-                            path="/ledgers"
-                            element={<LedgerEntryPage />}
-                          />
-                          <Route path="/" element={<Layout />}>
-                            <Route index element={<Index />} />
-                            <Route path="calendar" element={<CalendarView />} />
+                      <TourProvider>
+                        <HelpTour />
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Routes>
                             <Route
-                              path="/transactions"
-                              element={<Transactions />}
+                              path="/ledgers"
+                              element={<LedgerEntryPage />}
                             />
-                            <Route path="/vendors" element={<Vendors />} />
-                            <Route path="/accounts" element={<Accounts />} />
-                            <Route
-                              path="/categories"
-                              element={<Categories />}
-                            />
-                            <Route
-                              path="/scheduled"
-                              element={<ScheduledTransactions />}
-                            />
-                            <Route path="/budgets" element={<Budgets />} />
-                            <Route path="/analytics" element={<Analytics />} />
-                            <Route
-                              path="/reports/essential"
-                              element={<EssentialReports />}
-                            />
-                            <Route
-                              path="/reports/advanced"
-                              element={<AdvancedReports />}
-                            />
-                            <Route path="/insights" element={<Insights />} />
-                            <Route
-                              path="/settings"
-                              element={<SettingsPage />}
-                            />
-                            <Route
-                              path="/data-management"
-                              element={<DataManagementPage />}
-                            />
-                            <Route path="/backup" element={<BackupPage />} />
-                            <Route
-                              path="/currencies"
-                              element={<CurrenciesPage />}
-                            />
-                            <Route
-                              path="/ai-providers"
-                              element={<AIProviders />}
-                            />
-                            <Route path="/donate" element={<DonationPage />} />
+                            <Route path="/" element={<Layout />}>
+                              <Route index element={<Index />} />
+                              <Route
+                                path="calendar"
+                                element={<CalendarView />}
+                              />
+                              <Route
+                                path="/transactions"
+                                element={<Transactions />}
+                              />
+                              <Route path="/vendors" element={<Vendors />} />
+                              <Route path="/accounts" element={<Accounts />} />
+                              <Route
+                                path="/categories"
+                                element={<Categories />}
+                              />
+                              <Route
+                                path="/scheduled"
+                                element={<ScheduledTransactions />}
+                              />
+                              <Route path="/budgets" element={<Budgets />} />
+                              <Route
+                                path="/analytics"
+                                element={<Analytics />}
+                              />
+                              <Route
+                                path="/reports/essential"
+                                element={<EssentialReports />}
+                              />
+                              <Route
+                                path="/reports/advanced"
+                                element={<AdvancedReports />}
+                              />
+                              <Route path="/insights" element={<Insights />} />
+                              <Route
+                                path="/settings"
+                                element={<SettingsPage />}
+                              />
+                              <Route
+                                path="/data-management"
+                                element={<DataManagementPage />}
+                              />
+                              <Route path="/backup" element={<BackupPage />} />
+                              <Route
+                                path="/currencies"
+                                element={<CurrenciesPage />}
+                              />
+                              <Route
+                                path="/ai-providers"
+                                element={<AIProviders />}
+                              />
+                              <Route
+                                path="/donate"
+                                element={<DonationPage />}
+                              />
 
-                            <Route path="*" element={<NotFound />} />
-                          </Route>
-                        </Routes>
-                      </Suspense>
-                      <ShadcnToaster />
+                              <Route path="*" element={<NotFound />} />
+                            </Route>
+                          </Routes>
+                        </Suspense>
+                        <ShadcnToaster />
+                      </TourProvider>
                     </Router>
                     <ContinuitySyncManager />
                   </TransactionsProvider>

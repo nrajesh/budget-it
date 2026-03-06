@@ -13,8 +13,9 @@ const BackupPage = () => {
           </p>
         </div>
       </div>
-
-      <ScheduledBackups />
+      <div className="tour-backup-settings">
+        <ScheduledBackups />
+      </div>
     </div>
   );
 };

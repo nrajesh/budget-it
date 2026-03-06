@@ -114,7 +114,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <ThemedCard>
+      <ThemedCard className="tour-settings-ledger">
         <ThemedCardHeader>
           <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
           <ThemedCardDescription>
@@ -135,7 +135,7 @@ const SettingsPage = () => {
       </ThemedCard>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
-        <ThemedCard>
+        <ThemedCard className="tour-settings-currency">
           <ThemedCardHeader>
             <ThemedCardTitle>Default Currency</ThemedCardTitle>
             <ThemedCardDescription>
@@ -211,7 +211,7 @@ const SettingsPage = () => {
         </ThemedCard>
 
         {/* AI Integrations Settings Card */}
-        <ThemedCard className="md:col-span-2 lg:col-span-3 border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/10 dark:bg-indigo-950/5">
+        <ThemedCard className="tour-settings-ai md:col-span-2 lg:col-span-3 border-indigo-200/50 dark:border-indigo-900/50 bg-indigo-50/10 dark:bg-indigo-950/5">
           <ThemedCardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -386,7 +386,7 @@ const SettingsPage = () => {
         </ThemedCard>
 
         {/* Sync Settings Card */}
-        <ThemedCard className="md:col-span-2 lg:col-span-3">
+        <ThemedCard className="tour-settings-sync md:col-span-2 lg:col-span-3">
           <ThemedCardHeader>
             <div className="flex items-center justify-between">
               <div>

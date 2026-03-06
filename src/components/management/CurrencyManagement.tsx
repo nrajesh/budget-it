@@ -163,24 +163,26 @@ export const CurrencyManagement = () => {
                 </span>
               </ThemedCardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? (
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-3 w-3" />
-              )}
-              Refresh Rates
-            </Button>
+            <div className="tour-currency-refresh">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-3 w-3" />
+                )}
+                Refresh Rates
+              </Button>
+            </div>
           </div>
         </ThemedCardHeader>
         <ThemedCardContent className="space-y-6">
           {/* Top Section: Search/Add */}
-          <div className="space-y-4 border rounded-md p-4 bg-muted/30">
+          <div className="tour-currency-add space-y-4 border rounded-md p-4 bg-muted/30">
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">Add New Currency</Label>
               <div className="flex gap-2">
@@ -397,7 +399,7 @@ export const CurrencyManagement = () => {
             )}
           </div>
 
-          <div className="rounded-md border">
+          <div className="tour-currency-list rounded-md border">
             <div className="grid grid-cols-12 gap-4 p-4 border-b bg-muted/50 text-sm font-medium text-muted-foreground">
               <div className="col-span-5 md:col-span-6">Currency</div>
               <div className="col-span-5 md:col-span-4 text-right">
