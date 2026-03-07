@@ -235,13 +235,17 @@ export default function BudgetsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsSmartBudgetOpen(true)}>
+          <Button
+            variant="outline"
+            className="tour-smart-budget"
+            onClick={() => setIsSmartBudgetOpen(true)}
+          >
             <Wand2 className="mr-2 h-4 w-4" />
             Smart Create
           </Button>
           <Button
             onClick={() => handleOpenDialog()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="tour-create-budget bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
           </Button>
@@ -249,7 +253,7 @@ export default function BudgetsPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="mb-6 flex gap-4 items-center">
+        <div className="tour-budget-search-bar mb-6 flex gap-4 items-center">
           <Input
             placeholder="Search budgets by category name..."
             value={searchTerm}
@@ -278,7 +282,9 @@ export default function BudgetsPage() {
           )}
         </div>
 
-        <BudgetSummary budgets={spendingBudgets} isLoading={isLoading} />
+        <div className="tour-budget-list">
+          <BudgetSummary budgets={spendingBudgets} isLoading={isLoading} />
+        </div>
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>

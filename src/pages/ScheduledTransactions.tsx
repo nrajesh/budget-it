@@ -289,7 +289,7 @@ const ScheduledTransactionsPage = () => {
             </Button>
             <Button
               onClick={handleAdd}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="tour-scheduled-add bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Plus className="mr-2 h-4 w-4" /> Add Scheduled
             </Button>
@@ -306,7 +306,7 @@ const ScheduledTransactionsPage = () => {
         />
       </div>
 
-      <div className="grid gap-4">
+      <div className="tour-scheduled-list grid gap-4">
         <ScheduledTransactionsTable
           transactions={filteredTransactions}
           onEdit={handleEdit}

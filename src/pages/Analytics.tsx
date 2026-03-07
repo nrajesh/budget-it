@@ -18,7 +18,9 @@ const Analytics = () => {
 
   return (
     <div className="page-container space-y-2">
-      <AnalyticsChartView transactions={currentTransactions} />
+      <div className="tour-analytics-chart">
+        <AnalyticsChartView transactions={currentTransactions} />
+      </div>
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useLedger } from "@/contexts/LedgerContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useTour } from "@/contexts/TourContext";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
 import {
   ThemedCard,
@@ -24,6 +25,7 @@ import {
   FileText,
   Moon,
   Sun,
+  HelpCircle,
 } from "lucide-react";
 import {
   ImportConfig,
@@ -55,6 +57,7 @@ import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 const LedgerEntryPage = () => {
   const { ledgers, switchLedger, refreshLedgers, deleteLedger } = useLedger();
   const { setTheme, resolvedTheme } = useTheme();
+  const { startTour, hasTourForCurrentRoute } = useTour();
   const { generateDiverseDemoData, setOperationProgress } = useTransactions();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isGenerateConfirmOpen, setIsGenerateConfirmOpen] = useState(false);
@@ -457,7 +460,19 @@ const LedgerEntryPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       {/* Theme toggle button - top-right corner */}
-      <div className="fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-4 z-50">
+      <div className="tour-theme-toggle fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-4 z-50 flex items-center gap-2">
+        {hasTourForCurrentRoute && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+            onClick={startTour}
+            aria-label="Start Help Tour"
+          >
+            <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+            <span className="sr-only">Start Help Tour</span>
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -473,7 +488,7 @@ const LedgerEntryPage = () => {
         </Button>
       </div>
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
-        <div className="text-center space-y-2">
+        <div className="tour-ledger-title text-center space-y-2">
           <LogoImage />
           <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
             Budget It!
@@ -484,7 +499,7 @@ const LedgerEntryPage = () => {
         </div>
 
         {/* Search and Bulk Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
+        <div className="tour-ledger-search flex flex-col sm:flex-row gap-4 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -520,13 +535,14 @@ const LedgerEntryPage = () => {
         </div>
 
         <div
-          className={
+          className={cn(
+            "tour-ledger-list",
             filteredLedgers.length === 0 && ledgers.length > 0
               ? "text-center text-muted-foreground py-10"
               : ledgers.length === 0
                 ? "flex justify-center"
-                : "grid grid-cols-1 md:grid-cols-2 gap-4"
-          }
+                : "grid grid-cols-1 md:grid-cols-2 gap-4",
+          )}
         >
           {filteredLedgers.length === 0 && ledgers.length > 0 && (
             <p>No ledgers match your search.</p>
@@ -597,7 +613,7 @@ const LedgerEntryPage = () => {
           })}
 
           <ThemedCard
-            className={`cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+            className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
               filteredLedgers.length === 0 && ledgers.length > 0
                 ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
                 : ""
@@ -614,7 +630,7 @@ const LedgerEntryPage = () => {
         {/* Import Backup Controls */}
         {ledgers.length === 0 && (
           <>
-            <div className="w-full flex flex-col justify-center items-center mt-4 gap-2">
+            <div className="tour-import-backup w-full flex flex-col justify-center items-center mt-4 gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -660,7 +676,7 @@ const LedgerEntryPage = () => {
 
         {ledgers.length > 0 && (
           <>
-            <div className="flex flex-col justify-center items-center pt-8 gap-2">
+            <div className="tour-import-backup flex flex-col justify-center items-center pt-8 gap-2">
               <input
                 type="file"
                 ref={fileInputRef}

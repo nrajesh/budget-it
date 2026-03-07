@@ -13,8 +13,9 @@ const CurrenciesPage = () => {
           </p>
         </div>
       </div>
-
-      <CurrencyManagement />
+      <div className="tour-currencies-mgmt">
+        <CurrencyManagement />
+      </div>
     </div>
   );
 };

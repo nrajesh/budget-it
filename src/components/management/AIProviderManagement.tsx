@@ -62,32 +62,37 @@ const AIProviderManagement = () => {
   ];
 
   return (
-    <EntityManagementPage<AIProvider>
-      title="AI Providers"
-      subtitle={
-        <div className="flex flex-col gap-1">
-          <span>Manage your AI model endpoints and configurations.</span>
-          <Link
-            to="/settings"
-            className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
-          >
-            Go to Settings to manage API keys →
-          </Link>
-        </div>
-      }
-      entityName="AI Provider"
-      entityNamePlural="AI providers"
-      data={managementProps.providers}
-      columns={columns}
-      AddEditDialogComponent={(props) => (
-        <AddEditAIProviderDialog
-          {...props}
-          provider={managementProps.selectedProvider}
-          onSuccess={managementProps.refetch}
-        />
-      )}
-      {...managementProps}
-    />
+    <div className="tour-ai-list">
+      <EntityManagementPage<AIProvider>
+        title="AI Providers"
+        subtitle={
+          <div className="flex flex-col gap-1">
+            <span className="tour-ai-byok">
+              Bring Your Own Key (BYOK) for AI analysis. Manage your endpoints
+              and configurations here.
+            </span>
+            <Link
+              to="/settings"
+              className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
+            >
+              Go to Settings to manage API keys →
+            </Link>
+          </div>
+        }
+        entityName="AI Provider"
+        entityNamePlural="AI providers"
+        data={managementProps.providers}
+        columns={columns}
+        AddEditDialogComponent={(props) => (
+          <AddEditAIProviderDialog
+            {...props}
+            provider={managementProps.selectedProvider}
+            onSuccess={managementProps.refetch}
+          />
+        )}
+        {...managementProps}
+      />
+    </div>
   );
 };
 

@@ -32,6 +32,7 @@ import {
   BookOpen,
   PiggyBank,
   Brain,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,8 +74,8 @@ import {
 } from "@/components/ui/tooltip";
 
 import AddEditTransactionDialog from "@/components/dialogs/AddEditTransactionDialog";
-// import { useUser } from "@/contexts/UserContext";
 import { useLedger } from "@/contexts/LedgerContext";
+import { useTour } from "@/contexts/TourContext";
 import { useDefaultAccountSelection } from "@/hooks/useDefaultAccountSelection";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
 
@@ -131,6 +132,7 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const { startTour, hasTourForCurrentRoute } = useTour();
 
   React.useEffect(() => {
     if (!isLoading && !activeLedger) {
@@ -208,7 +210,7 @@ const Layout = () => {
   return (
     <SidebarProvider className="min-h-screen">
       <MobileSidebarCloser />
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" className="tour-sidebar-nav">
         <SidebarHeader className="pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
@@ -527,6 +529,18 @@ const Layout = () => {
             <h1 className="text-lg font-semibold">{pageTitle}</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            {hasTourForCurrentRoute && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                onClick={startTour}
+                aria-label="Start Help Tour"
+              >
+                <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">Start Help Tour</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

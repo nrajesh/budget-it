@@ -180,7 +180,7 @@ const CategoriesPage = () => {
   ];
 
   return (
-    <>
+    <div className="tour-categories-list">
       <EntityManagementPage
         title="Categories"
         subtitle="Organize transactions with categories and sub-categories"
@@ -207,7 +207,7 @@ const CategoriesPage = () => {
         onOpenChange={(open) => !open && setManagingSubCategory(null)}
         category={managingSubCategory}
       />
-    </>
+    </div>
   );
 };
 

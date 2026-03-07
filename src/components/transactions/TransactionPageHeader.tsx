@@ -55,7 +55,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
         <Button
           variant="outline"
           onClick={onExportClick}
-          className="flex-1 sm:flex-none"
+          className="tour-export-transactions flex-1 sm:flex-none"
         >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
@@ -81,7 +81,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
             variant="outline"
             onClick={onBulkCategorize}
             disabled={!isBulkCategorizeEnabled}
-            className="flex-1 sm:flex-none text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
+            className="tour-bulk-categorize flex-1 sm:flex-none text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
           >
             <Sparkles className="mr-2 h-4 w-4" />
             Categorize Missing

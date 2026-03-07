@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import React from "react";
 import MobileNavContent from "../navigation/MobileNavContent.tsx"; // Explicitly added .tsx extension
+import { useTour } from "@/contexts/TourContext";
 
 const Header = () => {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const { startTour, hasTourForCurrentRoute } = useTour();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -37,7 +39,17 @@ const Header = () => {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
+          {hasTourForCurrentRoute && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={startTour}
+              aria-label="Start Help Tour"
+            >
+              <HelpCircle className="h-5 w-5" />
+            </Button>
+          )}
           {/* User/Auth related stuff */}
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>

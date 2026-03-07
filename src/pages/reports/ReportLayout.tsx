@@ -359,16 +359,20 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
             {description}
           </div>
         </div>
-        <ExportButtons
-          onPdfExport={handlePdfExport}
-          onExcelExport={handleExcelExport}
-          onCsvExport={handleCsvExport}
-        />
+        <div className="tour-report-export">
+          <ExportButtons
+            onPdfExport={handlePdfExport}
+            onExcelExport={handleExcelExport}
+            onCsvExport={handleCsvExport}
+          />
+        </div>
       </div>
 
-      <SearchFilterBar />
+      <div className="tour-report-filters">
+        <SearchFilterBar />
+      </div>
 
-      <div className="space-y-4" id="report-content">
+      <div className="tour-report-content space-y-4" id="report-content">
         {children({
           historicalFilteredTransactions,
           combinedFilteredTransactions,

@@ -71,7 +71,7 @@ const AccountsPage = () => {
   ];
 
   return (
-    <>
+    <div className="tour-accounts-list">
       <EntityManagementPage<Payee>
         title="Accounts"
         subtitle="Manage your bank accounts and credit cards"
@@ -95,11 +95,10 @@ const AccountsPage = () => {
         BalanceReconciliationDialogComponent={
           AccountBalanceReconciliationDialog
         }
-        groupBy="type"
         TableComponent={GroupedEntityTable}
         disablePagination={true}
       />
-    </>
+    </div>
   );
 };
 

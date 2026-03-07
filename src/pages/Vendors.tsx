@@ -101,7 +101,7 @@ const VendorsPage = () => {
   ];
 
   return (
-    <>
+    <div className="tour-vendors-list">
       <EntityManagementPage<Payee>
         title="Vendors"
         subtitle="Manage payees and merchants"
@@ -125,7 +125,7 @@ const VendorsPage = () => {
           <CleanupEntitiesDialog {...props} entityType="vendor" />
         )}
       />
-    </>
+    </div>
   );
 };
 

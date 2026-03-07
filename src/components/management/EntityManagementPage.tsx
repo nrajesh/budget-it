@@ -190,7 +190,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
+        <div className="tour-entity-actions flex flex-wrap items-center gap-2 mt-4 md:mt-0">
           {numSelected > 0 && (
             <Button
               variant="destructive"
@@ -274,7 +274,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
           <CardTitle className="text-slate-900 dark:text-slate-100">
             Manage Your {title}
           </CardTitle>
-          <div className="mt-4">
+          <div className="tour-entity-search mt-4">
             <Input
               placeholder={
                 customFilter
@@ -287,7 +287,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="tour-entity-table">
           <TableComponent
             data={currentData}
             columns={columns}

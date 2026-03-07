@@ -1,0 +1,95 @@
+import React, { useEffect, useState } from "react";
+import Joyride, { CallBackProps, STATUS } from "react-joyride";
+import { useTour } from "@/contexts/TourContext";
+
+const HelpTour: React.FC = () => {
+  const { isActive, currentSteps, stopTour } = useTour();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detect dark mode based on the 'dark' class on the HTML element
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          setIsDarkMode(document.documentElement.classList.contains("dark"));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+
+    if (finishedStatuses.includes(status)) {
+      stopTour();
+    }
+  };
+
+  // Skip rendering if no steps or not active
+  if (!currentSteps.length || !isActive) {
+    return null;
+  }
+
+  return (
+    <Joyride
+      callback={handleJoyrideCallback}
+      continuous
+      hideCloseButton
+      run={isActive}
+      scrollToFirstStep
+      showProgress
+      showSkipButton
+      steps={currentSteps}
+      styles={{
+        options: {
+          zIndex: 10000,
+          primaryColor: isDarkMode ? "#3b82f6" : "#2563eb", // Tailwind blue-500 / blue-600
+          backgroundColor: isDarkMode ? "#1f2937" : "#ffffff", // gray-800 / white
+          textColor: isDarkMode ? "#f3f4f6" : "#111827", // gray-100 / gray-900
+          arrowColor: isDarkMode ? "#1f2937" : "#ffffff",
+        },
+        tooltip: {
+          fontFamily: "inherit",
+          borderRadius: "12px",
+          padding: "16px",
+        },
+        buttonClose: {
+          display: "none",
+        },
+        buttonNext: {
+          backgroundColor: isDarkMode ? "#3b82f6" : "#2563eb",
+          borderRadius: "6px",
+          color: "#ffffff",
+          padding: "8px 16px",
+          outline: "none",
+        },
+        buttonBack: {
+          color: isDarkMode ? "#9ca3af" : "#6b7280", // gray-400 / gray-500
+          marginRight: "8px",
+        },
+        buttonSkip: {
+          color: isDarkMode ? "#9ca3af" : "#6b7280",
+        },
+        tooltipContainer: {
+          textAlign: "left",
+        },
+        tooltipContent: {
+          padding: "10px 0",
+        },
+        tooltipTitle: {
+          fontSize: "1.1rem",
+          fontWeight: 600,
+          marginBottom: "5px",
+        },
+      }}
+    />
+  );
+};
+
+export default HelpTour;

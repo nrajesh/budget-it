@@ -620,25 +620,29 @@ const Transactions = () => {
   return (
     <div className="page-container">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <TransactionPageHeader
-          onImportClick={handleImportClick}
-          onExportClick={handleExport}
-          onDetectTransfers={handleDetectTransfers}
-          onAddTransaction={() => {
-            setEditingTransaction(null);
-            setIsDialogOpen(true);
-          }}
-          onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
-          onBulkCategorize={handleBulkCategorize}
-          isBulkCategorizeEnabled={!isBulkCategorizing}
-          fileInputRef={fileInputRef}
-          onFileChange={handleFileChange}
-        />
+        <div className="tour-add-transaction">
+          <TransactionPageHeader
+            onImportClick={handleImportClick}
+            onExportClick={handleExport}
+            onDetectTransfers={handleDetectTransfers}
+            onAddTransaction={() => {
+              setEditingTransaction(null);
+              setIsDialogOpen(true);
+            }}
+            onCleanUpDuplicates={() => setIsCleanupConfirmOpen(true)}
+            onBulkCategorize={handleBulkCategorize}
+            isBulkCategorizeEnabled={!isBulkCategorizing}
+            fileInputRef={fileInputRef}
+            onFileChange={handleFileChange}
+          />
+        </div>
 
-        <SearchFilterBar />
+        <div className="tour-transaction-filters">
+          <SearchFilterBar />
+        </div>
       </div>
 
-      <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="tour-transaction-list bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <TransactionTable
           transactions={filteredTransactions}
           allData={combinedTransactions}
