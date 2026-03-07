@@ -43,6 +43,9 @@ const HelpTour: React.FC = () => {
       hideCloseButton
       run={isActive}
       scrollToFirstStep
+      scrollOffset={100}
+      disableScrolling={false}
+      scrollDuration={400}
       showProgress
       showSkipButton
       steps={currentSteps}
