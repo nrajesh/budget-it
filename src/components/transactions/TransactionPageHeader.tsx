@@ -11,7 +11,7 @@ interface TransactionPageHeaderProps {
   onCleanUpDuplicates: () => void;
   onBulkCategorize?: () => void;
   isBulkCategorizeEnabled?: boolean;
-  fileInputRef: any;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
