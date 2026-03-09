@@ -1,26 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Joyride, { CallBackProps, STATUS } from "react-joyride";
 import { useTour } from "@/contexts/TourContext";
+import { useTheme as useNextTheme } from "next-themes";
 
 const HelpTour: React.FC = () => {
   const { isActive, currentSteps, stopTour } = useTour();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Detect dark mode based on the 'dark' class on the HTML element
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === "class") {
-          setIsDarkMode(document.documentElement.classList.contains("dark"));
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-    setIsDarkMode(document.documentElement.classList.contains("dark"));
-
-    return () => observer.disconnect();
-  }, []);
+  const { resolvedTheme } = useNextTheme();
+  const isDarkMode = resolvedTheme === "dark";
 
   const handleJoyrideCallback = (data: CallBackProps) => {
     const { status } = data;

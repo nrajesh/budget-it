@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   const { invalidateAllData } = useTransactions();
   const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: "",
       is_account: isAccountOnly ? true : false,
@@ -89,8 +89,14 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     },
   });
 
-  const isAccount = form.watch("is_account");
-  const accountType = form.watch("type");
+  const isAccount = useWatch({
+    control: form.control,
+    name: "is_account",
+  });
+  const accountType = useWatch({
+    control: form.control,
+    name: "type",
+  });
 
   React.useEffect(() => {
     if (payee) {

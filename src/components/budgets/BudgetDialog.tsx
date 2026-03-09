@@ -30,10 +30,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Budget, Category, SubCategory } from "../../types/budgets";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { CalendarIcon } from "lucide-react";
@@ -50,7 +50,7 @@ const budgetSchema = z
       .number()
       .positive("Amount must be a positive number."),
     frequency: z.string().min(1, "Frequency is required."),
-    start_date: z.date({ required_error: "Start date is required." }),
+    start_date: z.date({ error: "Start date is required." }),
     end_date: z.date().optional(),
   })
   .refine((data) => !data.end_date || data.end_date > data.start_date, {
@@ -79,13 +79,16 @@ export function BudgetDialog({
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [defaultCurrency, setDefaultCurrency] =
-    useState<string>(selectedCurrency);
   const isEditMode = !!budget;
   const dataProvider = useDataProvider();
 
+  const effectiveCurrency = useMemo(
+    () => budget?.currency || selectedCurrency,
+    [budget, selectedCurrency],
+  );
+
   const form = useForm<BudgetFormValues>({
-    resolver: zodResolver(budgetSchema),
+    resolver: zodResolver(budgetSchema) as any,
     defaultValues: {
       category_id: "",
       sub_category_id: null,
@@ -96,7 +99,10 @@ export function BudgetDialog({
     },
   });
 
-  const selectedCategoryId = form.watch("category_id");
+  const selectedCategoryId = useWatch({
+    control: form.control,
+    name: "category_id",
+  });
   const filteredSubCategories = subCategories.filter((sub) => {
     const match = sub.category_id === selectedCategoryId;
     return match;
@@ -119,7 +125,6 @@ export function BudgetDialog({
 
   useEffect(() => {
     if (budget) {
-      // ... existing reset logic
       form.reset({
         category_id: budget.category_id,
         sub_category_id: budget.sub_category_id,
@@ -128,10 +133,6 @@ export function BudgetDialog({
         start_date: new Date(budget.start_date),
         end_date: budget.end_date ? new Date(budget.end_date) : undefined,
       });
-      // If editing, respect the budget's currency if available, else fallback
-      if (budget.currency) {
-        setDefaultCurrency(budget.currency);
-      }
     } else {
       form.reset({
         category_id: "",
@@ -141,10 +142,8 @@ export function BudgetDialog({
         start_date: new Date(),
         end_date: undefined,
       });
-      // Set currency to global selected currency for new budgets
-      setDefaultCurrency(selectedCurrency);
     }
-  }, [budget, form, selectedCurrency]);
+  }, [budget, form]);
 
   const onSubmit = async (values: BudgetFormValues) => {
     const selectedCategory = categories.find(
@@ -165,7 +164,7 @@ export function BudgetDialog({
       frequency: values.frequency,
       start_date: values.start_date.toISOString(),
       end_date: values.end_date?.toISOString() || null,
-      currency: defaultCurrency,
+      currency: effectiveCurrency,
     };
 
     try {
@@ -210,9 +209,12 @@ export function BudgetDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit as any)}
+            className="space-y-4"
+          >
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="category_id"
               render={({ field }) => (
                 <FormItem>
@@ -235,7 +237,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="sub_category_id"
               render={({ field }) => (
                 <FormItem>
@@ -273,11 +275,11 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="target_amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target Amount ({defaultCurrency})</FormLabel>
+                  <FormLabel>Target Amount ({effectiveCurrency})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -293,7 +295,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="frequency"
               render={({ field }) => (
                 <FormItem>
@@ -316,7 +318,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="start_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -354,7 +356,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="end_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">

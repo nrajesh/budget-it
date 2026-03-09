@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { ImportConfig } from "@/utils/csvUtils";
 
 interface CSVMappingDialogProps {
   isOpen: boolean;
@@ -25,8 +26,6 @@ interface CSVMappingDialogProps {
   onConfirm: (results: Record<string, unknown>[], config: ImportConfig) => void;
   isNewLedger?: boolean;
 }
-
-import { ImportConfig } from "@/utils/csvUtils";
 
 const CSVMappingDialog = ({
   isOpen,
@@ -52,24 +51,6 @@ const CSVMappingDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasNegativeValues, setHasNegativeValues] = useState(false);
 
-  // Reset when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      setStep("config");
-      setConfig({
-        delimiter: ",",
-        dateFormat: "auto",
-        decimalSeparator: ".",
-        importMode: "append",
-        expenseSign: "negative",
-      });
-      setMapping({});
-      setCsvHeaders([]);
-      setCsvData([]);
-      setHasNegativeValues(false);
-    }
-  }, [isOpen, file]);
-
   const handleParse = useCallback(
     (shouldAdvanceStart: boolean = false) => {
       if (!file) return;
@@ -85,14 +66,13 @@ const CSVMappingDialog = ({
 
         Papa.parse(text, {
           header: true,
-          skipEmptyLines: "greedy", // Better for skipping empty lines
+          skipEmptyLines: "greedy",
           delimiter: config.delimiter === "auto" ? "" : config.delimiter,
           complete: (results: Papa.ParseResult<Record<string, unknown>>) => {
             const headers: string[] = results.meta.fields || [];
             setCsvHeaders(headers);
             setCsvData(results.data);
 
-            // Pre-fill mapping if matches found
             const ALIASES: Record<string, string[]> = {
               Payee: [
                 "Vendor",
@@ -129,7 +109,6 @@ const CSVMappingDialog = ({
                 ...aliases.map((a) => a.toLowerCase()),
               ];
 
-              // Find first match in headers that matches any search term
               const match = headers.find((header) => {
                 const h = header.trim().toLowerCase();
                 return searchTerms.includes(h);
@@ -139,7 +118,6 @@ const CSVMappingDialog = ({
             });
             setMapping(newMapping);
 
-            // Auto-detect decimal separator based on "Amount" column data
             const amountHeader = newMapping["Amount"];
             if (amountHeader) {
               const sampleValues = results.data
@@ -161,9 +139,6 @@ const CSVMappingDialog = ({
                 setConfig((prev) => ({ ...prev, decimalSeparator: "," }));
               }
 
-              // Auto-detect sign convention: If any value is negative, it must be "negative is expense" (or just signed)
-              // If all are positive, default to "negative" is still safe unless it's a CC statement with only positives.
-              // But if we see a negative, we SHOULD force "negative" or at least default to it.
               const hasNegative = sampleValues.some((val: string) => {
                 const normalized = val.replace(/[\u2013\u2014\u2212]/g, "-");
                 return normalized.includes("-") || normalized.includes("(");
@@ -198,10 +173,14 @@ const CSVMappingDialog = ({
 
   // Auto-refresh preview when delimiter changes
   useEffect(() => {
-    if (isOpen && file) {
-      handleParse(false);
+    if (file) {
+      // Defer execution to avoid synchronous setState in effect warning
+      const timer = setTimeout(() => {
+        handleParse(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [config.delimiter, isOpen, file, handleParse]); // Added handleParse to dependencies
+  }, [config.delimiter, file, handleParse]);
 
   const handleMappingChange = (required: string, value: string) => {
     setMapping((prev) => ({
@@ -211,12 +190,9 @@ const CSVMappingDialog = ({
   };
 
   const handleConfirm = () => {
-    // Apply mapping to data
     const mappedData = csvData.map((row) => {
-      // Keep original data, then overwrite with standardized keys
       const newRow: Record<string, unknown> = { ...row };
       Object.entries(mapping).forEach(([requiredHeader, csvHeader]) => {
-        // Only map if csvHeader is selected/valid
         if (csvHeader) {
           newRow[requiredHeader] = row[csvHeader];
         }
@@ -255,7 +231,6 @@ const CSVMappingDialog = ({
                     <SelectItem value=",">Comma (,)</SelectItem>
                     <SelectItem value=";">Semicolon (;)</SelectItem>
                     <SelectItem value="\t">Tab (\t)</SelectItem>
-                    {/* <SelectItem value="auto">Auto-detect</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>
@@ -274,10 +249,10 @@ const CSVMappingDialog = ({
                   <SelectContent>
                     <SelectItem value="auto">Auto-detect</SelectItem>
                     <SelectItem value="d/M/yyyy">
-                      Day/Month/Year (e.g. 31/01/2024 or 1/1/2024)
+                      Day/Month/Year (e.g. 31/01/2024)
                     </SelectItem>
                     <SelectItem value="M/d/yyyy">
-                      Month/Day/Year (e.g. 01/31/2024 or 1/1/2024)
+                      Month/Day/Year (e.g. 01/31/2024)
                     </SelectItem>
                     <SelectItem value="yyyy-MM-dd">
                       Year-Month-Day (e.g. 2024-01-31)
@@ -338,8 +313,8 @@ const CSVMappingDialog = ({
                   {hasNegativeValues
                     ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
                     : config.expenseSign === "positive"
-                      ? "Expenses entered as positive numbers (Income will be negative)"
-                      : "Expenses entered as negative numbers (Income will be positive)"}
+                      ? "Expenses entered as positive numbers"
+                      : "Expenses entered as negative numbers"}
                 </p>
               </div>
 
@@ -392,15 +367,9 @@ const CSVMappingDialog = ({
                       </Label>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {config.importMode === "replace"
-                      ? "Warning: This will delete ALL existing transactions before importing."
-                      : "New transactions will be added to your existing data."}
-                  </p>
                 </div>
               )}
 
-              {/* Preview Area */}
               <div className="border rounded-md p-3 bg-muted/30 mt-4">
                 <Label className="mb-2 block">
                   Available Data Preview (First 3 rows)
@@ -432,9 +401,7 @@ const CSVMappingDialog = ({
                   </div>
                 ) : (
                   <div className="text-xs text-muted-foreground p-2 text-center">
-                    {isLoading
-                      ? "Reading..."
-                      : "No data properly parsed. Check delimiter."}
+                    {isLoading ? "Reading..." : "No data properly parsed."}
                     <div className="mt-2">
                       <Button
                         variant="outline"
@@ -483,14 +450,6 @@ const CSVMappingDialog = ({
                     </div>
                   </div>
                 ))}
-              </div>
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-md">
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  <strong>Tip:</strong> If your CSV already contains separate
-                  rows for each leg of a transfer (balanced file), leave{" "}
-                  <strong>Transfer Account</strong> unmapped to avoid duplicate
-                  transactions.
-                </p>
               </div>
             </div>
           )}

@@ -45,7 +45,7 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   itemsPerPage: number;
   selectedRows: string[];
   isImporting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   isLoadingMutation: boolean;
   handleAddClick: () => void;
   handleEditClick: (item: T) => void;
@@ -264,7 +264,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
       </div>
       <input
         type="file"
-        ref={fileInputRef}
+        ref={fileInputRef as any}
         onChange={handleFileChange}
         className="hidden"
         accept=".csv"

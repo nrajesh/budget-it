@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -151,8 +151,6 @@ export function SpendingPieChart({
   selectedEntity,
 }: SpendingPieChartProps) {
   const { formatCurrency } = useCurrency();
-  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
-  const [glowKey, setGlowKey] = useState(0);
   const { resolvedTheme } = useNextTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -172,23 +170,13 @@ export function SpendingPieChart({
     [currentRange],
   );
 
-  // Sync activeIndex when selectedEntity changes from external source (table click)
-  useEffect(() => {
-    if (selectedEntity === null) {
-      setActiveIndex(undefined);
-    } else {
-      const idx = pieData.findIndex((d) => d.name === selectedEntity);
-      if (idx >= 0) {
-        setActiveIndex(idx);
-        setGlowKey((k) => k + 1);
-      } else {
-        setActiveIndex(undefined);
-      }
-    }
+  const activeIndex = useMemo(() => {
+    if (selectedEntity === null) return undefined;
+    const idx = pieData.findIndex((d) => d.name === selectedEntity);
+    return idx >= 0 ? idx : undefined;
   }, [selectedEntity, pieData]);
 
   const resetSelection = useCallback(() => {
-    setActiveIndex(undefined);
     onEntitySelect(null);
   }, [onEntitySelect]);
 
@@ -198,8 +186,6 @@ export function SpendingPieChart({
         // Clicking the already-selected segment resets
         resetSelection();
       } else {
-        setActiveIndex(index);
-        setGlowKey((k) => k + 1);
         onEntitySelect(pieData[index].name);
       }
     },
@@ -249,7 +235,7 @@ export function SpendingPieChart({
             // @ts-expect-error - Recharts type issue: activeIndex exists on Pie but not in PieProps type definition
             activeIndex={activeIndex}
             activeShape={renderActiveShape}
-            onClick={onPieClick}
+            onClick={onPieClick as any}
             animationDuration={600}
           >
             {pieData.map((_entry, index) => {
@@ -272,7 +258,7 @@ export function SpendingPieChart({
 
       {/* Center label - clickable to reset when segment is active */}
       <div
-        key={glowKey}
+        key={activeIndex ?? "center"}
         onClick={activeItem ? resetSelection : undefined}
         className={`absolute inset-0 flex flex-col items-center justify-center ${
           activeItem ? "cursor-pointer" : "pointer-events-none"

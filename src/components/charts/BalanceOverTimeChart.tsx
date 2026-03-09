@@ -568,13 +568,11 @@ export function BalanceOverTimeChart({
     const commonTooltip = (
       <ChartTooltip
         cursor={false}
-        content={(props: {
-          payload?: readonly { value: string | number; name: string }[];
-        }) => {
+        content={(props: any) => {
           const { payload } = props;
           // Filter out items with 0 value
           const filteredPayload = payload?.filter(
-            (item) => Math.abs(Number(item.value)) > 0,
+            (item: any) => Math.abs(Number(item.value)) > 0,
           );
 
           if (!filteredPayload || filteredPayload.length === 0) return null;
@@ -608,7 +606,7 @@ export function BalanceOverTimeChart({
         ItemComponent = Area;
 
         return (
-          <ChartComponent {...commonChartProps}>
+          <ChartComponent {...commonChartProps} data={dataToUse as any}>
             <defs>
               {accountsToDisplay.map((account) => {
                 const color =
@@ -695,7 +693,7 @@ export function BalanceOverTimeChart({
 
       case "bar-stacked":
         return (
-          <BarChart {...commonChartProps}>
+          <BarChart {...commonChartProps} data={dataToUse as any}>
             <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
@@ -745,7 +743,7 @@ export function BalanceOverTimeChart({
 
       case "waterfall":
         return (
-          <BarChart {...commonChartProps}>
+          <BarChart {...commonChartProps} data={dataToUse as any}>
             <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}

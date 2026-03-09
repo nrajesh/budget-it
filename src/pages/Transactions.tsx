@@ -23,7 +23,11 @@ import { ScheduledTransaction } from "@/types/dataProvider";
 import { TransactionPageHeader } from "@/components/transactions/TransactionPageHeader";
 import { useTransactionPageActions } from "@/hooks/transactions/useTransactionPageActions";
 import { MissingCurrencyDialog } from "@/components/dialogs/MissingCurrencyDialog";
-import { useAutoCategorize } from "@/hooks/useAutoCategorize";
+import {
+  useAutoCategorize,
+  CategorizeResult,
+  BulkCategorizeResult,
+} from "@/hooks/useAutoCategorize";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -444,7 +448,7 @@ const Transactions = () => {
         return;
       }
 
-      const localMappings: Record<string, any> = {};
+      const localMappings: Record<string, CategorizeResult> = {};
       const unknownVendors: string[] = [];
 
       const sortedHistory = [...allTransactions].sort(
@@ -461,7 +465,7 @@ const Transactions = () => {
         }
       }
 
-      let aiMappings: Record<string, any> = {};
+      let aiMappings: BulkCategorizeResult = {};
 
       if (unknownVendors.length > 0) {
         setIsBulkCategorizing(true);
@@ -741,15 +745,17 @@ const Transactions = () => {
         ]}
       />
 
-      <CSVMappingDialog
-        isOpen={mappingDialogState.isOpen}
-        onClose={() =>
-          setMappingDialogState((prev) => ({ ...prev, isOpen: false }))
-        }
-        file={mappingDialogState.file}
-        requiredHeaders={REQUIRED_HEADERS}
-        onConfirm={handleMappingConfirm}
-      />
+      {mappingDialogState.isOpen && (
+        <CSVMappingDialog
+          isOpen={true}
+          onClose={() =>
+            setMappingDialogState((prev) => ({ ...prev, isOpen: false }))
+          }
+          file={mappingDialogState.file}
+          requiredHeaders={REQUIRED_HEADERS}
+          onConfirm={handleMappingConfirm}
+        />
+      )}
 
       <MissingCurrencyDialog
         isOpen={missingCurrencyAccounts.length > 0}

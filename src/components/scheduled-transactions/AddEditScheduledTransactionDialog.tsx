@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,25 @@ interface AddEditScheduledTransactionDialogProps {
   isLoading: boolean;
 }
 
+const formSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  account: z.string().min(1, "Account is required"),
+  vendor: z.string().min(1, "Vendor is required"),
+  category: z.string().min(1, "Category is required"),
+  sub_category: z.string().optional(),
+  amount: z.coerce
+    .number()
+    .refine((val) => val !== 0, { message: "Amount cannot be zero" }),
+  frequency_value: z.coerce
+    .number()
+    .min(1, "Frequency value must be at least 1"),
+  frequency_unit: z.string().min(1, "Frequency unit is required"),
+  remarks: z.string().optional(),
+  recurrence_end_date: z.string().optional(),
+});
+
+type ScheduledTransactionFormData = z.infer<typeof formSchema>;
+
 export const AddEditScheduledTransactionDialog: React.FC<
   AddEditScheduledTransactionDialogProps
 > = ({
@@ -65,49 +84,21 @@ export const AddEditScheduledTransactionDialog: React.FC<
   allSubCategories,
   isLoading,
 }) => {
-  const formSchema = React.useMemo(
-    () =>
-      z
-        .object({
-          date: z.string().min(1, "Date is required"),
-          account: z.string().min(1, "Account is required"),
-          vendor: z.string().min(1, "Vendor is required"),
-          category: z.string().min(1, "Category is required"),
-          sub_category: z.string().optional(),
-          amount: z.coerce
-            .number()
-            .refine((val) => val !== 0, { message: "Amount cannot be zero" }),
-          frequency_value: z.coerce
-            .number()
-            .min(1, "Frequency value must be at least 1"),
-          frequency_unit: z.string().min(1, "Frequency unit is required"),
-          remarks: z.string().optional(),
-          recurrence_end_date: z.string().optional(),
-        })
-        .refine(
-          (data) => {
-            const isVendorAnAccount = allPayees.find(
-              (p) => p.value === data.vendor,
-            )?.isAccount;
-            if (isVendorAnAccount && data.category !== "Transfer") return false;
-            if (!isVendorAnAccount && data.category === "Transfer")
-              return false;
-            return true;
-          },
-          {
-            message:
-              "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
-            path: ["category"],
-          },
-        ),
-    [allPayees],
-  );
-
-  type ScheduledTransactionFormData = z.infer<typeof formSchema>;
-
   const form = useForm<ScheduledTransactionFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     mode: "onChange",
+    defaultValues: {
+      date: formatDateToYYYYMMDD(new Date()),
+      account: "",
+      vendor: "",
+      category: "",
+      sub_category: "",
+      amount: 0,
+      frequency_value: 1,
+      frequency_unit: "m",
+      remarks: "",
+      recurrence_end_date: "",
+    },
   });
 
   const tomorrowDateString = React.useMemo(() => {
@@ -157,7 +148,15 @@ export const AddEditScheduledTransactionDialog: React.FC<
     }
   }, [isOpen, transaction, form, tomorrowDateString]);
 
-  const watchedVendor = form.watch("vendor");
+  const watchedVendor = useWatch({
+    control: form.control,
+    name: "vendor",
+  });
+
+  const watchedDate = useWatch({
+    control: form.control,
+    name: "date",
+  });
   const isVendorAnAccount = React.useMemo(() => {
     return allPayees.find((p) => p.value === watchedVendor)?.isAccount || false;
   }, [watchedVendor, allPayees]);
@@ -235,11 +234,11 @@ export const AddEditScheduledTransactionDialog: React.FC<
                         <Input
                           type="date"
                           min={
-                            form.watch("date")
+                            watchedDate
                               ? formatDateToYYYYMMDD(
                                   new Date(
                                     Math.max(
-                                      new Date(form.watch("date")).getTime(),
+                                      new Date(watchedDate).getTime(),
                                       new Date(
                                         dayAfterTomorrowDateString,
                                       ).getTime(),

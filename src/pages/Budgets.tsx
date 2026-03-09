@@ -68,9 +68,13 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     if (ledgerId) {
-      fetchBudgets(ledgerId);
+      // Defer to avoid synchronous setState in effect (setIsLoading)
+      const timer = setTimeout(() => fetchBudgets(ledgerId), 0);
+      return () => clearTimeout(timer);
     } else {
-      setIsLoading(false);
+      // Defer to avoid synchronous setState in effect
+      const timer = setTimeout(() => setIsLoading(false), 0);
+      return () => clearTimeout(timer);
     }
   }, [ledgerId, fetchBudgets]);
 
