@@ -30,7 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useEffect, useState } from "react";
@@ -96,7 +96,10 @@ export function BudgetDialog({
     },
   });
 
-  const selectedCategoryId = form.watch("category_id");
+  const selectedCategoryId = useWatch({
+    control: form.control,
+    name: "category_id",
+  });
   const filteredSubCategories = subCategories.filter((sub) => {
     const match = sub.category_id === selectedCategoryId;
     return match;

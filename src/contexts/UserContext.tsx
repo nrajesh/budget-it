@@ -53,7 +53,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setIsLoadingUser(false);
-  }, [session]);
+  }, []);
 
   const value = React.useMemo(
     () => ({

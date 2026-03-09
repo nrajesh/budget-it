@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useState,
+  useMemo,
   useCallback,
   useEffect,
 } from "react";
@@ -24,13 +25,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   const location = useLocation();
-  const [currentSteps, setCurrentSteps] = useState<Step[]>([]);
 
-  // Whenever the route changes, update the steps and stop any running tour
+  const currentSteps = useMemo(() => {
+    return getStepsForRoute(location.pathname);
+  }, [location.pathname]);
+
+  // Whenever the route changes, stop any running tour
   useEffect(() => {
-    const steps = getStepsForRoute(location.pathname);
-    setCurrentSteps(steps);
-    // Auto stopping the tour on route change ensures it doesn't leak
     setIsActive(false);
   }, [location.pathname]);
 

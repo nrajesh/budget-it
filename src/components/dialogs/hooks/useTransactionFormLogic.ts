@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
@@ -88,11 +88,20 @@ export const useTransactionFormLogic = ({
     },
   });
 
-  const { reset, watch, setValue, getValues } = form;
+  const { reset, setValue, getValues, control } = form;
 
-  const accountValue = watch("account");
-  const vendorValue = watch("vendor");
-  const amountValue = watch("amount");
+  const accountValue = useWatch({
+    control,
+    name: "account",
+  });
+  const vendorValue = useWatch({
+    control,
+    name: "vendor",
+  });
+  const amountValue = useWatch({
+    control,
+    name: "amount",
+  });
 
   const allAccounts = useMemo(() => accounts.map((p) => p.name), [accounts]);
   const isTransfer = useMemo(
@@ -118,8 +127,8 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-                new Date(transactionToEdit.recurrence_end_date),
-              )
+              new Date(transactionToEdit.recurrence_end_date),
+            )
             : "",
         });
         setTransactionType(

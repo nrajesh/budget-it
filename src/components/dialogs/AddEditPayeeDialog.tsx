@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -89,8 +89,14 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
     },
   });
 
-  const isAccount = form.watch("is_account");
-  const accountType = form.watch("type");
+  const isAccount = useWatch({
+    control: form.control,
+    name: "is_account",
+  });
+  const accountType = useWatch({
+    control: form.control,
+    name: "type",
+  });
 
   React.useEffect(() => {
     if (payee) {
@@ -283,7 +289,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={field.value}
                           onChange={field.onChange}
-                          // disabled={!!payee} // Allow changing account type
+                        // disabled={!!payee} // Allow changing account type
                         >
                           <option value="Checking">Checking</option>
                           <option value="Savings">Savings</option>

@@ -192,6 +192,67 @@ function computeTickInterval(totalPoints: number): number {
   return Math.ceil(totalPoints / 7) - 1;
 }
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    payload: DataPoint;
+    [key: string]: unknown;
+  }>;
+  formatCurrency: (amount: number) => string;
+}
+
+const CustomTooltip = ({ active, payload, formatCurrency }: CustomTooltipProps) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const dataPoint = payload[0]?.payload as DataPoint | undefined;
+  if (!dataPoint) return null;
+
+  const currentVal = dataPoint.current;
+  const previousVal = dataPoint.previous;
+  const hasPrevious = previousVal != null && previousVal > 0;
+  const delta = hasPrevious ? currentVal - previousVal : 0;
+  const isLower = delta < 0;
+  const isHigher = delta > 0;
+
+  return (
+    <div className="bg-popover text-popover-foreground rounded-xl shadow-xl border border-border p-3 min-w-[160px]">
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <span className="text-xs font-semibold text-muted-foreground">
+          Spent
+        </span>
+        {hasPrevious && (
+          <span
+            className={`text-xs font-bold ${isLower ? "text-emerald-600 dark:text-emerald-400" : isHigher ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+          >
+            {isLower ? "▼" : isHigher ? "▲" : ""}{" "}
+            {formatCurrency(Math.abs(delta))}
+          </span>
+        )}
+      </div>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-xs text-muted-foreground">
+            {dataPoint.currentDate || dataPoint.label}
+          </span>
+          <span className="text-sm font-bold text-foreground">
+            {formatCurrency(currentVal)}
+          </span>
+        </div>
+        {hasPrevious && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-xs text-muted-foreground">
+              {dataPoint.previousDate || "prev"}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {formatCurrency(previousVal)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export function SpendingLineChart({
   currentTransactions,
   previousTransactions,
@@ -235,59 +296,6 @@ export function SpendingLineChart({
     );
   }, [chartData]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload || payload.length === 0) return null;
-
-    const dataPoint = payload[0]?.payload as DataPoint | undefined;
-    if (!dataPoint) return null;
-
-    const currentVal = dataPoint.current;
-    const previousVal = dataPoint.previous;
-    const hasPrevious = previousVal != null && previousVal > 0;
-    const delta = hasPrevious ? currentVal - previousVal : 0;
-    const isLower = delta < 0;
-    const isHigher = delta > 0;
-
-    return (
-      <div className="bg-popover text-popover-foreground rounded-xl shadow-xl border border-border p-3 min-w-[160px]">
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <span className="text-xs font-semibold text-muted-foreground">
-            Spent
-          </span>
-          {hasPrevious && (
-            <span
-              className={`text-xs font-bold ${isLower ? "text-emerald-600 dark:text-emerald-400" : isHigher ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
-            >
-              {isLower ? "▼" : isHigher ? "▲" : ""}{" "}
-              {formatCurrency(Math.abs(delta))}
-            </span>
-          )}
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-muted-foreground">
-              {dataPoint.currentDate || dataPoint.label}
-            </span>
-            <span className="text-sm font-bold text-foreground">
-              {formatCurrency(currentVal)}
-            </span>
-          </div>
-          {hasPrevious && (
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-xs text-muted-foreground">
-                {dataPoint.previousDate || "prev"}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {formatCurrency(previousVal)}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   if (
     chartData.every(
       (d) => d.current === 0 && (d.previous === null || d.previous === 0),
@@ -328,7 +336,7 @@ export function SpendingLineChart({
             domain={[0, maxValue * 1.15]}
           />
           <Tooltip
-            content={<CustomTooltip />}
+            content={<CustomTooltip formatCurrency={formatCurrency} />}
             cursor={{
               stroke: cursorColor,
               strokeWidth: 1,

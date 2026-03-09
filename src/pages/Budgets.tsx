@@ -70,7 +70,9 @@ export default function BudgetsPage() {
     if (ledgerId) {
       fetchBudgets(ledgerId);
     } else {
-      setIsLoading(false);
+      // Defer to avoid synchronous setState in effect
+      const timer = setTimeout(() => setIsLoading(false), 0);
+      return () => clearTimeout(timer);
     }
   }, [ledgerId, fetchBudgets]);
 
@@ -266,7 +268,7 @@ export default function BudgetsPage() {
             className="animate-in fade-in zoom-in duration-300"
           >
             {selectedBudgetIds.size === filteredBudgets.length &&
-            filteredBudgets.length > 0
+              filteredBudgets.length > 0
               ? "Deselect All"
               : "Select All"}
           </Button>
