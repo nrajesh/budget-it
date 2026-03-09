@@ -59,7 +59,11 @@ export const useTransactionFormLogic = ({
   const dataProvider = useDataProvider();
 
   const [transactionType, setTransactionType] = useState<"expense" | "income">(
-    "expense",
+    transactionToEdit
+      ? (transactionToEdit.amount ?? 0) >= 0
+        ? "income"
+        : "expense"
+      : "expense",
   );
   const [accountCurrencySymbol, setAccountCurrencySymbol] = useState<string>(
     currencySymbols[selectedCurrency] || selectedCurrency,
@@ -69,8 +73,6 @@ export const useTransactionFormLogic = ({
   const [destinationAccountCurrency, setDestinationAccountCurrency] = useState<
     string | null
   >(null);
-  const [autoCalculatedReceivingAmount, setAutoCalculatedReceivingAmount] =
-    useState<number>(0);
 
   const form = useForm<AddEditTransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -127,13 +129,10 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-                new Date(transactionToEdit.recurrence_end_date),
-              )
+              new Date(transactionToEdit.recurrence_end_date),
+            )
             : "",
         });
-        setTransactionType(
-          (transactionToEdit.amount ?? 0) >= 0 ? "income" : "expense",
-        );
       } else {
         reset({
           date: formatDateToYYYYMMDD(new Date()),
@@ -147,13 +146,11 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: "None",
           recurrenceEndDate: "",
         });
-        setTransactionType("expense");
       }
       setAccountCurrencySymbol(
         currencySymbols[selectedCurrency] || selectedCurrency,
       );
       setDestinationAccountCurrency(null);
-      setAutoCalculatedReceivingAmount(0);
     }
   }, [isOpen, reset, transactionToEdit, currencySymbols, selectedCurrency]);
 
@@ -204,8 +201,7 @@ export const useTransactionFormLogic = ({
     fetchDestinationCurrency();
   }, [vendorValue, isTransfer, accountCurrencyMap, dataProvider, activeLedger]);
 
-  // Auto Calculate Receiving Amount
-  useEffect(() => {
+  const autoCalculatedReceivingAmount = useMemo(() => {
     if (
       isTransfer &&
       accountValue &&
@@ -214,31 +210,35 @@ export const useTransactionFormLogic = ({
     ) {
       const sendingCurrency = accountCurrencyMap.get(accountValue);
       if (sendingCurrency && sendingCurrency !== destinationAccountCurrency) {
-        const convertedAmount = convertBetweenCurrencies(
+        return convertBetweenCurrencies(
           Math.abs(amountValue),
           sendingCurrency,
           destinationAccountCurrency,
         );
-        setAutoCalculatedReceivingAmount(convertedAmount);
-        setValue("receivingAmount", parseFloat(convertedAmount.toFixed(2)));
-      } else {
-        setAutoCalculatedReceivingAmount(0);
-        setValue("receivingAmount", 0);
       }
-    } else {
-      setAutoCalculatedReceivingAmount(0);
-      setValue("receivingAmount", 0);
     }
+    return 0;
   }, [
-    amountValue,
+    isTransfer,
     accountValue,
     vendorValue,
-    isTransfer,
-    accountCurrencyMap,
     destinationAccountCurrency,
+    accountCurrencyMap,
+    amountValue,
     convertBetweenCurrencies,
-    setValue,
   ]);
+
+  // Sync receivingAmount in form
+  useEffect(() => {
+    if (autoCalculatedReceivingAmount > 0) {
+      setValue(
+        "receivingAmount",
+        parseFloat(autoCalculatedReceivingAmount.toFixed(2)),
+      );
+    } else if (isTransfer) {
+      setValue("receivingAmount", 0);
+    }
+  }, [autoCalculatedReceivingAmount, isTransfer, setValue]);
 
   // Auto set Category to Transfer
   useEffect(() => {
@@ -250,13 +250,6 @@ export const useTransactionFormLogic = ({
       setValue("category", "");
     }
   }, [isTransfer, setValue, getValues]);
-
-  // Transaction Type Sync
-  useEffect(() => {
-    if (isTransfer) {
-      setTransactionType("expense");
-    }
-  }, [isTransfer]);
 
   return {
     form,

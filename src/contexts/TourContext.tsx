@@ -32,7 +32,9 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Whenever the route changes, stop any running tour
   useEffect(() => {
-    setIsActive(false);
+    // Defer to avoid synchronous setState in effect during route change
+    const timer = setTimeout(() => setIsActive(false), 0);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   const startTour = useCallback(() => {

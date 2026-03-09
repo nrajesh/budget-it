@@ -2,7 +2,6 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
   ReactNode,
 } from "react";
 import { useSession, Session } from "@/hooks/useSession";
@@ -44,14 +43,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return null;
   }, [session]);
 
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
 
   const fetchUserProfile = React.useCallback(async () => {
     // In local mode, we just use the session mock
-    setIsLoadingUser(false);
-  }, []);
-
-  useEffect(() => {
     setIsLoadingUser(false);
   }, []);
 

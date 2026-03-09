@@ -33,7 +33,7 @@ import {
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Budget, Category, SubCategory } from "../../types/budgets";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { CalendarIcon } from "lucide-react";
@@ -79,10 +79,13 @@ export function BudgetDialog({
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [defaultCurrency, setDefaultCurrency] =
-    useState<string>(selectedCurrency);
   const isEditMode = !!budget;
   const dataProvider = useDataProvider();
+
+  const effectiveCurrency = useMemo(
+    () => budget?.currency || selectedCurrency,
+    [budget, selectedCurrency],
+  );
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetSchema),
@@ -122,7 +125,6 @@ export function BudgetDialog({
 
   useEffect(() => {
     if (budget) {
-      // ... existing reset logic
       form.reset({
         category_id: budget.category_id,
         sub_category_id: budget.sub_category_id,
@@ -131,10 +133,6 @@ export function BudgetDialog({
         start_date: new Date(budget.start_date),
         end_date: budget.end_date ? new Date(budget.end_date) : undefined,
       });
-      // If editing, respect the budget's currency if available, else fallback
-      if (budget.currency) {
-        setDefaultCurrency(budget.currency);
-      }
     } else {
       form.reset({
         category_id: "",
@@ -144,10 +142,8 @@ export function BudgetDialog({
         start_date: new Date(),
         end_date: undefined,
       });
-      // Set currency to global selected currency for new budgets
-      setDefaultCurrency(selectedCurrency);
     }
-  }, [budget, form, selectedCurrency]);
+  }, [budget, form]);
 
   const onSubmit = async (values: BudgetFormValues) => {
     const selectedCategory = categories.find(
@@ -168,7 +164,7 @@ export function BudgetDialog({
       frequency: values.frequency,
       start_date: values.start_date.toISOString(),
       end_date: values.end_date?.toISOString() || null,
-      currency: defaultCurrency,
+      currency: effectiveCurrency,
     };
 
     try {
@@ -280,7 +276,7 @@ export function BudgetDialog({
               name="target_amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Target Amount ({defaultCurrency})</FormLabel>
+                  <FormLabel>Target Amount ({effectiveCurrency})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

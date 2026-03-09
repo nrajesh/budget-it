@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -151,7 +151,6 @@ export function SpendingPieChart({
   selectedEntity,
 }: SpendingPieChartProps) {
   const { formatCurrency } = useCurrency();
-  const [glowKey, setGlowKey] = useState(0);
   const { resolvedTheme } = useNextTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -176,13 +175,6 @@ export function SpendingPieChart({
     const idx = pieData.findIndex((d) => d.name === selectedEntity);
     return idx >= 0 ? idx : undefined;
   }, [selectedEntity, pieData]);
-
-  // Trigger glow animation when activeIndex changes
-  useEffect(() => {
-    if (activeIndex !== undefined) {
-      setGlowKey((k) => k + 1);
-    }
-  }, [activeIndex]);
 
   const resetSelection = useCallback(() => {
     onEntitySelect(null);
@@ -266,11 +258,10 @@ export function SpendingPieChart({
 
       {/* Center label - clickable to reset when segment is active */}
       <div
-        key={glowKey}
+        key={activeIndex ?? "center"}
         onClick={activeItem ? resetSelection : undefined}
-        className={`absolute inset-0 flex flex-col items-center justify-center ${
-          activeItem ? "cursor-pointer" : "pointer-events-none"
-        } ${activeItem ? "animate-pie-center-glow" : ""}`}
+        className={`absolute inset-0 flex flex-col items-center justify-center ${activeItem ? "cursor-pointer" : "pointer-events-none"
+          } ${activeItem ? "animate-pie-center-glow" : ""}`}
       >
         <span
           className="font-medium text-muted-foreground leading-tight text-center px-2"
