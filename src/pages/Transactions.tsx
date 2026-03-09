@@ -293,11 +293,11 @@ const Transactions = () => {
         const full = filteredTransactions.find((t) => t.id === i.id);
         return full
           ? {
-            ...i,
-            ...full,
-            transfer_id: full.transfer_id || undefined,
-            recurrence_id: full.recurrence_id || undefined,
-          }
+              ...i,
+              ...full,
+              transfer_id: full.transfer_id || undefined,
+              recurrence_id: full.recurrence_id || undefined,
+            }
           : i;
       });
 
@@ -471,8 +471,9 @@ const Transactions = () => {
         setIsBulkCategorizing(true);
         setOperationProgress({
           title: "Auto-Categorizing",
-          description: `Categorizing ${allUniqueVendors.length} unique vendors (${Object.keys(localMappings).length ? "Some locally matched" : ""
-            })...`,
+          description: `Categorizing ${allUniqueVendors.length} unique vendors (${
+            Object.keys(localMappings).length ? "Some locally matched" : ""
+          })...`,
           stage: "Calling AI",
           progress: 50,
           totalStages: 100,

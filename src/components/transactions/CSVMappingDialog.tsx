@@ -74,15 +74,29 @@ const CSVMappingDialog = ({
             setCsvData(results.data);
 
             const ALIASES: Record<string, string[]> = {
-              Payee: ["Vendor", "Counterparty", "Merchant", "Description", "Party"],
+              Payee: [
+                "Vendor",
+                "Counterparty",
+                "Merchant",
+                "Description",
+                "Party",
+              ],
               Subcategory: ["Sub-Category", "Sub Category", "Sub_Category"],
               Notes: ["Remarks", "Description", "Memo", "Details", "Comment"],
               Account: ["Account Name", "Wallet"],
               Amount: ["Value", "Cost", "Total"],
               Date: ["Txn Date", "Transaction Date", "Day"],
               Currency: ["Curr", "Cur", "Code"],
-              "Transfer Account": ["To Account", "Receiving Account", "Destination Account"],
-              "Transfer Amount": ["To Amount", "Receiving Amount", "Transfer Value"],
+              "Transfer Account": [
+                "To Account",
+                "Receiving Account",
+                "Destination Account",
+              ],
+              "Transfer Amount": [
+                "To Amount",
+                "Receiving Amount",
+                "Transfer Value",
+              ],
             };
 
             const newMapping: Record<string, string> = {};
@@ -90,7 +104,10 @@ const CSVMappingDialog = ({
             requiredHeaders.forEach((required) => {
               const lowerRequired = required.toLowerCase();
               const aliases = ALIASES[required] || [];
-              const searchTerms = [lowerRequired, ...aliases.map((a) => a.toLowerCase())];
+              const searchTerms = [
+                lowerRequired,
+                ...aliases.map((a) => a.toLowerCase()),
+              ];
 
               const match = headers.find((header) => {
                 const h = header.trim().toLowerCase();
@@ -105,7 +122,9 @@ const CSVMappingDialog = ({
             if (amountHeader) {
               const sampleValues = results.data
                 .slice(0, 5)
-                .map((row: Record<string, unknown>) => String(row[amountHeader] || ""))
+                .map((row: Record<string, unknown>) =>
+                  String(row[amountHeader] || ""),
+                )
                 .filter(Boolean) as string[];
               const hasComma = sampleValues.some(
                 (val: string) => val.includes(",") && !val.includes("."),
@@ -229,10 +248,18 @@ const CSVMappingDialog = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto">Auto-detect</SelectItem>
-                    <SelectItem value="d/M/yyyy">Day/Month/Year (e.g. 31/01/2024)</SelectItem>
-                    <SelectItem value="M/d/yyyy">Month/Day/Year (e.g. 01/31/2024)</SelectItem>
-                    <SelectItem value="yyyy-MM-dd">Year-Month-Day (e.g. 2024-01-31)</SelectItem>
-                    <SelectItem value="d.M.yyyy">Day.Month.Year (e.g. 31.01.2024)</SelectItem>
+                    <SelectItem value="d/M/yyyy">
+                      Day/Month/Year (e.g. 31/01/2024)
+                    </SelectItem>
+                    <SelectItem value="M/d/yyyy">
+                      Month/Day/Year (e.g. 01/31/2024)
+                    </SelectItem>
+                    <SelectItem value="yyyy-MM-dd">
+                      Year-Month-Day (e.g. 2024-01-31)
+                    </SelectItem>
+                    <SelectItem value="d.M.yyyy">
+                      Day.Month.Year (e.g. 31.01.2024)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -274,8 +301,12 @@ const CSVMappingDialog = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="negative">Negative is Expense (-100)</SelectItem>
-                    <SelectItem value="positive">Positive is Expense (100)</SelectItem>
+                    <SelectItem value="negative">
+                      Negative is Expense (-100)
+                    </SelectItem>
+                    <SelectItem value="positive">
+                      Positive is Expense (100)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
@@ -298,10 +329,18 @@ const CSVMappingDialog = ({
                         name="importMode"
                         value="append"
                         checked={config.importMode !== "replace"}
-                        onChange={() => setConfig((prev) => ({ ...prev, importMode: "append" }))}
+                        onChange={() =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            importMode: "append",
+                          }))
+                        }
                         className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                       />
-                      <Label htmlFor="append" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="append"
+                        className="font-normal cursor-pointer"
+                      >
                         Append to existing
                       </Label>
                     </div>
@@ -312,10 +351,18 @@ const CSVMappingDialog = ({
                         name="importMode"
                         value="replace"
                         checked={config.importMode === "replace"}
-                        onChange={() => setConfig((prev) => ({ ...prev, importMode: "replace" }))}
+                        onChange={() =>
+                          setConfig((prev) => ({
+                            ...prev,
+                            importMode: "replace",
+                          }))
+                        }
                         className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                       />
-                      <Label htmlFor="replace" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="replace"
+                        className="font-normal cursor-pointer"
+                      >
                         Replace existing
                       </Label>
                     </div>
@@ -324,14 +371,18 @@ const CSVMappingDialog = ({
               )}
 
               <div className="border rounded-md p-3 bg-muted/30 mt-4">
-                <Label className="mb-2 block">Available Data Preview (First 3 rows)</Label>
+                <Label className="mb-2 block">
+                  Available Data Preview (First 3 rows)
+                </Label>
                 {csvData.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="text-xs w-full text-left">
                       <thead>
                         <tr className="border-b">
                           {csvHeaders.map((h) => (
-                            <th key={h} className="p-1 font-medium">{h}</th>
+                            <th key={h} className="p-1 font-medium">
+                              {h}
+                            </th>
                           ))}
                         </tr>
                       </thead>
@@ -339,7 +390,9 @@ const CSVMappingDialog = ({
                         {csvData.slice(0, 3).map((row, i) => (
                           <tr key={i} className="border-b last:border-0">
                             {csvHeaders.map((h) => (
-                              <td key={h} className="p-1 whitespace-nowrap">{String(row[h] ?? "")}</td>
+                              <td key={h} className="p-1 whitespace-nowrap">
+                                {String(row[h] ?? "")}
+                              </td>
                             ))}
                           </tr>
                         ))}
@@ -350,7 +403,11 @@ const CSVMappingDialog = ({
                   <div className="text-xs text-muted-foreground p-2 text-center">
                     {isLoading ? "Reading..." : "No data properly parsed."}
                     <div className="mt-2">
-                      <Button variant="outline" size="sm" onClick={() => handleParse(false)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleParse(false)}
+                      >
                         Refresh Preview
                       </Button>
                     </div>
@@ -367,19 +424,26 @@ const CSVMappingDialog = ({
               </p>
               <div className="grid gap-4">
                 {requiredHeaders.map((header) => (
-                  <div key={header} className="grid grid-cols-3 items-center gap-4">
+                  <div
+                    key={header}
+                    className="grid grid-cols-3 items-center gap-4"
+                  >
                     <Label className="col-span-1">{header}</Label>
                     <div className="col-span-2">
                       <Select
                         value={mapping[header] || ""}
-                        onValueChange={(value) => handleMappingChange(header, value)}
+                        onValueChange={(value) =>
+                          handleMappingChange(header, value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
                           {csvHeaders.map((csvHeader) => (
-                            <SelectItem key={csvHeader} value={csvHeader}>{csvHeader}</SelectItem>
+                            <SelectItem key={csvHeader} value={csvHeader}>
+                              {csvHeader}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -392,14 +456,21 @@ const CSVMappingDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           {step === "config" ? (
-            <Button onClick={() => handleParse(true)} disabled={!file || isLoading}>
+            <Button
+              onClick={() => handleParse(true)}
+              disabled={!file || isLoading}
+            >
               {isLoading ? "Reading..." : "Next"}
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("config")}>Back</Button>
+              <Button variant="outline" onClick={() => setStep("config")}>
+                Back
+              </Button>
               <Button onClick={handleConfirm}>Import Transactions</Button>
             </div>
           )}

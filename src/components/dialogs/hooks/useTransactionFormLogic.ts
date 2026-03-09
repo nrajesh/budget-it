@@ -127,8 +127,8 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-              new Date(transactionToEdit.recurrence_end_date),
-            )
+                new Date(transactionToEdit.recurrence_end_date),
+              )
             : "",
         });
         setTransactionType(

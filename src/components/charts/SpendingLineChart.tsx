@@ -201,7 +201,11 @@ interface CustomTooltipProps {
   formatCurrency: (amount: number) => string;
 }
 
-const CustomTooltip = ({ active, payload, formatCurrency }: CustomTooltipProps) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  formatCurrency,
+}: CustomTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const dataPoint = payload[0]?.payload as DataPoint | undefined;
