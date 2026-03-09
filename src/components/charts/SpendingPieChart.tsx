@@ -260,8 +260,9 @@ export function SpendingPieChart({
       <div
         key={activeIndex ?? "center"}
         onClick={activeItem ? resetSelection : undefined}
-        className={`absolute inset-0 flex flex-col items-center justify-center ${activeItem ? "cursor-pointer" : "pointer-events-none"
-          } ${activeItem ? "animate-pie-center-glow" : ""}`}
+        className={`absolute inset-0 flex flex-col items-center justify-center ${
+          activeItem ? "cursor-pointer" : "pointer-events-none"
+        } ${activeItem ? "animate-pie-center-glow" : ""}`}
       >
         <span
           className="font-medium text-muted-foreground leading-tight text-center px-2"
