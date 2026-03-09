@@ -51,6 +51,25 @@ interface AddEditScheduledTransactionDialogProps {
   isLoading: boolean;
 }
 
+const formSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  account: z.string().min(1, "Account is required"),
+  vendor: z.string().min(1, "Vendor is required"),
+  category: z.string().min(1, "Category is required"),
+  sub_category: z.string().optional(),
+  amount: z.coerce
+    .number()
+    .refine((val) => val !== 0, { message: "Amount cannot be zero" }),
+  frequency_value: z.coerce
+    .number()
+    .min(1, "Frequency value must be at least 1"),
+  frequency_unit: z.string().min(1, "Frequency unit is required"),
+  remarks: z.string().optional(),
+  recurrence_end_date: z.string().optional(),
+});
+
+type ScheduledTransactionFormData = z.infer<typeof formSchema>;
+
 export const AddEditScheduledTransactionDialog: React.FC<
   AddEditScheduledTransactionDialogProps
 > = ({
@@ -65,46 +84,6 @@ export const AddEditScheduledTransactionDialog: React.FC<
   allSubCategories,
   isLoading,
 }) => {
-  const formSchema = React.useMemo(
-    () =>
-      z
-        .object({
-          date: z.string().min(1, "Date is required"),
-          account: z.string().min(1, "Account is required"),
-          vendor: z.string().min(1, "Vendor is required"),
-          category: z.string().min(1, "Category is required"),
-          sub_category: z.string().optional(),
-          amount: z.coerce
-            .number()
-            .refine((val) => val !== 0, { message: "Amount cannot be zero" }),
-          frequency_value: z.coerce
-            .number()
-            .min(1, "Frequency value must be at least 1"),
-          frequency_unit: z.string().min(1, "Frequency unit is required"),
-          remarks: z.string().optional(),
-          recurrence_end_date: z.string().optional(),
-        })
-        .refine(
-          (data) => {
-            const isVendorAnAccount = allPayees.find(
-              (p) => p.value === data.vendor,
-            )?.isAccount;
-            if (isVendorAnAccount && data.category !== "Transfer") return false;
-            if (!isVendorAnAccount && data.category === "Transfer")
-              return false;
-            return true;
-          },
-          {
-            message:
-              "Category must be 'Transfer' if vendor is an account, otherwise it cannot be 'Transfer'.",
-            path: ["category"],
-          },
-        ),
-    [allPayees],
-  );
-
-  type ScheduledTransactionFormData = z.infer<typeof formSchema>;
-
   const form = useForm<ScheduledTransactionFormData>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
