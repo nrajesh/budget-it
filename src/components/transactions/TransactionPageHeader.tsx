@@ -11,7 +11,7 @@ interface TransactionPageHeaderProps {
   onCleanUpDuplicates: () => void;
   onBulkCategorize?: () => void;
   isBulkCategorizeEnabled?: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
@@ -39,7 +39,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
       <div className="flex flex-wrap gap-2">
         <Input
           type="file"
-          ref={fileInputRef}
+          ref={fileInputRef as any}
           onChange={onFileChange}
           accept=".csv"
           className="hidden"
