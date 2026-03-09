@@ -45,7 +45,7 @@ interface EntityManagementPageProps<T extends { id: string; name: string }> {
   itemsPerPage: number;
   selectedRows: string[];
   isImporting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: any;
   isLoadingMutation: boolean;
   handleAddClick: () => void;
   handleEditClick: (item: T) => void;
@@ -160,9 +160,9 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const currentData = disablePagination
     ? filteredData
     : filteredData.slice(
-        (currentPage - 1) * itemsPerPage,
-        (currentPage - 1) * itemsPerPage + itemsPerPage,
-      );
+      (currentPage - 1) * itemsPerPage,
+      (currentPage - 1) * itemsPerPage + itemsPerPage,
+    );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
