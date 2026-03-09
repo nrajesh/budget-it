@@ -213,7 +213,7 @@ export const AddEditBudgetDialog: React.FC<AddEditBudgetDialogProps> = ({
   type BudgetFormData = z.infer<typeof formSchema>;
 
   const form = useForm<BudgetFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       is_active: true,
       currency: selectedCurrency,

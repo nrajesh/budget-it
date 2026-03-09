@@ -50,7 +50,7 @@ const budgetSchema = z
       .number()
       .positive("Amount must be a positive number."),
     frequency: z.string().min(1, "Frequency is required."),
-    start_date: z.date({ required_error: "Start date is required." }),
+    start_date: z.date({ error: "Start date is required." }),
     end_date: z.date().optional(),
   })
   .refine((data) => !data.end_date || data.end_date > data.start_date, {
@@ -88,7 +88,7 @@ export function BudgetDialog({
   );
 
   const form = useForm<BudgetFormValues>({
-    resolver: zodResolver(budgetSchema),
+    resolver: zodResolver(budgetSchema) as any,
     defaultValues: {
       category_id: "",
       sub_category_id: null,
@@ -209,9 +209,9 @@ export function BudgetDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-4">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="category_id"
               render={({ field }) => (
                 <FormItem>
@@ -234,7 +234,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="sub_category_id"
               render={({ field }) => (
                 <FormItem>
@@ -272,7 +272,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="target_amount"
               render={({ field }) => (
                 <FormItem>
@@ -292,7 +292,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="frequency"
               render={({ field }) => (
                 <FormItem>
@@ -315,7 +315,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="start_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -353,7 +353,7 @@ export function BudgetDialog({
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="end_date"
               render={({ field }) => (
                 <FormItem className="flex flex-col">

@@ -150,7 +150,7 @@ export function SpendingByVendorChart({
                 // @ts-expect-error - Recharts 3 type issue missing activeIndex from PieProps
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
-                onClick={onPieClick}
+                onClick={onPieClick as any}
                 animationDuration={800}
               >
                 {vendorSpendingData.map((_entry, index) => (

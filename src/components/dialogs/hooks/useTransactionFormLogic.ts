@@ -75,7 +75,7 @@ export const useTransactionFormLogic = ({
   >(null);
 
   const form = useForm<AddEditTransactionFormValues>({
-    resolver: zodResolver(transactionFormSchema),
+    resolver: zodResolver(transactionFormSchema) as any,
     defaultValues: {
       date: formatDateToYYYYMMDD(new Date()),
       account: "",
@@ -129,8 +129,8 @@ export const useTransactionFormLogic = ({
           recurrenceFrequency: transactionToEdit.recurrence_frequency || "None",
           recurrenceEndDate: transactionToEdit.recurrence_end_date
             ? formatDateToYYYYMMDD(
-                new Date(transactionToEdit.recurrence_end_date),
-              )
+              new Date(transactionToEdit.recurrence_end_date),
+            )
             : "",
         });
       } else {
@@ -147,10 +147,13 @@ export const useTransactionFormLogic = ({
           recurrenceEndDate: "",
         });
       }
-      setAccountCurrencySymbol(
-        currencySymbols[selectedCurrency] || selectedCurrency,
-      );
-      setDestinationAccountCurrency(null);
+      // Use a microtask/timeout to avoid cascading renders warning
+      Promise.resolve().then(() => {
+        setAccountCurrencySymbol(
+          currencySymbols[selectedCurrency] || selectedCurrency,
+        );
+        setDestinationAccountCurrency(null);
+      });
     }
   }, [isOpen, reset, transactionToEdit, currencySymbols, selectedCurrency]);
 

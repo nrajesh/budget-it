@@ -77,7 +77,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   const { invalidateAllData } = useTransactions();
   const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: "",
       is_account: isAccountOnly ? true : false,
@@ -289,7 +289,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           value={field.value}
                           onChange={field.onChange}
-                          // disabled={!!payee} // Allow changing account type
+                        // disabled={!!payee} // Allow changing account type
                         >
                           <option value="Checking">Checking</option>
                           <option value="Savings">Savings</option>
