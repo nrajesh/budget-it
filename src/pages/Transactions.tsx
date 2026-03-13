@@ -155,6 +155,9 @@ const Transactions = () => {
   const [isCleanupConfirmOpen, setIsCleanupConfirmOpen] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
+  const [isUnlinkConfirmOpen, setIsUnlinkConfirmOpen] = useState(false);
+  const [unlinkTransferId, setUnlinkTransferId] = useState<string | null>(null);
+
   const [isBulkCategorizing, setIsBulkCategorizing] = useState(false);
 
   const { toast } = useToast();
@@ -586,21 +589,23 @@ const Transactions = () => {
   };
 
   const handleUnlinkTransaction = React.useCallback(
-    async (transferId: string) => {
-      console.log("handleUnlinkTransaction called with:", transferId);
-      const confirm = window.confirm(
-        "Are you sure you want to unlink these transactions?",
-      );
-      if (confirm) {
-        await unlinkTransaction(transferId);
-        toast({
-          title: "Transactions Unlinked",
-          description: "The transfer link has been removed.",
-        });
-      }
+    (transferId: string) => {
+      setUnlinkTransferId(transferId);
+      setIsUnlinkConfirmOpen(true);
     },
-    [unlinkTransaction, toast],
+    [],
   );
+
+  const confirmUnlinkTransaction = async () => {
+    if (unlinkTransferId) {
+      await unlinkTransaction(unlinkTransferId);
+      toast({
+        title: "Transactions Unlinked",
+        description: "The transfer link has been removed.",
+      });
+      setUnlinkTransferId(null);
+    }
+  };
 
   const handleLinkTransactions = React.useCallback(
     async (id1: string, id2: string) => {
@@ -781,6 +786,15 @@ const Transactions = () => {
         title="Remove Duplicate Transactions?"
         description="This will scan for transactions with identical recurrence IDs on the same date and remove the duplicates. This action cannot be undone."
         confirmText={isCleaningUp ? "Cleaning..." : "Remove Duplicates"}
+      />
+
+      <ConfirmationDialog
+        isOpen={isUnlinkConfirmOpen}
+        onOpenChange={setIsUnlinkConfirmOpen}
+        onConfirm={confirmUnlinkTransaction}
+        title="Unlink Transactions?"
+        description="Are you sure you want to break the link between these transactions? They will no longer be treated as a transfer pair."
+        confirmText="Unlink"
       />
     </div>
   );
