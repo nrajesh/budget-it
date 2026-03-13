@@ -115,8 +115,13 @@ const TransactionRow = React.memo(
     }, [transaction.date, today]);
 
     const renderCell = (field: string, value: unknown) => {
+      const isFormerAccount =
+        field === "account" && !accountCurrencyMap?.has(value as string);
+
       return (
-        <span className="cursor-pointer">
+        <span
+          className={`cursor-pointer flex items-center gap-1 ${isFormerAccount ? "text-slate-400 dark:text-slate-500 italic" : ""}`}
+        >
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
                 style: "currency",
@@ -128,6 +133,14 @@ const TransactionRow = React.memo(
             : field === "date"
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
+          {isFormerAccount && (
+            <span
+              className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1 rounded font-normal not-italic"
+              title="This account has been deleted"
+            >
+              Former
+            </span>
+          )}
         </span>
       );
     };
@@ -363,9 +376,22 @@ const TransactionMobileCard = React.memo(
                   <div className="font-semibold text-sm leading-tight">
                     {transaction.vendor || "No Payee"}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                     {new Date(transaction.date).toLocaleDateString()} &middot;{" "}
-                    {transaction.account}
+                    <span
+                      className={
+                        !accountCurrencyMap?.has(transaction.account)
+                          ? "italic text-slate-400"
+                          : ""
+                      }
+                    >
+                      {transaction.account}
+                    </span>
+                    {!accountCurrencyMap?.has(transaction.account) && (
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 rounded uppercase font-medium">
+                        Former
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

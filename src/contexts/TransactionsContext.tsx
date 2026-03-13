@@ -1202,10 +1202,10 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // 2. Schedule Permanent Delete
       const timeoutId = setTimeout(async () => {
-        if (type === "vendor") {
-          await db.vendors.bulkDelete(ids);
-        } else if (type === "account") {
-          await db.accounts.bulkDelete(ids);
+        if (type === "vendor" || type === "account") {
+          for (const id of ids) {
+            await dataProvider.deletePayee(id);
+          }
         } else if (type === "category") {
           await db.categories.bulkDelete(ids);
         }
@@ -1235,7 +1235,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       showUndoToast(ids.length, type);
     },
-    [showUndoToast, invalidateAllData, triggerExport],
+    [showUndoToast, invalidateAllData, triggerExport, dataProvider],
   );
 
   const cleanUpDuplicates = React.useCallback(async () => {

@@ -235,7 +235,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
                 </FormItem>
               )}
             />
-            {!(payee && payee.is_account) && (
+            {!(payee && payee.is_account) && !isAccountOnly && (
               <FormField
                 control={form.control}
                 name="is_account"
