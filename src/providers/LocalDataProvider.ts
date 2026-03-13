@@ -394,30 +394,40 @@ export class LocalDataProvider implements DataProvider {
     const vendor = await db.vendors.get(id);
     if (!vendor) return;
 
-    await db.transaction("rw", [db.vendors, db.accounts, db.scheduled_transactions, db.budgets], async () => {
-      // 1. Delete Vendor and Account
-      await db.vendors.delete(id);
-      if (vendor.account_id) {
-        await db.accounts.delete(vendor.account_id);
-      }
+    await db.transaction(
+      "rw",
+      [db.vendors, db.accounts, db.scheduled_transactions, db.budgets],
+      async () => {
+        // 1. Delete Vendor and Account
+        await db.vendors.delete(id);
+        if (vendor.account_id) {
+          await db.accounts.delete(vendor.account_id);
+        }
 
-      // 2. Cleanup Scheduled Transactions referencing this payee/account
-      const name = vendor.name;
-      const scheduledToDelete = await db.scheduled_transactions
-        .filter(st => st.account === name || st.vendor === name)
-        .toArray();
-      if (scheduledToDelete.length > 0) {
-        await db.scheduled_transactions.bulkDelete(scheduledToDelete.map(st => st.id));
-      }
+        // 2. Cleanup Scheduled Transactions referencing this payee/account
+        const name = vendor.name;
+        const scheduledToDelete = await db.scheduled_transactions
+          .filter((st) => st.account === name || st.vendor === name)
+          .toArray();
+        if (scheduledToDelete.length > 0) {
+          await db.scheduled_transactions.bulkDelete(
+            scheduledToDelete.map((st) => st.id),
+          );
+        }
 
-      // 3. Cleanup Budgets referencing this account/payee
-      const budgetsToDelete = await db.budgets
-        .filter(b => (b.budget_scope === "account" || b.budget_scope === "vendor") && b.budget_scope_name === name)
-        .toArray();
-      if (budgetsToDelete.length > 0) {
-        await db.budgets.bulkDelete(budgetsToDelete.map(b => b.id));
-      }
-    });
+        // 3. Cleanup Budgets referencing this account/payee
+        const budgetsToDelete = await db.budgets
+          .filter(
+            (b) =>
+              (b.budget_scope === "account" || b.budget_scope === "vendor") &&
+              b.budget_scope_name === name,
+          )
+          .toArray();
+        if (budgetsToDelete.length > 0) {
+          await db.budgets.bulkDelete(budgetsToDelete.map((b) => b.id));
+        }
+      },
+    );
   }
 
   async getAllAccounts(ledgerId: string): Promise<Account[]> {
@@ -541,28 +551,38 @@ export class LocalDataProvider implements DataProvider {
     const category = await db.categories.get(id);
     if (!category) return;
 
-    await db.transaction("rw", [db.categories, db.sub_categories, db.scheduled_transactions, db.budgets], async () => {
-      // 1. Delete Category and Sub-categories
-      await db.categories.delete(id);
-      await db.sub_categories.where("category_id").equals(id).delete();
+    await db.transaction(
+      "rw",
+      [db.categories, db.sub_categories, db.scheduled_transactions, db.budgets],
+      async () => {
+        // 1. Delete Category and Sub-categories
+        await db.categories.delete(id);
+        await db.sub_categories.where("category_id").equals(id).delete();
 
-      // 2. Cleanup Scheduled Transactions referencing this category
-      const name = category.name;
-      const scheduledToDelete = await db.scheduled_transactions
-        .filter(st => st.category === name)
-        .toArray();
-      if (scheduledToDelete.length > 0) {
-        await db.scheduled_transactions.bulkDelete(scheduledToDelete.map(st => st.id));
-      }
+        // 2. Cleanup Scheduled Transactions referencing this category
+        const name = category.name;
+        const scheduledToDelete = await db.scheduled_transactions
+          .filter((st) => st.category === name)
+          .toArray();
+        if (scheduledToDelete.length > 0) {
+          await db.scheduled_transactions.bulkDelete(
+            scheduledToDelete.map((st) => st.id),
+          );
+        }
 
-      // 3. Cleanup Budgets referencing this category
-      const budgetsToDelete = await db.budgets
-        .filter(b => b.category_id === id || (b.budget_scope === "category" && b.budget_scope_name === name))
-        .toArray();
-      if (budgetsToDelete.length > 0) {
-        await db.budgets.bulkDelete(budgetsToDelete.map(b => b.id));
-      }
-    });
+        // 3. Cleanup Budgets referencing this category
+        const budgetsToDelete = await db.budgets
+          .filter(
+            (b) =>
+              b.category_id === id ||
+              (b.budget_scope === "category" && b.budget_scope_name === name),
+          )
+          .toArray();
+        if (budgetsToDelete.length > 0) {
+          await db.budgets.bulkDelete(budgetsToDelete.map((b) => b.id));
+        }
+      },
+    );
   }
 
   // Budgets

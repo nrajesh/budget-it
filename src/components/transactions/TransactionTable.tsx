@@ -115,10 +115,13 @@ const TransactionRow = React.memo(
     }, [transaction.date, today]);
 
     const renderCell = (field: string, value: unknown) => {
-      const isFormerAccount = field === "account" && !accountCurrencyMap?.has(value as string);
+      const isFormerAccount =
+        field === "account" && !accountCurrencyMap?.has(value as string);
 
       return (
-        <span className={`cursor-pointer flex items-center gap-1 ${isFormerAccount ? "text-slate-400 dark:text-slate-500 italic" : ""}`}>
+        <span
+          className={`cursor-pointer flex items-center gap-1 ${isFormerAccount ? "text-slate-400 dark:text-slate-500 italic" : ""}`}
+        >
           {field === "amount"
             ? (value as number).toLocaleString(undefined, {
                 style: "currency",
@@ -131,7 +134,7 @@ const TransactionRow = React.memo(
               ? new Date(value as string).toLocaleDateString()
               : (value as React.ReactNode) || "-"}
           {isFormerAccount && (
-            <span 
+            <span
               className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1 rounded font-normal not-italic"
               title="This account has been deleted"
             >
@@ -375,11 +378,19 @@ const TransactionMobileCard = React.memo(
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                     {new Date(transaction.date).toLocaleDateString()} &middot;{" "}
-                    <span className={!accountCurrencyMap?.has(transaction.account) ? "italic text-slate-400" : ""}>
+                    <span
+                      className={
+                        !accountCurrencyMap?.has(transaction.account)
+                          ? "italic text-slate-400"
+                          : ""
+                      }
+                    >
                       {transaction.account}
                     </span>
                     {!accountCurrencyMap?.has(transaction.account) && (
-                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 rounded uppercase font-medium">Former</span>
+                      <span className="text-[9px] bg-slate-100 dark:bg-slate-800 px-1 rounded uppercase font-medium">
+                        Former
+                      </span>
                     )}
                   </div>
                 </div>

@@ -588,13 +588,10 @@ const Transactions = () => {
     }
   };
 
-  const handleUnlinkTransaction = React.useCallback(
-    (transferId: string) => {
-      setUnlinkTransferId(transferId);
-      setIsUnlinkConfirmOpen(true);
-    },
-    [],
-  );
+  const handleUnlinkTransaction = React.useCallback((transferId: string) => {
+    setUnlinkTransferId(transferId);
+    setIsUnlinkConfirmOpen(true);
+  }, []);
 
   const confirmUnlinkTransaction = async () => {
     if (unlinkTransferId) {
