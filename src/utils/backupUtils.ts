@@ -50,10 +50,7 @@ export const saveFile = async (
     throw new Error("File System Access API not supported");
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "AbortError") {
-      const error = new Error("Save cancelled by user");
-      // @ts-expect-error - cause is valid but TS config may not know
-      (error as Error).cause = err;
-      throw error;
+      throw new Error("Save cancelled by user", { cause: err });
     }
 
     // Fallback to classic download

@@ -96,7 +96,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
       return;
     }
 
-    let csvContent = "";
+    let csvContent: string;
     if (isAccount) {
       const headers = [
         "Account Name",

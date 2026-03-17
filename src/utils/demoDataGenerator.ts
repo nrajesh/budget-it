@@ -139,8 +139,8 @@ const HOME_SCHEDULED_TRANSACTIONS: DemoScheduledTransaction[] = [
   {
     accountType: "Checking",
     vendor: "IRS",
-    category: "Health",
-    sub_category: "Insurance",
+    category: "Legal",
+    sub_category: "Taxes",
     amount: -15000,
     frequency: "Yearly",
     remarks: "Tax Payment",
@@ -307,6 +307,7 @@ const CATEGORIES_CONFIG = {
   Housing: ["Rent", "Mortgage", "Repairs", "Furniture", "Taxes"],
   Income: ["Salary", "Freelance", "Bonus", "Interest", "Refund"],
   Transfer: ["Transfer"],
+  Legal: ["Taxes", "Gov", "Attorney", "Court"],
 };
 
 const VENDOR_PREFIXES = [
@@ -318,6 +319,7 @@ const VENDOR_PREFIXES = [
   "Online",
   "Daily",
 ];
+
 const VENDOR_SUFFIXES = [
   "Store",
   "Shop",
@@ -329,10 +331,119 @@ const VENDOR_SUFFIXES = [
   "Center",
 ];
 
+const CATEGORY_VENDORS: Record<string, string[]> = {
+  Groceries: [
+    "Whole Foods",
+    "Trader Joe's",
+    "Safeway",
+    "Kroger",
+    "Aldi",
+    "Lidl",
+    "Costco",
+    "Tesco",
+  ],
+  "Dining Out": [
+    "Starbucks",
+    "McDonald's",
+    "Subway",
+    "Chipotle",
+    "Olive Garden",
+    "Local Bistro",
+    "Sushi Bar",
+  ],
+  Entertainment: [
+    "Netflix",
+    "Hulu",
+    "Disney+",
+    "AMC Theatres",
+    "Steam",
+    "PlayStation",
+    "Spotify",
+  ],
+  Transport: [
+    "Shell",
+    "Chevron",
+    "Exxon",
+    "Uber",
+    "Lyft",
+    "Public Transport",
+    "Parking Garage",
+  ],
+  Shopping: [
+    "Amazon",
+    "Target",
+    "Walmart",
+    "Apple Store",
+    "Nike",
+    "H&M",
+    "Zara",
+    "Best Buy",
+  ],
+  Utilities: [
+    "PG&E",
+    "Comcast",
+    "Verizon",
+    "AT&T",
+    "Water Dept",
+    "Waste Management",
+  ],
+  Health: [
+    "CVS",
+    "Walgreens",
+    "General Hospital",
+    "City Dental",
+    "Gym",
+    "Yoga Studio",
+  ],
+  "Home Services": [
+    "House Cleaning",
+    "Plumbing Pros",
+    "Gardening Pro",
+    "SecureHome",
+    "Handyman",
+  ],
+  Education: [
+    "University",
+    "Coursera",
+    "Udemy",
+    "Bookstore",
+    "School Supplies",
+  ],
+  "Personal Care": ["Hair Salon", "Sephora", "Spa Oasis", "Barber Shop"],
+  Pets: ["PetCo", "PetSmart", "Local Vet", "Pet Groomers"],
+  Housing: [
+    "Landlord",
+    "Mortgage Co",
+    "Property Management",
+    "Home Depot",
+    "IKEA",
+  ],
+  Income: [
+    "Employer",
+    "Freelance Client",
+    "IRS Refund",
+    "Bank Interest",
+    "Dividends",
+  ],
+  Legal: ["IRS", "City Court", "Legal Services", "Tax Authority"],
+};
+
 function getRandomVendor(category: string, subCategory: string): string {
-  if (category === "Income") return Math.random() > 0.7 ? "Client" : "Employer";
+  if (category === "Income") {
+    const incomeVendors = CATEGORY_VENDORS.Income;
+    return incomeVendors[Math.floor(Math.random() * incomeVendors.length)];
+  }
+
+  // 70% chance to use a predefined vendor for the category
+  if (Math.random() > 0.3 && CATEGORY_VENDORS[category]) {
+    const list = CATEGORY_VENDORS[category];
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  // Fallback to random generation
   if (subCategory && Math.random() > 0.5)
     return `${subCategory} ${VENDOR_SUFFIXES[Math.floor(Math.random() * VENDOR_SUFFIXES.length)]}`;
+
   const prefix =
     VENDOR_PREFIXES[Math.floor(Math.random() * VENDOR_PREFIXES.length)];
   const suffix =
@@ -341,18 +452,23 @@ function getRandomVendor(category: string, subCategory: string): string {
 }
 
 function getRandomDate(): string {
-  const isRecent = Math.random() > 0.3; // 70% chance of being recent (last 3 months)
   const now = new Date();
+  const isRecent = Math.random() > 0.3; // 70% chance of being recent
   let daysAgo;
 
   if (isRecent) {
-    // Last 90 days
     daysAgo = Math.floor(Math.random() * 90);
   } else {
-    // Last 2 years (approx 730 days)
     daysAgo = Math.floor(Math.random() * 730);
   }
+
   const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+  // Add more intra-day variety by randomizing hours/minutes
+  date.setHours(Math.floor(Math.random() * 24));
+  date.setMinutes(Math.floor(Math.random() * 60));
+  date.setSeconds(Math.floor(Math.random() * 60));
+
   return date.toISOString();
 }
 
