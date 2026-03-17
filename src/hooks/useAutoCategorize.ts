@@ -133,6 +133,7 @@ const parseAIResponse = <T>(text: string): T => {
     console.error("Failed to parse AI response as JSON:", resultJson);
     throw new Error(
       `Unexpected AI response format: ${e instanceof Error ? e.message : String(e)}`,
+      { cause: e },
     );
   }
 };
@@ -310,6 +311,7 @@ export const useAutoCategorize = () => {
       console.error("AutoCategorize Error:", error);
       throw new Error(
         (error as Error).message || "Failed to parse AI response.",
+        { cause: error },
       );
     }
   };
@@ -431,9 +433,10 @@ export const useAutoCategorize = () => {
 
       return parseAIResponse<BulkCategorizeResult>(resultJson);
     } catch (error: unknown) {
-      console.error("AutoCategorizeBulk Error:", error);
+      console.error("AutoCategorize Bulk Error:", error);
       throw new Error(
         (error as Error).message || "Failed to parse AI response.",
+        { cause: error },
       );
     }
   };
