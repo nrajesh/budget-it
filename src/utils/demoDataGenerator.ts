@@ -332,19 +332,99 @@ const VENDOR_SUFFIXES = [
 ];
 
 const CATEGORY_VENDORS: Record<string, string[]> = {
-  Groceries: ["Whole Foods", "Trader Joe's", "Safeway", "Kroger", "Aldi", "Lidl", "Costco", "Tesco"],
-  "Dining Out": ["Starbucks", "McDonald's", "Subway", "Chipotle", "Olive Garden", "Local Bistro", "Sushi Bar"],
-  Entertainment: ["Netflix", "Hulu", "Disney+", "AMC Theatres", "Steam", "PlayStation", "Spotify"],
-  Transport: ["Shell", "Chevron", "Exxon", "Uber", "Lyft", "Public Transport", "Parking Garage"],
-  Shopping: ["Amazon", "Target", "Walmart", "Apple Store", "Nike", "H&M", "Zara", "Best Buy"],
-  Utilities: ["PG&E", "Comcast", "Verizon", "AT&T", "Water Dept", "Waste Management"],
-  Health: ["CVS", "Walgreens", "General Hospital", "City Dental", "Gym", "Yoga Studio"],
-  "Home Services": ["House Cleaning", "Plumbing Pros", "Gardening Pro", "SecureHome", "Handyman"],
-  Education: ["University", "Coursera", "Udemy", "Bookstore", "School Supplies"],
+  Groceries: [
+    "Whole Foods",
+    "Trader Joe's",
+    "Safeway",
+    "Kroger",
+    "Aldi",
+    "Lidl",
+    "Costco",
+    "Tesco",
+  ],
+  "Dining Out": [
+    "Starbucks",
+    "McDonald's",
+    "Subway",
+    "Chipotle",
+    "Olive Garden",
+    "Local Bistro",
+    "Sushi Bar",
+  ],
+  Entertainment: [
+    "Netflix",
+    "Hulu",
+    "Disney+",
+    "AMC Theatres",
+    "Steam",
+    "PlayStation",
+    "Spotify",
+  ],
+  Transport: [
+    "Shell",
+    "Chevron",
+    "Exxon",
+    "Uber",
+    "Lyft",
+    "Public Transport",
+    "Parking Garage",
+  ],
+  Shopping: [
+    "Amazon",
+    "Target",
+    "Walmart",
+    "Apple Store",
+    "Nike",
+    "H&M",
+    "Zara",
+    "Best Buy",
+  ],
+  Utilities: [
+    "PG&E",
+    "Comcast",
+    "Verizon",
+    "AT&T",
+    "Water Dept",
+    "Waste Management",
+  ],
+  Health: [
+    "CVS",
+    "Walgreens",
+    "General Hospital",
+    "City Dental",
+    "Gym",
+    "Yoga Studio",
+  ],
+  "Home Services": [
+    "House Cleaning",
+    "Plumbing Pros",
+    "Gardening Pro",
+    "SecureHome",
+    "Handyman",
+  ],
+  Education: [
+    "University",
+    "Coursera",
+    "Udemy",
+    "Bookstore",
+    "School Supplies",
+  ],
   "Personal Care": ["Hair Salon", "Sephora", "Spa Oasis", "Barber Shop"],
   Pets: ["PetCo", "PetSmart", "Local Vet", "Pet Groomers"],
-  Housing: ["Landlord", "Mortgage Co", "Property Management", "Home Depot", "IKEA"],
-  Income: ["Employer", "Freelance Client", "IRS Refund", "Bank Interest", "Dividends"],
+  Housing: [
+    "Landlord",
+    "Mortgage Co",
+    "Property Management",
+    "Home Depot",
+    "IKEA",
+  ],
+  Income: [
+    "Employer",
+    "Freelance Client",
+    "IRS Refund",
+    "Bank Interest",
+    "Dividends",
+  ],
   Legal: ["IRS", "City Court", "Legal Services", "Tax Authority"],
 };
 
@@ -363,9 +443,11 @@ function getRandomVendor(category: string, subCategory: string): string {
   // Fallback to random generation
   if (subCategory && Math.random() > 0.5)
     return `${subCategory} ${VENDOR_SUFFIXES[Math.floor(Math.random() * VENDOR_SUFFIXES.length)]}`;
-  
-  const prefix = VENDOR_PREFIXES[Math.floor(Math.random() * VENDOR_PREFIXES.length)];
-  const suffix = VENDOR_SUFFIXES[Math.floor(Math.random() * VENDOR_SUFFIXES.length)];
+
+  const prefix =
+    VENDOR_PREFIXES[Math.floor(Math.random() * VENDOR_PREFIXES.length)];
+  const suffix =
+    VENDOR_SUFFIXES[Math.floor(Math.random() * VENDOR_SUFFIXES.length)];
   return `${prefix} ${category} ${suffix}`;
 }
 
@@ -379,14 +461,14 @@ function getRandomDate(): string {
   } else {
     daysAgo = Math.floor(Math.random() * 730);
   }
-  
+
   const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-  
+
   // Add more intra-day variety by randomizing hours/minutes
   date.setHours(Math.floor(Math.random() * 24));
   date.setMinutes(Math.floor(Math.random() * 60));
   date.setSeconds(Math.floor(Math.random() * 60));
-  
+
   return date.toISOString();
 }
 
