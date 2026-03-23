@@ -113,7 +113,7 @@
     "overrides": {
       "tar": ">=7.5.11",
       "undici": ">=7.24.0",
-      "flatted": ">=3.4.0",
+      "flatted": ">=3.4.2",
       "yauzl": ">=3.2.1",
       "dompurify": ">=3.3.2",
       "@tootallnate/once": ">=3.0.1"
