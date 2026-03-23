@@ -117,7 +117,6 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-
 }
 
 @layer components {

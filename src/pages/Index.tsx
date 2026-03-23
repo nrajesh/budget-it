@@ -112,7 +112,6 @@ const Index = () => {
   // I will reuse the monthly logic from before to get at least some comparison if possible, or just mock it for "UI likeness" if acceptable.
   // Let's bring back the monthly data calculation for the change percentages.
 
-
   return (
     <div className="page-container">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">

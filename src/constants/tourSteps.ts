@@ -8,7 +8,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Welcome to Budget It! This is the Ledgers screen where you choose or create your central financial datastore.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-theme-toggle",
@@ -45,7 +45,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "This is your main dashboard summary showing your financial health at a glance.",
       placement: "bottom",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-dashboard-charts",
@@ -71,7 +71,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "This is your transaction ledger. All your income and expenses are displayed here.",
       placement: "bottom",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-add-transaction",
@@ -101,7 +101,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Welcome to Budgets! Let's get your spending habits tracked and capped.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-budget-summary-cards",
@@ -140,7 +140,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Welcome to the Calendar View! Track your daily spending visually.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-calendar-grid",
@@ -161,7 +161,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Welcome to Analytics! This is where you dissect your financial behavior.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-analytics-summary",
@@ -200,7 +200,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "The Insights page gives you actionable intelligence on your budgets.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-insights-budget",
@@ -220,7 +220,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Manage the source of your funds here.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-accounts-list",
@@ -233,7 +233,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Group your transactions to understand where your money goes.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-categories-list",
@@ -246,7 +246,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Vendors or Payees keep track of who you interact with.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-vendors-list",
@@ -260,7 +260,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Multi-currency support allows you to travel and track everything.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-currency-refresh",
@@ -287,7 +287,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Welcome to the Settings page! Here you can manage your app preferences and data.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-settings-ledger",
@@ -317,7 +317,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Never miss a repeating transaction again.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-scheduled-add",
@@ -338,7 +338,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "You are in full control of your local data.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-data-export",
@@ -362,7 +362,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Automated backups ensure you never lose your records.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-backup-settings",
@@ -376,7 +376,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "This app is open-source and respects your privacy.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-donate-github",
@@ -394,7 +394,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Bring Your Own Key (BYOK) for AI analysis.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-ai-byok",
@@ -420,7 +420,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       target: "body",
       content: "Generate powerful tabular reports for your finances.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-report-filters",
@@ -445,7 +445,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       content:
         "Generate advanced analytical reports including cash flow and future projections.",
       placement: "center",
-      disableBeacon: true,
+      skipBeacon: true,
     },
     {
       target: ".tour-report-filters",

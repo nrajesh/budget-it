@@ -13,9 +13,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [dashboardStyle, setDashboardStyleState] = useState<DashboardStyle>(
-    "standard",
-  );
+  const [dashboardStyle, setDashboardStyleState] =
+    useState<DashboardStyle>("standard");
 
   const setDashboardStyle = (style: DashboardStyle) => {
     setDashboardStyleState(style);

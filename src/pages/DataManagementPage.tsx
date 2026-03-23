@@ -174,6 +174,7 @@ const DataManagementPage = () => {
 
   const handleGenerateDemoData = async () => {
     try {
+      handleClearAllFilters();
       await generateDiverseDemoData();
     } catch {
       // Ignore error during demo data generation

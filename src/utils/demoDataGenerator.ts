@@ -333,99 +333,69 @@ const VENDOR_SUFFIXES = [
 
 const CATEGORY_VENDORS: Record<string, string[]> = {
   Groceries: [
-    "Whole Foods",
-    "Trader Joe's",
-    "Safeway",
-    "Kroger",
-    "Aldi",
-    "Lidl",
-    "Costco",
-    "Tesco",
+    "Whole Foods", "Trader Joe's", "Safeway", "Kroger", "Aldi", "Lidl", "Costco",
+    "Tesco", "Sainsbury's", "Waitrose", "Marks & Spencer", "Publix", "Spinneys", "Carrefour",
+    "Local Market", "Neighborhood Co-op", "Fresh Market", "Giant Eagle", "Sprouts", "Wegmans"
   ],
   "Dining Out": [
-    "Starbucks",
-    "McDonald's",
-    "Subway",
-    "Chipotle",
-    "Olive Garden",
-    "Local Bistro",
-    "Sushi Bar",
+    "Starbucks", "McDonald's", "Subway", "Chipotle", "Olive Garden", "Local Bistro",
+    "Sushi Bar", "Pizza Express", "Wagamama", "Nando's", "Five Guys", "Burger King",
+    "Taco Bell", "Panda Express", "Sonic Drive-In", "Steakhouse", "Rooftop Lounge",
+    "Brunch Spot", "Dim Sum Parlor", "Gelato Shop", "Craft Brewery", "The Wine Cellar"
   ],
   Entertainment: [
-    "Netflix",
-    "Hulu",
-    "Disney+",
-    "AMC Theatres",
-    "Steam",
-    "PlayStation",
-    "Spotify",
+    "Netflix", "Hulu", "Disney+", "AMC Theatres", "Steam", "PlayStation", "Spotify",
+    "Apple TV+", "Paramount+", "HBO Max", "YouTube Premium", "Nintendo eShop",
+    "Audible", "Kindle Store", "Live Nation", "Ticketmaster", "Escape Room",
+    "Bowling Alley", "Art Museum", "Botanical Garden", "Zoo Membership"
   ],
   Transport: [
-    "Shell",
-    "Chevron",
-    "Exxon",
-    "Uber",
-    "Lyft",
-    "Public Transport",
-    "Parking Garage",
+    "Shell", "Chevron", "Exxon", "Uber", "Lyft", "Public Transport", "Parking Garage",
+    "Tesla Supercharger", "BP", "Mobil", "Train Station", "Bus Pass", "Avis",
+    "Hertz", "Lime Scooter", "Bird Bike", "Toll Road", "Bridge Toll", "Car Wash",
+    "Mechanic Shop", "AutoZone"
   ],
   Shopping: [
-    "Amazon",
-    "Target",
-    "Walmart",
-    "Apple Store",
-    "Nike",
-    "H&M",
-    "Zara",
-    "Best Buy",
+    "Amazon", "Target", "Walmart", "Apple Store", "Nike", "H&M", "Zara", "Best Buy",
+    "IKEA", "Wayfair", "Sephora", "Lush", "Uniqlo", "Nordstrom", "Macy's", "ASOS",
+    "Etsy", "eBay", "LEGO Store", "GameStop"
   ],
   Utilities: [
-    "PG&E",
-    "Comcast",
-    "Verizon",
-    "AT&T",
-    "Water Dept",
-    "Waste Management",
+    "PG&E", "Comcast", "Verizon", "AT&T", "Water Dept", "Waste Management",
+    "British Gas", "Sky", "Virgin Media", "O2", "EE", "Vodafone", "Duke Energy",
+    "Consolidated Edison", "National Grid"
   ],
   Health: [
-    "CVS",
-    "Walgreens",
-    "General Hospital",
-    "City Dental",
-    "Gym",
-    "Yoga Studio",
+    "CVS", "Walgreens", "General Hospital", "City Dental", "Gym", "Yoga Studio",
+    "Boots", "Holland & Barrett", "Therapy Co", "Vision Express", "Physio Point",
+    "Health Insurance", "Medication Refill", "Urgent Care"
   ],
   "Home Services": [
-    "House Cleaning",
-    "Plumbing Pros",
-    "Gardening Pro",
-    "SecureHome",
-    "Handyman",
+    "House Cleaning", "Plumbing Pros", "Gardening Pro", "SecureHome", "Handyman",
+    "TaskRabbit", "Angi", "Roofing Experts", "AC Repair", "Smart Home Install",
+    "Window Cleaning", "Pest Control"
   ],
   Education: [
-    "University",
-    "Coursera",
-    "Udemy",
-    "Bookstore",
-    "School Supplies",
+    "University", "Coursera", "Udemy", "Bookstore", "School Supplies", "Skillshare",
+    "MasterClass", "Language School", "Tutoring Center", "Adobe Creative Cloud"
   ],
-  "Personal Care": ["Hair Salon", "Sephora", "Spa Oasis", "Barber Shop"],
-  Pets: ["PetCo", "PetSmart", "Local Vet", "Pet Groomers"],
+  "Personal Care": [
+    "Hair Salon", "Sephora", "Spa Oasis", "Barber Shop", "Nail Boutique", "Massage Pro",
+    "Skin Clinic", "Grooming Lounge"
+  ],
+  Pets: [
+    "PetCo", "PetSmart", "Local Vet", "Pet Groomers", "BarkBox", "Chewy",
+    "Dog Walker", "Cat Sitter", "Aquarium Shop"
+  ],
   Housing: [
-    "Landlord",
-    "Mortgage Co",
-    "Property Management",
-    "Home Depot",
-    "IKEA",
+    "Landlord", "Mortgage Co", "Property Management", "Home Depot", "IKEA",
+    "Lowes", "Insurance Co", "City Tax", "HOA Dues", "Security Monitoring"
   ],
   Income: [
-    "Employer",
-    "Freelance Client",
-    "IRS Refund",
-    "Bank Interest",
-    "Dividends",
+    "Employer", "Freelance Client", "IRS Refund", "Bank Interest", "Dividends",
+    "Rental Income", "Consulting", "Project Payment", "Gift", "Side Hustle"
   ],
-  Legal: ["IRS", "City Court", "Legal Services", "Tax Authority"],
+  Legal: ["IRS", "City Court", "Legal Services", "Tax Authority", "Gov.za", "Law Firm"],
 };
 
 function getRandomVendor(category: string, subCategory: string): string {
@@ -735,7 +705,7 @@ export const generateDiverseDemoData = async (
     }
 
     // --- GENERATE BULK TRANSACTIONS ---
-    const numTransactions = 1000;
+    const numTransactions = 1500;
     const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(
       (c) => c !== "Transfer",
     );

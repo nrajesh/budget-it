@@ -80,7 +80,6 @@ const SettingsPage = () => {
     }
   };
 
-
   const handleProviderChange = async (providerId: string) => {
     if (providerId === "NONE") {
       const allProviders = await dataProvider.getAIProviders();
@@ -107,7 +106,6 @@ const SettingsPage = () => {
           </p>
         </div>
       </div>
-
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         <ThemedCard className="tour-settings-currency">
