@@ -1,5 +1,5 @@
 import React from "react";
-import Joyride, { CallBackProps, STATUS } from "react-joyride";
+import Joyride, { type CallBackProps, STATUS } from "react-joyride";
 import { useTour } from "@/contexts/TourContext";
 import { useTheme as useNextTheme } from "next-themes";
 

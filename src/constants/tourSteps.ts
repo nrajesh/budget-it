@@ -1,4 +1,4 @@
-import { Step } from "react-joyride";
+import { type Step } from "react-joyride";
 
 // Define the steps for each route that supports a help tour
 export const TOUR_STEPS: Record<string, Step[]> = {

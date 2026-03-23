@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useLocation } from "react-router-dom";
 import { getStepsForRoute } from "../constants/tourSteps";
-import { Step } from "react-joyride";
+import { type Step } from "react-joyride";
 
 interface TourContextType {
   isActive: boolean;
