@@ -1,5 +1,5 @@
 import React from "react";
-import Joyride, { type CallBackProps, STATUS } from "react-joyride";
+import { Joyride, type EventData, STATUS } from "react-joyride";
 import { useTour } from "@/contexts/TourContext";
 import { useTheme as useNextTheme } from "next-themes";
 
@@ -8,7 +8,7 @@ const HelpTour: React.FC = () => {
   const { resolvedTheme } = useNextTheme();
   const isDarkMode = resolvedTheme === "dark";
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
@@ -24,25 +24,24 @@ const HelpTour: React.FC = () => {
 
   return (
     <Joyride
-      callback={handleJoyrideCallback}
+      onEvent={handleJoyrideCallback}
       continuous
-      hideCloseButton
       run={isActive}
       scrollToFirstStep
-      scrollOffset={100}
-      disableScrolling={false}
-      scrollDuration={400}
-      showProgress
-      showSkipButton
       steps={currentSteps}
+      options={{
+        zIndex: 10000,
+        primaryColor: isDarkMode ? "#3b82f6" : "#2563eb", // Tailwind blue-500 / blue-600
+        backgroundColor: isDarkMode ? "#1f2937" : "#ffffff", // gray-800 / white
+        textColor: isDarkMode ? "#f3f4f6" : "#111827", // gray-100 / gray-900
+        arrowColor: isDarkMode ? "#1f2937" : "#ffffff",
+        buttons: ["back", "primary", "skip"],
+        scrollOffset: 100,
+        skipScroll: false,
+        scrollDuration: 400,
+        showProgress: true,
+      }}
       styles={{
-        options: {
-          zIndex: 10000,
-          primaryColor: isDarkMode ? "#3b82f6" : "#2563eb", // Tailwind blue-500 / blue-600
-          backgroundColor: isDarkMode ? "#1f2937" : "#ffffff", // gray-800 / white
-          textColor: isDarkMode ? "#f3f4f6" : "#111827", // gray-100 / gray-900
-          arrowColor: isDarkMode ? "#1f2937" : "#ffffff",
-        },
         tooltip: {
           fontFamily: "inherit",
           borderRadius: "12px",
@@ -51,7 +50,7 @@ const HelpTour: React.FC = () => {
         buttonClose: {
           display: "none",
         },
-        buttonNext: {
+        buttonPrimary: {
           backgroundColor: isDarkMode ? "#3b82f6" : "#2563eb",
           borderRadius: "6px",
           color: "#ffffff",

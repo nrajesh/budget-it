@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTheme, DashboardStyle } from "@/contexts/ThemeContext";
 import { showSuccess } from "@/utils/toast";
 import { ManageLedgerDialog } from "@/components/dialogs/ManageLedgerDialog";
 import { useLedger } from "@/contexts/LedgerContext";
@@ -32,7 +31,6 @@ import { AIProvider } from "@/types/dataProvider";
 
 const SettingsPage = () => {
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
-  const { dashboardStyle, setDashboardStyle } = useTheme();
   const { activeLedger, updateLedgerDetails } = useLedger();
   const dataProvider = useDataProvider();
   const syncConfig = useSyncConfig();
@@ -82,11 +80,6 @@ const SettingsPage = () => {
     }
   };
 
-  const handleDashboardStyleChange = (value: string) => {
-    setDashboardStyle(value as DashboardStyle);
-    showSuccess(`Dashboard style set to ${value}.`);
-  };
-
   const handleProviderChange = async (providerId: string) => {
     if (providerId === "NONE") {
       const allProviders = await dataProvider.getAIProviders();
@@ -113,26 +106,6 @@ const SettingsPage = () => {
           </p>
         </div>
       </div>
-
-      <ThemedCard className="tour-settings-ledger">
-        <ThemedCardHeader>
-          <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
-          <ThemedCardDescription>
-            Manage your current ledger details or create a new one.
-          </ThemedCardDescription>
-        </ThemedCardHeader>
-        <ThemedCardContent className="flex gap-4">
-          <Button
-            onClick={() => setIsManageLedgerOpen(true)}
-            className="bg-primary text-primary-foreground"
-          >
-            Edit Current Ledger
-          </Button>
-          <Button onClick={() => setIsCreateLedgerOpen(true)} variant="outline">
-            Create New Ledger
-          </Button>
-        </ThemedCardContent>
-      </ThemedCard>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         <ThemedCard className="tour-settings-currency">
@@ -161,26 +134,27 @@ const SettingsPage = () => {
           </ThemedCardContent>
         </ThemedCard>
 
-        <ThemedCard>
+        <ThemedCard className="tour-settings-ledger">
           <ThemedCardHeader>
-            <ThemedCardTitle>Dashboard Style</ThemedCardTitle>
+            <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
             <ThemedCardDescription>
-              Choose your preferred dashboard layout.
+              Manage your current ledger details or create a new one.
             </ThemedCardDescription>
           </ThemedCardHeader>
-          <ThemedCardContent>
-            <Select
-              value={dashboardStyle}
-              onValueChange={handleDashboardStyleChange}
+          <ThemedCardContent className="flex flex-col gap-2">
+            <Button
+              onClick={() => setIsManageLedgerOpen(true)}
+              className="w-full bg-primary text-primary-foreground"
             >
-              <SelectTrigger className="w-full sm:w-[180px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                <SelectValue placeholder="Select style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="standard">Standard</SelectItem>
-                <SelectItem value="financial-pulse">Financial Pulse</SelectItem>
-              </SelectContent>
-            </Select>
+              Edit Current Ledger
+            </Button>
+            <Button
+              onClick={() => setIsCreateLedgerOpen(true)}
+              variant="outline"
+              className="w-full"
+            >
+              Create New Ledger
+            </Button>
           </ThemedCardContent>
         </ThemedCard>
 

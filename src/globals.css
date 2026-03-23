@@ -117,72 +117,6 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-
-  [data-dashboard-style="financial-pulse"] {
-    --background: 220 13% 15%;
-    /* Dark Blue-Grey */
-    --foreground: 210 40% 98%;
-    /* White */
-
-    --card: 222.2 84% 4.9%;
-    /* Dark Card */
-    --card-foreground: 210 40% 98%;
-    /* White */
-
-    --popover: 222.2 84% 4.9%;
-    /* Dark Popover */
-    --popover-foreground: 210 40% 98%;
-    /* White */
-
-    --primary: 243 75% 59%;
-    /* Indigo Primary */
-    --primary-foreground: 210 40% 98%;
-    /* White Foreground */
-
-    --secondary: 217.2 32.6% 17.5%;
-    /* Dark Secondary */
-    --secondary-foreground: 210 40% 98%;
-    /* White */
-
-    --muted: 217.2 32.6% 17.5%;
-    /* Dark Muted */
-    --muted-foreground: 215 20.2% 65.1%;
-    /* Light Gray */
-
-    --accent: 217.2 32.6% 17.5%;
-    /* Dark Accent */
-    --accent-foreground: 210 40% 98%;
-    /* White */
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 0 0% 100% / 0.1;
-    /* Translucent White Border */
-    --input: 217.2 32.6% 17.5%;
-    /* Dark Input */
-    --ring: 212.7 26.8% 83.9%;
-  }
-
-  [data-dashboard-style="financial-pulse"] h1,
-  [data-dashboard-style="financial-pulse"] h2,
-  [data-dashboard-style="financial-pulse"] h3,
-  [data-dashboard-style="financial-pulse"] h4,
-  [data-dashboard-style="financial-pulse"] h5,
-  [data-dashboard-style="financial-pulse"] h6 {
-    font-weight: 900;
-    letter-spacing: -0.05em;
-    font-weight: 900 !important;
-    letter-spacing: -0.05em !important;
-  }
-
-  [data-dashboard-style="financial-pulse"] .recharts-text {
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 600;
-    font-size: 11px !important;
-    fill: rgba(255, 255, 255, 0.7) !important;
-  }
 }
 
 @layer components {
@@ -192,9 +126,6 @@
   }
 
   /* Financial Pulse Override (Uses Indigo) */
-  [data-dashboard-style="financial-pulse"] .bg-budget-bar {
-    background-color: #4f46e5;
-  }
 
   /* Centralized container dimensions based on Analytics base */
   .page-container {
