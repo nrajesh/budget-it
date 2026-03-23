@@ -5,8 +5,6 @@ import { slugify } from "@/lib/utils";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
-import { FinancialPulseDashboard } from "@/components/dashboard/FinancialPulseDashboard";
-import { useTheme } from "@/contexts/ThemeContext";
 
 // New Components
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
@@ -19,7 +17,6 @@ const Index = () => {
   const { transactions } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
-  const { dashboardStyle } = useTheme();
 
   const { selectedAccounts, selectedCategories, excludeTransfers, dateRange } =
     useTransactionFilters();
@@ -115,9 +112,6 @@ const Index = () => {
   // I will reuse the monthly logic from before to get at least some comparison if possible, or just mock it for "UI likeness" if acceptable.
   // Let's bring back the monthly data calculation for the change percentages.
 
-  if (dashboardStyle === "financial-pulse") {
-    return <FinancialPulseDashboard />;
-  }
 
   return (
     <div className="page-container">

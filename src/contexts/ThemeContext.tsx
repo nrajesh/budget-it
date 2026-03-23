@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-export type DashboardStyle = "standard" | "financial-pulse";
+export type DashboardStyle = "standard";
 
 interface ThemeContextType {
   dashboardStyle: DashboardStyle;
@@ -14,11 +14,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [dashboardStyle, setDashboardStyleState] = useState<DashboardStyle>(
-    () => {
-      return (
-        (localStorage.getItem("dashboardStyle") as DashboardStyle) || "standard"
-      );
-    },
+    "standard",
   );
 
   const setDashboardStyle = (style: DashboardStyle) => {
@@ -33,7 +29,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }, [dashboardStyle]);
 
-  const isFinancialPulse = dashboardStyle === "financial-pulse";
+  const isFinancialPulse = false;
 
   return (
     <ThemeContext.Provider
