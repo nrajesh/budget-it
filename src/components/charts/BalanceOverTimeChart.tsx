@@ -611,7 +611,10 @@ export function BalanceOverTimeChart({
         ItemComponent = Area;
 
         return (
-          <ChartComponent {...commonChartProps} data={dataToUse as BalanceChartRow[]}>
+          <ChartComponent
+            {...commonChartProps}
+            data={dataToUse as BalanceChartRow[]}
+          >
             <defs>
               {accountsToDisplay.map((account) => {
                 const color =

@@ -5,21 +5,33 @@ import { Input } from "@/components/ui/input";
 import { showError, showSuccess } from "@/utils/toast";
 import { Check, Trash2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { getEnabledLanguages, saveEnabledLanguages } from "@/i18n/languagePreferences";
+import {
+  getEnabledLanguages,
+  saveEnabledLanguages,
+} from "@/i18n/languagePreferences";
 import {
   builtInLanguageOptions,
   resources,
   type SupportedLanguage,
 } from "@/i18n/resources";
-import i18n, { registerCustomLanguage, unregisterCustomLanguage } from "@/i18n/config";
+import i18n, {
+  registerCustomLanguage,
+  unregisterCustomLanguage,
+} from "@/i18n/config";
 import { getCustomLanguages } from "@/i18n/customLanguages";
 import { useTranslation } from "react-i18next";
 import { sortLanguageOptionsByEnglishName } from "@/i18n/sortLanguages";
 
 const getLanguageOptions = (): { value: SupportedLanguage; label: string }[] =>
   sortLanguageOptionsByEnglishName([
-    ...builtInLanguageOptions.map((item) => ({ value: item.code, label: item.name })),
-    ...getCustomLanguages().map((item) => ({ value: item.code, label: item.name })),
+    ...builtInLanguageOptions.map((item) => ({
+      value: item.code,
+      label: item.name,
+    })),
+    ...getCustomLanguages().map((item) => ({
+      value: item.code,
+      label: item.name,
+    })),
   ]);
 
 const builtinTranslationJson = (code: string): string => {
@@ -58,9 +70,7 @@ const LanguagePage = () => {
   const [customLanguageName, setCustomLanguageName] = React.useState("");
   const [customLanguageJson, setCustomLanguageJson] = React.useState("{}");
 
-  const customCodes = new Set(
-    getCustomLanguages().map((item) => item.code),
-  );
+  const customCodes = new Set(getCustomLanguages().map((item) => item.code));
 
   React.useEffect(() => {
     const onLanguagesUpdated = () => {
@@ -69,7 +79,10 @@ const LanguagePage = () => {
     };
 
     window.addEventListener("app:languages-updated", onLanguagesUpdated);
-    window.addEventListener("app:enabled-languages-changed", onLanguagesUpdated);
+    window.addEventListener(
+      "app:enabled-languages-changed",
+      onLanguagesUpdated,
+    );
     return () => {
       window.removeEventListener("app:languages-updated", onLanguagesUpdated);
       window.removeEventListener(
@@ -213,7 +226,9 @@ const LanguagePage = () => {
                         className="h-10 w-fit min-w-0 max-w-[13rem] justify-between px-2.5 text-xs font-normal"
                         onClick={() => void handleLanguageChipClick(option)}
                         aria-label={`${option.label}${
-                          checked ? " (active, tap to load in editor below)" : ""
+                          checked
+                            ? " (active, tap to load in editor below)"
+                            : ""
                         }`}
                       >
                         <span className="truncate">{option.label}</span>
@@ -244,7 +259,9 @@ const LanguagePage = () => {
                   );
                 })}
               </div>
-              {languageOptions.some((option) => customCodes.has(option.value)) ? (
+              {languageOptions.some((option) =>
+                customCodes.has(option.value),
+              ) ? (
                 <p className="text-xs text-muted-foreground pt-1">
                   {t("settings.cards.language.deleteActiveHint", {
                     defaultValue:
@@ -263,14 +280,18 @@ const LanguagePage = () => {
               <div className="grid gap-3 md:grid-cols-2">
                 <Input
                   value={customLanguageCode}
-                  onChange={(event) => setCustomLanguageCode(event.target.value)}
+                  onChange={(event) =>
+                    setCustomLanguageCode(event.target.value)
+                  }
                   placeholder={t("settings.cards.language.codePlaceholder", {
                     defaultValue: "Language code (e.g. de, ja, hi)",
                   })}
                 />
                 <Input
                   value={customLanguageName}
-                  onChange={(event) => setCustomLanguageName(event.target.value)}
+                  onChange={(event) =>
+                    setCustomLanguageName(event.target.value)
+                  }
                   placeholder={t("settings.cards.language.namePlaceholder", {
                     defaultValue: "Display name (e.g. German)",
                   })}
@@ -285,7 +306,9 @@ const LanguagePage = () => {
                 </Label>
                 <textarea
                   value={customLanguageJson}
-                  onChange={(event) => setCustomLanguageJson(event.target.value)}
+                  onChange={(event) =>
+                    setCustomLanguageJson(event.target.value)
+                  }
                   className="min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs font-mono"
                   placeholder={t("settings.cards.language.jsonPlaceholder", {
                     defaultValue: '{"layout":{"nav":{"dashboard":"..."}}}',

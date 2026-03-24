@@ -195,7 +195,9 @@ const Layout = () => {
       case "/donate":
         return "Donate";
       default:
-        return t("layout.pageTitle.notFound", { defaultValue: "Page Not Found" });
+        return t("layout.pageTitle.notFound", {
+          defaultValue: "Page Not Found",
+        });
     }
   };
 
@@ -255,7 +257,9 @@ const Layout = () => {
                 <SidebarMenuButton asChild isActive={location.pathname === "/"}>
                   <Link to="/">
                     <LayoutGrid />
-                    <span>{t("layout.nav.dashboard", { defaultValue: "Dashboard" })}</span>
+                    <span>
+                      {t("layout.nav.dashboard", { defaultValue: "Dashboard" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -266,7 +270,9 @@ const Layout = () => {
                 >
                   <Link to="/calendar">
                     <Calendar />
-                    <span>{t("layout.nav.calendar", { defaultValue: "Calendar" })}</span>
+                    <span>
+                      {t("layout.nav.calendar", { defaultValue: "Calendar" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -277,7 +283,9 @@ const Layout = () => {
                 >
                   <Link to="/analytics">
                     <BarChart3 />
-                    <span>{t("layout.nav.analytics", { defaultValue: "Analytics" })}</span>
+                    <span>
+                      {t("layout.nav.analytics", { defaultValue: "Analytics" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -288,7 +296,9 @@ const Layout = () => {
                 >
                   <Link to="/insights">
                     <Lightbulb />
-                    <span>{t("layout.nav.insights", { defaultValue: "Insights" })}</span>
+                    <span>
+                      {t("layout.nav.insights", { defaultValue: "Insights" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -300,7 +310,9 @@ const Layout = () => {
                   <Link to="/transactions">
                     <Receipt />
                     <span>
-                      {t("layout.nav.transactions", { defaultValue: "Transactions" })}
+                      {t("layout.nav.transactions", {
+                        defaultValue: "Transactions",
+                      })}
                     </span>
                   </Link>
                 </SidebarMenuButton>
@@ -319,7 +331,9 @@ const Layout = () => {
                 >
                   <Link to="/accounts">
                     <CreditCard />
-                    <span>{t("layout.nav.accounts", { defaultValue: "Accounts" })}</span>
+                    <span>
+                      {t("layout.nav.accounts", { defaultValue: "Accounts" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -330,7 +344,11 @@ const Layout = () => {
                 >
                   <Link to="/categories">
                     <FolderTree />
-                    <span>{t("layout.nav.categories", { defaultValue: "Categories" })}</span>
+                    <span>
+                      {t("layout.nav.categories", {
+                        defaultValue: "Categories",
+                      })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -341,7 +359,9 @@ const Layout = () => {
                 >
                   <Link to="/vendors">
                     <Store />
-                    <span>{t("layout.nav.vendors", { defaultValue: "Vendors" })}</span>
+                    <span>
+                      {t("layout.nav.vendors", { defaultValue: "Vendors" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -352,7 +372,11 @@ const Layout = () => {
                 >
                   <Link to="/currencies">
                     <Coins />
-                    <span>{t("layout.nav.currencies", { defaultValue: "Currencies" })}</span>
+                    <span>
+                      {t("layout.nav.currencies", {
+                        defaultValue: "Currencies",
+                      })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -364,7 +388,9 @@ const Layout = () => {
                   <Link to="/ai-providers">
                     <Brain />
                     <span>
-                      {t("layout.nav.aiProviders", { defaultValue: "AI Providers" })}
+                      {t("layout.nav.aiProviders", {
+                        defaultValue: "AI Providers",
+                      })}
                     </span>
                   </Link>
                 </SidebarMenuButton>
@@ -383,7 +409,9 @@ const Layout = () => {
                 >
                   <Link to="/scheduled">
                     <Clock />
-                    <span>{t("layout.nav.scheduled", { defaultValue: "Scheduled" })}</span>
+                    <span>
+                      {t("layout.nav.scheduled", { defaultValue: "Scheduled" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -439,7 +467,9 @@ const Layout = () => {
                 >
                   <Link to="/budgets">
                     <PiggyBank />
-                    <span>{t("layout.nav.budgets", { defaultValue: "Budgets" })}</span>
+                    <span>
+                      {t("layout.nav.budgets", { defaultValue: "Budgets" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -457,7 +487,9 @@ const Layout = () => {
                 >
                   <Link to="/settings">
                     <BookOpen />
-                    <span>{t("layout.nav.ledger", { defaultValue: "Ledger" })}</span>
+                    <span>
+                      {t("layout.nav.ledger", { defaultValue: "Ledger" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -481,7 +513,9 @@ const Layout = () => {
                 >
                   <Link to="/data-management">
                     <DatabaseZap />
-                    <span>{t("layout.nav.data", { defaultValue: "Data" })}</span>
+                    <span>
+                      {t("layout.nav.data", { defaultValue: "Data" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -492,7 +526,9 @@ const Layout = () => {
                 >
                   <Link to="/backup">
                     <Shield />
-                    <span>{t("layout.nav.backup", { defaultValue: "Backup" })}</span>
+                    <span>
+                      {t("layout.nav.backup", { defaultValue: "Backup" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -503,7 +539,9 @@ const Layout = () => {
                 >
                   <Link to="/donate">
                     <Heart />
-                    <span>{t("layout.nav.donate", { defaultValue: "Donate" })}</span>
+                    <span>
+                      {t("layout.nav.donate", { defaultValue: "Donate" })}
+                    </span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -601,7 +639,9 @@ const Layout = () => {
               onClick={() =>
                 setTheme(resolvedTheme === "light" ? "dark" : "light")
               }
-              aria-label={t("layout.toggleTheme", { defaultValue: "Toggle theme" })}
+              aria-label={t("layout.toggleTheme", {
+                defaultValue: "Toggle theme",
+              })}
             >
               {resolvedTheme === "dark" ? (
                 <Sun className="h-5 w-5 text-amber-400" />
@@ -623,11 +663,15 @@ const Layout = () => {
             <Button
               onClick={() => setIsAddDialogOpen(true)}
               className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
-              aria-label={t("layout.addTransaction", { defaultValue: "Add Transaction" })}
+              aria-label={t("layout.addTransaction", {
+                defaultValue: "Add Transaction",
+              })}
             >
               <Plus className="h-6 w-6" />
               <span className="sr-only">
-                {t("layout.addTransaction", { defaultValue: "Add Transaction" })}
+                {t("layout.addTransaction", {
+                  defaultValue: "Add Transaction",
+                })}
               </span>
             </Button>
           </TooltipTrigger>

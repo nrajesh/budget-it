@@ -389,7 +389,8 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     defaultValue: "Modify the details of this transaction.",
                   })
                 : t("dialogs.addEditTransaction.description.add", {
-                    defaultValue: "Quickly add a new transaction to your records.",
+                    defaultValue:
+                      "Quickly add a new transaction to your records.",
                   })}
             </DialogDescription>
           </DialogHeader>
@@ -483,9 +484,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        {t("dialogs.addEditTransaction.fields.vendorReceiving", {
-                          defaultValue: "Vendor / Account (Receiving)",
-                        })}
+                        {t(
+                          "dialogs.addEditTransaction.fields.vendorReceiving",
+                          {
+                            defaultValue: "Vendor / Account (Receiving)",
+                          },
+                        )}
                       </FormLabel>
                       <Combobox
                         options={filteredCombinedVendorOptions}
@@ -636,9 +640,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t("dialogs.addEditTransaction.fields.amountReceiving", {
-                            defaultValue: "Amount (Receiving)",
-                          })}
+                          {t(
+                            "dialogs.addEditTransaction.fields.amountReceiving",
+                            {
+                              defaultValue: "Amount (Receiving)",
+                            },
+                          )}
                         </FormLabel>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
@@ -705,9 +712,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        {t("dialogs.addEditTransaction.fields.recurrenceFrequency", {
-                          defaultValue: "Recurrence Frequency",
-                        })}
+                        {t(
+                          "dialogs.addEditTransaction.fields.recurrenceFrequency",
+                          {
+                            defaultValue: "Recurrence Frequency",
+                          },
+                        )}
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -725,19 +735,28 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="None">
-                            {t("dialogs.addEditTransaction.recurrenceOptions.none", {
-                              defaultValue: "None",
-                            })}
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.none",
+                              {
+                                defaultValue: "None",
+                              },
+                            )}
                           </SelectItem>
                           <SelectItem value="Daily">
-                            {t("dialogs.addEditTransaction.recurrenceOptions.daily", {
-                              defaultValue: "Daily",
-                            })}
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.daily",
+                              {
+                                defaultValue: "Daily",
+                              },
+                            )}
                           </SelectItem>
                           <SelectItem value="Weekly">
-                            {t("dialogs.addEditTransaction.recurrenceOptions.weekly", {
-                              defaultValue: "Weekly",
-                            })}
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.weekly",
+                              {
+                                defaultValue: "Weekly",
+                              },
+                            )}
                           </SelectItem>
                           <SelectItem value="Monthly">
                             {t(
@@ -752,9 +771,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                             )}
                           </SelectItem>
                           <SelectItem value="Yearly">
-                            {t("dialogs.addEditTransaction.recurrenceOptions.yearly", {
-                              defaultValue: "Yearly",
-                            })}
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.yearly",
+                              {
+                                defaultValue: "Yearly",
+                              },
+                            )}
                           </SelectItem>
                         </SelectContent>
                       </Select>
@@ -779,9 +801,12 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t("dialogs.addEditTransaction.fields.recurrenceEndDate", {
-                            defaultValue: "Recurrence End Date",
-                          })}
+                          {t(
+                            "dialogs.addEditTransaction.fields.recurrenceEndDate",
+                            {
+                              defaultValue: "Recurrence End Date",
+                            },
+                          )}
                         </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />

@@ -21,7 +21,6 @@ const getMergedResources = () => {
   return merged;
 };
 
-
 const STORAGE_KEY = "app-language";
 
 const getInitialLanguage = () => {

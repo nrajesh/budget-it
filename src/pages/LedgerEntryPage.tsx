@@ -491,7 +491,7 @@ const LedgerEntryPage = () => {
             <Moon className="h-5 w-5 text-slate-600" />
           )}
         </Button>
-            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+        <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
       </div>
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="tour-ledger-title text-center space-y-2">

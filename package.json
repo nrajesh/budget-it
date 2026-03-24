@@ -15,7 +15,7 @@
     "test:ui": "vitest --ui",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "validate": "tsc --noEmit && eslint .",
+    "validate": "tsc --noEmit && eslint . && prettier --check \"src/**/*.{ts,tsx,css}\"",
     "electron:compile": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 --esModuleInterop --skipLibCheck && echo '{\"type\": \"commonjs\"}' > dist-electron/package.json",
     "electron": "wait-on tcp:8081 && pnpm run electron:compile && cross-env VITE_DEV_SERVER_URL=http://localhost:8081 electron .",
     "electron:build": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 && electron-builder",

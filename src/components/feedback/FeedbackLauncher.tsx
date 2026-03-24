@@ -53,7 +53,9 @@ interface FeedbackLauncherProps {
   triggerClassName?: string;
 }
 
-export const FeedbackLauncher = ({ triggerClassName }: FeedbackLauncherProps) => {
+export const FeedbackLauncher = ({
+  triggerClassName,
+}: FeedbackLauncherProps) => {
   const location = useLocation();
   const [open, setOpen] = React.useState(false);
   const [selectedKind, setSelectedKind] = React.useState<FeedbackKind>(

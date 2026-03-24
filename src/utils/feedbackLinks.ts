@@ -1,4 +1,5 @@
-export const GITHUB_REPO_ISSUES_URL = "https://github.com/nrajesh/budget-it/issues";
+export const GITHUB_REPO_ISSUES_URL =
+  "https://github.com/nrajesh/budget-it/issues";
 export const GITHUB_NEW_ISSUE_URL = `${GITHUB_REPO_ISSUES_URL}/new`;
 export const SECURITY_POLICY_URL =
   "https://github.com/nrajesh/budget-it/security/policy";
@@ -22,7 +23,10 @@ interface DiagnosticsContext extends FeedbackContext {
   generatedAt?: string;
 }
 
-const buildBugBody = ({ pathname, appContext }: FeedbackContext) => `**Describe the bug**
+const buildBugBody = ({
+  pathname,
+  appContext,
+}: FeedbackContext) => `**Describe the bug**
 A clear and concise description of what the bug is.
 
 **To Reproduce**
@@ -43,7 +47,10 @@ If applicable, add screenshots to help explain your problem.
  - Browser: [e.g. chrome, safari]
  - Version/Build (Desktop/Web): [${appContext}]`;
 
-const buildFeatureBody = ({ pathname, appContext }: FeedbackContext) => `**Is your feature request related to a problem? Please describe.**
+const buildFeatureBody = ({
+  pathname,
+  appContext,
+}: FeedbackContext) => `**Is your feature request related to a problem? Please describe.**
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
 **Describe the solution you'd like**
@@ -69,10 +76,7 @@ export const buildGitHubFeedbackUrl = (
 
   params.set("template", isBug ? "bug_report.md" : "feature_request.md");
   params.set("title", isBug ? "[Bug]: " : "[Feature Request]: ");
-  params.set(
-    "body",
-    isBug ? buildBugBody(context) : buildFeatureBody(context),
-  );
+  params.set("body", isBug ? buildBugBody(context) : buildFeatureBody(context));
 
   return `${GITHUB_NEW_ISSUE_URL}?${params.toString()}`;
 };
@@ -86,7 +90,8 @@ export const buildFeedbackDiagnostics = ({
 }: DiagnosticsContext) => {
   const timestamp = generatedAt ?? new Date().toISOString();
   const agent =
-    userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : "N/A");
+    userAgent ??
+    (typeof navigator !== "undefined" ? navigator.userAgent : "N/A");
 
   return [
     "Budget It Diagnostics",

@@ -58,7 +58,9 @@ describe("Runtime i18n switching", () => {
       expect(screen.getByText("Cuenta (envio)")).toBeInTheDocument();
     });
 
-    expect(screen.getByDisplayValue("pending unsaved value")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("pending unsaved value"),
+    ).toBeInTheDocument();
   });
 
   it("updates help/workflow tour content for the active language", async () => {

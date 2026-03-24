@@ -142,7 +142,8 @@ export const resources: Resource = {
             yearly: "Yearly",
           },
           helper: {
-            recurrenceFrequency: "Set how often this transaction should repeat.",
+            recurrenceFrequency:
+              "Set how often this transaction should repeat.",
             recurrenceEndDate:
               "The date after which this transaction will no longer recur.",
           },
@@ -202,8 +203,7 @@ export const resources: Resource = {
           },
           bulkCategorization: {
             title: "Bulk Categorization",
-            description:
-              "Categorized {{count}} transactions successfully.",
+            description: "Categorized {{count}} transactions successfully.",
           },
           noChanges: {
             title: "No changes",
@@ -558,7 +558,7 @@ export const resources: Resource = {
         tamil: "泰米尔语",
         removeCustomAria: "移除 {{name}}",
         removeCustomConfirm:
-          '要移除自定义语言“{{name}}”吗？可在语言设置中重新添加。',
+          "要移除自定义语言“{{name}}”吗？可在语言设置中重新添加。",
         openLanguageSettings: "语言设置",
         customRemoved: "已移除自定义语言。",
       },
@@ -652,8 +652,7 @@ export const resources: Resource = {
       tour: {
         language: {
           "0": {
-            content:
-              "在此选择 Budget It 的界面语言，或添加自定义翻译包。",
+            content: "在此选择 Budget It 的界面语言，或添加自定义翻译包。",
           },
           "1": {
             content:
@@ -741,7 +740,8 @@ export const resources: Resource = {
             selectAccount: "கணக்கை தேர்ந்தெடுக்கவும்...",
             searchAccounts: "கணக்குகளை தேடவும்...",
             noAccountFound: "கணக்கு கிடைக்கவில்லை.",
-            selectVendorOrAccount: "விற்பனையாளர் அல்லது கணக்கை தேர்ந்தெடுக்கவும்...",
+            selectVendorOrAccount:
+              "விற்பனையாளர் அல்லது கணக்கை தேர்ந்தெடுக்கவும்...",
             searchGeneric: "தேடவும்...",
             noResults: "முடிவுகள் இல்லை.",
             selectCategory: "வகையை தேர்ந்தெடுக்கவும்...",
@@ -764,8 +764,7 @@ export const resources: Resource = {
           helper: {
             recurrenceFrequency:
               "இந்த பரிவர்த்தனை எவ்வளவு அடிக்கடி மீள வேண்டும் என்பதை அமைக்கவும்.",
-            recurrenceEndDate:
-              "இந்த தேதிக்குப் பிறகு இந்த பரிவர்த்தனை மீளாது.",
+            recurrenceEndDate: "இந்த தேதிக்குப் பிறகு இந்த பரிவர்த்தனை மீளாது.",
           },
           title: {
             add: "புதிய பரிவர்த்தனை சேர்க்கவும்",

@@ -13,7 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { saveEnabledLanguages } from "@/i18n/languagePreferences";
-import { builtInLanguageOptions, type SupportedLanguage } from "@/i18n/resources";
+import {
+  builtInLanguageOptions,
+  type SupportedLanguage,
+} from "@/i18n/resources";
 import { getCustomLanguages } from "@/i18n/customLanguages";
 import { sortLanguageOptionsByEnglishName } from "@/i18n/sortLanguages";
 import i18n, { unregisterCustomLanguage } from "@/i18n/config";
@@ -55,7 +58,10 @@ export const LanguageSwitcher = () => {
       );
     };
 
-    window.addEventListener("app:enabled-languages-changed", onLanguagesChanged);
+    window.addEventListener(
+      "app:enabled-languages-changed",
+      onLanguagesChanged,
+    );
     window.addEventListener("app:languages-updated", onLanguagesChanged);
     return () => {
       window.removeEventListener(

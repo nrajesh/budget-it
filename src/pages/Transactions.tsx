@@ -445,9 +445,12 @@ const Transactions = () => {
           title: t("transactions.toasts.nothingToCategorize.title", {
             defaultValue: "Nothing to categorize",
           }),
-          description: t("transactions.toasts.nothingToCategorize.description", {
-            defaultValue: "No uncategorized vendors found.",
-          }),
+          description: t(
+            "transactions.toasts.nothingToCategorize.description",
+            {
+              defaultValue: "No uncategorized vendors found.",
+            },
+          ),
         });
         return;
       }
@@ -600,7 +603,8 @@ const Transactions = () => {
 
       const errorHint = isApiKeyIssue
         ? t("transactions.toasts.categorizationFailed.apiKeyHint", {
-            defaultValue: "Please check your API key or endpoint configuration.",
+            defaultValue:
+              "Please check your API key or endpoint configuration.",
           })
         : t("transactions.toasts.categorizationFailed.genericHint", {
             defaultValue: "An unexpected error occurred during categorization.",
@@ -739,11 +743,14 @@ const Transactions = () => {
                 title: t("transactions.toasts.filterUpdated.title", {
                   defaultValue: "Filter Updated",
                 }),
-                description: t("transactions.toasts.filterUpdated.description", {
-                  accountName,
-                  defaultValue:
-                    'Added "{{accountName}}" to your view so you can see the new transaction.',
-                }),
+                description: t(
+                  "transactions.toasts.filterUpdated.description",
+                  {
+                    accountName,
+                    defaultValue:
+                      'Added "{{accountName}}" to your view so you can see the new transaction.',
+                  },
+                ),
               });
             }
           }
@@ -776,9 +783,12 @@ const Transactions = () => {
                 title: t("transactions.toasts.scheduleUpdated.title", {
                   defaultValue: "Schedule Updated",
                 }),
-                description: t("transactions.toasts.scheduleUpdated.description", {
-                  defaultValue: "The recurring transaction has been updated.",
-                }),
+                description: t(
+                  "transactions.toasts.scheduleUpdated.description",
+                  {
+                    defaultValue: "The recurring transaction has been updated.",
+                  },
+                ),
               });
             } else {
               await dataProvider.addScheduledTransaction(payload);
@@ -786,9 +796,13 @@ const Transactions = () => {
                 title: t("transactions.toasts.scheduleCreated.title", {
                   defaultValue: "Schedule Created",
                 }),
-                description: t("transactions.toasts.scheduleCreated.description", {
-                  defaultValue: "A new recurring transaction has been scheduled.",
-                }),
+                description: t(
+                  "transactions.toasts.scheduleCreated.description",
+                  {
+                    defaultValue:
+                      "A new recurring transaction has been scheduled.",
+                  },
+                ),
               });
             }
             setIsScheduledDialogOpen(false);
@@ -799,9 +813,12 @@ const Transactions = () => {
               title: t("transactions.toasts.scheduleSaveError.title", {
                 defaultValue: "Error",
               }),
-              description: t("transactions.toasts.scheduleSaveError.description", {
-                defaultValue: "Failed to save schedule.",
-              }),
+              description: t(
+                "transactions.toasts.scheduleSaveError.description",
+                {
+                  defaultValue: "Failed to save schedule.",
+                },
+              ),
               variant: "destructive",
             });
           }
@@ -861,10 +878,13 @@ const Transactions = () => {
         title={t("transactions.confirmations.removeDuplicatesTitle", {
           defaultValue: "Remove Duplicate Transactions?",
         })}
-        description={t("transactions.confirmations.removeDuplicatesDescription", {
-          defaultValue:
-            "This scans for transactions with identical recurrence IDs on the same date and removes duplicates. This action cannot be undone.",
-        })}
+        description={t(
+          "transactions.confirmations.removeDuplicatesDescription",
+          {
+            defaultValue:
+              "This scans for transactions with identical recurrence IDs on the same date and removes duplicates. This action cannot be undone.",
+          },
+        )}
         confirmText={
           isCleaningUp
             ? t("transactions.confirmations.cleaning", {

@@ -75,7 +75,9 @@ export const useTransactionFormLogic = ({
   >(null);
 
   const form = useForm<AddEditTransactionFormValues>({
-    resolver: zodResolver(transactionFormSchema) as Resolver<AddEditTransactionFormValues>,
+    resolver: zodResolver(
+      transactionFormSchema,
+    ) as Resolver<AddEditTransactionFormValues>,
     defaultValues: {
       date: formatDateToYYYYMMDD(new Date()),
       account: "",
