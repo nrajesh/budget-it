@@ -648,12 +648,11 @@ export class LocalDataProvider implements DataProvider {
 
   async clearAllData(): Promise<void> {
     try {
-      if (!db.isOpen()) await db.open();
-      await db.transaction("rw", db.tables, async () => {
-        for (const table of db.tables) {
-          await table.clear();
-        }
-      });
+      // Full reset can deadlock when large RW transactions contend with live queries.
+      // Recreating the IndexedDB database is more reliable than clearing all tables in one transaction.
+      db.close();
+      await db.delete();
+      await db.open();
     } catch (error) {
       console.error("[LocalDataProvider] clearAllData FAILED:", error);
       throw error;

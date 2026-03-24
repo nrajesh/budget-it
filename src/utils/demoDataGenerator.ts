@@ -560,6 +560,36 @@ const CATEGORY_VENDORS: Record<string, string[]> = {
   ],
 };
 
+const EXPENSE_REMARKS = [
+  "Card payment",
+  "Mobile app order",
+  "Family purchase",
+  "Weekend spend",
+  "Auto-categorized",
+  "Everyday expense",
+  "Needs review",
+  "One-off purchase",
+  "Shared household cost",
+  "Subscription charge",
+];
+
+const INCOME_REMARKS = [
+  "Monthly income",
+  "Client payout",
+  "Bonus credit",
+  "Interest payout",
+  "Reimbursement",
+  "Side project income",
+];
+
+const TRANSFER_REMARKS = [
+  "Savings move",
+  "Planned transfer",
+  "Balance adjustment",
+  "Account funding",
+  "Cash flow rebalance",
+];
+
 function getRandomVendor(category: string, subCategory: string): string {
   if (category === "Income") {
     const incomeVendors = CATEGORY_VENDORS.Income;
@@ -583,15 +613,53 @@ function getRandomVendor(category: string, subCategory: string): string {
   return `${prefix} ${category} ${suffix}`;
 }
 
-function getRandomDate(): string {
-  const now = new Date();
-  const isRecent = Math.random() > 0.3; // 70% chance of being recent
-  let daysAgo;
+function getRandomRemark(
+  category: string,
+  amount: number,
+  isTransfer: boolean,
+): string {
+  // Keep many transactions clean while still generating realistic variety.
+  if (Math.random() < 0.55) return "";
 
-  if (isRecent) {
-    daysAgo = Math.floor(Math.random() * 90);
+  if (isTransfer || category === "Transfer") {
+    const text =
+      TRANSFER_REMARKS[Math.floor(Math.random() * TRANSFER_REMARKS.length)];
+    return `${text} (${Math.abs(amount).toFixed(2)})`;
+  }
+
+  if (category === "Income") {
+    const text =
+      INCOME_REMARKS[Math.floor(Math.random() * INCOME_REMARKS.length)];
+    return `${text} (${amount.toFixed(2)})`;
+  }
+
+  const text =
+    EXPENSE_REMARKS[Math.floor(Math.random() * EXPENSE_REMARKS.length)];
+  if (Math.random() < 0.3) return `${text} - ${category}`;
+  return text;
+}
+
+function getRandomDate(index: number): string {
+  const now = new Date();
+  let daysAgo: number;
+
+  // Guarantee each ledger spans at least 3 years.
+  // The first generated transaction in every ledger is pushed deep into history.
+  if (index === 0) {
+    daysAgo = 1120 + Math.floor(Math.random() * 180); // ~3.1y to ~3.6y
   } else {
-    daysAgo = Math.floor(Math.random() * 730);
+    const roll = Math.random();
+
+    if (roll < 0.62) {
+      // Dense recent months
+      daysAgo = Math.floor(Math.random() * 150);
+    } else if (roll < 0.87) {
+      // Mid-range history
+      daysAgo = 150 + Math.floor(Math.random() * 450);
+    } else {
+      // Long-tail older history (still within ~3.6 years)
+      daysAgo = 600 + Math.floor(Math.random() * 700);
+    }
   }
 
   const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
@@ -883,7 +951,7 @@ export const generateDiverseDemoData = async (
 
     for (let i = 0; i < numTransactions; i++) {
       const isTransfer = Math.random() < 0.08;
-      const date = getRandomDate();
+      const date = getRandomDate(i);
 
       // Boost Income Probability to ~20% (from ~8%) to ensure positive growth
       const isIncomeOverride = Math.random() < 0.2;
@@ -914,7 +982,7 @@ export const generateDiverseDemoData = async (
           account: acc1,
           vendor: acc2,
           category: "Transfer",
-          remarks: "Demo Transfer",
+          remarks: getRandomRemark("Transfer", -amount, true),
         });
         transactionsBatch.push({
           user_id: lId,
@@ -924,7 +992,7 @@ export const generateDiverseDemoData = async (
           account: acc2,
           vendor: acc1,
           category: "Transfer",
-          remarks: "Demo Transfer",
+          remarks: getRandomRemark("Transfer", amount, true),
         });
         continue;
       }
@@ -970,7 +1038,7 @@ export const generateDiverseDemoData = async (
         vendor: vendor,
         category: cat,
         sub_category: sub,
-        remarks: Math.random() > 0.8 ? "Special note" : "",
+        remarks: getRandomRemark(cat, amount, false),
       });
     }
 

@@ -858,9 +858,31 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     [transactions, deleteMultipleTransactions],
   );
   const clearAllTransactions = React.useCallback(async () => {
-    await dataProvider.clearAllData();
-    await invalidateAllData();
-  }, [dataProvider, invalidateAllData]);
+    try {
+      setOperationProgress({
+        title: "Resetting Data",
+        description: "Clearing existing data...",
+        stage: "Clearing existing data...",
+        progress: 5,
+        totalStages: 100,
+      });
+
+      // Cancel in-flight queries before destructive DB reset to avoid lock contention.
+      await queryClient.cancelQueries();
+      await new Promise((r) => setTimeout(r, 250));
+
+      await dataProvider.clearAllData();
+
+      setHiddenTransactionIds(new Set());
+      setHiddenScheduledIds(new Set());
+      setHiddenBudgetIds(new Set());
+      setHiddenEntityIds(new Map());
+
+      await invalidateAllData();
+    } finally {
+      setOperationProgress(null);
+    }
+  }, [dataProvider, invalidateAllData, queryClient]);
 
   const addScheduledTransaction = React.useCallback(
     async (transaction: Omit<ScheduledTransaction, "id" | "created_at">) => {

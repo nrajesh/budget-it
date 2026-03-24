@@ -92,4 +92,45 @@ describe("LocalDataProvider", () => {
       ),
     ).toBeDefined();
   });
+
+  it("should clear all data across all major tables", async () => {
+    const ledger = await provider.addLedger({
+      name: "Test Ledger",
+      currency: "USD",
+      icon: "home",
+      short_name: "TL",
+    });
+
+    await provider.addTransaction({
+      date: new Date().toISOString(),
+      amount: -25,
+      currency: "USD",
+      account: "Checking",
+      vendor: "Coffee Shop",
+      category: "Dining Out",
+      user_id: ledger.id,
+    });
+
+    await provider.addBudget({
+      user_id: ledger.id,
+      category_id: "cat-1",
+      category_name: "Dining Out",
+      target_amount: 200,
+      currency: "USD",
+      start_date: new Date().toISOString(),
+      end_date: null,
+      frequency: "Monthly",
+    });
+
+    await provider.clearAllData();
+
+    expect(await db.transactions.count()).toBe(0);
+    expect(await db.scheduled_transactions.count()).toBe(0);
+    expect(await db.budgets.count()).toBe(0);
+    expect(await db.vendors.count()).toBe(0);
+    expect(await db.accounts.count()).toBe(0);
+    expect(await db.categories.count()).toBe(0);
+    expect(await db.sub_categories.count()).toBe(0);
+    expect(await db.ledgers.count()).toBe(0);
+  });
 });
