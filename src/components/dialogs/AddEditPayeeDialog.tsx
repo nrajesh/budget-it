@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,7 @@ const AddEditPayeeDialog: React.FC<AddEditPayeeDialogProps> = ({
   const { invalidateAllData } = useTransactions();
   const dataProvider = useDataProvider();
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema) as Resolver<z.infer<typeof formSchema>>,
     defaultValues: {
       name: "",
       is_account: isAccountOnly ? true : false,

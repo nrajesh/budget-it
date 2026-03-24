@@ -35,9 +35,8 @@ export const LanguageSwitcher = () => {
     ]),
   );
 
-  const customCodes = React.useMemo(
-    () => new Set(getCustomLanguages().map((language) => language.code)),
-    [allLanguages],
+  const customCodes = new Set(
+    getCustomLanguages().map((language) => language.code),
   );
 
   React.useEffect(() => {

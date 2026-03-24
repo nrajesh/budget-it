@@ -672,7 +672,7 @@ const Transactions = () => {
         }),
       });
     },
-    [linkTransactions, toast],
+    [linkTransactions, toast, t],
   );
 
   const handleRowDoubleClick = React.useCallback(

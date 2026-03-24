@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ComponentProps } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -235,7 +235,9 @@ export function SpendingPieChart({
             // @ts-expect-error - Recharts type issue: activeIndex exists on Pie but not in PieProps type definition
             activeIndex={activeIndex}
             activeShape={renderActiveShape}
-            onClick={onPieClick as any}
+            onClick={
+              onPieClick as unknown as ComponentProps<typeof Pie>["onClick"]
+            }
             animationDuration={600}
           >
             {pieData.map((_entry, index) => {

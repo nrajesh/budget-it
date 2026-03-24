@@ -43,7 +43,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
       <div className="flex flex-wrap gap-2">
         <Input
           type="file"
-          ref={fileInputRef as any}
+          ref={fileInputRef as React.Ref<HTMLInputElement>}
           onChange={onFileChange}
           accept=".csv"
           className="hidden"

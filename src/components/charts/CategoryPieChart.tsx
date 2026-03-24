@@ -201,7 +201,11 @@ const CategoryPieChart = () => {
                 // @ts-expect-error - Recharts 3 type issue missing activeIndex from PieProps
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
-                onClick={onPieClick as any}
+                onClick={
+                  onPieClick as unknown as React.ComponentProps<
+                    typeof Pie
+                  >["onClick"]
+                }
                 animationBegin={0}
                 animationDuration={1000}
               >

@@ -58,9 +58,8 @@ const LanguagePage = () => {
   const [customLanguageName, setCustomLanguageName] = React.useState("");
   const [customLanguageJson, setCustomLanguageJson] = React.useState("{}");
 
-  const customCodes = React.useMemo(
-    () => new Set(getCustomLanguages().map((item) => item.code)),
-    [languageOptions],
+  const customCodes = new Set(
+    getCustomLanguages().map((item) => item.code),
   );
 
   React.useEffect(() => {
@@ -146,7 +145,7 @@ const LanguagePage = () => {
       return;
     }
 
-    let translations: Record<string, unknown> = {};
+    let translations: Record<string, unknown>;
     try {
       translations = JSON.parse(customLanguageJson || "{}") as Record<
         string,
@@ -160,10 +159,8 @@ const LanguagePage = () => {
     registerCustomLanguage({ code, name, translations });
     setLanguageOptions(getLanguageOptions());
 
-    let nextEnabled = enabledLanguages;
     if (!enabledLanguages.includes(code)) {
-      nextEnabled = saveEnabledLanguages([code]);
-      setEnabledLanguages(nextEnabled);
+      setEnabledLanguages(saveEnabledLanguages([code]));
     }
 
     await i18n.changeLanguage(code);

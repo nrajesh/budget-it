@@ -264,7 +264,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
       </div>
       <input
         type="file"
-        ref={fileInputRef as any}
+        ref={fileInputRef as React.Ref<HTMLInputElement>}
         onChange={handleFileChange}
         className="hidden"
         accept=".csv"

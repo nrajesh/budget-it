@@ -26,11 +26,11 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   const location = useLocation();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const currentSteps = useMemo(() => {
     return getStepsForRoute(location.pathname, t);
-  }, [location.pathname, t, i18n.resolvedLanguage]);
+  }, [location.pathname, t]);
 
   // Whenever the route changes, stop any running tour
   useEffect(() => {

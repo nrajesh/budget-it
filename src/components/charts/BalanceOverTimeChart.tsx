@@ -25,6 +25,8 @@ import {
   Area,
   ComposedChart,
 } from "recharts";
+
+type BalanceChartRow = Record<string, string | number | null | undefined>;
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -568,11 +570,14 @@ export function BalanceOverTimeChart({
     const commonTooltip = (
       <ChartTooltip
         cursor={false}
-        content={(props: any) => {
-          const { payload } = props;
+        content={(props: unknown) => {
+          const { payload, ...rest } = props as {
+            payload?: ReadonlyArray<{ value?: unknown; name?: unknown }>;
+            [key: string]: unknown;
+          };
           // Filter out items with 0 value
           const filteredPayload = payload?.filter(
-            (item: any) => Math.abs(Number(item.value)) > 0,
+            (item) => Math.abs(Number(item.value)) > 0,
           );
 
           if (!filteredPayload || filteredPayload.length === 0) return null;
@@ -580,7 +585,7 @@ export function BalanceOverTimeChart({
           // Pass filtered payload to Content
           return (
             <ChartTooltipContent
-              {...(props as Record<string, unknown>)}
+              {...(rest as React.ComponentProps<typeof ChartTooltipContent>)}
               payload={filteredPayload}
               indicator="dashed"
               className="min-w-[12rem] bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100"
@@ -606,7 +611,7 @@ export function BalanceOverTimeChart({
         ItemComponent = Area;
 
         return (
-          <ChartComponent {...commonChartProps} data={dataToUse as any}>
+          <ChartComponent {...commonChartProps} data={dataToUse as BalanceChartRow[]}>
             <defs>
               {accountsToDisplay.map((account) => {
                 const color =
@@ -693,7 +698,7 @@ export function BalanceOverTimeChart({
 
       case "bar-stacked":
         return (
-          <BarChart {...commonChartProps} data={dataToUse as any}>
+          <BarChart {...commonChartProps} data={dataToUse as BalanceChartRow[]}>
             <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
@@ -743,7 +748,7 @@ export function BalanceOverTimeChart({
 
       case "waterfall":
         return (
-          <BarChart {...commonChartProps} data={dataToUse as any}>
+          <BarChart {...commonChartProps} data={dataToUse as BalanceChartRow[]}>
             <CartesianGrid vertical={false} stroke={chartStroke} />
             <XAxis
               dataKey={xAxisDataKey}
