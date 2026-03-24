@@ -1,5 +1,10 @@
 import { type Step } from "react-joyride";
 
+type TourTranslator = (
+  key: string,
+  options?: { defaultValue?: string },
+) => string;
+
 // Define the steps for each route that supports a help tour
 export const TOUR_STEPS: Record<string, Step[]> = {
   "/ledgers": [
@@ -312,6 +317,27 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       placement: "top",
     },
   ],
+  "/language": [
+    {
+      target: "body",
+      content:
+        "Choose how Budget It speaks to you. Pick your primary language or add a custom translation bundle.",
+      placement: "center",
+      skipBeacon: true,
+    },
+    {
+      target: ".tour-language-primary",
+      content:
+        "Select one built-in language as your primary UI language. The interface updates instantly without losing your data.",
+      placement: "bottom",
+    },
+    {
+      target: ".tour-language-custom",
+      content:
+        "Need a locale we do not ship? Add a code, display name, and translation JSON to extend the app.",
+      placement: "top",
+    },
+  ],
   "/scheduled": [
     {
       target: "body",
@@ -467,7 +493,26 @@ export const TOUR_STEPS: Record<string, Step[]> = {
   ],
 };
 
+const normalizeRouteKey = (pathname: string) => {
+  if (pathname === "/") return "home";
+  return pathname.replace(/^\//, "").replace(/\//g, ".");
+};
+
 // We can fallback to an empty array for paths that don't have tours
-export const getStepsForRoute = (pathname: string): Step[] => {
-  return TOUR_STEPS[pathname] || [];
+export const getStepsForRoute = (
+  pathname: string,
+  translate?: TourTranslator,
+): Step[] => {
+  const routeSteps = TOUR_STEPS[pathname] || [];
+  if (!translate) {
+    return routeSteps;
+  }
+
+  const routeKey = normalizeRouteKey(pathname);
+  return routeSteps.map((step, index) => ({
+    ...step,
+    content: translate(`tour.${routeKey}.${index}.content`, {
+      defaultValue: String(step.content),
+    }),
+  }));
 };

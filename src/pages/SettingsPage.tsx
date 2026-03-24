@@ -28,8 +28,10 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { AIProvider } from "@/types/dataProvider";
+import { useTranslation } from "react-i18next";
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const { selectedCurrency, setCurrency, availableCurrencies } = useCurrency();
   const { activeLedger, updateLedgerDetails } = useLedger();
   const dataProvider = useDataProvider();
@@ -110,9 +112,15 @@ const SettingsPage = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
         <ThemedCard className="tour-settings-currency">
           <ThemedCardHeader>
-            <ThemedCardTitle>Default Currency</ThemedCardTitle>
+            <ThemedCardTitle>
+              {t("settings.cards.currency.title", {
+                defaultValue: "Default Currency",
+              })}
+            </ThemedCardTitle>
             <ThemedCardDescription>
-              Select your preferred currency for display.
+              {t("settings.cards.currency.description", {
+                defaultValue: "Select your preferred currency for display.",
+              })}
             </ThemedCardDescription>
           </ThemedCardHeader>
           <ThemedCardContent>
@@ -121,7 +129,11 @@ const SettingsPage = () => {
               onValueChange={handleCurrencyChange}
             >
               <SelectTrigger className="w-full sm:w-[180px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100">
-                <SelectValue placeholder="Select currency" />
+                <SelectValue
+                  placeholder={t("dialogs.missingCurrency.selectCurrency", {
+                    defaultValue: "Select currency",
+                  })}
+                />
               </SelectTrigger>
               <SelectContent>
                 {availableCurrencies.map((currency) => (
@@ -136,9 +148,16 @@ const SettingsPage = () => {
 
         <ThemedCard className="tour-settings-ledger">
           <ThemedCardHeader>
-            <ThemedCardTitle>Ledger Settings</ThemedCardTitle>
+            <ThemedCardTitle>
+              {t("settings.cards.ledger.title", {
+                defaultValue: "Ledger Settings",
+              })}
+            </ThemedCardTitle>
             <ThemedCardDescription>
-              Manage your current ledger details or create a new one.
+              {t("settings.cards.ledger.description", {
+                defaultValue:
+                  "Manage your current ledger details or create a new one.",
+              })}
             </ThemedCardDescription>
           </ThemedCardHeader>
           <ThemedCardContent className="flex flex-col gap-2">
@@ -146,23 +165,34 @@ const SettingsPage = () => {
               onClick={() => setIsManageLedgerOpen(true)}
               className="w-full bg-primary text-primary-foreground"
             >
-              Edit Current Ledger
+              {t("settings.cards.ledger.edit", {
+                defaultValue: "Edit Current Ledger",
+              })}
             </Button>
             <Button
               onClick={() => setIsCreateLedgerOpen(true)}
               variant="outline"
               className="w-full"
             >
-              Create New Ledger
+              {t("settings.cards.ledger.create", {
+                defaultValue: "Create New Ledger",
+              })}
             </Button>
           </ThemedCardContent>
         </ThemedCard>
 
         <ThemedCard>
           <ThemedCardHeader>
-            <ThemedCardTitle>Future Transactions</ThemedCardTitle>
+            <ThemedCardTitle>
+              {t("settings.cards.future.title", {
+                defaultValue: "Future Transactions",
+              })}
+            </ThemedCardTitle>
             <ThemedCardDescription>
-              Define how many months of future scheduled transactions to show.
+              {t("settings.cards.future.description", {
+                defaultValue:
+                  "Define how many months of future scheduled transactions to show.",
+              })}
             </ThemedCardDescription>
           </ThemedCardHeader>
           <ThemedCardContent>
@@ -179,7 +209,9 @@ const SettingsPage = () => {
                 min="0"
                 className="w-[100px] bg-white/80 dark:bg-slate-950/50 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
               />
-              <span className="text-sm text-muted-foreground">months</span>
+              <span className="text-sm text-muted-foreground">
+                {t("settings.cards.future.months", { defaultValue: "months" })}
+              </span>
             </div>
           </ThemedCardContent>
         </ThemedCard>

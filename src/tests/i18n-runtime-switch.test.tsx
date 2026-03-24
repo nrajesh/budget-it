@@ -1,0 +1,109 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { I18nextProvider, useTranslation } from "react-i18next";
+import { MemoryRouter } from "react-router-dom";
+import React from "react";
+import i18n from "@/i18n/config";
+import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
+import { getStepsForRoute } from "@/constants/tourSteps";
+
+const DraftFormProbe = () => {
+  const { t } = useTranslation();
+  const [draft, setDraft] = React.useState("initial-draft");
+
+  return (
+    <MemoryRouter>
+      <div>
+        <p>{t("layout.nav.dashboard")}</p>
+        <label htmlFor="draft-note">{t("test.draftLabel")}</label>
+        <input
+          id="draft-note"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <LanguageSwitcher />
+        <p>{t("dialogs.addEditTransaction.title.add")}</p>
+        <p>{t("dialogs.addEditTransaction.fields.accountSending")}</p>
+      </div>
+    </MemoryRouter>
+  );
+};
+
+describe("Runtime i18n switching", () => {
+  beforeEach(async () => {
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["en"]));
+    await i18n.changeLanguage("en");
+  });
+
+  it("switches page and modal copy without refresh and preserves draft input", async () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <DraftFormProbe />
+      </I18nextProvider>,
+    );
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Add New Transaction")).toBeInTheDocument();
+
+    const input = screen.getByLabelText("Draft Note");
+    fireEvent.change(input, { target: { value: "pending unsaved value" } });
+
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["es"]));
+    await i18n.changeLanguage("es");
+
+    await waitFor(() => {
+      expect(screen.getByText("Tablero")).toBeInTheDocument();
+      expect(screen.getByText("Agregar nueva transaccion")).toBeInTheDocument();
+      expect(screen.getByText("Cuenta (envio)")).toBeInTheDocument();
+    });
+
+    expect(screen.getByDisplayValue("pending unsaved value")).toBeInTheDocument();
+  });
+
+  it("updates help/workflow tour content for the active language", async () => {
+    const englishSteps = getStepsForRoute("/", i18n.t.bind(i18n));
+    expect(englishSteps[0]?.content).toContain("dashboard summary");
+
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["es"]));
+    await i18n.changeLanguage("es");
+    const spanishSteps = getStepsForRoute("/", i18n.t.bind(i18n));
+
+    expect(spanishSteps[0]?.content).toContain("resumen del tablero");
+  });
+
+  it("lists built-in languages in header menu and switches from there", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["zh"]));
+    await i18n.changeLanguage("zh");
+
+    render(
+      <MemoryRouter>
+        <I18nextProvider i18n={i18n}>
+          <LanguageSwitcher />
+        </I18nextProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("language.label") }),
+    );
+
+    const menuItems = await screen.findAllByRole("menuitem");
+    expect(menuItems.length).toBeGreaterThanOrEqual(4);
+
+    const englishRow = menuItems.find((element) =>
+      element.textContent?.trim().startsWith("English"),
+    );
+    expect(englishRow).toBeTruthy();
+    await user.click(englishRow!);
+
+    await waitFor(() => {
+      expect(i18n.language.startsWith("en")).toBe(true);
+    });
+    const stored = JSON.parse(
+      localStorage.getItem("app-enabled-languages") || "[]",
+    ) as string[];
+    expect(stored).toEqual(["en"]);
+  });
+});

@@ -15,6 +15,7 @@ import {
   DatabaseZap,
   Shield,
 } from "lucide-react"; // Importing icons
+import { LanguageIcon } from "@/components/language/LanguageIcon";
 
 const MobileNavContent = () => {
   return (
@@ -156,6 +157,15 @@ const MobileNavContent = () => {
             >
               <User className="h-4 w-4" />
               Ledger
+            </Link>
+          </SheetClose>
+          <SheetClose asChild>
+            <Link
+              to="/language"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            >
+              <LanguageIcon className="h-4 w-4" />
+              Languages
             </Link>
           </SheetClose>
           <SheetClose asChild>

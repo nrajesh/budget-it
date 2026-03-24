@@ -53,8 +53,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
+import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
+import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
 
 const LedgerEntryPage = () => {
+  const { t } = useTranslation();
   const { ledgers, switchLedger, refreshLedgers, deleteLedger } = useLedger();
   const { setTheme, resolvedTheme } = useTheme();
   const { startTour, hasTourForCurrentRoute } = useTour();
@@ -461,16 +465,17 @@ const LedgerEntryPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       {/* Theme toggle button - top-right corner */}
       <div className="tour-theme-toggle fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-4 z-50 flex items-center gap-2">
+        <LanguageSwitcher />
         {hasTourForCurrentRoute && (
           <Button
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
             onClick={startTour}
-            aria-label="Start Help Tour"
+            aria-label={t("helpTour.start")}
           >
             <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-            <span className="sr-only">Start Help Tour</span>
+            <span className="sr-only">{t("helpTour.start")}</span>
           </Button>
         )}
         <Button
@@ -478,7 +483,7 @@ const LedgerEntryPage = () => {
           size="icon"
           className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          aria-label="Toggle theme"
+          aria-label={t("layout.toggleTheme", { defaultValue: "Toggle theme" })}
         >
           {resolvedTheme === "dark" ? (
             <Sun className="h-5 w-5 text-amber-400" />
@@ -486,6 +491,7 @@ const LedgerEntryPage = () => {
             <Moon className="h-5 w-5 text-slate-600" />
           )}
         </Button>
+            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
       </div>
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="tour-ledger-title text-center space-y-2">

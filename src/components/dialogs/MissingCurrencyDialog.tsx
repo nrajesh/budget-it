@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTranslation } from "react-i18next";
 
 interface MissingCurrencyDialogProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const MissingCurrencyDialog: React.FC<MissingCurrencyDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation();
   const { availableCurrencies } = useCurrency();
   const [currencyMap, setCurrencyMap] = React.useState<Record<string, string>>(
     {},
@@ -64,10 +66,16 @@ export const MissingCurrencyDialog: React.FC<MissingCurrencyDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Select Currency for New Accounts</DialogTitle>
+          <DialogTitle>
+            {t("dialogs.missingCurrency.title", {
+              defaultValue: "Select Currency for New Accounts",
+            })}
+          </DialogTitle>
           <DialogDescription>
-            The following accounts are new and their currency could not be
-            determined. Please select the correct currency for each.
+            {t("dialogs.missingCurrency.description", {
+              defaultValue:
+                "Some accounts are new and their currency could not be determined. Select the correct currency for each.",
+            })}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
@@ -88,7 +96,11 @@ export const MissingCurrencyDialog: React.FC<MissingCurrencyDialogProps> = ({
                   }
                 >
                   <SelectTrigger id={`currency-${account}`}>
-                    <SelectValue placeholder="Select currency" />
+                    <SelectValue
+                      placeholder={t("dialogs.missingCurrency.selectCurrency", {
+                        defaultValue: "Select currency",
+                      })}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {availableCurrencies.map((c) => (
@@ -104,9 +116,13 @@ export const MissingCurrencyDialog: React.FC<MissingCurrencyDialogProps> = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCancel}>
-            Cancel
+            {t("dialogs.common.cancel", { defaultValue: "Cancel" })}
           </Button>
-          <Button onClick={handleConfirm}>Confirm & Import</Button>
+          <Button onClick={handleConfirm}>
+            {t("dialogs.common.confirmAndImport", {
+              defaultValue: "Confirm & Import",
+            })}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

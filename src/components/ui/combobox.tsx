@@ -17,6 +17,8 @@ interface ComboboxProps {
   className?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   consumeEscapeEvent?: boolean;
+  inputId?: string;
+  ariaLabel?: string;
 }
 
 export function Combobox({
@@ -31,6 +33,8 @@ export function Combobox({
   className,
   onKeyDown,
   consumeEscapeEvent = true,
+  inputId,
+  ariaLabel,
 }: ComboboxProps & { onCreate?: (value: string) => void }) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [open, setOpen] = React.useState(false);
@@ -58,6 +62,8 @@ export function Combobox({
         >
           <div className="flex flex-wrap gap-1">
             <CommandPrimitive.Input
+              id={inputId}
+              aria-label={ariaLabel}
               ref={inputRef}
               value={inputValue}
               onValueChange={setInputValue}

@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from "react-i18next";
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -26,9 +27,21 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   onConfirm,
   title,
   description,
-  confirmText = "Continue",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
 }) => {
+  const { t } = useTranslation();
+  const resolvedConfirmText =
+    confirmText ||
+    t("dialogs.common.continue", {
+      defaultValue: "Continue",
+    });
+  const resolvedCancelText =
+    cancelText ||
+    t("dialogs.common.cancel", {
+      defaultValue: "Cancel",
+    });
+
   const handleConfirm = () => {
     onConfirm();
     onOpenChange(false);
@@ -42,12 +55,12 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel>{resolvedCancelText}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {confirmText}
+            {resolvedConfirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

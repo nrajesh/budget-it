@@ -2,10 +2,12 @@ import React from "react";
 import { Joyride, type EventData, STATUS } from "react-joyride";
 import { useTour } from "@/contexts/TourContext";
 import { useTheme as useNextTheme } from "next-themes";
+import { useTranslation } from "react-i18next";
 
 const HelpTour: React.FC = () => {
   const { isActive, currentSteps, stopTour } = useTour();
   const { resolvedTheme } = useNextTheme();
+  const { t } = useTranslation();
   const isDarkMode = resolvedTheme === "dark";
 
   const handleJoyrideCallback = (data: EventData) => {
@@ -40,6 +42,14 @@ const HelpTour: React.FC = () => {
         skipScroll: false,
         scrollDuration: 400,
         showProgress: true,
+      }}
+      locale={{
+        back: t("helpTour.back"),
+        close: t("helpTour.last"),
+        last: t("helpTour.last"),
+        next: t("helpTour.next"),
+        open: t("helpTour.start"),
+        skip: t("helpTour.skip"),
       }}
       styles={{
         tooltip: {
