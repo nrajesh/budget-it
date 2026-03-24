@@ -560,6 +560,36 @@ const CATEGORY_VENDORS: Record<string, string[]> = {
   ],
 };
 
+const EXPENSE_REMARKS = [
+  "Card payment",
+  "Mobile app order",
+  "Family purchase",
+  "Weekend spend",
+  "Auto-categorized",
+  "Everyday expense",
+  "Needs review",
+  "One-off purchase",
+  "Shared household cost",
+  "Subscription charge",
+];
+
+const INCOME_REMARKS = [
+  "Monthly income",
+  "Client payout",
+  "Bonus credit",
+  "Interest payout",
+  "Reimbursement",
+  "Side project income",
+];
+
+const TRANSFER_REMARKS = [
+  "Savings move",
+  "Planned transfer",
+  "Balance adjustment",
+  "Account funding",
+  "Cash flow rebalance",
+];
+
 function getRandomVendor(category: string, subCategory: string): string {
   if (category === "Income") {
     const incomeVendors = CATEGORY_VENDORS.Income;
@@ -581,6 +611,29 @@ function getRandomVendor(category: string, subCategory: string): string {
   const suffix =
     VENDOR_SUFFIXES[Math.floor(Math.random() * VENDOR_SUFFIXES.length)];
   return `${prefix} ${category} ${suffix}`;
+}
+
+function getRandomRemark(
+  category: string,
+  amount: number,
+  isTransfer: boolean,
+): string {
+  // Keep many transactions clean while still generating realistic variety.
+  if (Math.random() < 0.55) return "";
+
+  if (isTransfer || category === "Transfer") {
+    const text = TRANSFER_REMARKS[Math.floor(Math.random() * TRANSFER_REMARKS.length)];
+    return `${text} (${Math.abs(amount).toFixed(2)})`;
+  }
+
+  if (category === "Income") {
+    const text = INCOME_REMARKS[Math.floor(Math.random() * INCOME_REMARKS.length)];
+    return `${text} (${amount.toFixed(2)})`;
+  }
+
+  const text = EXPENSE_REMARKS[Math.floor(Math.random() * EXPENSE_REMARKS.length)];
+  if (Math.random() < 0.3) return `${text} - ${category}`;
+  return text;
 }
 
 function getRandomDate(): string {
@@ -914,7 +967,7 @@ export const generateDiverseDemoData = async (
           account: acc1,
           vendor: acc2,
           category: "Transfer",
-          remarks: "Demo Transfer",
+          remarks: getRandomRemark("Transfer", -amount, true),
         });
         transactionsBatch.push({
           user_id: lId,
@@ -924,7 +977,7 @@ export const generateDiverseDemoData = async (
           account: acc2,
           vendor: acc1,
           category: "Transfer",
-          remarks: "Demo Transfer",
+          remarks: getRandomRemark("Transfer", amount, true),
         });
         continue;
       }
@@ -970,7 +1023,7 @@ export const generateDiverseDemoData = async (
         vendor: vendor,
         category: cat,
         sub_category: sub,
-        remarks: Math.random() > 0.8 ? "Special note" : "",
+        remarks: getRandomRemark(cat, amount, false),
       });
     }
 

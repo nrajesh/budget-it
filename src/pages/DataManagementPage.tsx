@@ -150,11 +150,10 @@ const DataManagementPage = () => {
 
   const handleResetData = async () => {
     try {
-      await dataProvider.clearAllData();
+      await clearAllTransactions();
       // Refresh ledgers to ensure context is aware of the wipe
       await refreshLedgers();
 
-      clearAllTransactions();
       handleClearAllFilters();
 
       // Clear non-filter persistent state if desired
