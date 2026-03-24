@@ -83,4 +83,50 @@ describe("generateDiverseDemoData", () => {
     const uniqueRemarks = new Set(nonEmptyRemarks);
     expect(uniqueRemarks.size).toBeGreaterThanOrEqual(5);
   });
+
+  it("covers at least three years for each generated ledger", async () => {
+    const provider = createMockProvider();
+    await generateDiverseDemoData(provider, () => undefined);
+
+    const addMany = vi.mocked(provider.addMultipleTransactions);
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+
+    // One batch per ledger in generator flow.
+    expect(addMany.mock.calls.length).toBe(3);
+
+    for (const [batch] of addMany.mock.calls) {
+      const oldest = batch.reduce((min, tx) => {
+        const d = new Date(tx.date);
+        return d < min ? d : min;
+      }, new Date());
+
+      expect(oldest.getTime()).toBeLessThanOrEqual(threeYearsAgo.getTime());
+    }
+  });
+
+  it("keeps recent months denser than older windows", async () => {
+    const provider = createMockProvider();
+    await generateDiverseDemoData(provider, () => undefined);
+
+    const addMany = vi.mocked(provider.addMultipleTransactions);
+    const allTransactions = addMany.mock.calls.map(([batch]) => batch).flat();
+
+    const now = Date.now();
+    const msInDay = 24 * 60 * 60 * 1000;
+    const recentCutoff = now - 120 * msInDay; // ~4 months
+    const oldWindowStart = now - 3 * 365 * msInDay;
+    const oldWindowEnd = now - 2 * 365 * msInDay;
+
+    const recentCount = allTransactions.filter(
+      (tx) => new Date(tx.date).getTime() >= recentCutoff,
+    ).length;
+
+    const olderYearCount = allTransactions.filter((tx) => {
+      const t = new Date(tx.date).getTime();
+      return t >= oldWindowStart && t < oldWindowEnd;
+    }).length;
+
+    expect(recentCount).toBeGreaterThan(olderYearCount);
+  });
 });

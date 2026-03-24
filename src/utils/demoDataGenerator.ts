@@ -639,15 +639,27 @@ function getRandomRemark(
   return text;
 }
 
-function getRandomDate(): string {
+function getRandomDate(index: number): string {
   const now = new Date();
-  const isRecent = Math.random() > 0.3; // 70% chance of being recent
-  let daysAgo;
+  let daysAgo: number;
 
-  if (isRecent) {
-    daysAgo = Math.floor(Math.random() * 90);
+  // Guarantee each ledger spans at least 3 years.
+  // The first generated transaction in every ledger is pushed deep into history.
+  if (index === 0) {
+    daysAgo = 1120 + Math.floor(Math.random() * 180); // ~3.1y to ~3.6y
   } else {
-    daysAgo = Math.floor(Math.random() * 730);
+    const roll = Math.random();
+
+    if (roll < 0.62) {
+      // Dense recent months
+      daysAgo = Math.floor(Math.random() * 150);
+    } else if (roll < 0.87) {
+      // Mid-range history
+      daysAgo = 150 + Math.floor(Math.random() * 450);
+    } else {
+      // Long-tail older history (still within ~3.6 years)
+      daysAgo = 600 + Math.floor(Math.random() * 700);
+    }
   }
 
   const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
@@ -939,7 +951,7 @@ export const generateDiverseDemoData = async (
 
     for (let i = 0; i < numTransactions; i++) {
       const isTransfer = Math.random() < 0.08;
-      const date = getRandomDate();
+      const date = getRandomDate(i);
 
       // Boost Income Probability to ~20% (from ~8%) to ensure positive growth
       const isIncomeOverride = Math.random() < 0.2;
