@@ -9,6 +9,7 @@ import React, {
 import { useLocation } from "react-router-dom";
 import { getStepsForRoute } from "../constants/tourSteps";
 import { type Step } from "react-joyride";
+import { useTranslation } from "react-i18next";
 
 interface TourContextType {
   isActive: boolean;
@@ -25,10 +26,11 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
 
   const currentSteps = useMemo(() => {
-    return getStepsForRoute(location.pathname);
-  }, [location.pathname]);
+    return getStepsForRoute(location.pathname, t);
+  }, [location.pathname, t]);
 
   // Whenever the route changes, stop any running tour
   useEffect(() => {

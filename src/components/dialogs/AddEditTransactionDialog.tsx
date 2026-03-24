@@ -40,6 +40,7 @@ import {
   useTransactionFormLogic,
   AddEditTransactionFormValues,
 } from "./hooks/useTransactionFormLogic";
+import { useTranslation } from "react-i18next";
 
 interface AddEditTransactionDialogProps {
   isOpen: boolean;
@@ -70,6 +71,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
     transactions: allTransactions,
   } = useTransactions();
   const { currencySymbols, formatCurrency } = useCurrency();
+  const { t } = useTranslation();
 
   const [recurrenceDialogOpen, setRecurrenceDialogOpen] = React.useState(false);
   const [pendingValues, setPendingValues] =
@@ -373,12 +375,23 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isEditMode ? "Edit Transaction" : "Add New Transaction"}
+              {isEditMode
+                ? t("dialogs.addEditTransaction.title.edit", {
+                    defaultValue: "Edit Transaction",
+                  })
+                : t("dialogs.addEditTransaction.title.add", {
+                    defaultValue: "Add New Transaction",
+                  })}
             </DialogTitle>
             <DialogDescription>
               {isEditMode
-                ? "Modify the details of this transaction."
-                : "Quickly add a new transaction to your records."}
+                ? t("dialogs.addEditTransaction.description.edit", {
+                    defaultValue: "Modify the details of this transaction.",
+                  })
+                : t("dialogs.addEditTransaction.description.add", {
+                    defaultValue:
+                      "Quickly add a new transaction to your records.",
+                  })}
             </DialogDescription>
           </DialogHeader>
           {isFormLoading ? (
@@ -403,9 +416,15 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     className="w-[400px]"
                   >
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="expense">Expense</TabsTrigger>
+                      <TabsTrigger value="expense">
+                        {t("dialogs.addEditTransaction.tabs.expense", {
+                          defaultValue: "Expense",
+                        })}
+                      </TabsTrigger>
                       <TabsTrigger value="income" disabled={isTransfer}>
-                        Income
+                        {t("dialogs.addEditTransaction.tabs.income", {
+                          defaultValue: "Income",
+                        })}
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
@@ -415,7 +434,11 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.date", {
+                          defaultValue: "Date",
+                        })}
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" className="text-sm" {...field} />
                       </FormControl>
@@ -428,15 +451,28 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="account"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account (Sending)</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.accountSending", {
+                          defaultValue: "Account (Sending)",
+                        })}
+                      </FormLabel>
                       <Combobox
                         options={filteredAccountOptions}
                         value={field.value}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
-                        placeholder="Select an account..."
-                        searchPlaceholder="Search accounts..."
-                        emptyPlaceholder="No account found."
+                        placeholder={t(
+                          "dialogs.addEditTransaction.placeholders.selectAccount",
+                          { defaultValue: "Select an account..." },
+                        )}
+                        searchPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.searchAccounts",
+                          { defaultValue: "Search accounts..." },
+                        )}
+                        emptyPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.noAccountFound",
+                          { defaultValue: "No account found." },
+                        )}
                       />
                       <FormMessage />
                     </FormItem>
@@ -447,15 +483,31 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="vendor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vendor / Account (Receiving)</FormLabel>
+                      <FormLabel>
+                        {t(
+                          "dialogs.addEditTransaction.fields.vendorReceiving",
+                          {
+                            defaultValue: "Vendor / Account (Receiving)",
+                          },
+                        )}
+                      </FormLabel>
                       <Combobox
                         options={filteredCombinedVendorOptions}
                         value={field.value}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
-                        placeholder="Select a vendor or account..."
-                        searchPlaceholder="Search..."
-                        emptyPlaceholder="No results found."
+                        placeholder={t(
+                          "dialogs.addEditTransaction.placeholders.selectVendorOrAccount",
+                          { defaultValue: "Select a vendor or account..." },
+                        )}
+                        searchPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.searchGeneric",
+                          { defaultValue: "Search..." },
+                        )}
+                        emptyPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.noResults",
+                          { defaultValue: "No results found." },
+                        )}
                       />
                       {!isTransfer && field.value && config.provider && (
                         <div className="flex justify-end mt-1">
@@ -472,7 +524,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                             ) : (
                               "✨ "
                             )}
-                            Auto-Categorize
+                            {t(
+                              "dialogs.addEditTransaction.actions.autoCategorize",
+                              { defaultValue: "Auto-Categorize" },
+                            )}
                           </Button>
                         </div>
                       )}
@@ -485,15 +540,28 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.category", {
+                          defaultValue: "Category",
+                        })}
+                      </FormLabel>
                       <Combobox
                         options={categoryOptions}
                         value={field.value || ""}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
-                        placeholder="Select a category..."
-                        searchPlaceholder="Search categories..."
-                        emptyPlaceholder="No category found."
+                        placeholder={t(
+                          "dialogs.addEditTransaction.placeholders.selectCategory",
+                          { defaultValue: "Select a category..." },
+                        )}
+                        searchPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.searchCategories",
+                          { defaultValue: "Search categories..." },
+                        )}
+                        emptyPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.noCategoryFound",
+                          { defaultValue: "No category found." },
+                        )}
                         disabled={isTransfer}
                       />
                       <FormMessage />
@@ -505,15 +573,28 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="sub_category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sub-category</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.subCategory", {
+                          defaultValue: "Sub-category",
+                        })}
+                      </FormLabel>
                       <Combobox
                         options={subCategoryOptions}
                         value={field.value || ""}
                         onChange={field.onChange}
                         onCreate={(value) => field.onChange(value)}
-                        placeholder="Select or create..."
-                        searchPlaceholder="Search sub-categories..."
-                        emptyPlaceholder="No sub-category found."
+                        placeholder={t(
+                          "dialogs.addEditTransaction.placeholders.selectOrCreate",
+                          { defaultValue: "Select or create..." },
+                        )}
+                        searchPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.searchSubCategories",
+                          { defaultValue: "Search sub-categories..." },
+                        )}
+                        emptyPlaceholder={t(
+                          "dialogs.addEditTransaction.placeholders.noSubCategoryFound",
+                          { defaultValue: "No sub-category found." },
+                        )}
                         disabled={isTransfer}
                       />
                       <FormMessage />
@@ -525,7 +606,11 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount (Sending)</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.amountSending", {
+                          defaultValue: "Amount (Sending)",
+                        })}
+                      </FormLabel>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
                           {accountCurrencySymbol}
@@ -535,7 +620,10 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                             type="number"
                             step="0.01"
                             {...field}
-                            placeholder="0.00"
+                            placeholder={t(
+                              "dialogs.addEditTransaction.placeholders.amount",
+                              { defaultValue: "0.00" },
+                            )}
                             className="pl-8"
                           />
                         </FormControl>
@@ -551,7 +639,14 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     name="receivingAmount"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Amount (Receiving)</FormLabel>
+                        <FormLabel>
+                          {t(
+                            "dialogs.addEditTransaction.fields.amountReceiving",
+                            {
+                              defaultValue: "Amount (Receiving)",
+                            },
+                          )}
+                        </FormLabel>
                         <div className="relative">
                           <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground pointer-events-none">
                             {currencySymbols[
@@ -597,7 +692,11 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="remarks"
                   render={({ field }) => (
                     <FormItem className="col-span-2">
-                      <FormLabel>Remarks</FormLabel>
+                      <FormLabel>
+                        {t("dialogs.addEditTransaction.fields.remarks", {
+                          defaultValue: "Remarks",
+                        })}
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -612,27 +711,83 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                   name="recurrenceFrequency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Recurrence Frequency</FormLabel>
+                      <FormLabel>
+                        {t(
+                          "dialogs.addEditTransaction.fields.recurrenceFrequency",
+                          {
+                            defaultValue: "Recurrence Frequency",
+                          },
+                        )}
+                      </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select recurrence frequency" />
+                            <SelectValue
+                              placeholder={t(
+                                "dialogs.addEditTransaction.placeholders.recurrence",
+                                { defaultValue: "Select recurrence frequency" },
+                              )}
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="None">None</SelectItem>
-                          <SelectItem value="Daily">Daily</SelectItem>
-                          <SelectItem value="Weekly">Weekly</SelectItem>
-                          <SelectItem value="Monthly">Monthly</SelectItem>
-                          <SelectItem value="Quarterly">Quarterly</SelectItem>
-                          <SelectItem value="Yearly">Yearly</SelectItem>
+                          <SelectItem value="None">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.none",
+                              {
+                                defaultValue: "None",
+                              },
+                            )}
+                          </SelectItem>
+                          <SelectItem value="Daily">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.daily",
+                              {
+                                defaultValue: "Daily",
+                              },
+                            )}
+                          </SelectItem>
+                          <SelectItem value="Weekly">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.weekly",
+                              {
+                                defaultValue: "Weekly",
+                              },
+                            )}
+                          </SelectItem>
+                          <SelectItem value="Monthly">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.monthly",
+                              { defaultValue: "Monthly" },
+                            )}
+                          </SelectItem>
+                          <SelectItem value="Quarterly">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.quarterly",
+                              { defaultValue: "Quarterly" },
+                            )}
+                          </SelectItem>
+                          <SelectItem value="Yearly">
+                            {t(
+                              "dialogs.addEditTransaction.recurrenceOptions.yearly",
+                              {
+                                defaultValue: "Yearly",
+                              },
+                            )}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Set how often this transaction should repeat.
+                        {t(
+                          "dialogs.addEditTransaction.helper.recurrenceFrequency",
+                          {
+                            defaultValue:
+                              "Set how often this transaction should repeat.",
+                          },
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -645,13 +800,25 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     name="recurrenceEndDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Recurrence End Date</FormLabel>
+                        <FormLabel>
+                          {t(
+                            "dialogs.addEditTransaction.fields.recurrenceEndDate",
+                            {
+                              defaultValue: "Recurrence End Date",
+                            },
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
                         <FormDescription>
-                          The date after which this transaction will no longer
-                          recur.
+                          {t(
+                            "dialogs.addEditTransaction.helper.recurrenceEndDate",
+                            {
+                              defaultValue:
+                                "The date after which this transaction will no longer recur.",
+                            },
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -664,7 +831,13 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
                     {form.formState.isSubmitting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    {isEditMode ? "Save Changes" : "Add Transaction"}
+                    {isEditMode
+                      ? t("dialogs.addEditTransaction.actions.save", {
+                          defaultValue: "Save Changes",
+                        })
+                      : t("dialogs.addEditTransaction.actions.add", {
+                          defaultValue: "Add Transaction",
+                        })}
                   </Button>
                 </DialogFooter>
               </form>

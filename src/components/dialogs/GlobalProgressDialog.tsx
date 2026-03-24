@@ -9,8 +9,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export const GlobalProgressDialog = () => {
+  const { t } = useTranslation();
   const { operationProgress, setOperationProgress } = useTransactions();
 
   // If no progress state, or progress is null, don't render (or render closed)
@@ -48,18 +50,26 @@ export const GlobalProgressDialog = () => {
       >
         <DialogHeader>
           <DialogTitle>
-            {operationProgress.title || "Processing..."}
+            {operationProgress.title ||
+              t("dialogs.globalProgress.processing", {
+                defaultValue: "Processing...",
+              })}
           </DialogTitle>
           <DialogDescription>
             {operationProgress.description ||
-              "Please wait while we process your request."}
+              t("dialogs.globalProgress.waitDescription", {
+                defaultValue: "Please wait while we process your request.",
+              })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {operationProgress.stage || "Initializing..."}
+              {operationProgress.stage ||
+                t("dialogs.globalProgress.initializing", {
+                  defaultValue: "Initializing...",
+                })}
             </p>
           </div>
           <Progress
@@ -68,7 +78,10 @@ export const GlobalProgressDialog = () => {
             indicatorClassName="bg-primary"
           />
           <p className="text-right text-sm text-muted-foreground">
-            {Math.round(progressValue)}% Complete
+            {Math.round(progressValue)}%{" "}
+            {t("dialogs.globalProgress.complete", {
+              defaultValue: "Complete",
+            })}
           </p>
         </div>
       </DialogContent>

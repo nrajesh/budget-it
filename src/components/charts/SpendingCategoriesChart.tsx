@@ -219,7 +219,11 @@ export function SpendingCategoriesChart({
                 // @ts-expect-error - Recharts 3 type issue missing activeIndex from PieProps
                 activeIndex={activeIndex}
                 activeShape={renderActiveShape}
-                onClick={onPieClick as any}
+                onClick={
+                  onPieClick as unknown as React.ComponentProps<
+                    typeof Pie
+                  >["onClick"]
+                }
                 animationDuration={800}
               >
                 {currentData.map((_entry, index) => (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { formatDateToYYYYMMDD } from "@/lib/utils";
@@ -75,7 +75,9 @@ export const useTransactionFormLogic = ({
   >(null);
 
   const form = useForm<AddEditTransactionFormValues>({
-    resolver: zodResolver(transactionFormSchema) as any,
+    resolver: zodResolver(
+      transactionFormSchema,
+    ) as Resolver<AddEditTransactionFormValues>,
     defaultValues: {
       date: formatDateToYYYYMMDD(new Date()),
       account: "",

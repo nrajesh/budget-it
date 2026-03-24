@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 interface PasswordDialogProps {
   isOpen: boolean;
@@ -33,9 +34,15 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
   onConfirm,
   title,
   description,
-  confirmText = "Confirm",
+  confirmText,
 }) => {
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
+  const resolvedConfirmText =
+    confirmText ||
+    t("dialogs.password.confirm", {
+      defaultValue: "Confirm",
+    });
 
   const handleConfirm = () => {
     if (password) {
@@ -58,21 +65,27 @@ const PasswordDialog: React.FC<PasswordDialogProps> = ({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="py-4">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">
+            {t("dialogs.password.label", { defaultValue: "Password" })}
+          </Label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password"
+            placeholder={t("dialogs.password.placeholder", {
+              defaultValue: "Enter password",
+            })}
             className="mt-2"
             autoFocus
           />
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={handleCancel}>
+            {t("dialogs.common.cancel", { defaultValue: "Cancel" })}
+          </AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirm} disabled={!password}>
-            {confirmText}
+            {resolvedConfirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

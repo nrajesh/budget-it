@@ -31,8 +31,10 @@ import {
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 const Transactions = () => {
+  const { t } = useTranslation();
   //   const session = useSession();
   const {
     transactions: allTransactions,
@@ -330,8 +332,12 @@ const Transactions = () => {
         return;
       } else {
         toast({
-          title: "Schedule Not Found",
-          description: "The original schedule seems to have been deleted.",
+          title: t("transactions.toasts.scheduleNotFound.title", {
+            defaultValue: "Schedule Not Found",
+          }),
+          description: t("transactions.toasts.scheduleNotFound.description", {
+            defaultValue: "The original schedule seems to have been deleted.",
+          }),
           variant: "destructive",
         });
       }
@@ -384,20 +390,33 @@ const Transactions = () => {
       const count = await cleanUpDuplicates();
       if (count > 0) {
         toast({
-          title: "Cleanup Complete",
-          description: `Removed ${count} duplicate transactions.`,
+          title: t("transactions.toasts.cleanupComplete.title", {
+            defaultValue: "Cleanup Complete",
+          }),
+          description: t("transactions.toasts.cleanupComplete.description", {
+            count,
+            defaultValue: "Removed {{count}} duplicate transactions.",
+          }),
         });
         invalidateAllData();
       } else {
         toast({
-          title: "No Duplicates",
-          description: "No duplicate transactions were found.",
+          title: t("transactions.toasts.noDuplicates.title", {
+            defaultValue: "No Duplicates",
+          }),
+          description: t("transactions.toasts.noDuplicates.description", {
+            defaultValue: "No duplicate transactions were found.",
+          }),
         });
       }
     } catch (_error) {
       toast({
-        title: "Cleanup Failed",
-        description: "An error occurred while removing duplicates.",
+        title: t("transactions.toasts.cleanupFailed.title", {
+          defaultValue: "Cleanup Failed",
+        }),
+        description: t("transactions.toasts.cleanupFailed.description", {
+          defaultValue: "An error occurred while removing duplicates.",
+        }),
         variant: "destructive",
       });
     } finally {
@@ -423,8 +442,15 @@ const Transactions = () => {
 
       if (allUniqueVendors.length === 0) {
         toast({
-          title: "Nothing to categorize",
-          description: "No uncategorized vendors found.",
+          title: t("transactions.toasts.nothingToCategorize.title", {
+            defaultValue: "Nothing to categorize",
+          }),
+          description: t(
+            "transactions.toasts.nothingToCategorize.description",
+            {
+              defaultValue: "No uncategorized vendors found.",
+            },
+          ),
         });
         return;
       }
@@ -432,17 +458,27 @@ const Transactions = () => {
       // Check for config before starting progress modal
       if (!config.apiKey || !config.provider) {
         toast({
-          title: "AI Not Configured",
+          title: t("transactions.toasts.aiNotConfigured.title", {
+            defaultValue: "AI Not Configured",
+          }),
           description: (
             <div className="flex flex-col gap-2">
-              <span>Please configure your AI provider and API key</span>
+              <span>
+                {t("transactions.toasts.aiNotConfigured.description", {
+                  defaultValue: "Please configure your AI provider and API key",
+                })}
+              </span>
               <Button
                 variant="secondary"
                 size="sm"
                 asChild
                 className="w-fit mt-1"
               >
-                <Link to="/settings">Go to AI Settings</Link>
+                <Link to="/settings">
+                  {t("transactions.toasts.aiNotConfigured.action", {
+                    defaultValue: "Go to AI Settings",
+                  })}
+                </Link>
               </Button>
             </div>
           ),
@@ -529,15 +565,24 @@ const Transactions = () => {
           await updateTransaction(updates[i]);
         }
         toast({
-          title: "Bulk Categorization",
-          description: `Categorized ${updates.length} transactions successfully.`,
+          title: t("transactions.toasts.bulkCategorization.title", {
+            defaultValue: "Bulk Categorization",
+          }),
+          description: t("transactions.toasts.bulkCategorization.description", {
+            count: updates.length,
+            defaultValue: "Categorized {{count}} transactions successfully.",
+          }),
         });
         invalidateAllData();
       } else {
         toast({
-          title: "No changes",
-          description:
-            "The AI could not confidently categorize any items or no valid mappings were returned.",
+          title: t("transactions.toasts.noChanges.title", {
+            defaultValue: "No changes",
+          }),
+          description: t("transactions.toasts.noChanges.description", {
+            defaultValue:
+              "The AI could not confidently categorize any items or no valid mappings were returned.",
+          }),
         });
       }
     } catch (e) {
@@ -557,11 +602,18 @@ const Transactions = () => {
         errorStr.toLowerCase().includes("failed to fetch");
 
       const errorHint = isApiKeyIssue
-        ? "Please check your API key or endpoint configuration."
-        : "An unexpected error occurred during categorization.";
+        ? t("transactions.toasts.categorizationFailed.apiKeyHint", {
+            defaultValue:
+              "Please check your API key or endpoint configuration.",
+          })
+        : t("transactions.toasts.categorizationFailed.genericHint", {
+            defaultValue: "An unexpected error occurred during categorization.",
+          });
 
       toast({
-        title: "Categorization Failed",
+        title: t("transactions.toasts.categorizationFailed.title", {
+          defaultValue: "Categorization Failed",
+        }),
         description: (
           <div className="flex flex-col gap-2">
             <div className="flex flex-col gap-1">
@@ -575,7 +627,11 @@ const Transactions = () => {
                 asChild
                 className="w-fit mt-1"
               >
-                <Link to="/settings">Go to AI Settings</Link>
+                <Link to="/settings">
+                  {t("transactions.toasts.aiNotConfigured.action", {
+                    defaultValue: "Go to AI Settings",
+                  })}
+                </Link>
               </Button>
             )}
           </div>
@@ -597,8 +653,12 @@ const Transactions = () => {
     if (unlinkTransferId) {
       await unlinkTransaction(unlinkTransferId);
       toast({
-        title: "Transactions Unlinked",
-        description: "The transfer link has been removed.",
+        title: t("transactions.toasts.unlinked.title", {
+          defaultValue: "Transactions Unlinked",
+        }),
+        description: t("transactions.toasts.unlinked.description", {
+          defaultValue: "The transfer link has been removed.",
+        }),
       });
       setUnlinkTransferId(null);
     }
@@ -608,11 +668,15 @@ const Transactions = () => {
     async (id1: string, id2: string) => {
       await linkTransactions(id1, id2);
       toast({
-        title: "Transactions Linked",
-        description: "The transactions have been paired as a transfer.",
+        title: t("transactions.toasts.linked.title", {
+          defaultValue: "Transactions Linked",
+        }),
+        description: t("transactions.toasts.linked.description", {
+          defaultValue: "The transactions have been paired as a transfer.",
+        }),
       });
     },
-    [linkTransactions, toast],
+    [linkTransactions, toast, t],
   );
 
   const handleRowDoubleClick = React.useCallback(
@@ -676,8 +740,17 @@ const Transactions = () => {
                 return [...prev, slugifiedAccount];
               });
               toast({
-                title: "Filter Updated",
-                description: `Added "${accountName}" to your view so you can see the new transaction.`,
+                title: t("transactions.toasts.filterUpdated.title", {
+                  defaultValue: "Filter Updated",
+                }),
+                description: t(
+                  "transactions.toasts.filterUpdated.description",
+                  {
+                    accountName,
+                    defaultValue:
+                      'Added "{{accountName}}" to your view so you can see the new transaction.',
+                  },
+                ),
               });
             }
           }
@@ -707,14 +780,29 @@ const Transactions = () => {
                 ...payload,
               });
               toast({
-                title: "Schedule Updated",
-                description: "The recurring transaction has been updated.",
+                title: t("transactions.toasts.scheduleUpdated.title", {
+                  defaultValue: "Schedule Updated",
+                }),
+                description: t(
+                  "transactions.toasts.scheduleUpdated.description",
+                  {
+                    defaultValue: "The recurring transaction has been updated.",
+                  },
+                ),
               });
             } else {
               await dataProvider.addScheduledTransaction(payload);
               toast({
-                title: "Schedule Created",
-                description: "A new recurring transaction has been scheduled.",
+                title: t("transactions.toasts.scheduleCreated.title", {
+                  defaultValue: "Schedule Created",
+                }),
+                description: t(
+                  "transactions.toasts.scheduleCreated.description",
+                  {
+                    defaultValue:
+                      "A new recurring transaction has been scheduled.",
+                  },
+                ),
               });
             }
             setIsScheduledDialogOpen(false);
@@ -722,8 +810,15 @@ const Transactions = () => {
           } catch (e) {
             console.error(e);
             toast({
-              title: "Error",
-              description: "Failed to save schedule.",
+              title: t("transactions.toasts.scheduleSaveError.title", {
+                defaultValue: "Error",
+              }),
+              description: t(
+                "transactions.toasts.scheduleSaveError.description",
+                {
+                  defaultValue: "Failed to save schedule.",
+                },
+              ),
               variant: "destructive",
             });
           }
@@ -780,18 +875,41 @@ const Transactions = () => {
         isOpen={isCleanupConfirmOpen}
         onOpenChange={setIsCleanupConfirmOpen}
         onConfirm={handleCleanupDuplicates}
-        title="Remove Duplicate Transactions?"
-        description="This will scan for transactions with identical recurrence IDs on the same date and remove the duplicates. This action cannot be undone."
-        confirmText={isCleaningUp ? "Cleaning..." : "Remove Duplicates"}
+        title={t("transactions.confirmations.removeDuplicatesTitle", {
+          defaultValue: "Remove Duplicate Transactions?",
+        })}
+        description={t(
+          "transactions.confirmations.removeDuplicatesDescription",
+          {
+            defaultValue:
+              "This scans for transactions with identical recurrence IDs on the same date and removes duplicates. This action cannot be undone.",
+          },
+        )}
+        confirmText={
+          isCleaningUp
+            ? t("transactions.confirmations.cleaning", {
+                defaultValue: "Cleaning...",
+              })
+            : t("transactions.confirmations.removeDuplicatesAction", {
+                defaultValue: "Remove Duplicates",
+              })
+        }
       />
 
       <ConfirmationDialog
         isOpen={isUnlinkConfirmOpen}
         onOpenChange={setIsUnlinkConfirmOpen}
         onConfirm={confirmUnlinkTransaction}
-        title="Unlink Transactions?"
-        description="Are you sure you want to break the link between these transactions? They will no longer be treated as a transfer pair."
-        confirmText="Unlink"
+        title={t("transactions.confirmations.unlinkTitle", {
+          defaultValue: "Unlink Transactions?",
+        })}
+        description={t("transactions.confirmations.unlinkDescription", {
+          defaultValue:
+            "Are you sure you want to break the link between these transactions? They will no longer be treated as a transfer pair.",
+        })}
+        confirmText={t("transactions.confirmations.unlinkAction", {
+          defaultValue: "Unlink",
+        })}
       />
     </div>
   );

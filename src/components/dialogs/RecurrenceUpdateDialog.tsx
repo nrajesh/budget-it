@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface RecurrenceUpdateDialogProps {
   isOpen: boolean;
@@ -27,28 +28,47 @@ export const RecurrenceUpdateDialog: React.FC<RecurrenceUpdateDialogProps> = ({
   isMixedSelection = false,
   count = 1,
 }) => {
+  const { t } = useTranslation();
   let title: string;
   let description: string;
 
   if (actionType === "delete") {
     if (isMixedSelection) {
-      title = "Delete Selected Transactions";
-      description = `You have selected ${count} transactions. Some of them are part of a recurring series.
-            
-            Do you want to delete only the selected instances (Current Only) or also delete the future schedules for the recurring ones (Current & Future)?`;
+      title = t("dialogs.recurrence.titleDeleteSelected", {
+        defaultValue: "Delete Selected Transactions",
+      });
+      description = t("dialogs.recurrence.descriptionDeleteSelected", {
+        count,
+        defaultValue:
+          "You have selected {{count}} transactions. Some are part of a recurring series. Do you want to delete only selected instances (Current Only) or include future schedules for recurring ones (Current & Future)?",
+      });
     } else if (count > 1) {
-      title = "Delete Recurring Transactions";
-      description = `You have selected ${count} recurring transactions. Do you want to delete only these specific instances or also cancel their future schedules?`;
+      title = t("dialogs.recurrence.titleDeleteMany", {
+        defaultValue: "Delete Recurring Transactions",
+      });
+      description = t("dialogs.recurrence.descriptionDeleteMany", {
+        count,
+        defaultValue:
+          "You have selected {{count}} recurring transactions. Do you want to delete only these specific instances or also cancel their future schedules?",
+      });
     } else {
-      title = "Delete Recurring Transaction";
-      description =
-        "This transaction is part of a recurring series. Do you want to delete just this occurrence or this and all future occurrences?";
+      title = t("dialogs.recurrence.titleDeleteOne", {
+        defaultValue: "Delete Recurring Transaction",
+      });
+      description = t("dialogs.recurrence.descriptionDeleteOne", {
+        defaultValue:
+          "This transaction is part of a recurring series. Do you want to delete just this occurrence or this and all future occurrences?",
+      });
     }
   } else {
     // Edit mode (usually single)
-    title = "Edit Recurring Transaction";
-    description =
-      "This transaction is part of a recurring series. Do you want to save changes to just this occurrence or update the future schedule as well?";
+    title = t("dialogs.recurrence.titleEdit", {
+      defaultValue: "Edit Recurring Transaction",
+    });
+    description = t("dialogs.recurrence.descriptionEdit", {
+      defaultValue:
+        "This transaction is part of a recurring series. Do you want to save changes to just this occurrence or update the future schedule as well?",
+    });
   }
 
   return (
@@ -62,7 +82,7 @@ export const RecurrenceUpdateDialog: React.FC<RecurrenceUpdateDialogProps> = ({
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
           <AlertDialogCancel onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("dialogs.common.cancel", { defaultValue: "Cancel" })}
           </AlertDialogCancel>
           <Button
             variant="outline"
@@ -71,7 +91,9 @@ export const RecurrenceUpdateDialog: React.FC<RecurrenceUpdateDialogProps> = ({
               onOpenChange(false);
             }}
           >
-            {actionType === "edit" ? "Current Only" : "Current Only"}
+            {t("dialogs.recurrence.currentOnly", {
+              defaultValue: "Current Only",
+            })}
           </Button>
           <Button
             variant={actionType === "delete" ? "destructive" : "default"}
@@ -80,7 +102,9 @@ export const RecurrenceUpdateDialog: React.FC<RecurrenceUpdateDialogProps> = ({
               onOpenChange(false);
             }}
           >
-            {actionType === "edit" ? "Current & Future" : "Current & Future"}
+            {t("dialogs.recurrence.currentAndFuture", {
+              defaultValue: "Current & Future",
+            })}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
