@@ -622,16 +622,19 @@ function getRandomRemark(
   if (Math.random() < 0.55) return "";
 
   if (isTransfer || category === "Transfer") {
-    const text = TRANSFER_REMARKS[Math.floor(Math.random() * TRANSFER_REMARKS.length)];
+    const text =
+      TRANSFER_REMARKS[Math.floor(Math.random() * TRANSFER_REMARKS.length)];
     return `${text} (${Math.abs(amount).toFixed(2)})`;
   }
 
   if (category === "Income") {
-    const text = INCOME_REMARKS[Math.floor(Math.random() * INCOME_REMARKS.length)];
+    const text =
+      INCOME_REMARKS[Math.floor(Math.random() * INCOME_REMARKS.length)];
     return `${text} (${amount.toFixed(2)})`;
   }
 
-  const text = EXPENSE_REMARKS[Math.floor(Math.random() * EXPENSE_REMARKS.length)];
+  const text =
+    EXPENSE_REMARKS[Math.floor(Math.random() * EXPENSE_REMARKS.length)];
   if (Math.random() < 0.3) return `${text} - ${category}`;
   return text;
 }
