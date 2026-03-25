@@ -111,7 +111,7 @@ Execution steps:
 - **Trigger**: Only proceed after cross-artifact analysis passes.
 - **Action**: Run the following checks sequentially. ALL must pass before merging.
 
-  **0. One-shot (recommended)**: `pnpm validate` — runs TypeScript, ESLint, and Prettier **check** on `src` (same combination as a healthy pre-push run). If Prettier fails, run `pnpm format`, re-run `pnpm validate`, then commit formatting.
+  **0. One-shot (recommended)**: `pnpm validate` - runs TypeScript, ESLint, and Prettier **check** on `src` (same combination as a healthy pre-push run). If Prettier fails, run `pnpm format`, re-run `pnpm validate`, then commit formatting.
 
   **1. Format Check**: `pnpm format:check` (or `npx prettier --check "src/**/*.{ts,tsx,css}"`)
      - If fails: Run `pnpm format` to auto-fix, then re-check. Commit the formatting fixes.
