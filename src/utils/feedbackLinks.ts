@@ -1,3 +1,5 @@
+/** Public repository home (README, stars, source). */
+export const GITHUB_REPO_URL = "https://github.com/nrajesh/budget-it/";
 export const GITHUB_REPO_ISSUES_URL =
   "https://github.com/nrajesh/budget-it/issues";
 export const GITHUB_NEW_ISSUE_URL = `${GITHUB_REPO_ISSUES_URL}/new`;
