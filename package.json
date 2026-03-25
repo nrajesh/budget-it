@@ -120,7 +120,8 @@
       "flatted": ">=3.4.2",
       "yauzl": ">=3.2.1",
       "dompurify": ">=3.3.2",
-      "@tootallnate/once": ">=3.0.1"
+      "@tootallnate/once": ">=3.0.1",
+      "picomatch": ">=4.0.4"
     },
     "onlyBuiltDependencies": [
       "electron"
