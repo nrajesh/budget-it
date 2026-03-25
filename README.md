@@ -210,7 +210,7 @@ We enforce high code quality standards using a strict **CircleCI** pipeline. Eve
 > You can run `pnpm validate` locally to run TypeScript and ESLint checks in one go.
 
 > [!NOTE]
-> **Security Overrides**: `package.json` includes a handful of `pnpm.overrides` that pin transitive dependencies (`tar`, `undici`, `flatted`, `yauzl`, `dompurify`, `@tootallnate/once`) to patched versions. These resolve Dependabot alerts for packages we don't import directly - they're pulled in by tooling like Vitest, ESLint, Capacitor CLI, and Electron. Run `pnpm audit` to verify.
+> **Security Overrides**: `package.json` includes a handful of `pnpm.overrides` that pin transitive dependencies (`tar`, `undici`, `flatted`, `yauzl`, `dompurify`, `@tootallnate/once`, `picomatch`) to patched versions. These resolve Dependabot alerts for packages we don't import directly - they're pulled in by tooling like Vitest, ESLint, Capacitor CLI, and Electron. Run `pnpm audit` to verify.
 
 ---
 
