@@ -17,9 +17,10 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "validate": "tsc --noEmit && eslint . && prettier --check \"src/**/*.{ts,tsx,css}\"",
     "electron:compile": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 --esModuleInterop --skipLibCheck && echo '{\"type\": \"commonjs\"}' > dist-electron/package.json",
-    "electron": "wait-on tcp:8081 && pnpm run electron:compile && cross-env VITE_DEV_SERVER_URL=http://localhost:8081 electron .",
+    "electron:run": "wait-on tcp:8081 && pnpm run electron:compile && cross-env VITE_DEV_SERVER_URL=http://localhost:8081 electron .",
+    "electron": "node scripts/electron-dev-runner.mjs",
     "electron:build": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 && electron-builder",
-    "electron:dev": "concurrently -k \"pnpm run dev\" \"pnpm run electron\""
+    "electron:dev": "pnpm run electron"
   },
   "dependencies": {
     "@capacitor/core": "^8.2.0",
