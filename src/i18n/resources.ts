@@ -54,6 +54,11 @@ export const resources: Resource = {
           configure: "Configure",
           setup: "Setup",
         },
+        footer: {
+          tagline: "Privacy-first | Data local | Open sourced",
+          heartLink: "Made with ❤️ for your financial freedom",
+          githubAria: "Open Budget It on GitHub",
+        },
       },
       dialogs: {
         common: {
@@ -363,6 +368,11 @@ export const resources: Resource = {
           configure: "Configurar",
           setup: "Configuracion",
         },
+        footer: {
+          tagline: "Privacidad primero | Datos locales | Codigo abierto",
+          heartLink: "Hecho con ❤️ para tu libertad financiera",
+          githubAria: "Abrir Budget It en GitHub",
+        },
       },
       dialogs: {
         common: {
@@ -588,6 +598,11 @@ export const resources: Resource = {
           myLedgers: "我的账本",
           languages: "语言",
         },
+        footer: {
+          tagline: "隐私优先 | 数据本地 | 开源",
+          heartLink: "用 ❤️ 助你实现财务自由",
+          githubAria: "在 GitHub 上打开 Budget It",
+        },
       },
       dialogs: {
         common: {
@@ -711,6 +726,11 @@ export const resources: Resource = {
           management: "மேலாண்மை",
           configure: "அமைவு",
           setup: "தொடக்கம்",
+        },
+        footer: {
+          tagline: "தனியுரிமை முதலில் | தரவு உள்ளமை | திறந்த மூலம்",
+          heartLink: "உங்கள் நிதி சுதந்திரத்திற்காக ❤️ உடன் உருவாக்கப்பட்டது",
+          githubAria: "GitHub இல் Budget It ஐ திறக்கவும்",
         },
       },
       dialogs: {

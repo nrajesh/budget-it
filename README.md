@@ -32,6 +32,10 @@
 
 ---
 
+**Motivation:** Budget It exists because basic budgeting should not sit behind paywalls when the core idea is simple math and honest records—and because your data should stay yours. For the full story, local-first ethos, and visuals, see **[Why Budget It exists](documentation/WHY_BUDGET_IT.md)**.
+
+---
+
 ## 🌟 Key Features
 
 | Category                | Feature                                                                                           |
@@ -218,6 +222,7 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 | File                                                                         | Purpose                                                                                                             |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **[`WHY_BUDGET_IT.md`](documentation/WHY_BUDGET_IT.md)**                     | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.              |
 | **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
 | **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |
 | **[`SUPPORT.md`](documentation/SUPPORT.md)**                                 | **Support Policy**. How to get help and file issues.                                                                |
