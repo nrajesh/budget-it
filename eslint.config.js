@@ -19,6 +19,12 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // React Compiler / hooks extras in eslint-plugin-react-hooks 7.1+ are very strict;
+      // treat as warnings until refactors can align with them across the codebase.
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/static-components": "warn",
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },
