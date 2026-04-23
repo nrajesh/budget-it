@@ -22,4 +22,11 @@ describe("languagePreferences", () => {
     expect(saved).toEqual(["ta"]);
     expect(getEnabledLanguages()).toEqual(["ta"]);
   });
+
+  it("supports dutch as an enabled language", () => {
+    const saved = saveEnabledLanguages(["nl"]);
+
+    expect(saved).toEqual(["nl"]);
+    expect(getEnabledLanguages()).toEqual(["nl"]);
+  });
 });

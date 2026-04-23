@@ -1489,16 +1489,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       */
     } catch (error) {
       console.error("Failed to generate demo data:", error);
-    } finally {
-      setOperationProgress({
-        title: "Generating Demo Data",
-        description: "Finalizing...",
-        stage: "Complete",
-        progress: 100,
-        totalStages: 100,
-      });
-      // Clear progress after short delay
-      setTimeout(() => setOperationProgress(null), 1000);
+      setOperationProgress(null);
     }
   }, [dataProvider, refreshLedgers, queryClient]);
 

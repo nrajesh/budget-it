@@ -23,4 +23,26 @@ describe("translation coverage", () => {
       expect(i18n.t(key)).not.toBe(key);
     });
   });
+
+  it("has common dialog translations in dutch", async () => {
+    await i18n.changeLanguage("nl");
+
+    const keys = [
+      "dialogs.common.cancel",
+      "dialogs.common.continue",
+      "dialogs.password.label",
+      "dialogs.password.placeholder",
+      "dialogs.recurrence.currentOnly",
+      "dialogs.recurrence.currentAndFuture",
+      "dialogs.missingCurrency.title",
+      "dialogs.globalProgress.complete",
+      "transactions.header.title",
+      "transactions.toasts.scheduleNotFound.title",
+      "settings.cards.currency.title",
+    ];
+
+    keys.forEach((key) => {
+      expect(i18n.t(key)).not.toBe(key);
+    });
+  });
 });

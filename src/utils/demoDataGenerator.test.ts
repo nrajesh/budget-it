@@ -92,17 +92,16 @@ describe("generateDiverseDemoData", () => {
     const threeYearsAgo = new Date();
     threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
-    // One batch per ledger in generator flow.
-    expect(addMany.mock.calls.length).toBe(3);
+    // Demo data saves transactions in multiple IndexedDB chunks per ledger.
+    expect(addMany.mock.calls.length).toBeGreaterThanOrEqual(3);
 
-    for (const [batch] of addMany.mock.calls) {
-      const oldest = batch.reduce((min, tx) => {
-        const d = new Date(tx.date);
-        return d < min ? d : min;
-      }, new Date());
+    const allTransactions = addMany.mock.calls.map(([batch]) => batch).flat();
+    const oldest = allTransactions.reduce((min, tx) => {
+      const d = new Date(tx.date);
+      return d < min ? d : min;
+    }, new Date());
 
-      expect(oldest.getTime()).toBeLessThanOrEqual(threeYearsAgo.getTime());
-    }
+    expect(oldest.getTime()).toBeLessThanOrEqual(threeYearsAgo.getTime());
   });
 
   it("keeps recent months denser than older windows", async () => {

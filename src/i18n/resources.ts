@@ -4,6 +4,7 @@ export const builtInLanguageOptions = [
   { code: "zh", name: "Chinese (Mandarin)" },
   { code: "en", name: "English" },
   { code: "es", name: "Spanish" },
+  { code: "nl", name: "Dutch (Nederlands)" },
   { code: "ta", name: "Tamil (தமிழ்)" },
 ] as const;
 
@@ -16,6 +17,7 @@ export const resources: Resource = {
         spanish: "Spanish",
         chinese: "Chinese (Mandarin)",
         tamil: "Tamil (தமிழ்)",
+        dutch: "Dutch",
         removeCustomAria: "Remove {{name}}",
         removeCustomConfirm:
           'Remove custom language "{{name}}"? You can add it again from Language settings.',
@@ -330,6 +332,7 @@ export const resources: Resource = {
         spanish: "Espanol",
         chinese: "Chino (Mandarin)",
         tamil: "Tamil (தமிழ்)",
+        dutch: "Neerlandés",
         removeCustomAria: "Quitar {{name}}",
         removeCustomConfirm:
           '¿Quitar el idioma personalizado "{{name}}"? Puedes volver a agregarlo en Idioma.',
@@ -566,6 +569,7 @@ export const resources: Resource = {
         spanish: "西班牙语",
         chinese: "中文（普通话）",
         tamil: "泰米尔语",
+        dutch: "荷兰语",
         removeCustomAria: "移除 {{name}}",
         removeCustomConfirm:
           "要移除自定义语言“{{name}}”吗？可在语言设置中重新添加。",
@@ -681,6 +685,323 @@ export const resources: Resource = {
       },
     },
   },
+  nl: {
+    translation: {
+      language: {
+        label: "Taal",
+        english: "Engels",
+        spanish: "Spaans",
+        chinese: "Chinees (Mandarijn)",
+        tamil: "Tamil (தமிழ்)",
+        dutch: "Nederlands",
+        removeCustomAria: "{{name}} verwijderen",
+        removeCustomConfirm:
+          'Aangepaste taal "{{name}}" verwijderen? Je kunt deze opnieuw toevoegen via Taalinstellingen.',
+        openLanguageSettings: "Taalinstellingen",
+        customRemoved: "Aangepaste taal verwijderd.",
+      },
+      layout: {
+        nav: {
+          dashboard: "Dashboard",
+          calendar: "Kalender",
+          analytics: "Analytics",
+          insights: "Inzichten",
+          transactions: "Transacties",
+          accounts: "Rekeningen",
+          categories: "Categorieën",
+          vendors: "Leveranciers",
+          currencies: "Valuta",
+          aiProviders: "AI-providers",
+          scheduled: "Gepland",
+          reports: "Rapporten",
+          reportsEssential: "Essentieel",
+          reportsAdvanced: "Geavanceerd",
+          budgets: "Budgetten",
+          ledger: "Grootboek",
+          data: "Gegevens",
+          backup: "Back-up",
+          donate: "Doneren",
+          settings: "Instellingen",
+          logout: "Afmelden",
+          myLedgers: "Mijn grootboeken",
+          languages: "Talen",
+        },
+        groups: {
+          dashboards: "Dashboards",
+          management: "Beheer",
+          configure: "Configureren",
+          setup: "Instellen",
+        },
+        footer: {
+          tagline: "Privacy eerst | Gegevens lokaal | Open source",
+          heartLink: "Met ❤️ gemaakt voor jouw financiële vrijheid",
+          githubAria: "Budget It openen op GitHub",
+        },
+      },
+      dialogs: {
+        common: {
+          cancel: "Annuleren",
+          continue: "Doorgaan",
+          close: "Sluiten",
+          confirmAndImport: "Bevestigen en importeren",
+        },
+        password: {
+          label: "Wachtwoord",
+          placeholder: "Voer wachtwoord in",
+          confirm: "Bevestigen",
+        },
+        recurrence: {
+          titleEdit: "Terugkerende transactie bewerken",
+          titleDeleteOne: "Terugkerende transactie verwijderen",
+          titleDeleteMany: "Terugkerende transacties verwijderen",
+          titleDeleteSelected: "Geselecteerde transacties verwijderen",
+          descriptionEdit:
+            "Deze transactie maakt deel uit van een terugkerende reeks. Wil je wijzigingen alleen voor deze keer opslaan of ook het toekomstige schema bijwerken?",
+          descriptionDeleteOne:
+            "Deze transactie maakt deel uit van een terugkerende reeks. Wil je alleen deze keer verwijderen of ook alle toekomstige keren?",
+          descriptionDeleteMany:
+            "Je hebt {{count}} terugkerende transacties geselecteerd. Wil je alleen deze specifieke instanties verwijderen of ook hun toekomstige schema's annuleren?",
+          descriptionDeleteSelected:
+            "Je hebt {{count}} transacties geselecteerd. Sommige maken deel uit van een terugkerende reeks. Wil je alleen de geselecteerde instanties verwijderen (Alleen huidige) of ook toekomstige schema's voor terugkerende transacties (Huidig en toekomstig)?",
+          currentOnly: "Alleen huidige",
+          currentAndFuture: "Huidig en toekomstig",
+        },
+        missingCurrency: {
+          title: "Valuta selecteren voor nieuwe rekeningen",
+          description:
+            "Sommige rekeningen zijn nieuw en hun valuta kon niet worden bepaald. Selecteer voor elke rekening de juiste valuta.",
+          selectCurrency: "Valuta selecteren",
+        },
+        globalProgress: {
+          processing: "Bezig met verwerken...",
+          waitDescription: "Even geduld terwijl we je verzoek verwerken.",
+          initializing: "Initialiseren...",
+          complete: "Voltooid",
+        },
+        addEditTransaction: {
+          tabs: {
+            expense: "Uitgave",
+            income: "Inkomsten",
+          },
+          actions: {
+            autoCategorize: "Automatisch categoriseren",
+            add: "Transactie toevoegen",
+            save: "Wijzigingen opslaan",
+          },
+          fields: {
+            date: "Datum",
+            accountSending: "Rekening (afzender)",
+            vendorReceiving: "Leverancier / rekening (ontvanger)",
+            category: "Categorie",
+            subCategory: "Subcategorie",
+            amountSending: "Bedrag (afzender)",
+            amountReceiving: "Bedrag (ontvanger)",
+            remarks: "Opmerkingen",
+            recurrenceFrequency: "Herhalingsfrequentie",
+            recurrenceEndDate: "Einddatum herhaling",
+          },
+          placeholders: {
+            selectAccount: "Selecteer een rekening...",
+            searchAccounts: "Zoek rekeningen...",
+            noAccountFound: "Geen rekening gevonden.",
+            selectVendorOrAccount: "Selecteer leverancier of rekening...",
+            searchGeneric: "Zoeken...",
+            noResults: "Geen resultaten gevonden.",
+            selectCategory: "Selecteer een categorie...",
+            searchCategories: "Zoek categorieën...",
+            noCategoryFound: "Geen categorie gevonden.",
+            selectOrCreate: "Selecteer of maak...",
+            searchSubCategories: "Zoek subcategorieën...",
+            noSubCategoryFound: "Geen subcategorie gevonden.",
+            amount: "0,00",
+            recurrence: "Selecteer herhalingsfrequentie",
+          },
+          recurrenceOptions: {
+            none: "Geen",
+            daily: "Dagelijks",
+            weekly: "Wekelijks",
+            monthly: "Maandelijks",
+            quarterly: "Per kwartaal",
+            yearly: "Jaarlijks",
+          },
+          helper: {
+            recurrenceFrequency:
+              "Stel in hoe vaak deze transactie moet worden herhaald.",
+            recurrenceEndDate:
+              "De datum na welke deze transactie niet meer wordt herhaald.",
+          },
+          title: {
+            add: "Nieuwe transactie toevoegen",
+            edit: "Transactie bewerken",
+          },
+          description: {
+            add: "Voeg snel een nieuwe transactie toe aan je administratie.",
+            edit: "Pas de gegevens van deze transactie aan.",
+          },
+        },
+      },
+      helpTour: {
+        start: "Hulp-rondleiding starten",
+        next: "Volgende",
+        back: "Terug",
+        last: "Klaar",
+        skip: "Overslaan",
+      },
+      transactions: {
+        header: {
+          title: "Transacties",
+          subtitle: "Beheer en volg je financiële activiteiten",
+          importCsv: "CSV importeren",
+          exportCsv: "CSV exporteren",
+          detectTransfers: "Overschrijvingen detecteren",
+          cleanupDuplicates: "Duplicaten opschonen",
+          categorizeMissing: "Ontbrekende categoriseren",
+          addTransaction: "Transactie toevoegen",
+        },
+        toasts: {
+          scheduleNotFound: {
+            title: "Schema niet gevonden",
+            description: "Het oorspronkelijke schema lijkt te zijn verwijderd.",
+          },
+          cleanupComplete: {
+            title: "Opschonen voltooid",
+            description: "{{count}} dubbele transacties verwijderd.",
+          },
+          noDuplicates: {
+            title: "Geen duplicaten",
+            description: "Er zijn geen dubbele transacties gevonden.",
+          },
+          cleanupFailed: {
+            title: "Opschonen mislukt",
+            description:
+              "Er is een fout opgetreden bij het verwijderen van duplicaten.",
+          },
+          nothingToCategorize: {
+            title: "Niets te categoriseren",
+            description: "Geen niet-gecategoriseerde leveranciers gevonden.",
+          },
+          aiNotConfigured: {
+            title: "AI niet geconfigureerd",
+            description: "Configureer je AI-provider en API-sleutel",
+            action: "Naar AI-instellingen",
+          },
+          bulkCategorization: {
+            title: "Bulkcategorisatie",
+            description: "{{count}} transacties succesvol gecategoriseerd.",
+          },
+          noChanges: {
+            title: "Geen wijzigingen",
+            description:
+              "De AI kon geen items met vertrouwen categoriseren of er werden geen geldige koppelingen teruggestuurd.",
+          },
+          categorizationFailed: {
+            title: "Categorisatie mislukt",
+            apiKeyHint: "Controleer je API-sleutel of endpointconfiguratie.",
+            genericHint:
+              "Er is een onverwachte fout opgetreden bij categorisatie.",
+          },
+          unlinked: {
+            title: "Transacties ontkoppeld",
+            description: "De overschrijvingskoppeling is verwijderd.",
+          },
+          linked: {
+            title: "Transacties gekoppeld",
+            description: "De transacties zijn als overschrijving gekoppeld.",
+          },
+          filterUpdated: {
+            title: "Filter bijgewerkt",
+            description:
+              '"{{accountName}}" toegevoegd aan je weergave zodat je de nieuwe transactie ziet.',
+          },
+          scheduleUpdated: {
+            title: "Schema bijgewerkt",
+            description: "De terugkerende transactie is bijgewerkt.",
+          },
+          scheduleCreated: {
+            title: "Schema aangemaakt",
+            description: "Er is een nieuwe terugkerende transactie gepland.",
+          },
+          scheduleSaveError: {
+            title: "Fout",
+            description: "Schema opslaan mislukt.",
+          },
+        },
+        confirmations: {
+          removeDuplicatesTitle: "Dubbele transacties verwijderen?",
+          removeDuplicatesDescription:
+            "Zoekt transacties met dezelfde terugkerings-ID op dezelfde datum en verwijdert duplicaten. Deze actie kan niet ongedaan worden gemaakt.",
+          cleaning: "Opschonen...",
+          removeDuplicatesAction: "Duplicaten verwijderen",
+          unlinkTitle: "Transacties ontkoppelen?",
+          unlinkDescription:
+            "Weet je zeker dat je de koppeling tussen deze transacties wilt verbreken? Ze worden niet meer als overschrijvingspaar behandeld.",
+          unlinkAction: "Ontkoppelen",
+        },
+      },
+      settings: {
+        cards: {
+          currency: {
+            title: "Standaardvaluta",
+            description: "Selecteer je voorkeursvaluta voor weergave.",
+          },
+          ledger: {
+            title: "Grootboekinstellingen",
+            description:
+              "Beheer de gegevens van je huidige grootboek of maak een nieuw grootboek.",
+            edit: "Huidig grootboek bewerken",
+            create: "Nieuw grootboek maken",
+          },
+          future: {
+            title: "Toekomstige transacties",
+            description:
+              "Bepaal hoeveel maanden aan toekomstige geplande transacties worden getoond.",
+            months: "maanden",
+          },
+          language: {
+            title: "Taal en lokalisatie",
+            description:
+              "Gebruik één primaire taal (moedertaal). Voeg aangepaste talen toe via code en vertaal-JSON.",
+            active: "Actieve taal",
+            enabled: "Ingeschakelde talen",
+            customTitle: "Aangepaste taal toevoegen",
+            codePlaceholder: "Taalcode (bijv. de, ja, hi)",
+            namePlaceholder: "Weergavenaam (bijv. Duits)",
+            jsonLabel:
+              "Vertaal-JSON voor deze taal (root = vertaalsleutels)",
+            jsonPlaceholder: '{"layout":{"nav":{"dashboard":"..."}}}',
+            save: "Aangepaste taal opslaan",
+            deleteActiveHint:
+              "Aangepaste talen kun je met het prullenbakpictogram verwijderen. Als je de taal die je gebruikt verwijdert, schakelt de app over naar een reserve (Engels als beschikbaar, of een andere ondersteunde taal die bij je browser past).",
+          },
+        },
+      },
+      test: {
+        draftLabel: "Conceptnotitie",
+      },
+      tour: {
+        home: {
+          "0": {
+            content:
+              "Dit is je hoofd-dashboardoverzicht met in één oogopslag je financiële gezondheid.",
+          },
+        },
+        language: {
+          "0": {
+            content:
+              "Kies hoe Budget It met je communiceert. Kies je primaire taal of voeg een aangepast vertaalpakket toe.",
+          },
+          "1": {
+            content:
+              "Kies één ingebouwde taal als primaire interface-taal. De interface wordt direct bijgewerkt zonder je gegevens te verliezen.",
+          },
+          "2": {
+            content:
+              "Heb je een locale die we niet meeleveren? Voeg een code, weergavenaam en vertaal-JSON toe om de app uit te breiden.",
+          },
+        },
+      },
+    },
+  },
   ta: {
     translation: {
       language: {
@@ -689,6 +1010,7 @@ export const resources: Resource = {
         spanish: "ஸ்பானிஷ்",
         chinese: "சீனம் (மாண்டரின்)",
         tamil: "தமிழ்",
+        dutch: "டச்",
         removeCustomAria: "{{name}} ஐ நீக்கு",
         removeCustomConfirm:
           'தனிப்பயன் மொழி "{{name}}" ஐ நீக்கவா? மொழி அமைப்புகளில் மீண்டும் சேர்க்கலாம்.',
@@ -880,5 +1202,5 @@ export const resources: Resource = {
   },
 };
 
-export const supportedLanguages = ["en", "es", "zh", "ta"] as const;
+export const supportedLanguages = ["en", "es", "zh", "nl", "ta"] as const;
 export type SupportedLanguage = string;
