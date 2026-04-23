@@ -9,6 +9,33 @@ export interface ProgressCallback {
   (progress: { stage: string; progress: number; totalStages: number }): void;
 }
 
+/** Batches DB writes so IndexedDB work is visible in the UI progress bar. */
+const TRANSACTION_INSERT_BATCH_SIZE = 250;
+
+/**
+ * Maps real work units to 0–99% (caller emits 100% only when fully done).
+ * Prevents the bar from racing ahead while heavy Dexie work is still running.
+ */
+function createWeightedProgress(onProgress: ProgressCallback) {
+  const BP_TOTAL = 10_000;
+  let bpDone = 0;
+
+  const emit = (stage: string) => {
+    const progress = Math.min(
+      99,
+      Math.max(0, Math.floor((bpDone / BP_TOTAL) * 99)),
+    );
+    onProgress({ stage, progress, totalStages: 100 });
+  };
+
+  const advance = (bp: number, stage: string) => {
+    bpDone = Math.min(BP_TOTAL, bpDone + Math.max(0, bp));
+    emit(stage);
+  };
+
+  return { advance, emit };
+}
+
 const DEMO_BUDGETS: {
   category?: string;
   sub?: string;
@@ -676,23 +703,21 @@ export const generateDiverseDemoData = async (
   dataProvider: DataProvider,
   onProgress: ProgressCallback,
 ) => {
-  const TOTAL_STAGES = 100;
+  const { advance, emit } = createWeightedProgress(onProgress);
+
+  // Weight budget (basis points, total 10_000): clear + ledger rows + 3× populate
+  const BP_CLEAR = 1_200;
+  const BP_LEDGER_ROW = 100;
+  const LEDGER_COUNT = 3;
+  const BP_AFTER_CLEAR = 10_000 - BP_CLEAR - LEDGER_COUNT * BP_LEDGER_ROW;
+  const BP_PER_LEDGER_POPULATE = Math.floor(BP_AFTER_CLEAR / LEDGER_COUNT);
 
   // 1. Clear ALL Data
-  onProgress({
-    stage: "Clearing existing data...",
-    progress: 5,
-    totalStages: TOTAL_STAGES,
-  });
+  advance(0, "Clearing existing data...");
   await dataProvider.clearAllData();
+  advance(BP_CLEAR, "Existing data cleared");
 
   // 2. Create Ledgers
-  onProgress({
-    stage: "Creating Ledgers...",
-    progress: 10,
-    totalStages: TOTAL_STAGES,
-  });
-
   const ledgersToCreate = [
     {
       name: "Home Budget",
@@ -736,11 +761,15 @@ export const generateDiverseDemoData = async (
       short_name: l.short_name,
     });
     createdLedgers.push({ ...newLedger, config: l });
+    advance(BP_LEDGER_ROW, `Created ledger: ${l.name}`);
   }
 
   // 3. Populate Data per Ledger
-  const totalLedgers = createdLedgers.length;
-  let currentLedgerIndex = 0;
+  const categoryEntries = Object.entries(CATEGORIES_CONFIG);
+  let categoryEnsureSteps = 0;
+  for (const [, subs] of categoryEntries) {
+    categoryEnsureSteps += 1 + subs.length;
+  }
 
   for (const ledgerItem of createdLedgers) {
     const ledger = ledgerItem as Ledger & {
@@ -749,17 +778,48 @@ export const generateDiverseDemoData = async (
     const lId = ledger.id;
     const config = ledger.config;
 
-    onProgress({
-      stage: `Populating ${config.name}...`,
-      progress: 10 + (currentLedgerIndex / totalLedgers) * 80,
-      totalStages: TOTAL_STAGES,
-    });
+    const nAcc = Math.max(1, config.accounts.length);
+    const scheduledTransactions = config.scheduledTransactions || [];
+    let schedProgressSteps = 0;
+    for (const s of scheduledTransactions) {
+      if (!s.isTransfer) schedProgressSteps += 1;
+      schedProgressSteps += 1;
+      if (s.isTransfer) schedProgressSteps += 2;
+    }
+    schedProgressSteps = Math.max(1, schedProgressSteps);
+
+    const numTransactions = 1500;
+
+    const wAccounts = Math.floor(BP_PER_LEDGER_POPULATE * 0.08);
+    const wCategories = Math.floor(BP_PER_LEDGER_POPULATE * 0.28);
+    const wBudgets = Math.max(1, Math.floor(BP_PER_LEDGER_POPULATE * 0.06));
+    const wScheduled = Math.max(1, Math.floor(BP_PER_LEDGER_POPULATE * 0.1));
+    const wTxGen = Math.max(1, Math.floor(BP_PER_LEDGER_POPULATE * 0.02));
+    const wVendors = Math.floor(BP_PER_LEDGER_POPULATE * 0.16);
+    const wInsert = Math.max(
+      1,
+      BP_PER_LEDGER_POPULATE -
+        wAccounts -
+        wCategories -
+        wBudgets -
+        wScheduled -
+        wTxGen -
+        wVendors,
+    );
+
+    const bpPerSchedOp = Math.max(
+      1,
+      Math.floor(wScheduled / schedProgressSteps),
+    );
+
+    emit(`Populating ${config.name} — accounts…`);
 
     // --- Create Accounts ---
     const accountMap = new Map<string, string>(); // Name -> Currency
     const createdAccountNames: string[] = [];
 
     // Pre-create accounts as they are needed for transactions
+    let accountBpApplied = 0;
     for (let i = 0; i < config.accounts.length; i++) {
       const accName = config.accounts[i];
       const accCurr = config.currencies[i];
@@ -777,6 +837,16 @@ export const generateDiverseDemoData = async (
       });
       accountMap.set(accName, accCurr);
       createdAccountNames.push(accName);
+      const targetApplied = Math.floor((wAccounts * (i + 1)) / nAcc);
+      const delta = targetApplied - accountBpApplied;
+      if (delta > 0) {
+        advance(delta, `${config.name}: account ${accName}`);
+        accountBpApplied += delta;
+      }
+    }
+    const accountBpRemainder = wAccounts - accountBpApplied;
+    if (accountBpRemainder > 0) {
+      advance(accountBpRemainder, `${config.name}: accounts`);
     }
 
     // --- Create Categories ---
@@ -784,23 +854,52 @@ export const generateDiverseDemoData = async (
     const subCategoryMap = new Map<string, string[]>(); // Category -> SubCategories[]
 
     // Pre-create categories
-    for (const [cat, subs] of Object.entries(CATEGORIES_CONFIG)) {
+    let categoryBpApplied = 0;
+    let catStepIdx = 0;
+    for (const [cat, subs] of categoryEntries) {
       const id = await dataProvider.ensureCategoryExists(cat, lId);
+      catStepIdx += 1;
+      {
+        const targetApplied = Math.floor(
+          (wCategories * catStepIdx) / categoryEnsureSteps,
+        );
+        const delta = targetApplied - categoryBpApplied;
+        if (delta > 0) {
+          advance(delta, `${config.name}: category ${cat}`);
+          categoryBpApplied += delta;
+        }
+      }
       if (id) {
         categoryMap.set(cat, id);
         subCategoryMap.set(cat, subs);
         // Create sub-categories
         for (const sub of subs) {
           await dataProvider.ensureSubCategoryExists(sub, id, lId);
+          catStepIdx += 1;
+          const targetApplied = Math.floor(
+            (wCategories * catStepIdx) / categoryEnsureSteps,
+          );
+          const delta = targetApplied - categoryBpApplied;
+          if (delta > 0) {
+            advance(delta, `${config.name}: sub-category ${sub}`);
+            categoryBpApplied += delta;
+          }
         }
       }
+    }
+    const categoryBpRemainder = wCategories - categoryBpApplied;
+    if (categoryBpRemainder > 0) {
+      advance(categoryBpRemainder, `${config.name}: categories`);
     }
 
     // --- Create Budgets ---
     const shuffledBudgets = [...DEMO_BUDGETS].sort(() => 0.5 - Math.random());
     const selectedBudgets = shuffledBudgets.slice(0, config.budgetCount);
+    const nBudgetSlots = Math.max(1, selectedBudgets.length);
+    let budgetBpApplied = 0;
 
-    for (const budget of selectedBudgets) {
+    for (let bi = 0; bi < selectedBudgets.length; bi++) {
+      const budget = selectedBudgets[bi];
       const scope = budget.budget_scope || "category";
 
       // Resolve __ACCOUNT_N__ placeholders to real account names
@@ -855,10 +954,19 @@ export const generateDiverseDemoData = async (
         target_date: targetDate,
         goal_context: budget.is_goal ? resolvedGoalContext : undefined,
       });
+      const targetApplied = Math.floor((wBudgets * (bi + 1)) / nBudgetSlots);
+      const delta = targetApplied - budgetBpApplied;
+      if (delta > 0) {
+        advance(delta, `${config.name}: budgets`);
+        budgetBpApplied += delta;
+      }
+    }
+    const budgetBpRemainder = wBudgets - budgetBpApplied;
+    if (budgetBpRemainder > 0) {
+      advance(budgetBpRemainder, `${config.name}: budgets`);
     }
 
     // --- Create Scheduled Transactions ---
-    const scheduledTransactions = config.scheduledTransactions || [];
     for (const sched of scheduledTransactions) {
       let accountName = createdAccountNames.find((n) => {
         const lowerN = n.toLowerCase();
@@ -902,6 +1010,7 @@ export const generateDiverseDemoData = async (
 
       if (!sched.isTransfer) {
         await dataProvider.ensurePayeeExists(vendorName, false, lId);
+        advance(bpPerSchedOp, `${config.name}: scheduled payees`);
       }
 
       await dataProvider.addScheduledTransaction({
@@ -916,9 +1025,11 @@ export const generateDiverseDemoData = async (
         frequency: sched.frequency,
         remarks: sched.remarks,
       });
+      advance(bpPerSchedOp, `${config.name}: scheduled transactions`);
 
       if (sched.isTransfer) {
         await dataProvider.ensureCategoryExists("Transfer", lId);
+        advance(bpPerSchedOp, `${config.name}: scheduled transfer (link)`);
         await dataProvider.addScheduledTransaction({
           user_id: lId,
           account: vendorName,
@@ -931,24 +1042,18 @@ export const generateDiverseDemoData = async (
           frequency: sched.frequency,
           remarks: sched.remarks,
         });
+        advance(bpPerSchedOp, `${config.name}: scheduled transfer (mirror)`);
       }
     }
 
     // --- GENERATE BULK TRANSACTIONS ---
-    const numTransactions = 1500;
     const availableCategories = Object.keys(CATEGORIES_CONFIG).filter(
       (c) => c !== "Transfer",
     );
     const transactionsBatch: Omit<Transaction, "id" | "created_at">[] = [];
     const vendorsToEnsure = new Set<string>();
 
-    // Generate phase (in-memory)
-    onProgress({
-      stage: `Generating ${numTransactions} transactions...`,
-      progress: 10 + (currentLedgerIndex / totalLedgers) * 80 + 5,
-      totalStages: TOTAL_STAGES,
-    });
-
+    // Generate phase (in-memory) — fast; one progress bump so the bar does not lie about DB work
     for (let i = 0; i < numTransactions; i++) {
       const isTransfer = Math.random() < 0.08;
       const date = getRandomDate(i);
@@ -1041,39 +1146,59 @@ export const generateDiverseDemoData = async (
         remarks: getRandomRemark(cat, amount, false),
       });
     }
+    advance(wTxGen, `${config.name}: transactions prepared (in memory)`);
 
     // Bulk Ensure Entities (Vendors)
     // Note: ensurePayeeExists is singular, so we loop.
-    // But since we have ~1000 transactions, we probably have ~50-100 vendors. This is fast.
-    onProgress({
-      stage: `Creating vendors...`,
-      progress: 10 + (currentLedgerIndex / totalLedgers) * 80 + 10,
-      totalStages: TOTAL_STAGES,
-    });
-
-    for (const vendorName of vendorsToEnsure) {
-      await dataProvider.ensurePayeeExists(vendorName, false, lId);
+    const vendorList = [...vendorsToEnsure];
+    let vendorBpApplied = 0;
+    for (let vi = 0; vi < vendorList.length; vi++) {
+      await dataProvider.ensurePayeeExists(vendorList[vi], false, lId);
+      const targetApplied = Math.floor(
+        (wVendors * (vi + 1)) / vendorList.length,
+      );
+      const delta = targetApplied - vendorBpApplied;
+      if (delta > 0) {
+        advance(
+          delta,
+          `${config.name}: vendors (${vi + 1}/${vendorList.length})`,
+        );
+        vendorBpApplied += delta;
+      }
+    }
+    const vendorBpRemainder = wVendors - vendorBpApplied;
+    if (vendorBpRemainder > 0) {
+      advance(vendorBpRemainder, `${config.name}: vendors`);
     }
 
-    // Bulk Insert Transactions
-    onProgress({
-      stage: `Inserting transactions...`,
-      progress: 10 + (currentLedgerIndex / totalLedgers) * 80 + 15,
-      totalStages: TOTAL_STAGES,
-    });
-
-    // DataProvider might not have addMultipleTransactions interface fully typed in all contexts,
-    // but LocalDataProvider has it. Cast if necessary or assume DataProvider interface has it.
-    // DataProvider interface guarantees addMultipleTransactions
-    await dataProvider.addMultipleTransactions(transactionsBatch);
-
-    currentLedgerIndex++;
+    const txTotal = transactionsBatch.length;
+    let insertBpApplied = 0;
+    for (let off = 0; off < txTotal; off += TRANSACTION_INSERT_BATCH_SIZE) {
+      const slice = transactionsBatch.slice(
+        off,
+        off + TRANSACTION_INSERT_BATCH_SIZE,
+      );
+      await dataProvider.addMultipleTransactions(slice);
+      const doneCount = Math.min(off + slice.length, txTotal);
+      const targetApplied = Math.floor((wInsert * doneCount) / txTotal);
+      const delta = targetApplied - insertBpApplied;
+      if (delta > 0) {
+        advance(
+          delta,
+          `${config.name}: saving transactions (${doneCount}/${txTotal})`,
+        );
+        insertBpApplied += delta;
+      }
+    }
+    const insertBpRemainder = wInsert - insertBpApplied;
+    if (insertBpRemainder > 0) {
+      advance(insertBpRemainder, `${config.name}: transactions saved`);
+    }
   }
 
   onProgress({
-    stage: "Finalizing...",
+    stage: "Demo data ready — reloading…",
     progress: 100,
-    totalStages: TOTAL_STAGES,
+    totalStages: 100,
   });
-  await new Promise((r) => setTimeout(r, 800));
 };

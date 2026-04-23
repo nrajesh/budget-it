@@ -31,10 +31,11 @@ export const GlobalProgressDialog = () => {
 
   React.useEffect(() => {
     if (shouldClose && isOpen) {
-      // Use a small timeout to ensure the progress bar reaches 100% before closing
+      // Let the bar sit at 100% briefly so users read "complete" before auto-dismiss
+      // (flows that need an exact lifetime still call setOperationProgress(null) themselves).
       const timer = setTimeout(() => {
         setOperationProgress(null);
-      }, 500);
+      }, 1600);
       return () => clearTimeout(timer);
     }
   }, [shouldClose, isOpen, setOperationProgress]);
