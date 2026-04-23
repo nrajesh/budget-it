@@ -966,8 +966,7 @@ export const resources: Resource = {
             customTitle: "Aangepaste taal toevoegen",
             codePlaceholder: "Taalcode (bijv. de, ja, hi)",
             namePlaceholder: "Weergavenaam (bijv. Duits)",
-            jsonLabel:
-              "Vertaal-JSON voor deze taal (root = vertaalsleutels)",
+            jsonLabel: "Vertaal-JSON voor deze taal (root = vertaalsleutels)",
             jsonPlaceholder: '{"layout":{"nav":{"dashboard":"..."}}}',
             save: "Aangepaste taal opslaan",
             deleteActiveHint:

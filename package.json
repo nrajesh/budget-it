@@ -127,7 +127,8 @@
       "minimatch@^3.0.0>brace-expansion": "1.1.13",
       "minimatch@^5.0.0>brace-expansion": "2.0.3",
       "minimatch@^9.0.0>brace-expansion": "2.0.3",
-      "minimatch@^10.0.0>brace-expansion": "5.0.5"
+      "minimatch@^10.0.0>brace-expansion": "5.0.5",
+      "@xmldom/xmldom": ">=0.8.13"
     },
     "onlyBuiltDependencies": [
       "electron"

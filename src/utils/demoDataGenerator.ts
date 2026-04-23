@@ -860,7 +860,9 @@ export const generateDiverseDemoData = async (
       const id = await dataProvider.ensureCategoryExists(cat, lId);
       catStepIdx += 1;
       {
-        const targetApplied = Math.floor((wCategories * catStepIdx) / categoryEnsureSteps);
+        const targetApplied = Math.floor(
+          (wCategories * catStepIdx) / categoryEnsureSteps,
+        );
         const delta = targetApplied - categoryBpApplied;
         if (delta > 0) {
           advance(delta, `${config.name}: category ${cat}`);
@@ -1152,10 +1154,15 @@ export const generateDiverseDemoData = async (
     let vendorBpApplied = 0;
     for (let vi = 0; vi < vendorList.length; vi++) {
       await dataProvider.ensurePayeeExists(vendorList[vi], false, lId);
-      const targetApplied = Math.floor((wVendors * (vi + 1)) / vendorList.length);
+      const targetApplied = Math.floor(
+        (wVendors * (vi + 1)) / vendorList.length,
+      );
       const delta = targetApplied - vendorBpApplied;
       if (delta > 0) {
-        advance(delta, `${config.name}: vendors (${vi + 1}/${vendorList.length})`);
+        advance(
+          delta,
+          `${config.name}: vendors (${vi + 1}/${vendorList.length})`,
+        );
         vendorBpApplied += delta;
       }
     }
@@ -1167,7 +1174,10 @@ export const generateDiverseDemoData = async (
     const txTotal = transactionsBatch.length;
     let insertBpApplied = 0;
     for (let off = 0; off < txTotal; off += TRANSACTION_INSERT_BATCH_SIZE) {
-      const slice = transactionsBatch.slice(off, off + TRANSACTION_INSERT_BATCH_SIZE);
+      const slice = transactionsBatch.slice(
+        off,
+        off + TRANSACTION_INSERT_BATCH_SIZE,
+      );
       await dataProvider.addMultipleTransactions(slice);
       const doneCount = Math.min(off + slice.length, txTotal);
       const targetApplied = Math.floor((wInsert * doneCount) / txTotal);
