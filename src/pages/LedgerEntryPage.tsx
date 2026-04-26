@@ -453,10 +453,7 @@ const LedgerEntryPage = () => {
       <img
         src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
         alt="Vaulted Money"
-        className={cn(
-          "h-24 w-auto mx-auto",
-          resolvedTheme !== "dark" && "mix-blend-multiply",
-        )}
+        className="h-24 w-auto mx-auto"
       />
     );
   };

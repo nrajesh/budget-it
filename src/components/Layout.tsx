@@ -239,10 +239,7 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt="Vaulted Money"
-                className={cn(
-                  "size-8 shrink-0",
-                  resolvedTheme !== "dark" && "mix-blend-multiply",
-                )}
+                className="size-8 shrink-0"
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Vaulted Money
