@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Budget It</string>
-    <string name="title_activity_main">Budget It</string>
-    <string name="package_name">com.budgetit.app</string>
-    <string name="custom_url_scheme">com.budgetit.app</string>
+    <string name="app_name">Vaulted Money</string>
+    <string name="title_activity_main">Vaulted Money</string>
+    <string name="package_name">com.vaultedmoney.app</string>
+    <string name="custom_url_scheme">com.vaultedmoney.app</string>
 </resources>

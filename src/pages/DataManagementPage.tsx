@@ -56,7 +56,7 @@ const DataManagementPage = () => {
   const handleExportPlain = async () => {
     try {
       const filename = `budget_backup_${new Date().toISOString().split("T")[0]}.json`;
-      const description = "Budget It Full Backup (All Ledgers)";
+      const description = "Vaulted Money Full Backup (All Ledgers)";
 
       const data = await generateBackupData(dataProvider);
       const jsonString = JSON.stringify(data, null, 2);
@@ -86,7 +86,7 @@ const DataManagementPage = () => {
       const success = await saveFile(
         filename,
         encrypted,
-        "Budget It Full Backup (Encrypted)",
+        "Vaulted Money Full Backup (Encrypted)",
       );
 
       if (success) {

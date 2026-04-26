@@ -48,7 +48,7 @@ As a user, I want to be able to "pin" the sidebar so it stays expanded, and have
 - **FR-006**: The pinned state MUST be persisted across reloads (using cookies/localStorage).g., via cookies/localStorage) so it survives reloads.
 - **FR-007**: When Pinned, the sidebar acts as a standard fixed sidebar (pushing content).
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+).
     - *Note*: On mobile, the sidebar behavior typically changes (sheets/drawers). This feature primarily targets Desktop. Mobile behavior should remain "Sheet" based or standard mobile drawer.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes.

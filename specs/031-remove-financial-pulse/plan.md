@@ -6,14 +6,14 @@ The "Financial Pulse" dashboard style was introduced as an alternative layout. I
 ## Proposed Changes
 
 ### [Component] Contexts
-#### [MODIFY] [ThemeContext.tsx](file:///Users/nrajesh/Github/budget-it/src/contexts/ThemeContext.tsx)
+#### [MODIFY] [ThemeContext.tsx](file:///Users/nrajesh/Github/vaulted-money/src/contexts/ThemeContext.tsx)
 -   Remove `"financial-pulse"` from `DashboardStyle` type.
 -   Hardcode `isFinancialPulse` to `false`.
 -   Update `setDashboardStyle` to only accept `"standard"` (to avoid runtime errors, though type-safety should handle it).
 -   Update initialization logic to always default to `"standard"`.
 
 ### [Component] Pages
-#### [MODIFY] [SettingsPage.tsx](file:///Users/nrajesh/Github/budget-it/src/pages/SettingsPage.tsx)
+#### [MODIFY] [SettingsPage.tsx](file:///Users/nrajesh/Github/vaulted-money/src/pages/SettingsPage.tsx)
 -   Remove `Dashboard Style` card (Lines 164-185).
 -   Remove `handleDashboardStyleChange` function.
 -   Move `Ledger Settings` card (Lines 117-135) into the grid slot previously occupied by `Dashboard Style` (between `Default Currency` and `Future Transactions`).

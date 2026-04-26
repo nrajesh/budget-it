@@ -1,4 +1,4 @@
-# Budget It Constitution
+# Vaulted Money Constitution
 
 ## Core Principles
 

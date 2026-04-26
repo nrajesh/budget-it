@@ -68,7 +68,7 @@ A user imports a JSON backup file on the Ledger Select screen. This is typically
 - **FR-004**: JSON import MUST report progress at start and completion.
 - **FR-005**: The modal MUST not be dismissible during active operations (matching existing behavior).
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency.

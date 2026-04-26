@@ -37,7 +37,7 @@ specs/010-implement-continuity-feature/
 ### Source Code Impact
 
 ```text
-budget-it/
+vaulted-money/
 ├── electron/
 │   ├── main.ts                # Add IPC handlers for folder selection & fs ops
 │   └── preload.ts             # Expose fs APIs to renderer
@@ -73,5 +73,5 @@ Add a new section in the settings to let users designate the sync folder. It wil
 ### Manual Verification
 1. Open the app in a web browser.
 2. Go to Settings -> Select Sync Folder. Pick a local folder.
-3. Make a test transaction. Verify a `budget-it-sync.json` file is created in that folder.
+3. Make a test transaction. Verify sync data (e.g. `ledger.json` in the sync folder) is created as expected.
 4. Reload the page. Ensure the app picks up the transaction automatically.

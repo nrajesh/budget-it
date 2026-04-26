@@ -86,7 +86,7 @@
 - **FR-001**: System MUST [be able to manage user's financial transactions giving meaningful insights using inherent entities]
 - **FR-002**: System MUST [be able to derive budgets from transactions and make it intuitive for user to manage their finances]
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise).
@@ -98,7 +98,7 @@
 - **Modified Components**: [e.g., `src/components/dashboard/widget.tsx`]
 - **Context Updates**: [e.g., `src/contexts/TransactionContext.tsx`]
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 
 - **Ledger**: The central storage which hosts user's finance. Consider it equivalent of a private book which can be passed on to another user. This is primordial to all other entities.
 - **Transaction**: The central unit of data. Linked to Account, Category, and (optionally) Vendor/Payee.

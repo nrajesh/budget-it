@@ -9,7 +9,7 @@ None.
 
 ### UI Components
 
-#### [MODIFY] [Insights.tsx](file:///Users/nrajesh/Github/budget-it/src/pages/Insights.tsx)
+#### [MODIFY] [Insights.tsx](file:///Users/nrajesh/Github/vaulted-money/src/pages/Insights.tsx)
 -   **Header**: Replace the simple `h1` with the gradient-styled header from `Analytics.tsx`.
 -   **Container**: Update the main wrapper `div` to include the standard background, padding, and rounded corners found in other pages.
 -   **Usage Trends**: Wrap the "Top Account Activity" and "Top Vendor Spending" sections in `Card` components or the standard bordered container used in `Transactions` table to ensure visual consistency and better separation.

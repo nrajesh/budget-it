@@ -6,7 +6,7 @@ export const getWebDirectoryHandle =
   async (): Promise<FileSystemDirectoryHandle> => {
     if (!("showDirectoryPicker" in window)) {
       throw new Error(
-        "Your browser does not support local folder sync. Please use Chrome, Edge, or the Budget-It desktop app.",
+        "Your browser does not support local folder sync. Please use Chrome, Edge, or the Vaulted Money desktop app.",
       );
     }
     // @ts-expect-error - showDirectoryPicker is not yet in all TS definitions

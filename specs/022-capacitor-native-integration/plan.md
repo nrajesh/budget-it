@@ -5,13 +5,13 @@
 
 ## Summary
 
-This plan outlines the steps to wrap the existing Budget-It Web Application in a native mobile shell (iOS/Android) using Capacitor. Based on research regarding mobile OS sandboxing limitations, we will bypass the need for a web-like "Directory Picker" by defaulting the sync location to the platform-native `Documents` directory using `@capacitor/filesystem`. This ensures 100% reliable read/write access and leverages built-in OS sync (like iCloud Drive).
+This plan outlines the steps to wrap the existing Vaulted Money Web Application in a native mobile shell (iOS/Android) using Capacitor. Based on research regarding mobile OS sandboxing limitations, we will bypass the need for a web-like "Directory Picker" by defaulting the sync location to the platform-native `Documents` directory using `@capacitor/filesystem`. This ensures 100% reliable read/write access and leverages built-in OS sync (like iCloud Drive).
 
 ### Architecture Diagram
 
 ```mermaid
 flowchart TD
-    A[Budget-It App \n React / Hooks] --> B(fs-adapter.ts \n Unified API Layer)
+    A[Vaulted Money App \n React / Hooks] --> B(fs-adapter.ts \n Unified API Layer)
     
     B -->|isElectron() === true| C(fs-electron.ts)
     B -->|Capacitor.isNativePlatform() === true| D(fs-capacitor.ts)
@@ -54,7 +54,7 @@ specs/011-implement-capacitor-native/
 ### Source Code Impact
 
 ```text
-budget-it/
+vaulted-money/
 ├── capacitor.config.ts        # [NEW] Capacitor configuration
 ├── android/                   # [NEW] Generated Android Studio project
 ├── ios/                       # [NEW] Generated Xcode project
@@ -68,7 +68,7 @@ budget-it/
 └── package.json               # [MODIFY] Add @capacitor/* dependencies
 ```
 
-**Structure Decision**: Adhering to standard `Budget It` modular architecture by extending the `fs-adapter.ts` pattern.
+**Structure Decision**: Adhering to standard `Vaulted Money` modular architecture by extending the `fs-adapter.ts` pattern.
 
 ## Implementation Details
 
@@ -98,7 +98,7 @@ Because Capacitor requires native emulators to test *native* features, verificat
 1. Run `npx cap sync ios`.
 2. Open `ios/App/App.xcworkspace` in Xcode.
 3. Select an iOS Simulator (e.g., iPhone 15 Pro) and click Run.
-4. Navigate to Budget-It Settings -> Cross-Device Continuity.
+4. Navigate to Vaulted Money Settings -> Cross-Device Continuity.
 5. Enable Auto-Sync. The system should default to the App's Documents folder.
 6. Create a budget or transaction.
-7. Open the iOS "Files" app inside the simulator, navigate to "On My iPhone -> Budget-It -> Documents" and verify that `ledger.json` was created successfully.
+7. Open the iOS "Files" app inside the simulator, navigate to "On My iPhone -> Vaulted Money -> Documents" and verify that `ledger.json` was created successfully.

@@ -1,4 +1,4 @@
-# Budget It Development Guidelines
+# Vaulted Money Development Guidelines
 
 Auto-generated from all feature plans. Last updated: [DATE]
 

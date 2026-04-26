@@ -1,6 +1,6 @@
 {
-	"appId": "com.budgetit.app",
-	"appName": "Budget It!",
+	"appId": "com.vaultedmoney.app",
+	"appName": "Vaulted Money",
 	"webDir": "dist",
 	"packageClassList": [
 		"FilesystemPlugin",

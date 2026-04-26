@@ -1,4 +1,4 @@
-# Budget It Constitution
+# Vaulted Money Constitution
 
 ## Core Principles
 
@@ -39,6 +39,6 @@ All features start with a specification (`spec.md`) and an implementation plan (
 
 ## Governance
 
-This constitution defines the immutable laws of the Budget It codebase. Changes to these principles require a team-wide RFC and unanimous approval.
+This constitution defines the immutable laws of the Vaulted Money codebase. Changes to these principles require a team-wide RFC and unanimous approval.
 
 **Version**: 1.0.0 | **Ratified**: 2026-02-15

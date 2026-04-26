@@ -29,7 +29,7 @@ Users can keep their lists clean by removing unused categories or vendors.
 - **FR-003**: System MUST identify and allow deletion of unused entities (0 transactions).
 - **FR-004**: System MUST recalculate ledger stats after maintenance operations.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **MaintenanceAction**:
     - `type`: 'merge' | 'delete'
     - `entityType`: 'vendor' | 'category'

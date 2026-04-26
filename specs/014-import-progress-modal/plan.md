@@ -8,7 +8,7 @@ The `LedgerEntryPage` (at `/ledgers`) renders **outside** the `Layout` component
 
 ### LedgerEntryPage Component
 
-#### [MODIFY] [LedgerEntryPage.tsx](file:///Users/nrajesh/Github/budget-it/src/pages/LedgerEntryPage.tsx)
+#### [MODIFY] [LedgerEntryPage.tsx](file:///Users/nrajesh/Github/vaulted-money/src/pages/LedgerEntryPage.tsx)
 
 **Change 1: Render `GlobalProgressDialog` on this page**
 
@@ -57,7 +57,7 @@ Add progress calls around decryption and import:
 
 Since this is a UX feature (visual progress modal), the primary verification is visual/interactive:
 
-1. **Start the dev server**: `cd /Users/nrajesh/Github/budget-it && npm run dev`
+1. **Start the dev server**: `cd /Users/nrajesh/Github/vaulted-money && npm run dev`
 2. **Navigate** to `http://localhost:5173/ledgers`
 3. **Test Demo Data Generation**:
    - Click "Generate Data" → confirm

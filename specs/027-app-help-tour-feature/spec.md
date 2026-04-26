@@ -53,7 +53,7 @@ As a developer, I want the tour configurations to be centralized and easily main
 - **FR-003**: System MUST provide specific, step-by-step guided tours for major screens in the application.
 - **FR-004**: System MUST ensure the help tour UI responds to the active theme (light/dark mode) of the application.
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency.

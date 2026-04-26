@@ -34,14 +34,13 @@ export default defineConfig(() => ({
           "'self'",
           "https://api.frankfurter.app",
           "wss://ws-us3.pusher.com",
-          "https://vercel.live",
           ...aiDomains,
         ].join(" ");
 
         return html.replace(
           "<head>",
           `<head>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src ${connectSrc}; frame-src 'self' https://vercel.live; font-src 'self' data:;">`,
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src ${connectSrc}; frame-src 'self'; font-src 'self' data:;">`,
         );
       },
     },

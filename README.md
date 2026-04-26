@@ -1,18 +1,15 @@
-<h1 align="center">💰 Budget It - Personal Finance Tracker</h1>
+<h1 align="center">💰 Vaulted Money - Secure Finance Tracker</h1>
 
 <p align="center">
-  <i>A privacy-focused, local-first personal finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud.</i>
+  <i>A privacy-focused, local-first Secure Finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud.</i>
 </p>
 
 <!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
 <p align="center">
-  <a href="https://app.circleci.com/pipelines/github/nrajesh/budget-it">
-    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/budget-it/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
+  <a href="https://app.circleci.com/pipelines/github/nrajesh/vaulted.money">
+    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/vaulted.money/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
   </a>
-  <a href="https://budget-it-nine.vercel.app/">
-    <img src="https://deploy-badge.vercel.app/vercel/budget-it-nine?style=flat" alt="Vercel Deployment">
-  </a>
-  <a href="https://github.com/nrajesh/budget-it">
+  <a href="https://github.com/nrajesh/vaulted.money">
     <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white" alt="GitHub">
   </a>
   <a href="https://opensource.org/licenses/MIT">
@@ -32,7 +29,7 @@
 
 ---
 
-**Motivation:** Budget It exists because basic budgeting should not sit behind paywalls when the core idea is simple math and honest records - and because your data should stay yours. For the full story, local-first ethos, and visuals, see **[Why Budget It exists](documentation/WHY_BUDGET_IT.md)**.
+**Motivation:** Vaulted Money exists because basic budgeting should not sit behind paywalls when the core idea is simple math and honest records - and because your data should stay yours. For the full story, local-first ethos, and visuals, see **[Why Vaulted Money exists](documentation/WHY_VAULTED_MONEY.md)**.
 
 ---
 
@@ -80,8 +77,8 @@ For a detailed view of the system architecture, including web and desktop compon
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/nrajesh/budget-it.git
-cd budget-it
+git clone https://github.com/nrajesh/vaulted.money.git
+cd vaulted.money
 
 # 2. Install dependencies
 pnpm install
@@ -155,14 +152,14 @@ This single command does everything:
 
 ## 🔗 Live Demo
 
-Try the latest version of the app here: **[budget-it-nine.vercel.app](https://budget-it-nine.vercel.app)**
+Deploy a production build to your host (for example [Cloudflare Pages](https://pages.cloudflare.com/)) and use that URL as the public demo.
 
 ---
 
 ## 📂 Project Structure
 
 ```
-budget-it/
+vaulted.money/
 ├── electron/                  # Electron-specific code
 │   ├── main.ts                #   Main process (window, IPC, fs access)
 │   └── preload.ts             #   Preload script (contextBridge)
@@ -222,7 +219,7 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 | File                                                                         | Purpose                                                                                                             |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **[`WHY_BUDGET_IT.md`](documentation/WHY_BUDGET_IT.md)**                     | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.              |
+| **[`WHY_VAULTED_MONEY.md`](documentation/WHY_VAULTED_MONEY.md)**                     | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.              |
 | **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
 | **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |
 | **[`SUPPORT.md`](documentation/SUPPORT.md)**                                 | **Support Policy**. How to get help and file issues.                                                                |
@@ -266,7 +263,7 @@ The slash commands (e.g., `/agent.palette`) work automatically in IDEs that supp
 
 ### AI Provider Configuration
 
-Budget It supports "Bring Your Own Key" (BYOK) AI categorization. You can manage AI providers directly in the application.
+Vaulted Money supports "Bring Your Own Key" (BYOK) AI categorization. You can manage AI providers directly in the application.
 
 1.  **AI Provider Management**: Navigate to **Management > AI Providers** in the sidebar.
 2.  **Add/Edit Provider**:
@@ -281,7 +278,7 @@ Budget It supports "Bring Your Own Key" (BYOK) AI categorization. You can manage
 
 ### ⚠️ Important: Content Security Policy (CSP)
 
-Because Budget It is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default. 
+Because Vaulted Money is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default. 
 
 **If you add a completely new API domain via the UI (e.g. `https://api.my-new-ai.com`), you MUST add it to the allowed domains list in the code.**
 
@@ -339,14 +336,9 @@ pnpm validate          # TypeScript + ESLint in one shot
 
 ## 📦 Deployment
 
-### Deploy to Vercel (Recommended)
+The web build is a static SPA (`dist/`). Use any static host; **Cloudflare Pages** is a good fit: connect the Git repository, set the build command to `pnpm run build`, the build output directory to `dist`, and use Node 20+ to match local builds. The `public/_redirects` file is included for client-side routing on Cloudflare Pages.
 
-```bash
-npm i -g vercel
-vercel deploy
-```
-
-Since the app is fully client-side, it works on any static host: **Vercel**, **Netlify**, **GitHub Pages**, or **Cloudflare Pages**.
+You can also deploy the `dist` folder with `npx wrangler pages deploy dist` (Wrangler from devDependencies or `npx`) after `pnpm run build`, if you are not using Git-integrated builds.
 
 ---
 

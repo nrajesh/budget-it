@@ -32,7 +32,7 @@ Users can see their most recent transactions and quickly add new ones.
 - **FR-004**: Dashboard MUST include a "Recent Activity" feed.
 - **FR-005**: Dashboard MUST include a "Financial Pulse" score (0-100) based on health metrics.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Dashboard Widget**:
     - `type`: 'metric' | 'chart' | 'feed'
     - `data_source`: 'transactions' | 'budgets' | 'accounts'

@@ -30,7 +30,7 @@ Users can ensure their automated backups are secure.
 - **FR-003**: System MUST persist backup configurations in DB.
 - **FR-004**: System MUST handle permission expiry gracefully (Web).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **BackupConfig**:
     - `id`: UUID
     - `frequency`: number (ms)

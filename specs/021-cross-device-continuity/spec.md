@@ -82,7 +82,7 @@ As a user, I want my changes to be automatically exported to the default sync fo
 - **FR-008**: System MUST verify the version of the incoming data during import (both manual and auto-import). If a version mismatch is detected (e.g., importing v2 data into a v1 app), the system MUST gracefully warn the user and prevent corruption.
 - **FR-009**: System MUST integrate the default location as an option in the manual Import/Export UI flows.
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise).
@@ -94,7 +94,7 @@ As a user, I want my changes to be automatically exported to the default sync fo
 - **Modified Components**: App bootstrap/initialization logic, Import/Export screens.
 - **Context Updates**: Global state or LedgerContext to trigger exports on change.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Ledger**: The central storage which hosts user's finance. The sync feature will act on the Ledger file.
 
 ## Success Criteria

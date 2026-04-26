@@ -9,13 +9,13 @@ None.
 
 ### UI Components
 
-#### [MODIFY] [CalendarView.tsx](file:///Users/nrajesh/Github/budget-it/src/pages/CalendarView.tsx)
+#### [MODIFY] [CalendarView.tsx](file:///Users/nrajesh/Github/vaulted-money/src/pages/CalendarView.tsx)
 -   **Header**: Replace `h2` with the standard `h1` gradient header.
 -   **Container**: Update the main wrapper `div` to use standard page styling (slate-50/dark-gradient, rounded-xl, etc.).
 
 ### Templates
 
-#### [MODIFY] [checklist-template.md](file:///Users/nrajesh/Github/budget-it/.specify/templates/checklist-template.md)
+#### [MODIFY] [checklist-template.md](file:///Users/nrajesh/Github/vaulted-money/.specify/templates/checklist-template.md)
 -   **New Section**: Add "UI Consistency" section.
 -   **Items**: Add checks for "Header matches standard design" and "Container matches standard design".
 

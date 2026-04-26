@@ -11,7 +11,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
     {
       target: "body",
       content:
-        "Welcome to Budget It! This is the Ledgers screen where you choose or create your central financial datastore.",
+        "Welcome to Vaulted Money! This is the Ledgers screen where you choose or create your central financial datastore.",
       placement: "center",
       skipBeacon: true,
     },
@@ -321,7 +321,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
     {
       target: "body",
       content:
-        "Choose how Budget It speaks to you. Pick your primary language or add a custom translation bundle.",
+        "Choose how Vaulted Money speaks to you. Pick your primary language or add a custom translation bundle.",
       placement: "center",
       skipBeacon: true,
     },

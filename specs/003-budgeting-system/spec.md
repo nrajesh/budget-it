@@ -26,7 +26,7 @@ Budgets can be scoped to specific accounts (e.g., "Business Budget" only counts 
 - **FR-002**: System MUST calculate `spent_amount` dynamically based on transactions within the date range.
 - **FR-003**: System MUST support `account_scope` (Global vs specific accounts).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Budget**:
     - `id`: UUID
     - `name`: string

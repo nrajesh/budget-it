@@ -1,6 +1,6 @@
-# Contributing to Budget It
+# Contributing to Vaulted Money
 
-First off, thank you for considering contributing to Budget It! It's people like you that make Budget It such a great tool for personal finance.
+First off, thank you for considering contributing to Vaulted Money It's people like you that make Vaulted Money such a great tool for personal finance.
 
 ## Getting Started
 

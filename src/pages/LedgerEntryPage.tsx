@@ -451,8 +451,8 @@ const LedgerEntryPage = () => {
     const { resolvedTheme } = useTheme();
     return (
       <img
-        src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo.png"}
-        alt="Budget It!"
+        src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+        alt="Vaulted Money"
         className={cn(
           "h-24 w-auto mx-auto",
           resolvedTheme !== "dark" && "mix-blend-multiply",
@@ -497,7 +497,7 @@ const LedgerEntryPage = () => {
         <div className="tour-ledger-title text-center space-y-2">
           <LogoImage />
           <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
-            Budget It!
+            Vaulted Money
           </h1>
           <p className="text-lg text-muted-foreground">
             Select a budget ledger to continue.

@@ -59,7 +59,7 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacy-first | Data local | Open sourced",
           heartLink: "Made with ❤️ for your financial freedom",
-          githubAria: "Open Budget It on GitHub",
+          githubAria: "Open Vaulted Money on GitHub",
         },
       },
       dialogs: {
@@ -310,7 +310,7 @@ export const resources: Resource = {
         language: {
           "0": {
             content:
-              "Choose how Budget It speaks to you. Pick your primary language or add a custom translation bundle.",
+              "Choose how Vaulted Money speaks to you. Pick your primary language or add a custom translation bundle.",
           },
           "1": {
             content:
@@ -374,7 +374,7 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacidad primero | Datos locales | Codigo abierto",
           heartLink: "Hecho con ❤️ para tu libertad financiera",
-          githubAria: "Abrir Budget It en GitHub",
+          githubAria: "Abrir Vaulted Money en GitHub",
         },
       },
       dialogs: {
@@ -547,7 +547,7 @@ export const resources: Resource = {
         language: {
           "0": {
             content:
-              "Elige como te habla Budget It. Selecciona tu idioma principal o agrega un paquete de traduccion personalizado.",
+              "Elige como te habla Vaulted Money. Selecciona tu idioma principal o agrega un paquete de traduccion personalizado.",
           },
           "1": {
             content:
@@ -605,7 +605,7 @@ export const resources: Resource = {
         footer: {
           tagline: "隐私优先 | 数据本地 | 开源",
           heartLink: "用 ❤️ 助你实现财务自由",
-          githubAria: "在 GitHub 上打开 Budget It",
+          githubAria: "在 GitHub 上打开 Vaulted Money",
         },
       },
       dialogs: {
@@ -671,7 +671,7 @@ export const resources: Resource = {
       tour: {
         language: {
           "0": {
-            content: "在此选择 Budget It 的界面语言，或添加自定义翻译包。",
+            content: "在此选择 Vaulted Money 的界面语言，或添加自定义翻译包。",
           },
           "1": {
             content:
@@ -735,7 +735,7 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacy eerst | Gegevens lokaal | Open source",
           heartLink: "Met ❤️ gemaakt voor jouw financiële vrijheid",
-          githubAria: "Budget It openen op GitHub",
+          githubAria: "Vaulted Money openen op GitHub",
         },
       },
       dialogs: {
@@ -987,7 +987,7 @@ export const resources: Resource = {
         language: {
           "0": {
             content:
-              "Kies hoe Budget It met je communiceert. Kies je primaire taal of voeg een aangepast vertaalpakket toe.",
+              "Kies hoe Vaulted Money met je communiceert. Kies je primaire taal of voeg een aangepast vertaalpakket toe.",
           },
           "1": {
             content:
@@ -1051,7 +1051,7 @@ export const resources: Resource = {
         footer: {
           tagline: "தனியுரிமை முதலில் | தரவு உள்ளமை | திறந்த மூலம்",
           heartLink: "உங்கள் நிதி சுதந்திரத்திற்காக ❤️ உடன் உருவாக்கப்பட்டது",
-          githubAria: "GitHub இல் Budget It ஐ திறக்கவும்",
+          githubAria: "GitHub இல் Vaulted Money ஐ திறக்கவும்",
         },
       },
       dialogs: {
@@ -1185,7 +1185,7 @@ export const resources: Resource = {
         language: {
           "0": {
             content:
-              "Budget It உங்களிடம் எப்படி பேச வேண்டும் என்பதை இங்கே தேர்ந்தெடுக்கவும். முதன்மை மொழியைத் தேர்ந்தெடுக்கவும் அல்லது தனிப்பயன் மொழிபெயர்ப்பைச் சேர்க்கவும்.",
+              "Vaulted Money உங்களிடம் எப்படி பேச வேண்டும் என்பதை இங்கே தேர்ந்தெடுக்கவும். முதன்மை மொழியைத் தேர்ந்தெடுக்கவும் அல்லது தனிப்பயன் மொழிபெயர்ப்பைச் சேர்க்கவும்.",
           },
           "1": {
             content:

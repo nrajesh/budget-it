@@ -29,7 +29,7 @@ Users can see future balances based on scheduled transactions.
 - **FR-002**: System MUST support "Next Due Date" calculation logic.
 - **FR-003**: System MUST allow converting a Scheduled Transaction into a Real Transaction (`processScheduledTransactions`).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **ScheduledTransaction**:
     - `id`: UUID
     - `recurrence_frequency`: string

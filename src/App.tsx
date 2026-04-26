@@ -10,8 +10,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { DataProviderProvider } from "./context/DataProviderContext";
 import { FilterProvider } from "./contexts/FilterContext";
-import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
@@ -145,8 +143,6 @@ function App() {
         </ThemeProvider>
       </DataProviderProvider>
       <Toaster />
-      <VercelAnalytics />
-      <SpeedInsights />
     </QueryClientProvider>
   );
 }

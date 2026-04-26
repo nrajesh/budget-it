@@ -3,10 +3,11 @@ import { SyncDirectoryConfig } from "@/types/sync";
 import { selectSyncDirectory, checkSyncPermission } from "@/utils/fs-adapter";
 import { isElectron } from "@/utils/electron";
 import { Capacitor } from "@capacitor/core";
-import { set, get } from "idb-keyval"; // IDB is required for Web FileSystemDirectoryHandle to persist
+import { set, get, del } from "idb-keyval"; // IDB is required for Web FileSystemDirectoryHandle to persist
 import { toast } from "sonner";
 
-const STORAGE_KEY = "budget_it_sync_config";
+const SYNC_STORAGE_KEY = "vaultedmoney_sync_config";
+const LEGACY_SYNC_STORAGE_KEY = "budget_it_sync_config";
 
 export const useSyncConfig = () => {
   const [config, setConfig] = useState<SyncDirectoryConfig>({
@@ -22,7 +23,15 @@ export const useSyncConfig = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const savedConfig = await get<SyncDirectoryConfig>(STORAGE_KEY);
+        let savedConfig = await get<SyncDirectoryConfig>(SYNC_STORAGE_KEY);
+        if (!savedConfig) {
+          const legacy = await get<SyncDirectoryConfig>(LEGACY_SYNC_STORAGE_KEY);
+          if (legacy) {
+            savedConfig = legacy;
+            await set(SYNC_STORAGE_KEY, legacy);
+            await del(LEGACY_SYNC_STORAGE_KEY);
+          }
+        }
         if (savedConfig) {
           setConfig(savedConfig);
 
@@ -49,7 +58,7 @@ export const useSyncConfig = () => {
   // Save config whenever it changes
   useEffect(() => {
     if (isReady) {
-      set(STORAGE_KEY, config).catch((err: unknown) =>
+      set(SYNC_STORAGE_KEY, config).catch((err: unknown) =>
         console.error("Failed to save sync config:", err),
       );
     }

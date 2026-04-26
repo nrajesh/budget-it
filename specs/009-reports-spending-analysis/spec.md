@@ -30,7 +30,7 @@ Users can track their cash flow over time.
 - **FR-003**: System MUST support date range filtering (Custom, Last 30 Days, YTD).
 - **FR-004**: System MUST support exporting reports to PDF/CSV (if implemented).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **ReportFilter**:
     - `dateRange`: { start, end }
     - `accounts`: string[]
