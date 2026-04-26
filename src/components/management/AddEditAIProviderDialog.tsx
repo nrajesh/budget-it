@@ -125,9 +125,7 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
 
   const handleTestConnection = async () => {
     const values = form.getValues();
-    const apiKey = provider?.id
-      ? readAiApiKeyFromStorage(provider.id)
-      : "";
+    const apiKey = provider?.id ? readAiApiKeyFromStorage(provider.id) : "";
 
     if (!apiKey) {
       showError(

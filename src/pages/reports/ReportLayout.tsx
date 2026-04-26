@@ -341,11 +341,13 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
     const ledgerName = activeLedger ? slugify(activeLedger.name) : "report";
     const fileName = `${ledgerName}_${title.replace(/\s+/g, "_")}_Export.csv`;
 
-    saveFile(fileName, csvString, "Vaulted Money Report Export").then((success) => {
-      if (success) {
-        showSuccess("CSV export completed successfully.");
-      }
-    });
+    saveFile(fileName, csvString, "Vaulted Money Report Export").then(
+      (success) => {
+        if (success) {
+          showSuccess("CSV export completed successfully.");
+        }
+      },
+    );
   };
 
   return (

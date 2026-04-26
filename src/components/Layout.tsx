@@ -233,7 +233,11 @@ const Layout = () => {
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
               <img
-                src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+                src={
+                  resolvedTheme === "dark"
+                    ? "/logo-dark.png"
+                    : "/logo-light.png"
+                }
                 alt="Vaulted Money"
                 className={cn(
                   "size-8 shrink-0",

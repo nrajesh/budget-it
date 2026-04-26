@@ -25,7 +25,9 @@ export const useSyncConfig = () => {
       try {
         let savedConfig = await get<SyncDirectoryConfig>(SYNC_STORAGE_KEY);
         if (!savedConfig) {
-          const legacy = await get<SyncDirectoryConfig>(LEGACY_SYNC_STORAGE_KEY);
+          const legacy = await get<SyncDirectoryConfig>(
+            LEGACY_SYNC_STORAGE_KEY,
+          );
           if (legacy) {
             savedConfig = legacy;
             await set(SYNC_STORAGE_KEY, legacy);
