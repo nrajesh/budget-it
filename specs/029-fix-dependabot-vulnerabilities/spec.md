@@ -1,7 +1,7 @@
 # Fix Dependabot Security Vulnerabilities
 
 ## Problem Statement
-The budget-it repository has 9 open Dependabot security alerts (5 High, 4 Moderate) affecting transitive dependencies in `pnpm-lock.yaml`. All vulnerable packages are dev/build-time dependencies, not production runtime dependencies.
+The GitHub repository `nrajesh/vaulted-money` has 9 open Dependabot security alerts (5 High, 4 Moderate) affecting transitive dependencies in `pnpm-lock.yaml`. All vulnerable packages are dev/build-time dependencies, not production runtime dependencies.
 
 ## Goals
 - Resolve all 9 Dependabot alerts by upgrading transitive dependencies

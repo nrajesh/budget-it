@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve Budget It
+about: Create a report to help us improve Vaulted Money
 title: ''
 labels: bug
 assignees: ''

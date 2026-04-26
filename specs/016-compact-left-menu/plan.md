@@ -11,7 +11,7 @@ We will implement a compact left menu that displays icons by default, expands to
 
 ### UI Components
 
-#### [MODIFY] [sidebar.tsx](file:///Users/nrajesh/Github/budget-it/src/components/ui/sidebar.tsx)
+#### [MODIFY] [sidebar.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/ui/sidebar.tsx)
 
 - Update `Sidebar` component to track `isHovered` state.
 - Implement "Floating Expansion" logic:
@@ -20,7 +20,7 @@ We will implement a compact left menu that displays icons by default, expands to
     - **Interaction**: Remove any `onClick` handler on the sidebar container to prevent accidental pinning during navigation.
     - **Pinning**: Implement `PinTrigger` with `e.stopPropagation()` to handle manual pinning.
 
-#### [MODIFY] [Layout.tsx](file:///Users/nrajesh/Github/budget-it/src/components/Layout.tsx)
+#### [MODIFY] [Layout.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/Layout.tsx)
 
 - Update `<Sidebar>` prop to `collapsible="icon"`.
 - Add a "Pin/Unpin" toggle button to the `SidebarHeader` or `SidebarFooter`.

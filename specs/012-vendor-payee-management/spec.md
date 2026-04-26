@@ -22,7 +22,7 @@ Users can manage the list of payees/vendors to keep their transaction data clean
 - **FR-002**: System MUST allow manual creation/editing of vendors.
 - **FR-003**: System MUST distinguish between 'Vendors' (external) and 'Accounts' (internal), although both are Payees.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Vendor (Payee)**:
     - `id`: UUID
     - `name`: string

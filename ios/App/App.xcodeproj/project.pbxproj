@@ -311,8 +311,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Budget It!";
-				INFOPLIST_KEY_CFBundleName = "Budget It!";
+				INFOPLIST_KEY_CFBundleDisplayName = "Vaulted Money";
+				INFOPLIST_KEY_CFBundleName = "Vaulted Money";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -320,7 +320,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-				PRODUCT_BUNDLE_IDENTIFIER = com.budgetit.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vaultedmoney.app;
 				PRODUCT_NAME = App;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
@@ -335,15 +335,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Budget It!";
-				INFOPLIST_KEY_CFBundleName = "Budget It!";
+				INFOPLIST_KEY_CFBundleDisplayName = "Vaulted Money";
+				INFOPLIST_KEY_CFBundleName = "Vaulted Money";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.budgetit.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vaultedmoney.app;
 				PRODUCT_NAME = App;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;

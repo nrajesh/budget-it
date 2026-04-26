@@ -39,7 +39,7 @@ User wants to see clear options to donate via Github Sponsors, Bank Transfer, or
 - **FR-003**: The page MUST display the provided QR codes (Bank & Paypal).
 - **FR-004**: The page MUST display the specific message "I drink tea & not coffee 😉".
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes.
 - **FR-STD-03**: Feature MUST work offline (images should be local assets).

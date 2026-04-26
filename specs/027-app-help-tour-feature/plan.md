@@ -1,6 +1,6 @@
 # Implementation Plan - App Help Tour Module
 
-This plan outlines the integration of a guided help tour using `react-joyride` to assist users in navigating the `budget-it` application.
+This plan outlines the integration of a guided help tour using `react-joyride` to assist users in navigating the Vaulted Money application.
 
 ## User Review Required
 
@@ -13,29 +13,29 @@ This plan outlines the integration of a guided help tour using `react-joyride` t
 
 ### Core Integration
 
-#### [NEW] [TourContext.tsx](file:///Users/nrajesh/Github/budget-it/src/contexts/TourContext.tsx)
+#### [NEW] [TourContext.tsx](file:///Users/nrajesh/Github/vaulted-money/src/contexts/TourContext.tsx)
 - Create a context to manage the active state of the tour and provide a function to start/stop it.
 - Store step configurations for different routes.
 
-#### [NEW] [help-tour.tsx](file:///Users/nrajesh/Github/budget-it/src/components/ui/help-tour.tsx)
+#### [NEW] [help-tour.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/ui/help-tour.tsx)
 - Implementation of the `Joyride` component wrapper.
 - Handles theme styling (matching current light/dark mode).
 - Maps high-level step definitions to `react-joyride` format.
 
-#### [NEW] [tourSteps.ts](file:///Users/nrajesh/Github/budget-it/src/constants/tourSteps.ts)
+#### [NEW] [tourSteps.ts](file:///Users/nrajesh/Github/vaulted-money/src/constants/tourSteps.ts)
 - Centralized configuration for all tour steps across different screens (Ledger Entry, Dashboard, Transactions, etc.).
 - This makes it easy to update tours as requested.
 
 ### UI Components
 
-#### [MODIFY] [Header.tsx](file:///Users/nrajesh/Github/budget-it/src/components/layout/Header.tsx)
+#### [MODIFY] [Header.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/layout/Header.tsx)
 - Add the `HelpCircle` icon from `lucide-react`.
 - Conditionally show the icon if the user is not on the root landing page (or specifically from `/ledgers` onwards).
 - Hook up the icon to the `TourContext` to trigger the tour.
 
 ### Application Level
 
-#### [MODIFY] [App.tsx](file:///Users/nrajesh/Github/budget-it/src/App.tsx)
+#### [MODIFY] [App.tsx](file:///Users/nrajesh/Github/vaulted-money/src/App.tsx)
 - Wrap the application (or the `Layout` routes) with `TourProvider`.
 - Include the `<HelpTour />` component at a high level so it can overlay any screen.
 

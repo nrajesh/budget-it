@@ -1,4 +1,4 @@
-# Budget It — Ledger module (screenshot tests)
+# Vaulted Money — Ledger module (screenshot tests)
 
 These cases follow `/Users/nrajesh/Github/scrnsh/SCREENSHOT_TESTS_AUTHORING_GUIDE.md`: each level-2 heading (`##`) plus a following fenced `yaml` block defines one screenshot. Run with `screenshot-runner`, for example:
 
@@ -11,7 +11,7 @@ These cases follow `/Users/nrajesh/Github/scrnsh/SCREENSHOT_TESTS_AUTHORING_GUID
 1. **Initial wait (non-negotiable)** — The **first `steps` entry in every test case must be `wait: 2000`** (or higher for heavy pages). Omitting it is the most common cause of **blank or spinner** screenshots.
 2. **After `click:`** — Use at least **`wait: 500`** when a **dialog/modal** opens, **`wait: 1500`** minimum for **in-app route changes** (e.g. sidebar link); use **`wait: 2000`** when the click triggers a **data fetch** or full reload. When in doubt after navigation, prefer **2000ms** on ledger routes.
 3. **One case per meaningful UI state** — Multi-step flows are split into **separate `##` cases** (e.g. dialog closed → dialog open → form filled). Each case **reloads from `url:`** and repeats the prefix steps; do not rely on another case’s prior state.
-4. **Theme variants** — The runner does not auto-capture light/dark. Pairs below use **`[aria-label='Toggle theme']`** (Budget It default English string from [`Layout.tsx`](../../src/components/Layout.tsx) / [`LedgerEntryPage`](../../src/pages/LedgerEntryPage.tsx)); add i18n-specific selectors if you run under another locale.
+4. **Theme variants** — The runner does not auto-capture light/dark. Pairs below use **`[aria-label='Toggle theme']`** (Vaulted Money default English string from [`Layout.tsx`](../../src/components/Layout.tsx) / [`LedgerEntryPage`](../../src/pages/LedgerEntryPage.tsx)); add i18n-specific selectors if you run under another locale.
 5. **`"Target page has been closed"`** — Per the guide, this indicates the **browser was closed externally** during the run (user interruption), not a screenshot-runner bug. The partial **`report.json`** shows which cases finished.
 
 ### Parser / runner quirks (still applies)

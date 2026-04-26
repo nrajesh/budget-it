@@ -3,7 +3,7 @@
 **Feature Branch**: `012-identify-best-way`  
 **Created**: 2026-03-03
 **Status**: Draft  
-**Input**: User description: "identify best way to implement https://github.com/nrajesh/budget-it/issues/96 without compromising fundamentals..."
+**Input**: User description: "identify best way to implement https://github.com/nrajesh/vaulted.money/issues/96 without compromising fundamentals..."
 
 ## Problem Statement
 When importing transaction data or adding new data, vendors often lack an associated category or sub-category. It is tedious for users to manually associate a vendor to a category/sub-category combination every single time, particularly when starting from scratch.
@@ -61,7 +61,7 @@ As a user managing transactions or vendors, I want to explicitly click an "Auto-
 - **FR-005**: System MUST display links to provider documentation for obtaining API keys.
 - **FR-006**: System MUST fail gracefully with clear error messages if the AI provider returns an error (e.g., invalid key, rate limit, timeout).
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise). *Note: This feature inherently requires network access for API calls, but the rest of the application must not crash offline.*
@@ -73,7 +73,7 @@ As a user managing transactions or vendors, I want to explicitly click an "Auto-
 - **Modified Components**: Vendor/Transaction forms or lists, existing Settings panel.
 - **Context Updates**: AppSettings store for the API key and chosen provider.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **AI Integration**: A new configuration entity containing the user's `provider` (enum: OPENAI, GEMINI, PERPLEXITY) and `apiKey` (string).
 
 ## Success Criteria *(mandatory)*

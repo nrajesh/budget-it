@@ -1,6 +1,6 @@
 # Implementation Plan: Reimagine Analytics Graphics for Mobile
 
-**Branch**: `013-analytics-mobile-reimagine` | **Date**: 2026-03-03 | **Spec**: [spec.md](file:///Users/nrajesh/Github/budget-it/specs/013-analytics-mobile-reimagine/spec.md)
+**Branch**: `013-analytics-mobile-reimagine` | **Date**: 2026-03-03 | **Spec**: [spec.md](file:///Users/nrajesh/Github/vaulted-money/specs/013-analytics-mobile-reimagine/spec.md)
 
 ## Summary
 
@@ -28,7 +28,7 @@ Replace the existing two-panel analytics layout (`BalanceOverTimeChart` + `Spend
 
 ---
 
-#### [NEW] [useAnalyticsPeriod.ts](file:///Users/nrajesh/Github/budget-it/src/hooks/useAnalyticsPeriod.ts)
+#### [NEW] [useAnalyticsPeriod.ts](file:///Users/nrajesh/Github/vaulted-money/src/hooks/useAnalyticsPeriod.ts)
 
 Central hook managing all period logic:
 - State: `period` (1W/1M/6M/1Y/custom), `periodOffset` (0 = current, -1 = previous month, etc.), `customRange`
@@ -37,7 +37,7 @@ Central hook managing all period logic:
 - Computes `periodLabel` (e.g., "This week", "Feb 2026", "Jan – Jun")
 - Filters transactions into `currentPeriodTransactions` and `previousPeriodTransactions`
 
-#### [NEW] [useSwipeNavigation.ts](file:///Users/nrajesh/Github/budget-it/src/hooks/useSwipeNavigation.ts)
+#### [NEW] [useSwipeNavigation.ts](file:///Users/nrajesh/Github/vaulted-money/src/hooks/useSwipeNavigation.ts)
 
 Touch swipe + keyboard arrow handler:
 - Takes a `ref` to the swipeable container
@@ -52,7 +52,7 @@ Touch swipe + keyboard arrow handler:
 
 ---
 
-#### [NEW] [SpendingSummaryHeader.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/SpendingSummaryHeader.tsx)
+#### [NEW] [SpendingSummaryHeader.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/SpendingSummaryHeader.tsx)
 
 Displays at the top of the analytics view:
 - "Spent" label + total amount for current period (large, bold)
@@ -60,7 +60,7 @@ Displays at the top of the analytics view:
 - Period label (e.g., "This week", "This month")
 - Adapts to light/dark themes using Tailwind variables
 
-#### [NEW] [SpendingLineChart.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/SpendingLineChart.tsx)
+#### [NEW] [SpendingLineChart.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/SpendingLineChart.tsx)
 
 Cumulative spending line chart:
 - Dark line (current period) + lighter line (previous period)
@@ -69,7 +69,7 @@ Cumulative spending line chart:
 - X-axis: day labels (Mon, Tue... or 1, 6, 11...)
 - Responsive height for mobile
 
-#### [NEW] [SpendingBarChart.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/SpendingBarChart.tsx)
+#### [NEW] [SpendingBarChart.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/SpendingBarChart.tsx)
 
 Average spending bar chart:
 - Solid bars for per-sub-period spending amounts
@@ -77,7 +77,7 @@ Average spending bar chart:
 - X-axis: sub-period labels (months for 6M/1Y, weeks for 1M, days for 1W)
 - Shows average per month label in header (e.g., "€ 1,734 avg. per month")
 
-#### [NEW] [SpendingPieChart.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/SpendingPieChart.tsx)
+#### [NEW] [SpendingPieChart.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/SpendingPieChart.tsx)
 
 Donut-style pie chart:
 - Colorful segments for the selected entity type
@@ -86,14 +86,14 @@ Donut-style pie chart:
 - Click center → reset/zoom out
 - Reuses existing `ActivePieShape` component (already built)
 
-#### [NEW] [PeriodSelector.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/PeriodSelector.tsx)
+#### [NEW] [PeriodSelector.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/PeriodSelector.tsx)
 
 Pill-style period buttons below the chart:
 - Buttons: 1W, 1M, 6M, 1Y with active state highlighting
 - "..." button opens a popover with date range picker for custom dates
 - Uses existing `react-day-picker` component
 
-#### [NEW] [EntityBreakdownTable.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/EntityBreakdownTable.tsx)
+#### [NEW] [EntityBreakdownTable.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/EntityBreakdownTable.tsx)
 
 Bottom table with entity toggle:
 - Header: "By Category ▾" (dropdown to toggle: Category, Vendor, Currency, Account)
@@ -101,7 +101,7 @@ Bottom table with entity toggle:
 - Category view includes sub-category drilldown capability
 - "Manage" link retained from reference
 
-#### [NEW] [AnalyticsChartView.tsx](file:///Users/nrajesh/Github/budget-it/src/components/charts/AnalyticsChartView.tsx)
+#### [NEW] [AnalyticsChartView.tsx](file:///Users/nrajesh/Github/vaulted-money/src/components/charts/AnalyticsChartView.tsx)
 
 Container component orchestrating the full analytics view:
 - Chart type toggles (line/bar/pie icons at top-right, matching reference)
@@ -117,7 +117,7 @@ Container component orchestrating the full analytics view:
 
 ---
 
-#### [MODIFY] [Analytics.tsx](file:///Users/nrajesh/Github/budget-it/src/pages/Analytics.tsx)
+#### [MODIFY] [Analytics.tsx](file:///Users/nrajesh/Github/vaulted-money/src/pages/Analytics.tsx)
 
 Replace the existing two-panel grid layout with the new `AnalyticsChartView`:
 - Remove the `SearchFilterBar` (analytics is now self-contained with its own period selector and entity toggle)

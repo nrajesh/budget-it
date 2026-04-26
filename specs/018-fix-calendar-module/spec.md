@@ -36,7 +36,7 @@ As a developer, I want the QA checklist to explicitly include "UI Consistency" c
 - **FR-002**: `CalendarView.tsx` header MUST match the shared gradient header style.
 - **FR-003**: The project checklist template MUST be updated to include UI consistency checks.
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes.
 

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Budget It
+about: Suggest an idea for Vaulted Money
 title: ''
 labels: enhancement
 assignees: ''

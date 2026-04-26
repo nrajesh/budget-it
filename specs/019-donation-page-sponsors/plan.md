@@ -9,7 +9,7 @@
 - Create a new page component.
 - Use Tailwind CSS for styling.
 - Layout:
-    - Title: "Support Budget It"
+    - Title: "Support Vaulted Money"
     - Subtitle: "I drink tea & not coffee 😉"
     - Card for Github Sponsors (Link to `https://github.com/sponsors/nrajesh`).
     - Card for Payment (Display QR codes).

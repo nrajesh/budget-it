@@ -3,7 +3,7 @@
 ## Technical Context
 The user wants to bring their own API key (BYOK) for an AI provider (OpenAI, Gemini, Perplexity) to automatically guess categories and sub-categories for vendors. This must be a manual action triggered by the user to avoid unintended token usage. 
 
-Because Budget It associates Categories directly with Transactions (not strictly with Vendors), the Auto-Categorize feature will be exposed inside the Transaction Form (`AddEditTransactionDialog.tsx`). When a user enters a Vendor name, they can click "Auto-Categorize ✨" to have the AI suggest the best Category & Sub-Category based on their existing categories.
+Because Vaulted Money associates Categories directly with Transactions (not strictly with Vendors), the Auto-Categorize feature will be exposed inside the Transaction Form (`AddEditTransactionDialog.tsx`). When a user enters a Vendor name, they can click "Auto-Categorize ✨" to have the AI suggest the best Category & Sub-Category based on their existing categories.
 
 ## Proposed Changes
 

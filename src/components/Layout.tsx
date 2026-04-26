@@ -233,15 +233,16 @@ const Layout = () => {
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
               <img
-                src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo.png"}
-                alt="Budget It!"
-                className={cn(
-                  "size-8 shrink-0",
-                  resolvedTheme !== "dark" && "mix-blend-multiply",
-                )}
+                src={
+                  resolvedTheme === "dark"
+                    ? "/logo-dark.png"
+                    : "/logo-light.png"
+                }
+                alt="Vaulted Money"
+                className="size-8 shrink-0"
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
-                Budget It!
+                Vaulted Money
               </span>
             </div>
             <PinTrigger />
@@ -674,7 +675,7 @@ const Layout = () => {
             rel="noopener noreferrer"
             className="mt-2 block text-center text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
             aria-label={t("layout.footer.githubAria", {
-              defaultValue: "Open Budget It on GitHub",
+              defaultValue: "Open Vaulted Money on GitHub",
             })}
           >
             {t("layout.footer.heartLink", {

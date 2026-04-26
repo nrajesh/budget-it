@@ -21,8 +21,8 @@ const MobileNavContent = () => {
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="flex items-center gap-2 text-xl font-bold">
-        <img src="/logo.png" alt="Budget It! Logo" className="h-6 w-6" />
-        Budget It!
+        <img src="/logo-light.png" alt="Vaulted Money" className="h-6 w-6" />
+        Vaulted Money
       </div>
 
       <div className="space-y-2">

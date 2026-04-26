@@ -1,10 +1,10 @@
 /** Public repository home (README, stars, source). */
-export const GITHUB_REPO_URL = "https://github.com/nrajesh/budget-it/";
+export const GITHUB_REPO_URL = "https://github.com/nrajesh/vaulted.money/";
 export const GITHUB_REPO_ISSUES_URL =
-  "https://github.com/nrajesh/budget-it/issues";
+  "https://github.com/nrajesh/vaulted.money/issues";
 export const GITHUB_NEW_ISSUE_URL = `${GITHUB_REPO_ISSUES_URL}/new`;
 export const SECURITY_POLICY_URL =
-  "https://github.com/nrajesh/budget-it/security/policy";
+  "https://github.com/nrajesh/vaulted.money/security/policy";
 
 export const FEEDBACK_KIND = {
   BUG: "bug",
@@ -96,7 +96,7 @@ export const buildFeedbackDiagnostics = ({
     (typeof navigator !== "undefined" ? navigator.userAgent : "N/A");
 
   return [
-    "Budget It Diagnostics",
+    "Vaulted Money Diagnostics",
     `Type: ${feedbackKind}`,
     `Route: ${pathname}`,
     `App: ${appContext}`,

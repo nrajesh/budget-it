@@ -58,7 +58,7 @@ budget-it/
 └── [config files]             # package.json, vite.config.ts, etc.
 ```
 
-**Structure Decision**: Adhering to standard `Budget It` modular architecture.
+**Structure Decision**: Adhering to standard `Vaulted Money` modular architecture.
 
 ## Complexity Tracking
 

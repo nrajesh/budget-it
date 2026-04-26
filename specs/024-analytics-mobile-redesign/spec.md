@@ -152,7 +152,7 @@ At the top of the analytics page, a summary header shows:
 - **FR-014**: Table MUST support three-level drill-down for category entity type: categories → sub-categories → individual transactions.
 - **FR-015**: Table MUST show a back (‹) button and a Clear button when in sub-category or transaction view.
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency.
@@ -165,7 +165,7 @@ At the top of the analytics page, a summary header shows:
 - **New Hooks**: `src/hooks/useAnalyticsPeriod.ts` (period management, comparison data), `src/hooks/useSwipeNavigation.ts` (touch swipe + keyboard handling)
 - **Context Updates**: None anticipated (uses existing `TransactionsContext` and `CurrencyContext`)
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 
 - **Transaction**: The central data unit. Used to calculate spending totals, averages, and breakdowns.
 - **Account**: Source of funds. Used as an entity toggle in the bottom table.

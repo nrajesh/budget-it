@@ -245,7 +245,7 @@ export const useTransactionPageActions = (
     const BOM = "\uFEFF";
     const csvString = BOM + csv;
 
-    saveFile(fileName, csvString, "Budget It Transactions");
+    saveFile(fileName, csvString, "Vaulted Money Transactions");
   };
 
   // --- Import Logic ---

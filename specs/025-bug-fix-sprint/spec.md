@@ -1,7 +1,7 @@
 # Bug Fixes Spec - 014-carry-out-bug-fixes
 
 ## Problem Statement
-Six user-reported bugs across the Budget It! application need to be resolved.
+Six user-reported bugs across the Vaulted Money application need to be resolved.
 
 ## Bug List
 

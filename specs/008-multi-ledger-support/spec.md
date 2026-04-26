@@ -28,7 +28,7 @@ Users can create multiple independent ledgers (e.g., Personal, Business) and swi
 - **FR-004**: System MUST persist the last active ledger ID.
 - **FR-005**: System MUST support deleting a ledger and its associated data (cascading delete).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Ledger**: Container for all other entities (Account, Transaction, etc.).
     - `id`: UUID
     - `name`: string

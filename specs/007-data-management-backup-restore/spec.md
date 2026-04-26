@@ -38,7 +38,7 @@ Users can generate demo data for testing.
 - **FR-003**: System MUST provide a "Hard Reset" function that clears Dexie DB.
 - **FR-004**: System MUST provide a Demo Data generator.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **BackupData**:
     - `version`: string
     - `timestamp`: ISO Date

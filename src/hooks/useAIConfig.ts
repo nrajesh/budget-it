@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { AIProvider } from "@/types/dataProvider";
 import { useDataProvider } from "@/context/DataProviderContext";
+import {
+  readAiApiKeyFromStorage,
+  writeAiApiKeyToStorage,
+} from "@/constants/aiApiKeyStorage";
 
 export interface AIConfig {
   provider: AIProvider | null;
@@ -23,8 +27,7 @@ export const useAIConfig = () => {
 
       let apiKey = "";
       if (activeProvider) {
-        apiKey =
-          localStorage.getItem(`budgetit_ai_apiKey_${activeProvider.id}`) || "";
+        apiKey = readAiApiKeyFromStorage(activeProvider.id);
       }
 
       setConfig({
@@ -43,7 +46,7 @@ export const useAIConfig = () => {
   }, [refreshConfig]);
 
   const saveConfig = async (providerId: string, newApiKey: string) => {
-    localStorage.setItem(`budgetit_ai_apiKey_${providerId}`, newApiKey);
+    writeAiApiKeyToStorage(providerId, newApiKey);
     await refreshConfig();
   };
 

@@ -25,7 +25,7 @@ Dependabot helps keep dependencies up to date by automatically creating pull req
 
 ### .github
 
-#### [NEW] [dependabot.yml](file:///Users/nrajesh/Github/budget-it/.github/dependabot.yml)
+#### [NEW] [dependabot.yml](file:///Users/nrajesh/Github/vaulted-money/.github/dependabot.yml)
 - Create `.github` directory if it does not exist.
 - Add `dependabot.yml` with the following configuration:
   - **package-ecosystem**: `npm`

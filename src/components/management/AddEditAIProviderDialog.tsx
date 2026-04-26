@@ -26,6 +26,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { AIProvider } from "@/types/dataProvider";
 import { buildGeminiUrl } from "@/hooks/useAutoCategorize";
+import { readAiApiKeyFromStorage } from "@/constants/aiApiKeyStorage";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 const formSchema = z.object({
@@ -124,8 +125,7 @@ const AddEditAIProviderDialog: React.FC<AddEditAIProviderDialogProps> = ({
 
   const handleTestConnection = async () => {
     const values = form.getValues();
-    const apiKey =
-      localStorage.getItem(`budgetit_ai_apiKey_${provider?.id}`) || "";
+    const apiKey = provider?.id ? readAiApiKeyFromStorage(provider.id) : "";
 
     if (!apiKey) {
       showError(

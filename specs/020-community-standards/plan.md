@@ -8,31 +8,31 @@ The goal is to ensure the repository meets GitHub's Community Standards checklis
 ### Documentation Updates
 These changes will create the missing standard files.
 
-#### [NEW] [CODE_OF_CONDUCT.md](file:///Users/nrajesh/Github/budget-it/CODE_OF_CONDUCT.md)
+#### [NEW] [CODE_OF_CONDUCT.md](file:///Users/nrajesh/Github/vaulted-money/CODE_OF_CONDUCT.md)
 Create a standard Contributor Covenant Code of Conduct in the root directory.
 
-#### [NEW] [CONTRIBUTING.md](file:///Users/nrajesh/Github/budget-it/CONTRIBUTING.md)
+#### [NEW] [CONTRIBUTING.md](file:///Users/nrajesh/Github/vaulted-money/CONTRIBUTING.md)
 Create a contributing guideline document referencing the existing `documentation/CODE_REVIEW.md` and basic open-source contributing workflow.
 
-#### [NEW] [LICENSE](file:///Users/nrajesh/Github/budget-it/LICENSE)
+#### [NEW] [LICENSE](file:///Users/nrajesh/Github/vaulted-money/LICENSE)
 Create an MIT License file in the root directory (given it is an open-source project as seen in `package.json` and marketing descriptions).
 
 ### GitHub Templates and Policies
 These changes will set up issue and PR templates, and move the security policy.
 
-#### [NEW] [bug_report.md](file:///Users/nrajesh/Github/budget-it/.github/ISSUE_TEMPLATE/bug_report.md)
+#### [NEW] [bug_report.md](file:///Users/nrajesh/Github/vaulted-money/.github/ISSUE_TEMPLATE/bug_report.md)
 Standard bug report template.
 
-#### [NEW] [feature_request.md](file:///Users/nrajesh/Github/budget-it/.github/ISSUE_TEMPLATE/feature_request.md)
+#### [NEW] [feature_request.md](file:///Users/nrajesh/Github/vaulted-money/.github/ISSUE_TEMPLATE/feature_request.md)
 Standard feature request template.
 
-#### [NEW] [pull_request_template.md](file:///Users/nrajesh/Github/budget-it/.github/pull_request_template.md)
+#### [NEW] [pull_request_template.md](file:///Users/nrajesh/Github/vaulted-money/.github/pull_request_template.md)
 Standard pull request template.
 
-#### [MODIFY] [SECURITY.md](file:///Users/nrajesh/Github/budget-it/.github/SECURITY.md)
+#### [MODIFY] [SECURITY.md](file:///Users/nrajesh/Github/vaulted-money/.github/SECURITY.md)
 Move `documentation/SECURITY.md` to `.github/SECURITY.md`.
 
-#### [DELETE] [SECURITY.md](file:///Users/nrajesh/Github/budget-it/documentation/SECURITY.md)
+#### [DELETE] [SECURITY.md](file:///Users/nrajesh/Github/vaulted-money/documentation/SECURITY.md)
 Remove the old location.
 
 ## Verification Plan

@@ -43,7 +43,7 @@ As a mobile user, I want the app to automatically sync my transactions when I op
 - **FR-003**: System MUST update the unified `fs-adapter.ts` to detect the Capacitor runtime (`Capacitor.isNativePlatform()`) and route file system calls (select folder, read, write) to the `fs-capacitor.ts` implementation instead of the Web or Electron implementations.
 - **FR-004**: System MUST handle native mobile permissions (e.g., requesting external storage read/write access on Android) gracefully when setting up the sync folder.
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 - **FR-STD-03**: Feature MUST work offline without any network dependency (unless explicitly stating otherwise).
@@ -58,7 +58,7 @@ As a mobile user, I want the app to automatically sync my transactions when I op
   - `vite.config.ts` (If specific mobile proxy/build settings are required)
 - **Context Updates**: None structurally, though hooks calling external file systems will naturally route through the updated adapter.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 
 - **Ledger**: The central storage which hosts user's finance. Consider it equivalent of a private book which can be passed on to another user. This is primordial to all other entities.
 - **Transaction**: The central unit of data. Linked to Account, Category, and (optionally) Vendor/Payee.

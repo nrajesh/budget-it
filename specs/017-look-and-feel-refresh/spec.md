@@ -30,14 +30,14 @@ As a user, I want the Insights page to look and feel like the rest of the applic
 - **FR-002**: The `Insights` page header MUST use the shared gradient styling found in `Analytics`.
 - **FR-003**: The "Budget Analysis" and "Trends" sections MUST be visually separated in a way that aligns with the app's design language (currently `Analytics` uses Cards for charts, `Transactions` uses a bordered container for the table).
 
-### Standard Requirements (Budget It)
+### Standard Requirements (Vaulted Money)
 - **FR-STD-01**: Feature MUST be fully responsive and usable on mobile (375px+) and desktop.
 - **FR-STD-02**: Feature MUST support both Light and Dark modes using Tailwind CSS variables.
 
 ### Component Impact
 - **Modified Components**: `src/pages/Insights.tsx`
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Budget**: Displayed in the Budget Analysis section.
 - **Transaction**: Used to calculate trends.
 

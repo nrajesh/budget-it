@@ -45,7 +45,7 @@ Users can delete transactions. Deletion supports "Undo" for a short period.
 - **FR-004**: System MUST allow soft-delete with Undo capability.
 - **FR-005**: System MUST support split categories (if implemented, TBD).
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Transaction**:
     - `id`: UUID
     - `user_id`: string (Ledger ID)

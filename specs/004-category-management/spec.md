@@ -29,7 +29,7 @@ Users can merge two categories into one (e.g., "Food" and "Dining" -> "Food & Di
 - **FR-002**: System MUST allow renaming categories.
 - **FR-003**: System MUST support merging categories.
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Category**:
     - `id`: UUID
     - `name`: string

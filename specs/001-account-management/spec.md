@@ -29,7 +29,7 @@ Accounts have types (Checking, Savings, Credit Card, Investment) that may affect
 - **FR-003**: System MUST calculate current balance based on initial balance + sum of transactions.
 - **FR-004**: System MUST support account groups (e.g. "Liquid Assets", "Credit Cards").
 
-### Key Entities (Budget It Core)
+### Key Entities (Vaulted Money Core)
 - **Account**:
     - `id`: UUID
     - `ledger_id`: UUID (Foreign Key)

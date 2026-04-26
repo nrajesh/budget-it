@@ -74,7 +74,7 @@ graph TB
 
 ```mermaid
 flowchart TD
-    subgraph Core["Budget-It React App ⚛️"]
+    subgraph Core["Vaulted Money React App ⚛️"]
         A[React Hooks & State]
     end
 

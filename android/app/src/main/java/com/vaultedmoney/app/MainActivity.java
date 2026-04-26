@@ -1,4 +1,4 @@
-package com.budgetit.app;
+package com.vaultedmoney.app;
 
 import com.getcapacitor.BridgeActivity;
 
