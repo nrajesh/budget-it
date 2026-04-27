@@ -44,7 +44,7 @@ export const TOUR_STEPS: Record<string, Step[]> = {
       placement: "left",
     },
   ],
-  "/": [
+  "/dashboard": [
     {
       target: ".tour-dashboard-summary",
       content:
@@ -494,7 +494,8 @@ export const TOUR_STEPS: Record<string, Step[]> = {
 };
 
 const normalizeRouteKey = (pathname: string) => {
-  if (pathname === "/") return "home";
+  if (pathname === "/") return "landing";
+  if (pathname === "/dashboard") return "home";
   return pathname.replace(/^\//, "").replace(/\//g, ".");
 };
 

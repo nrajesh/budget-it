@@ -7,7 +7,7 @@ Basic money clarity - knowing what you earn, what you spend, and what is left - 
 The visuals below are from an earlier design pass; they still describe the product story. The stack panel mentions React, TypeScript, and Dexie - the web client still builds on those; see the main [README](../README.md) for the full picture (Vite, Electron, Capacitor, optional AI, and more).
 
 <p align="center">
-  <img src="readme/infographic.png" alt="Infographic: from financial anxiety to clarity, goals, and control with Vaulted Money" width="780" />
+  <img src="../assets/brand/infographic.png" alt="Infographic: from financial anxiety to clarity, goals, and control with Vaulted Money" width="780" />
 </p>
 
 <p align="center"><i>Your Financial GPS: from anxiety and restriction toward clarity, goals, and control.</i></p>

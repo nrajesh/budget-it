@@ -157,7 +157,7 @@ const Layout = () => {
       return t("layout.nav.reportsAdvanced", { defaultValue: "Advanced" });
     }
     switch (pathname) {
-      case "/":
+      case "/dashboard":
         return t("layout.nav.dashboard", { defaultValue: "Dashboard" });
       case "/calendar":
         return t("layout.nav.calendar", { defaultValue: "Calendar" });
@@ -234,7 +234,7 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt="Vaulted Money"
-                className="h-8 w-8 shrink-0 object-contain"
+                className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Vaulted Money
@@ -251,8 +251,11 @@ const Layout = () => {
             </SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === "/"}>
-                  <Link to="/">
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/dashboard"}
+                >
+                  <Link to="/dashboard">
                     <LayoutGrid />
                     <span>
                       {t("layout.nav.dashboard", { defaultValue: "Dashboard" })}
@@ -618,6 +621,22 @@ const Layout = () => {
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+            >
+              <Link
+                to="/"
+                aria-label={t("home.actions.home", { defaultValue: "Home" })}
+              >
+                <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">
+                  {t("home.actions.home", { defaultValue: "Home" })}
+                </span>
+              </Link>
+            </Button>
             <LanguageSwitcher />
             {hasTourForCurrentRoute && (
               <Button

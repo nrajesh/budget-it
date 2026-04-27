@@ -2,6 +2,8 @@
 
 These standards keep screens predictable across financial modules. When a page needs an exception, prefer creating a named variant instead of one-off spacing, borders, or action layouts.
 
+For the core brand philosophy, logo geometry, and color strategy, refer to the [**Brand Identity Manual (DESIGN.md)**](./DESIGN.md).
+
 ## Page Structure
 
 Every standard module should follow this order:
@@ -83,3 +85,13 @@ Before shipping a module screen, check:
 - Selected mobile rows/cards have a full perimeter highlight.
 - Section headings are smaller than page headings.
 - Section headers use the same border treatment.
+
+## Public Landing Page
+
+The root homepage (`/`) is the only page that does not follow the standard module structure. It is designed for conversion and trust:
+
+1. **Hero Section**: Must clearly state the "Privacy-first, Data local, Open sourced" mission.
+2. **Social Proof/Trust**: Use badges (MIT, CircleCI) and feature previews to build credibility.
+3. **Action Orientation**: Primary CTA should always lead to `/ledgers`. Secondary CTA for local installation.
+4. **Theme Consistency**: Must support both light and dark modes, using the same semantic colors as the app but with more expressive typography and spacing.
+5. **Guidance**: Explicitly mention the importance of backups and CSV imports to set clear expectations for local-first users.

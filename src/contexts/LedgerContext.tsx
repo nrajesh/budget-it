@@ -128,9 +128,8 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
       // Clear logout flag as we are now entering a ledger
       localStorage.removeItem("userLoggedOut");
 
-      // Force reload of page to clean context states (transcations etc)
-      // Use href = '/' to ensure we navigate to root (Dashboard) and hard reload
-      window.location.href = "/";
+      // Force reload of page to clean context states (transactions etc).
+      window.location.href = "/dashboard";
     }
   };
 
