@@ -228,7 +228,7 @@ const HomePage = () => {
         </div>
       </header>
 
-      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,hsl(var(--background)),rgba(248,250,252,0.72))] px-4 pt-8 pb-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] sm:py-14 lg:py-16">
+      <section className="border-b border-slate-200 bg-[linear-gradient(180deg,hsl(var(--background)),rgba(248,250,252,0.72))] px-4 pt-6 pb-2 dark:border-slate-800 dark:bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] sm:py-8 lg:py-10">
         <div className="mx-auto grid max-w-7xl items-center gap-5 sm:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
           <div className="max-w-3xl">
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-medium">
@@ -279,15 +279,15 @@ const HomePage = () => {
 
             <div className="mt-7 hidden max-w-2xl gap-3 text-sm text-slate-600 dark:text-slate-300 sm:grid sm:grid-cols-3">
               <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-                {t("home.proof.offline", { defaultValue: "Works offline" })}
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-sky-600 dark:text-sky-300" />
+                <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 {t("home.proof.noCloud", { defaultValue: "No cloud account" })}
               </div>
               <div className="flex items-center gap-2">
-                <GitFork className="h-4 w-4 text-slate-700 dark:text-slate-200" />
+                <Database className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                {t("home.proof.offline", { defaultValue: "Works offline" })}
+              </div>
+              <div className="flex items-center gap-2">
+                <GitFork className="h-4 w-4 text-amber-600 dark:text-amber-500" />
                 {t("home.proof.auditable", { defaultValue: "Auditable code" })}
               </div>
             </div>
@@ -393,8 +393,13 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section id="trust" className="px-4 pt-3 pb-8 sm:py-12">
+      <section id="trust" className="px-4 pt-8 pb-8 sm:py-12">
         <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
+              {t("home.nav.trust", { defaultValue: "Trust" })}
+            </h2>
+          </div>
           <div className="grid gap-4 md:grid-cols-3">
             {trustPillars.map((pillar) => (
               <article
@@ -445,14 +450,14 @@ const HomePage = () => {
       >
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-normal app-accent-text">
-              {t("home.workflow.eyebrow", { defaultValue: "Daily use" })}
-            </p>
-            <h2 className="app-gradient-title mt-2 text-3xl font-bold tracking-normal">
+            <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
+              {t("home.nav.workflow", { defaultValue: "Workflow" })}
+            </h2>
+            <p className="mt-4 text-xl font-medium text-slate-800 dark:text-slate-200">
               {t("home.workflow.title", {
                 defaultValue: "Everything needed to run a personal ledger.",
               })}
-            </h2>
+            </p>
             <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
               {t("home.workflow.description", {
                 defaultValue:
@@ -523,14 +528,14 @@ const HomePage = () => {
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-normal text-emerald-300">
-                {t("home.commands.eyebrow", { defaultValue: "Quick start" })}
-              </p>
-              <h2 className="app-gradient-title mt-2 text-3xl font-bold tracking-normal">
+              <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
+                {t("home.nav.install", { defaultValue: "Install" })}
+              </h2>
+              <p className="mt-4 text-xl font-medium text-slate-300">
                 {t("home.commands.title", {
                   defaultValue: "Install it or jump straight into a ledger.",
                 })}
-              </h2>
+              </p>
             </div>
             <Button
               asChild

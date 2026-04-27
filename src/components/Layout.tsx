@@ -234,7 +234,7 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt="Vaulted Money"
-                className="h-8 w-8 shrink-0 object-contain"
+                className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Vaulted Money
