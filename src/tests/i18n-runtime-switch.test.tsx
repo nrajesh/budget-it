@@ -64,12 +64,12 @@ describe("Runtime i18n switching", () => {
   });
 
   it("updates help/workflow tour content for the active language", async () => {
-    const englishSteps = getStepsForRoute("/", i18n.t.bind(i18n));
+    const englishSteps = getStepsForRoute("/dashboard", i18n.t.bind(i18n));
     expect(englishSteps[0]?.content).toContain("dashboard summary");
 
     localStorage.setItem("app-enabled-languages", JSON.stringify(["es"]));
     await i18n.changeLanguage("es");
-    const spanishSteps = getStepsForRoute("/", i18n.t.bind(i18n));
+    const spanishSteps = getStepsForRoute("/dashboard", i18n.t.bind(i18n));
 
     expect(spanishSteps[0]?.content).toContain("resumen del tablero");
   });

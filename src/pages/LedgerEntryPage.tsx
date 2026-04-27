@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useLedger } from "@/contexts/LedgerContext";
@@ -56,6 +57,7 @@ import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
+import { GITHUB_REPO_URL } from "@/utils/feedbackLinks";
 
 const LedgerEntryPage = () => {
   const { t } = useTranslation();
@@ -459,272 +461,321 @@ const LedgerEntryPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
-      {/* Theme toggle button - top-right corner */}
-      <div className="tour-theme-toggle fixed top-[calc(0.75rem+env(safe-area-inset-top))] right-4 z-50 flex items-center gap-2">
-        <LanguageSwitcher />
-        {hasTourForCurrentRoute && (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <header className="sticky top-0 z-40 flex min-h-[calc(4rem+env(safe-area-inset-top))] w-full items-center justify-end border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
+        <div className="tour-theme-toggle flex items-center gap-2">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+          >
+            <Link
+              to="/"
+              aria-label={t("home.actions.home", { defaultValue: "Home" })}
+            >
+              <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+              <span className="sr-only">
+                {t("home.actions.home", { defaultValue: "Home" })}
+              </span>
+            </Link>
+          </Button>
+          <LanguageSwitcher />
+          {hasTourForCurrentRoute && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              onClick={startTour}
+              aria-label={t("helpTour.start")}
+            >
+              <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+              <span className="sr-only">{t("helpTour.start")}</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            onClick={startTour}
-            aria-label={t("helpTour.start")}
+            onClick={() =>
+              setTheme(resolvedTheme === "dark" ? "light" : "dark")
+            }
+            aria-label={t("layout.toggleTheme", {
+              defaultValue: "Toggle theme",
+            })}
           >
-            <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-            <span className="sr-only">{t("helpTour.start")}</span>
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-5 w-5 text-amber-400" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-600" />
+            )}
           </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          aria-label={t("layout.toggleTheme", { defaultValue: "Toggle theme" })}
-        >
-          {resolvedTheme === "dark" ? (
-            <Sun className="h-5 w-5 text-amber-400" />
-          ) : (
-            <Moon className="h-5 w-5 text-slate-600" />
-          )}
-        </Button>
-        <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
-      </div>
-      <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
-        <div className="tour-ledger-title text-center space-y-2">
-          <LogoImage />
-          <h1 className="app-gradient-title text-3xl sm:text-4xl font-black tracking-tighter">
-            Vaulted Money
-          </h1>
-          <p className="app-page-subtitle">
-            Select a budget ledger to continue.
-          </p>
+          <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
         </div>
-
-        {/* Search and Bulk Actions */}
-        <div className="tour-ledger-search flex flex-col sm:flex-row gap-4 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search ledgers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
+      </header>
+      <div className="flex flex-1 flex-col items-center justify-center p-4">
+        <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
+          <div className="tour-ledger-title text-center space-y-2">
+            <LogoImage />
+            <h1 className="app-gradient-title text-3xl sm:text-4xl font-black tracking-tighter">
+              Vaulted Money
+            </h1>
+            <p className="app-page-subtitle">
+              Select a budget ledger to continue.
+            </p>
           </div>
 
-          {selectedLedgers.size > 0 && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-5">
-              <span className="text-sm font-medium text-muted-foreground">
-                {selectedLedgers.size} selected
-              </span>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleMassDeleteClick}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Selected
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedLedgers(new Set())}
-              >
-                Cancel
-              </Button>
+          {/* Search and Bulk Actions */}
+          <div className="tour-ledger-search flex flex-col sm:flex-row gap-4 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search ledgers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
             </div>
-          )}
-        </div>
 
-        <div
-          className={cn(
-            "tour-ledger-list",
-            filteredLedgers.length === 0 && ledgers.length > 0
-              ? "text-center text-muted-foreground py-10"
-              : ledgers.length === 0
-                ? "flex justify-center"
-                : "grid grid-cols-1 md:grid-cols-2 gap-4",
-          )}
-        >
-          {filteredLedgers.length === 0 && ledgers.length > 0 && (
-            <p>No ledgers match your search.</p>
-          )}
-
-          {filteredLedgers.map((ledger) => {
-            const isSelected = selectedLedgers.has(ledger.id);
-            return (
-              <div key={ledger.id} className="relative group/card">
-                {/* Selection Checkbox (Visible on hover or if selected) */}
-                <div
-                  className={`absolute top-3 right-3 z-20 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"}`}
+            {selectedLedgers.size > 0 && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-5">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {selectedLedgers.size} selected
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleMassDeleteClick}
                 >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={(c) =>
-                      handleToggleSelect(ledger.id, c as boolean)
-                    }
-                    className="h-5 w-5 bg-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-primary/50"
-                  />
-                </div>
-
-                <ThemedCard
-                  className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
-                  onClick={() => handleSelectLedger(ledger.id)}
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Selected
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedLedgers(new Set())}
                 >
-                  <ThemedCardHeader className="flex flex-row items-center gap-4 pb-2 space-y-0 pr-10">
-                    <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                      {getIcon(ledger.icon)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <ThemedCardTitle className="text-xl text-emerald-800 dark:text-emerald-300">
-                          {ledger.name}
-                        </ThemedCardTitle>
-                        {/* Delete Button (Visible on hover, if not selected mode maybe? Let's just put it next to title or separate) */}
-                      </div>
-                      <ThemedCardDescription className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded-sm inline-block mt-1">
-                        {ledger.currency}
-                      </ThemedCardDescription>
-                    </div>
-
-                    {/* Delete Individual Action */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity h-10 w-10 p-2"
-                      onClick={(e) => handleDeleteClick(ledger.id, e)}
-                      title="Delete Ledger"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </ThemedCardHeader>
-                  <ThemedCardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {ledger.short_name ? `(${ledger.short_name})` : ""}
-                      <span className="block mt-1 text-xs opacity-70">
-                        Last:{" "}
-                        {ledger.last_accessed
-                          ? new Date(ledger.last_accessed).toLocaleDateString()
-                          : "Never"}
-                      </span>
-                    </p>
-                  </ThemedCardContent>
-                </ThemedCard>
+                  Cancel
+                </Button>
               </div>
-            );
-          })}
+            )}
+          </div>
 
-          <ThemedCard
-            className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+          <div
+            className={cn(
+              "tour-ledger-list",
               filteredLedgers.length === 0 && ledgers.length > 0
-                ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
-                : ""
-            } border-emerald-300 dark:border-emerald-800 bg-emerald-50/10 dark:bg-emerald-950/10`}
-            onClick={() => setIsCreateOpen(true)}
+                ? "text-center text-muted-foreground py-10"
+                : ledgers.length === 0
+                  ? "flex justify-center"
+                  : "grid grid-cols-1 md:grid-cols-2 gap-4",
+            )}
           >
-            <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-              <Plus className="h-8 w-8" />
-              <span className="font-semibold">Create New Ledger</span>
-            </div>
-          </ThemedCard>
+            {filteredLedgers.length === 0 && ledgers.length > 0 && (
+              <p>No ledgers match your search.</p>
+            )}
+
+            {filteredLedgers.map((ledger) => {
+              const isSelected = selectedLedgers.has(ledger.id);
+              return (
+                <div key={ledger.id} className="relative group/card">
+                  {/* Selection Checkbox (Visible on hover or if selected) */}
+                  <div
+                    className={`absolute top-3 right-3 z-20 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"}`}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(c) =>
+                        handleToggleSelect(ledger.id, c as boolean)
+                      }
+                      className="h-5 w-5 bg-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-primary/50"
+                    />
+                  </div>
+
+                  <ThemedCard
+                    className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
+                    onClick={() => handleSelectLedger(ledger.id)}
+                  >
+                    <ThemedCardHeader className="flex flex-row items-center gap-4 pb-2 space-y-0 pr-10">
+                      <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                        {getIcon(ledger.icon)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <ThemedCardTitle className="text-xl text-emerald-800 dark:text-emerald-300">
+                            {ledger.name}
+                          </ThemedCardTitle>
+                          {/* Delete Button (Visible on hover, if not selected mode maybe? Let's just put it next to title or separate) */}
+                        </div>
+                        <ThemedCardDescription className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded-sm inline-block mt-1">
+                          {ledger.currency}
+                        </ThemedCardDescription>
+                      </div>
+
+                      {/* Delete Individual Action */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity h-10 w-10 p-2"
+                        onClick={(e) => handleDeleteClick(ledger.id, e)}
+                        title="Delete Ledger"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </ThemedCardHeader>
+                    <ThemedCardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {ledger.short_name ? `(${ledger.short_name})` : ""}
+                        <span className="block mt-1 text-xs opacity-70">
+                          Last:{" "}
+                          {ledger.last_accessed
+                            ? new Date(
+                                ledger.last_accessed,
+                              ).toLocaleDateString()
+                            : "Never"}
+                        </span>
+                      </p>
+                    </ThemedCardContent>
+                  </ThemedCard>
+                </div>
+              );
+            })}
+
+            <ThemedCard
+              className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+                filteredLedgers.length === 0 && ledgers.length > 0
+                  ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
+                  : ""
+              } border-emerald-300 dark:border-emerald-800 bg-emerald-50/10 dark:bg-emerald-950/10`}
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                <Plus className="h-8 w-8" />
+                <span className="font-semibold">Create New Ledger</span>
+              </div>
+            </ThemedCard>
+          </div>
+
+          {/* Import Backup Controls */}
+          {ledgers.length === 0 && (
+            <>
+              <div className="tour-import-backup w-full flex flex-col justify-center items-center mt-4 gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".json,.lock"
+                />
+                <input
+                  type="file"
+                  ref={csvFileInputRef}
+                  onChange={handleCSVFileChange}
+                  className="hidden"
+                  accept=".csv"
+                />
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-primary"
+                  onClick={handleImportClick}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import Backup (JSON / Encrypted)
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-primary"
+                  onClick={handleImportCSVClick}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Import Transactions CSV (Experimental)
+                </Button>
+              </div>
+              <div className="w-full flex justify-center mt-2">
+                <Button
+                  onClick={() => setIsGenerateConfirmOpen(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Generate Data
+                </Button>
+              </div>
+            </>
+          )}
+
+          {ledgers.length > 0 && (
+            <>
+              <div className="tour-import-backup flex flex-col justify-center items-center pt-8 gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".json,.lock"
+                />
+                <input
+                  type="file"
+                  ref={csvFileInputRef}
+                  onChange={handleCSVFileChange}
+                  className="hidden"
+                  accept=".csv"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImportClick}
+                  className="text-muted-foreground hover:text-primary w-full max-w-xs"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import Backup
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImportCSVClick}
+                  className="text-muted-foreground hover:text-primary w-full max-w-xs"
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Import Transactions CSV
+                </Button>
+              </div>
+              <div className="flex justify-center mt-2">
+                <Button
+                  onClick={() => setIsGenerateConfirmOpen(true)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Generate Data
+                </Button>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Import Backup Controls */}
-        {ledgers.length === 0 && (
-          <>
-            <div className="tour-import-backup w-full flex flex-col justify-center items-center mt-4 gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".json,.lock"
-              />
-              <input
-                type="file"
-                ref={csvFileInputRef}
-                onChange={handleCSVFileChange}
-                className="hidden"
-                accept=".csv"
-              />
-              <Button
-                variant="ghost"
-                className="text-muted-foreground hover:text-primary"
-                onClick={handleImportClick}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Import Backup (JSON / Encrypted)
-              </Button>
-              <Button
-                variant="ghost"
-                className="text-muted-foreground hover:text-primary"
-                onClick={handleImportCSVClick}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Import Transactions CSV (Experimental)
-              </Button>
-            </div>
-            <div className="w-full flex justify-center mt-2">
-              <Button
-                onClick={() => setIsGenerateConfirmOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Generate Data
-              </Button>
-            </div>
-          </>
-        )}
-
-        {ledgers.length > 0 && (
-          <>
-            <div className="tour-import-backup flex flex-col justify-center items-center pt-8 gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".json,.lock"
-              />
-              <input
-                type="file"
-                ref={csvFileInputRef}
-                onChange={handleCSVFileChange}
-                className="hidden"
-                accept=".csv"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportClick}
-                className="text-muted-foreground hover:text-primary w-full max-w-xs"
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Import Backup
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportCSVClick}
-                className="text-muted-foreground hover:text-primary w-full max-w-xs"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Import Transactions CSV
-              </Button>
-            </div>
-            <div className="flex justify-center mt-2">
-              <Button
-                onClick={() => setIsGenerateConfirmOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Generate Data
-              </Button>
-            </div>
-          </>
-        )}
       </div>
+
+      <footer
+        className="shrink-0 border-t border-border/60 bg-background px-4 py-3 sm:px-6"
+        role="contentinfo"
+      >
+        <p className="mx-auto max-w-md text-center text-xs leading-relaxed text-muted-foreground">
+          {t("layout.footer.tagline", {
+            defaultValue: "Privacy-first | Data local | Open sourced",
+          })}
+        </p>
+        <a
+          href={GITHUB_REPO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 block text-center text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+          aria-label={t("layout.footer.githubAria", {
+            defaultValue: "Open Vaulted Money on GitHub",
+          })}
+        >
+          {t("layout.footer.heartLink", {
+            defaultValue: "Made with ❤️ for your financial freedom",
+          })}
+        </a>
+      </footer>
 
       <ManageLedgerDialog
         isOpen={isCreateOpen}
