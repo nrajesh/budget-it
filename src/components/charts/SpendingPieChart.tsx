@@ -7,6 +7,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { format } from "date-fns";
 import { type PeriodRange } from "@/hooks/useAnalyticsPeriod";
 import { Sector, type PieSectorDataItem } from "recharts";
+import { useTranslation } from "react-i18next";
 
 export type EntityType = "category" | "vendor" | "currency" | "account";
 
@@ -44,6 +45,7 @@ interface PieDataItem {
 function aggregateByEntity(
   transactions: Transaction[],
   entityType: EntityType,
+  labels: { unknown: string; uncategorized: string },
 ): PieDataItem[] {
   const map = new Map<string, number>();
   const spendingTxs = transactions.filter(
@@ -54,19 +56,19 @@ function aggregateByEntity(
     let key: string;
     switch (entityType) {
       case "category":
-        key = t.category || "Uncategorized";
+        key = t.category || labels.uncategorized;
         break;
       case "vendor":
-        key = t.vendor || "Unknown";
+        key = t.vendor || labels.unknown;
         break;
       case "currency":
-        key = t.currency || "Unknown";
+        key = t.currency || labels.unknown;
         break;
       case "account":
-        key = t.account || "Unknown";
+        key = t.account || labels.unknown;
         break;
       default:
-        key = "Unknown";
+        key = labels.unknown;
     }
 
     map.set(key, (map.get(key) || 0) + Math.abs(t.amount));
@@ -151,12 +153,22 @@ export function SpendingPieChart({
   selectedEntity,
 }: SpendingPieChartProps) {
   const { formatCurrency } = useCurrency();
+  const { t } = useTranslation();
   const { resolvedTheme } = useNextTheme();
   const isDark = resolvedTheme === "dark";
+  const fallbackLabels = useMemo(
+    () => ({
+      unknown: t("analytics.chart.unknown", { defaultValue: "Unknown" }),
+      uncategorized: t("analytics.breakdown.uncategorized", {
+        defaultValue: "Uncategorized",
+      }),
+    }),
+    [t],
+  );
 
   const pieData = useMemo(
-    () => aggregateByEntity(transactions, entityType),
-    [transactions, entityType],
+    () => aggregateByEntity(transactions, entityType, fallbackLabels),
+    [transactions, entityType, fallbackLabels],
   );
 
   const totalSpent = useMemo(
@@ -195,7 +207,8 @@ export function SpendingPieChart({
   // Center display content
   const activeItem =
     activeIndex !== undefined ? pieData[activeIndex] : undefined;
-  const centerName = activeItem?.name || "Spent";
+  const centerName =
+    activeItem?.name || t("analytics.chart.spent", { defaultValue: "Spent" });
   const centerAmount = activeItem
     ? formatCurrency(activeItem.amount)
     : formatCurrency(totalSpent);
@@ -212,7 +225,9 @@ export function SpendingPieChart({
   if (pieData.length === 0) {
     return (
       <div className="w-full h-[220px] sm:h-[260px] flex items-center justify-center text-muted-foreground text-sm">
-        No spending data for this period
+        {t("analytics.chart.noData", {
+          defaultValue: "No spending data for this period",
+        })}
       </div>
     );
   }

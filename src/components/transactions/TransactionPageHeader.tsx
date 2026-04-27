@@ -29,83 +29,129 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="flex flex-col items-start gap-4">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+        <h1 className="app-gradient-title app-page-title">
           {t("transactions.header.title", { defaultValue: "Transactions" })}
         </h1>
-        <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+        <p className="app-page-subtitle">
           {t("transactions.header.subtitle", {
             defaultValue: "Manage and track your financial activities",
           })}
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Input
-          type="file"
-          ref={fileInputRef as React.Ref<HTMLInputElement>}
-          onChange={onFileChange}
-          accept=".csv"
-          className="hidden"
-        />
-        <Button
-          variant="outline"
-          onClick={onImportClick}
-          className="flex-1 sm:flex-none"
-        >
-          <Upload className="mr-2 h-4 w-4" />
-          {t("transactions.header.importCsv", { defaultValue: "Import CSV" })}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onExportClick}
-          className="tour-export-transactions flex-1 sm:flex-none"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          {t("transactions.header.exportCsv", { defaultValue: "Export CSV" })}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onDetectTransfers}
-          className="flex-1 sm:flex-none"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          {t("transactions.header.detectTransfers", {
-            defaultValue: "Detect Transfers",
-          })}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={onCleanUpDuplicates}
-          className="flex-1 sm:flex-none text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-        >
-          <Sparkles className="mr-2 h-4 w-4" />
-          {t("transactions.header.cleanupDuplicates", {
-            defaultValue: "Cleanup Duplicates",
-          })}
-        </Button>
-        {onBulkCategorize && (
+      <div className="app-action-panel">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <Input
+            type="file"
+            ref={fileInputRef as React.Ref<HTMLInputElement>}
+            onChange={onFileChange}
+            accept=".csv"
+            className="hidden"
+          />
           <Button
             variant="outline"
-            onClick={onBulkCategorize}
-            disabled={!isBulkCategorizeEnabled}
-            className="tour-bulk-categorize flex-1 sm:flex-none text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
+            onClick={onDetectTransfers}
+            className="justify-center sm:flex-none"
+            title={t("transactions.header.detectTransfers", {
+              defaultValue: "Detect Transfers",
+            })}
+            aria-label={t("transactions.header.detectTransfers", {
+              defaultValue: "Detect Transfers",
+            })}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            <span className="text-sm">
+              {t("transactions.header.detectTransfers", {
+                defaultValue: "Detect Transfers",
+              })}
+            </span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onCleanUpDuplicates}
+            className="justify-center text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 sm:flex-none dark:bg-amber-950/20 dark:hover:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+            title={t("transactions.header.cleanupDuplicates", {
+              defaultValue: "Cleanup Duplicates",
+            })}
+            aria-label={t("transactions.header.cleanupDuplicates", {
+              defaultValue: "Cleanup Duplicates",
+            })}
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            {t("transactions.header.categorizeMissing", {
-              defaultValue: "Categorize Missing",
+            <span className="text-sm">
+              {t("transactions.header.cleanupDuplicates", {
+                defaultValue: "Cleanup Duplicates",
+              })}
+            </span>
+          </Button>
+          {onBulkCategorize && (
+            <Button
+              variant="outline"
+              onClick={onBulkCategorize}
+              disabled={!isBulkCategorizeEnabled}
+              className="tour-bulk-categorize col-span-2 justify-center text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 sm:col-span-1 sm:flex-none dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
+              title={t("transactions.header.categorizeMissing", {
+                defaultValue: "Categorize Missing",
+              })}
+              aria-label={t("transactions.header.categorizeMissing", {
+                defaultValue: "Categorize Missing",
+              })}
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              <span className="text-sm">
+                {t("transactions.header.categorizeMissing", {
+                  defaultValue: "Categorize Missing",
+                })}
+              </span>
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={onImportClick}
+            className="justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-100 sm:flex-none dark:border-slate-700 dark:hover:border-sky-500/70 dark:hover:bg-sky-950/40 dark:hover:text-sky-100"
+            title={t("transactions.header.importCsv", {
+              defaultValue: "Import CSV",
+            })}
+            aria-label={t("transactions.header.importCsv", {
+              defaultValue: "Import CSV",
+            })}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            <span className="text-sm">
+              {t("transactions.header.importCsv", {
+                defaultValue: "Import CSV",
+              })}
+            </span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onExportClick}
+            className="tour-export-transactions justify-center sm:flex-none"
+            title={t("transactions.header.exportCsv", {
+              defaultValue: "Export CSV",
+            })}
+            aria-label={t("transactions.header.exportCsv", {
+              defaultValue: "Export CSV",
+            })}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            <span className="text-sm">
+              {t("transactions.header.exportCsv", {
+                defaultValue: "Export CSV",
+              })}
+            </span>
+          </Button>
+          <Button
+            onClick={onAddTransaction}
+            className="col-span-2 justify-center bg-indigo-600 hover:bg-indigo-700 text-white sm:col-span-1 sm:flex-none"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t("transactions.header.addTransaction", {
+              defaultValue: "Add Transaction",
             })}
           </Button>
-        )}
-        <Button
-          onClick={onAddTransaction}
-          className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t("transactions.header.addTransaction", {
-            defaultValue: "Add Transaction",
-          })}
-        </Button>
+        </div>
       </div>
     </div>
   );

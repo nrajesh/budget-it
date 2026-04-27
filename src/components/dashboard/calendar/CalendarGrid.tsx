@@ -73,8 +73,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               onDateChange(newDate);
             }}
           >
-            <SelectTrigger className="w-[90px] sm:w-[120px] font-bold text-base sm:text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-1 sm:gap-2">
-              <SelectValue>{format(currentDate, "MMMM")}</SelectValue>
+            <SelectTrigger className="w-[86px] sm:w-[112px] h-9 justify-center gap-1 px-2 font-semibold text-sm sm:text-base border-none shadow-none focus:ring-0">
+              <SelectValue className="text-center">
+                {format(currentDate, "MMMM")}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Array.from({ length: 12 }).map((_, i) => (
@@ -93,8 +95,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               onDateChange(newDate);
             }}
           >
-            <SelectTrigger className="w-[70px] sm:w-[80px] font-bold text-base sm:text-lg border-none shadow-none focus:ring-0 px-0 h-auto gap-1 sm:gap-2">
-              <SelectValue>{format(currentDate, "yyyy")}</SelectValue>
+            <SelectTrigger className="w-[58px] sm:w-[72px] h-9 justify-center gap-1 px-2 font-semibold text-sm sm:text-base border-none shadow-none focus:ring-0">
+              <SelectValue className="text-center">
+                {format(currentDate, "yyyy")}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {Array.from({ length: 21 }).map((_, i) => {

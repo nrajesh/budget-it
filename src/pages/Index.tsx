@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { slugify } from "@/lib/utils";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
+import { applyTransactionFilters } from "@/utils/transactionFilters";
+import { useTranslation } from "react-i18next";
 
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 
@@ -14,48 +15,51 @@ import { BudgetStatusCard } from "@/components/dashboard/BudgetStatusCard";
 import { ConsolidatedMetricsCard } from "@/components/dashboard/ConsolidatedMetricsCard";
 
 const Index = () => {
+  const { t } = useTranslation();
   const { transactions } = useTransactions();
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
 
-  const { selectedAccounts, selectedCategories, excludeTransfers, dateRange } =
-    useTransactionFilters();
-
-  const filteredTransactions = useMemo(() => {
-    let filtered = transactions;
-
-    // Filter by Date Range
-    if (dateRange?.from) {
-      filtered = filtered.filter((t) => new Date(t.date) >= dateRange.from!);
-    }
-    if (dateRange?.to) {
-      filtered = filtered.filter((t) => new Date(t.date) <= dateRange.to!);
-    }
-
-    if (excludeTransfers) {
-      filtered = filtered.filter((t) => t.category !== "Transfer");
-    }
-
-    if (selectedAccounts.length > 0) {
-      filtered = filtered.filter((t) =>
-        selectedAccounts.includes(slugify(t.account)),
-      );
-    }
-
-    if (selectedCategories.length > 0) {
-      filtered = filtered.filter((t) =>
-        selectedCategories.includes(slugify(t.category)),
-      );
-    }
-
-    return filtered;
-  }, [
-    transactions,
+  const {
+    searchTerm,
     selectedAccounts,
     selectedCategories,
-    excludeTransfers,
+    selectedSubCategories,
+    selectedVendors,
     dateRange,
-  ]);
+    excludeTransfers,
+    minAmount,
+    maxAmount,
+    transactionType,
+  } = useTransactionFilters();
+  const filteredTransactions = useMemo(
+    () =>
+      applyTransactionFilters(transactions, {
+        searchTerm,
+        selectedAccounts,
+        selectedCategories,
+        selectedSubCategories,
+        selectedVendors,
+        dateRange,
+        excludeTransfers,
+        minAmount,
+        maxAmount,
+        transactionType,
+      }),
+    [
+      transactions,
+      searchTerm,
+      selectedAccounts,
+      selectedCategories,
+      selectedSubCategories,
+      selectedVendors,
+      dateRange,
+      excludeTransfers,
+      minAmount,
+      maxAmount,
+      transactionType,
+    ],
+  );
 
   // Calculate Metrics
   const { totalIncome, totalExpenses, totalBalance } = useMemo(() => {
@@ -114,14 +118,16 @@ const Index = () => {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <div className="flex flex-col md:flex-row items-center justify-between">
+      <div className="flex flex-col gap-6">
+        <div className="app-page-header flex flex-col items-start justify-between md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-              Dashboard
+            <h1 className="app-gradient-title app-page-title">
+              {t("layout.nav.dashboard", { defaultValue: "Dashboard" })}
             </h1>
-            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
-              Overview of your financial health
+            <p className="app-page-subtitle">
+              {t("dashboard.header.subtitle", {
+                defaultValue: "Overview of your financial health",
+              })}
             </p>
           </div>
         </div>

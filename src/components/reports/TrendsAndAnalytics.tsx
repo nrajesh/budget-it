@@ -100,7 +100,9 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
   return (
     <ThemedCard className="col-span-full">
       <ThemedCardHeader>
-        <ThemedCardTitle>Trends and Analytics</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Trends and Analytics
+        </ThemedCardTitle>
         <ThemedCardDescription>
           Monthly patterns in your spending and income.
         </ThemedCardDescription>
@@ -126,7 +128,7 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
               dataKey="month"
               tick={{
                 fill: isFinancialPulse ? "#94a3b8" : "#666",
-                fontSize: 12,
+                fontSize: 11,
               }}
               stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
             />
@@ -134,7 +136,7 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
               tickFormatter={(value) => formatCurrency(Number(value))}
               tick={{
                 fill: isFinancialPulse ? "#94a3b8" : "#666",
-                fontSize: 12,
+                fontSize: 11,
               }}
               stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
             />
@@ -146,9 +148,16 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
                   ? "rgba(255,255,255,0.1)"
                   : "#e5e7eb",
                 color: isFinancialPulse ? "white" : "black",
+                fontSize: "11px",
               }}
             />
-            <Legend />
+            <Legend
+              wrapperStyle={{ fontSize: "11px" }}
+              iconSize={8}
+              formatter={(value) => (
+                <span style={{ fontSize: "11px" }}>{value}</span>
+              )}
+            />
             <Area
               type="monotone"
               dataKey="income"

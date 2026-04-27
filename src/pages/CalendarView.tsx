@@ -7,8 +7,10 @@ import { CalendarGrid } from "@/components/dashboard/calendar/CalendarGrid";
 import { DailyTransactions } from "@/components/dashboard/calendar/DailyTransactions";
 import { generateScheduledOccurrences } from "@/utils/calendarUtils";
 import { startOfMonth, endOfMonth, isSameDay, format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 export default function CalendarView() {
+  const { t } = useTranslation();
   const { transactions, scheduledTransactions } = useTransactions();
   const { activeLedger } = useLedger();
   const dataProvider = useDataProvider();
@@ -143,10 +145,18 @@ export default function CalendarView() {
 
   return (
     <div className="h-full flex flex-col space-y-4 sm:space-y-6 p-3 sm:p-6 rounded-xl overflow-hidden transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <div className="flex items-center justify-between space-y-2 shrink-0">
-        <h1 className="text-2xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-          Calendar
-        </h1>
+      <div className="app-page-header flex flex-col items-start justify-between gap-4 md:flex-row md:items-center shrink-0">
+        <div>
+          <h1 className="app-gradient-title app-page-title">
+            {t("layout.nav.calendar", { defaultValue: "Calendar" })}
+          </h1>
+          <p className="app-page-subtitle">
+            {t("calendar.header.subtitle", {
+              defaultValue:
+                "Explore monthly patterns and the transactions behind each day.",
+            })}
+          </p>
+        </div>
       </div>
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4 min-h-0">
         <div className="tour-calendar-grid h-full min-h-0 overflow-hidden">

@@ -12,8 +12,10 @@ import { SmartScheduleDialog } from "@/components/scheduled-transactions/SmartSc
 import { addMonths, addWeeks, addYears } from "date-fns";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { slugify } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const ScheduledTransactionsPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     scheduledTransactions,
@@ -269,29 +271,38 @@ const ScheduledTransactionsPage = () => {
   return (
     <div className="page-container">
       <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-              Scheduled Transactions
+            <h1 className="app-gradient-title app-page-title">
+              {t("scheduled.header.title", {
+                defaultValue: "Scheduled Transactions",
+              })}
             </h1>
-            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
-              Manage recurring payments and transfers
+            <p className="app-page-subtitle">
+              {t("scheduled.header.subtitle", {
+                defaultValue: "Manage recurring payments and transfers",
+              })}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          <div className="app-action-panel flex flex-wrap gap-2 md:w-auto">
             <Button
               onClick={handleSmartSchedule}
               variant="outline"
               className="border-indigo-200 hover:bg-indigo-50 dark:border-indigo-900 dark:hover:bg-indigo-950"
             >
               <Sparkles className="mr-2 h-4 w-4 text-indigo-500" />{" "}
-              Auto-Schedule
+              {t("scheduled.header.autoSchedule", {
+                defaultValue: "Auto-Schedule",
+              })}
             </Button>
             <Button
               onClick={handleAdd}
               className="tour-scheduled-add bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              <Plus className="mr-2 h-4 w-4" /> Add Scheduled
+              <Plus className="mr-2 h-4 w-4" />{" "}
+              {t("scheduled.header.addScheduled", {
+                defaultValue: "Add Scheduled",
+              })}
             </Button>
           </div>
         </div>
@@ -306,7 +317,7 @@ const ScheduledTransactionsPage = () => {
         />
       </div>
 
-      <div className="tour-scheduled-list grid gap-4">
+      <div className="tour-scheduled-list app-table-shell">
         <ScheduledTransactionsTable
           transactions={filteredTransactions}
           onEdit={handleEdit}

@@ -18,6 +18,7 @@ import {
   endOfDay,
 } from "date-fns";
 import { type Transaction } from "@/data/finance-data";
+import { useTranslation } from "react-i18next";
 
 export type PeriodType = "1W" | "1M" | "6M" | "1Y" | "custom";
 
@@ -148,6 +149,7 @@ function computePreviousRange(
 function formatPeriodLabel(
   period: PeriodType,
   currentRange: PeriodRange,
+  t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
   const now = new Date();
   const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -156,13 +158,13 @@ function formatPeriodLabel(
   switch (period) {
     case "1W": {
       if (currentRange.from.getTime() === thisWeekStart.getTime()) {
-        return "This week";
+        return t("analytics.period.thisWeek", { defaultValue: "This week" });
       }
       return `${format(currentRange.from, "d MMM")} – ${format(currentRange.to, "d MMM")}`;
     }
     case "1M": {
       if (currentRange.from.getTime() === thisMonthStart.getTime()) {
-        return "This month";
+        return t("analytics.period.thisMonth", { defaultValue: "This month" });
       }
       return format(currentRange.from, "MMMM yyyy");
     }
@@ -199,6 +201,7 @@ function computeTotalSpent(transactions: Transaction[]): number {
 export function useAnalyticsPeriod(
   transactions: Transaction[],
 ): UseAnalyticsPeriodReturn {
+  const { t } = useTranslation();
   const [state, setState] = useState<AnalyticsPeriodState>({
     period: "1M",
     periodOffset: 0,
@@ -216,8 +219,8 @@ export function useAnalyticsPeriod(
   );
 
   const periodLabel = useMemo(
-    () => formatPeriodLabel(state.period, currentRange),
-    [state.period, currentRange],
+    () => formatPeriodLabel(state.period, currentRange, t),
+    [state.period, currentRange, t],
   );
 
   const currentPeriodTransactions = useMemo(

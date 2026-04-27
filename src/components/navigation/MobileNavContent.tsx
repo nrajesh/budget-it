@@ -16,8 +16,10 @@ import {
   Shield,
 } from "lucide-react"; // Importing icons
 import { LanguageIcon } from "@/components/language/LanguageIcon";
+import { useTranslation } from "react-i18next";
 
 const MobileNavContent = () => {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="flex items-center gap-2 text-xl font-bold">
@@ -27,7 +29,7 @@ const MobileNavContent = () => {
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">
-          Dashboards
+          {t("layout.groups.dashboards", { defaultValue: "Dashboards" })}
         </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
@@ -36,7 +38,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <LayoutDashboard className="h-4 w-4" />
-              Dashboard
+              {t("layout.nav.dashboard", { defaultValue: "Dashboard" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -45,7 +47,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <BarChart2 className="h-4 w-4" />
-              Analytics
+              {t("layout.nav.analytics", { defaultValue: "Analytics" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -54,7 +56,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Lightbulb className="h-4 w-4" />
-              Insights
+              {t("layout.nav.insights", { defaultValue: "Insights" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -63,7 +65,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-primary bg-muted"
             >
               <Users className="h-4 w-4" />
-              Transactions
+              {t("layout.nav.transactions", { defaultValue: "Transactions" })}
             </Link>
           </SheetClose>
         </nav>
@@ -71,7 +73,7 @@ const MobileNavContent = () => {
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">
-          Management
+          {t("layout.groups.management", { defaultValue: "Management" })}
         </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
@@ -80,7 +82,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Wallet className="h-4 w-4" />
-              Accounts
+              {t("layout.nav.accounts", { defaultValue: "Accounts" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -89,7 +91,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Tag className="h-4 w-4" />
-              Categories
+              {t("layout.nav.categories", { defaultValue: "Categories" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -98,7 +100,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Building className="h-4 w-4" />
-              Vendors
+              {t("layout.nav.vendors", { defaultValue: "Vendors" })}
             </Link>
           </SheetClose>
         </nav>
@@ -106,7 +108,7 @@ const MobileNavContent = () => {
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">
-          Configure
+          {t("layout.groups.configure", { defaultValue: "Configure" })}
         </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
@@ -115,7 +117,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Calendar className="h-4 w-4" />
-              Scheduled
+              {t("layout.nav.scheduled", { defaultValue: "Scheduled" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -124,7 +126,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <ScrollText className="h-4 w-4" />
-              Essential Reports
+              {t("layout.nav.reportsEssential", { defaultValue: "Essential" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -133,7 +135,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <ScrollText className="h-4 w-4" />
-              Advanced Reports
+              {t("layout.nav.reportsAdvanced", { defaultValue: "Advanced" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -142,13 +144,15 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <PiggyBank className="h-4 w-4" />
-              Budgets
+              {t("layout.nav.budgets", { defaultValue: "Budgets" })}
             </Link>
           </SheetClose>
         </nav>
       </div>
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">Setup</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground">
+          {t("layout.groups.setup", { defaultValue: "Setup" })}
+        </h3>
         <nav className="grid gap-2">
           <SheetClose asChild>
             <Link
@@ -156,7 +160,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <User className="h-4 w-4" />
-              Ledger
+              {t("layout.nav.ledger", { defaultValue: "Ledger" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -165,7 +169,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <LanguageIcon className="h-4 w-4" />
-              Languages
+              {t("layout.nav.languages", { defaultValue: "Languages" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -174,7 +178,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <DatabaseZap className="h-4 w-4" />
-              Data
+              {t("layout.nav.data", { defaultValue: "Data" })}
             </Link>
           </SheetClose>
           <SheetClose asChild>
@@ -183,7 +187,7 @@ const MobileNavContent = () => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
             >
               <Shield className="h-4 w-4" />
-              Backup
+              {t("layout.nav.backup", { defaultValue: "Backup" })}
             </Link>
           </SheetClose>
         </nav>

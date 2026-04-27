@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTranslation } from "react-i18next";
 import {
   format,
   differenceInDays,
@@ -24,7 +25,6 @@ import {
   isBefore,
 } from "date-fns";
 import { type PeriodRange, type PeriodType } from "@/hooks/useAnalyticsPeriod";
-import { useTheme as useNextTheme } from "next-themes";
 
 interface SpendingBarChartProps {
   currentTransactions: Transaction[];
@@ -127,15 +127,15 @@ export function SpendingBarChart({
   period,
 }: SpendingBarChartProps) {
   const { formatCurrency } = useCurrency();
-  const { resolvedTheme } = useNextTheme();
-  const isDark = resolvedTheme === "dark";
-
-  // Theme-aware colors
-  const tickColor = isDark ? "#94a3b8" : "#64748b";
-  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const barColor = isDark ? "#e2e8f0" : "#1e293b";
-  const maxLineColor = isDark ? "#f87171" : "#dc2626";
-  const meanLineColor = isDark ? "#60a5fa" : "#3b82f6";
+  const { t } = useTranslation();
+  const barGradientId = useId().replace(/:/g, "");
+  const tickColor = "hsl(var(--analytics-axis))";
+  const gridColor = "hsl(var(--analytics-grid))";
+  const barColor = `url(#${barGradientId})`;
+  const secondaryColor = "hsl(var(--foreground))";
+  const barStrokeColor = secondaryColor;
+  const maxLineColor = secondaryColor;
+  const meanLineColor = secondaryColor;
 
   const barData = useMemo(
     () => buildBarData(currentTransactions, currentRange, period),
@@ -161,24 +161,37 @@ export function SpendingBarChart({
     const mean = total / count;
 
     // Determine label for the avg
-    let periodUnit = "per period";
-    if (period === "6M" || period === "1Y") periodUnit = "avg. per month";
-    else if (period === "1M") periodUnit = "avg. per week";
-    else if (period === "1W") periodUnit = "avg. per day";
+    let periodUnit = t("analytics.chart.avgPerPeriod", {
+      defaultValue: "per period",
+    });
+    if (period === "6M" || period === "1Y")
+      periodUnit = t("analytics.chart.avgPerMonth", {
+        defaultValue: "avg. per month",
+      });
+    else if (period === "1M")
+      periodUnit = t("analytics.chart.avgPerWeek", {
+        defaultValue: "avg. per week",
+      });
+    else if (period === "1W")
+      periodUnit = t("analytics.chart.avgPerDay", {
+        defaultValue: "avg. per day",
+      });
 
     return {
       meanValue: mean,
       maxValue: max,
       avgLabel: `${formatCurrency(mean)} ${periodUnit}`,
     };
-  }, [barData, period, formatCurrency]);
+  }, [barData, period, formatCurrency, t]);
 
   const yMax = useMemo(() => Math.max(maxValue, 1) * 1.15, [maxValue]);
 
   if (barData.every((d) => d.amount === 0)) {
     return (
       <div className="w-full h-[220px] sm:h-[260px] flex items-center justify-center text-muted-foreground text-sm">
-        No spending data for this period
+        {t("analytics.chart.noData", {
+          defaultValue: "No spending data for this period",
+        })}
       </div>
     );
   }
@@ -186,7 +199,7 @@ export function SpendingBarChart({
   return (
     <div className="w-full">
       {avgLabel && (
-        <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-2 px-1">
+        <p className="app-accent-text mb-2 px-1 text-xs font-medium">
           📊 {avgLabel}
         </p>
       )}
@@ -194,20 +207,26 @@ export function SpendingBarChart({
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={barData}
-            margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+            margin={{ top: 5, right: 18, left: 0, bottom: 5 }}
           >
+            <defs>
+              <linearGradient id={barGradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--analytics-bar-from))" />
+                <stop offset="100%" stopColor="hsl(var(--analytics-bar-to))" />
+              </linearGradient>
+            </defs>
             <CartesianGrid vertical={false} stroke={gridColor} />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               tickMargin={8}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               tickFormatter={(v) => {
                 if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
                 return String(Math.round(v));
@@ -218,7 +237,7 @@ export function SpendingBarChart({
             <Tooltip
               formatter={(value: unknown) => [
                 formatCurrency(value as number),
-                "Spending",
+                t("analytics.chart.spending", { defaultValue: "Spending" }),
               ]}
               contentStyle={{
                 borderRadius: "12px",
@@ -226,7 +245,11 @@ export function SpendingBarChart({
                 boxShadow: "0 10px 25px -5px rgb(0 0 0 / 0.1)",
                 backgroundColor: "hsl(var(--card))",
                 color: "hsl(var(--card-foreground))",
+                fontSize: "11px",
+                lineHeight: "1.2",
               }}
+              labelStyle={{ fontSize: "11px", marginBottom: "2px" }}
+              itemStyle={{ fontSize: "11px", paddingTop: 0, paddingBottom: 0 }}
               cursor={{ fill: "var(--muted)", opacity: 0.3 }}
             />
 
@@ -238,10 +261,12 @@ export function SpendingBarChart({
                 strokeDasharray="4 4"
                 strokeOpacity={0.6}
                 label={{
-                  value: `max`,
-                  position: "right",
-                  fill: tickColor,
+                  value: t("analytics.chart.max", { defaultValue: "max" }),
+                  position: "insideTopRight",
+                  fill: maxLineColor,
                   fontSize: 10,
+                  dx: -8,
+                  dy: -2,
                 }}
               />
             )}
@@ -254,10 +279,12 @@ export function SpendingBarChart({
                 strokeDasharray="4 4"
                 strokeOpacity={0.7}
                 label={{
-                  value: `mean`,
-                  position: "right",
+                  value: t("analytics.chart.mean", { defaultValue: "mean" }),
+                  position: "insideTopRight",
                   fill: meanLineColor,
                   fontSize: 10,
+                  dx: -8,
+                  dy: 10,
                 }}
               />
             )}
@@ -265,6 +292,9 @@ export function SpendingBarChart({
             <Bar
               dataKey="amount"
               fill={barColor}
+              stroke={barStrokeColor}
+              strokeOpacity={0.55}
+              strokeWidth={1.25}
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
             />

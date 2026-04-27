@@ -11,6 +11,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { MoreHorizontal } from "lucide-react";
 import { type DateRange } from "react-day-picker";
+import { useTranslation } from "react-i18next";
 
 interface PeriodSelectorProps {
   period: PeriodType;
@@ -30,6 +31,7 @@ export function PeriodSelector({
   onPeriodChange,
   onCustomRange,
 }: PeriodSelectorProps) {
+  const { t } = useTranslation();
   const [customDateRange, setCustomDateRange] = useState<
     DateRange | undefined
   >();
@@ -72,7 +74,9 @@ export function PeriodSelector({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }
             `}
-            aria-label="Custom date range"
+            aria-label={t("analytics.period.customDateRange", {
+              defaultValue: "Custom date range",
+            })}
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -80,7 +84,9 @@ export function PeriodSelector({
         <PopoverContent className="w-auto p-0" align="end">
           <div className="p-3 space-y-3">
             <p className="text-sm font-medium text-muted-foreground px-1">
-              Custom range
+              {t("analytics.period.customRange", {
+                defaultValue: "Custom range",
+              })}
             </p>
             <Calendar
               mode="range"
@@ -94,7 +100,7 @@ export function PeriodSelector({
                 onClick={handleCustomApply}
                 disabled={!customDateRange?.from || !customDateRange?.to}
               >
-                Apply
+                {t("analytics.period.apply", { defaultValue: "Apply" })}
               </Button>
             </div>
           </div>

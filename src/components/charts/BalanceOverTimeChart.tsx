@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { DateRange } from "react-day-picker";
 
@@ -82,6 +83,7 @@ export function BalanceOverTimeChart({
 }: BalanceOverTimeChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
+  const { t } = useTranslation();
   const { isFinancialPulse } = useTheme();
   const { resolvedTheme } = useNextTheme();
   const isDark = resolvedTheme === "dark";
@@ -107,6 +109,19 @@ export function BalanceOverTimeChart({
     dataKey: string;
   } | null>(null);
   const [chartType, setChartType] = React.useState<ChartType>("line");
+
+  const translatedBaseChartConfig = React.useMemo(
+    () => ({
+      ...chartConfig,
+      balance: {
+        ...chartConfig.balance,
+        label: t("dashboard.balanceChart.balance", {
+          defaultValue: "Balance",
+        }),
+      },
+    }),
+    [t],
+  );
 
   React.useEffect(() => {
     // Use accounts from context instead of Supabase
@@ -497,7 +512,7 @@ export function BalanceOverTimeChart({
   }, [dailyRunningBalanceData, accountsToDisplay]); // Removed chartType and other data dependencies
 
   const dynamicChartConfig = React.useMemo(() => {
-    const newConfig = { ...chartConfig };
+    const newConfig = { ...translatedBaseChartConfig };
     allDefinedAccounts.forEach((account, index) => {
       const colorIndex = (index % 4) + 1;
       newConfig[account as keyof typeof newConfig] = {
@@ -506,7 +521,7 @@ export function BalanceOverTimeChart({
       };
     });
     return newConfig;
-  }, [allDefinedAccounts]);
+  }, [allDefinedAccounts, translatedBaseChartConfig]);
 
   const handleLineClick = React.useCallback((dataKey: string) => {
     setActiveLine((prevActiveLine) =>
@@ -634,13 +649,13 @@ export function BalanceOverTimeChart({
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             {commonTooltip}
@@ -707,13 +722,13 @@ export function BalanceOverTimeChart({
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value.slice(0, 7)}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             {commonTooltip}
@@ -757,13 +772,13 @@ export function BalanceOverTimeChart({
               dataKey={xAxisDataKey}
               {...commonAxisProps}
               tickFormatter={(value) => value}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             <YAxis
               {...commonAxisProps}
               tickFormatter={(value) => formatCurrency(Number(value))}
-              tick={{ fill: tickColor, fontSize: 12 }}
+              tick={{ fill: tickColor, fontSize: 11 }}
               stroke={chartStroke}
             />
             {commonTooltip}
@@ -809,9 +824,16 @@ export function BalanceOverTimeChart({
     <ThemedCard>
       <ThemedCardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center p-6">
-          <ThemedCardTitle>Balance Over Time</ThemedCardTitle>
+          <ThemedCardTitle>
+            {t("dashboard.balanceChart.title", {
+              defaultValue: "Balance Over Time",
+            })}
+          </ThemedCardTitle>
           <ThemedCardDescription>
-            Total balance: {formatCurrency(totalBalance)}
+            {t("dashboard.balanceChart.totalBalance", {
+              defaultValue: "Total balance",
+            })}
+            : {formatCurrency(totalBalance)}
           </ThemedCardDescription>
         </div>
         <div className="flex items-center gap-1 p-6">
@@ -821,21 +843,36 @@ export function BalanceOverTimeChart({
                 variant="outline"
                 className="flex items-center gap-2 bg-white/80 dark:bg-transparent backdrop-blur-sm"
               >
-                {chartType === "line" && "Line Chart"}
-                {chartType === "bar-stacked" && "Stacked Bar Chart"}
-                {chartType === "waterfall" && "Waterfall Chart"}
+                {chartType === "line" &&
+                  t("dashboard.balanceChart.lineChart", {
+                    defaultValue: "Line Chart",
+                  })}
+                {chartType === "bar-stacked" &&
+                  t("dashboard.balanceChart.stackedBarChart", {
+                    defaultValue: "Stacked Bar Chart",
+                  })}
+                {chartType === "waterfall" &&
+                  t("dashboard.balanceChart.waterfallChart", {
+                    defaultValue: "Waterfall Chart",
+                  })}
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
               <DropdownMenuItem onClick={() => setChartType("line")}>
-                Line Chart
+                {t("dashboard.balanceChart.lineChart", {
+                  defaultValue: "Line Chart",
+                })}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setChartType("bar-stacked")}>
-                Stacked Bar Chart
+                {t("dashboard.balanceChart.stackedBarChart", {
+                  defaultValue: "Stacked Bar Chart",
+                })}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setChartType("waterfall")}>
-                Waterfall Chart
+                {t("dashboard.balanceChart.waterfallChart", {
+                  defaultValue: "Waterfall Chart",
+                })}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

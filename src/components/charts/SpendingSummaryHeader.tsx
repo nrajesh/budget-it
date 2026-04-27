@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTranslation } from "react-i18next";
 
 interface SpendingSummaryHeaderProps {
   totalSpent: number;
@@ -18,6 +19,7 @@ export function SpendingSummaryHeader({
   hasPreviousPeriod,
 }: SpendingSummaryHeaderProps) {
   const { formatCurrency } = useCurrency();
+  const { t } = useTranslation();
 
   const isLower = spentDelta < 0;
   const isHigher = spentDelta > 0;
@@ -26,9 +28,11 @@ export function SpendingSummaryHeader({
   return (
     <div className="px-1 mb-4">
       <p className="text-sm font-medium text-muted-foreground tracking-wide">
-        Spent
+        {t("analytics.summary.totalSpent", {
+          defaultValue: "Total spent",
+        })}
       </p>
-      <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground mt-0.5">
+      <p className="app-gradient-title mt-0.5 text-3xl sm:text-4xl font-extrabold tracking-tight">
         {formatCurrency(totalSpent)}
       </p>
       {hasPreviousPeriod && previousTotalSpent > 0 && (
@@ -49,14 +53,22 @@ export function SpendingSummaryHeader({
           )}
           {!isLower && !isHigher && (
             <span className="text-muted-foreground font-semibold">
-              No change
+              {t("analytics.summary.noChange", {
+                defaultValue: "No change",
+              })}
             </span>
           )}
           <span className="text-muted-foreground">· {periodLabel}</span>
         </p>
       )}
       {(!hasPreviousPeriod || previousTotalSpent === 0) && (
-        <p className="mt-1 text-sm text-muted-foreground">{periodLabel}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t("analytics.summary.selectedPeriod", {
+            defaultValue: "Selected period",
+          })}
+          {" · "}
+          {periodLabel}
+        </p>
       )}
     </div>
   );

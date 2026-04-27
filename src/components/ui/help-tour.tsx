@@ -55,7 +55,9 @@ const HelpTour: React.FC = () => {
         tooltip: {
           fontFamily: "inherit",
           borderRadius: "12px",
-          padding: "16px",
+          padding: "14px",
+          fontSize: "0.9rem",
+          lineHeight: "1.4",
         },
         buttonClose: {
           display: "none",
@@ -64,15 +66,19 @@ const HelpTour: React.FC = () => {
           backgroundColor: isDarkMode ? "#3b82f6" : "#2563eb",
           borderRadius: "6px",
           color: "#ffffff",
-          padding: "8px 16px",
+          padding: "6px 12px",
+          fontSize: "0.85rem",
+          fontWeight: 600,
           outline: "none",
         },
         buttonBack: {
           color: isDarkMode ? "#9ca3af" : "#6b7280", // gray-400 / gray-500
           marginRight: "8px",
+          fontSize: "0.85rem",
         },
         buttonSkip: {
           color: isDarkMode ? "#9ca3af" : "#6b7280",
+          fontSize: "0.85rem",
         },
         tooltipContainer: {
           textAlign: "left",
@@ -81,7 +87,7 @@ const HelpTour: React.FC = () => {
           padding: "10px 0",
         },
         tooltipTitle: {
-          fontSize: "1.1rem",
+          fontSize: "0.95rem",
           fontWeight: 600,
           marginBottom: "5px",
         },

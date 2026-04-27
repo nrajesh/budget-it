@@ -176,9 +176,9 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
                       <ContextMenu key={item.id}>
                         <ContextMenuTrigger asChild>
                           <div
-                            className={`p-3 border rounded-lg shadow-sm flex flex-col gap-2 transition-colors ${
+                            className={`app-mobile-row flex flex-col gap-2 p-3 ${
                               selectedRows.includes(item.id)
-                                ? "ring-2 ring-primary bg-primary/5"
+                                ? "app-row-selected"
                                 : "bg-card"
                             }`}
                           >
@@ -330,7 +330,7 @@ export const GroupedEntityTable = <T extends { id: string; name: string }>({
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block border rounded-md overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

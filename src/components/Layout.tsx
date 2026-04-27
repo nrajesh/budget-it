@@ -151,58 +151,53 @@ const Layout = () => {
 
   const getPageTitle = (pathname: string) => {
     if (pathname.startsWith("/reports/essential")) {
-      return t("layout.pageTitle.reportsEssential", {
-        defaultValue: "Essential Reports",
-      });
+      return t("layout.nav.reportsEssential", { defaultValue: "Essential" });
     }
     if (pathname.startsWith("/reports/advanced")) {
-      return t("layout.pageTitle.reportsAdvanced", {
-        defaultValue: "Advanced Reports",
-      });
+      return t("layout.nav.reportsAdvanced", { defaultValue: "Advanced" });
     }
     switch (pathname) {
       case "/":
         return t("layout.nav.dashboard", { defaultValue: "Dashboard" });
       case "/calendar":
-        return "Calendar";
+        return t("layout.nav.calendar", { defaultValue: "Calendar" });
       case "/transactions":
-        return "Transactions";
+        return t("layout.nav.transactions", { defaultValue: "Transactions" });
       case "/analytics":
-        return "Analytics";
+        return t("layout.nav.analytics", { defaultValue: "Analytics" });
       case "/insights":
-        return "Insights";
+        return t("layout.nav.insights", { defaultValue: "Insights" });
       case "/settings":
-        return "Ledger";
+        return t("layout.nav.ledger", { defaultValue: "Ledger" });
       case "/language":
-        return t("layout.pageTitle.language", { defaultValue: "Languages" });
+        return t("layout.nav.languages", { defaultValue: "Languages" });
       case "/data-management":
-        return "Data";
+        return t("layout.nav.data", { defaultValue: "Data" });
       case "/vendors":
-        return "Vendors";
+        return t("layout.nav.vendors", { defaultValue: "Vendors" });
       case "/currencies":
-        return "Currencies";
+        return t("layout.nav.currencies", { defaultValue: "Currencies" });
       case "/accounts":
-        return "Accounts";
+        return t("layout.nav.accounts", { defaultValue: "Accounts" });
       case "/categories":
-        return "Categories";
+        return t("layout.nav.categories", { defaultValue: "Categories" });
       case "/scheduled":
-        return "Scheduled Transactions";
+        return t("layout.nav.scheduled", { defaultValue: "Scheduled" });
       case "/budgets":
-        return "Budgets";
+        return t("layout.nav.budgets", { defaultValue: "Budgets" });
       case "/ai-providers":
-        return "AI Providers";
+        return t("layout.nav.aiProviders", { defaultValue: "AI Providers" });
       case "/backup":
-        return "Backup";
+        return t("layout.nav.backup", { defaultValue: "Backup" });
       case "/donate":
-        return "Donate";
+        return t("layout.nav.donate", { defaultValue: "Donate" });
       default:
-        return t("layout.pageTitle.notFound", {
-          defaultValue: "Page Not Found",
-        });
+        return "Page Not Found";
     }
   };
 
   const pageTitle = getPageTitle(location.pathname);
+  const showMobilePageTitle = location.pathname === "/ledgers";
 
   const displayName = activeLedger?.name || "Select Ledger";
   const displayEmail = activeLedger?.short_name || "Budget";
@@ -239,7 +234,7 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt="Vaulted Money"
-                className="size-8 shrink-0"
+                className="h-8 w-8 shrink-0 object-contain"
               />
               <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
                 Vaulted Money
@@ -618,7 +613,9 @@ const Layout = () => {
         <header className="flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between border-b bg-background px-4 sm:px-6">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="sm:hidden" />
-            <h1 className="text-lg font-semibold">{pageTitle}</h1>
+            {showMobilePageTitle && (
+              <h1 className="text-lg font-semibold sm:text-xl">{pageTitle}</h1>
+            )}
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <LanguageSwitcher />

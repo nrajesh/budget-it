@@ -154,24 +154,48 @@ export function ScheduledTransactionsTable({
   return (
     <div className="space-y-4">
       {/* Bulk Toolbar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2">
-          <span className="text-sm font-medium px-2">
-            {selectedIds.size} selected
-          </span>
-          <div className="h-4 w-px bg-border" />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            <X className="h-4 w-4 mr-1" /> Clear
-          </Button>
-          <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
-            <Trash className="h-4 w-4 mr-1" /> Delete
-          </Button>
+      <div
+        className={`app-table-toolbar ${
+          selectedIds.size > 0
+            ? "app-table-toolbar-active"
+            : "app-table-toolbar-idle"
+        }`}
+      >
+        <div className="flex min-h-12 flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="px-1 text-sm font-medium">
+              {selectedIds.size} selected
+            </span>
+            <div className="h-4 w-px bg-border" />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={selectedIds.size === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:opacity-45 sm:h-9 sm:w-auto sm:px-3"
+              title="Clear selection"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Clear selection</span>
+              <span className="hidden sm:inline sm:ml-1">Clear</span>
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={selectedIds.size === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:h-9 sm:w-auto sm:px-3"
+              title="Delete selected"
+            >
+              <Trash className="h-4 w-4" />
+              <span className="sr-only">Delete selected</span>
+              <span className="hidden sm:inline sm:ml-1">Delete</span>
+            </Button>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Mobile View */}
       <div className="block md:hidden space-y-4">
@@ -190,10 +214,8 @@ export function ScheduledTransactionsTable({
             return (
               <div
                 key={transaction.id || `sched-txn-${index}`}
-                className={`p-4 border rounded-xl bg-white/50 dark:bg-black/20 backdrop-blur-sm shadow-sm flex flex-col gap-3 transition-colors ${
-                  selectedIds.has(transaction.id)
-                    ? "ring-2 ring-primary bg-primary/5"
-                    : ""
+                className={`app-mobile-row flex flex-col gap-3 bg-white/50 backdrop-blur-sm dark:bg-black/20 ${
+                  selectedIds.has(transaction.id) ? "app-row-selected" : ""
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">

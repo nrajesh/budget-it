@@ -16,6 +16,7 @@ import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilter
 import { slugify } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const COLORS = [
   "#0088FE",
@@ -37,6 +38,10 @@ export function SpendingCategoriesChart({
 }: SpendingCategoriesChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
+  const { t } = useTranslation();
+  const fallbackUncategorized = t("analytics.breakdown.uncategorized", {
+    defaultValue: "Uncategorized",
+  });
   const {
     setSelectedCategories,
     setSelectedSubCategories,
@@ -91,7 +96,7 @@ export function SpendingCategoriesChart({
     accountFilteredTransactions
       .filter((t) => t.category === selectedCategory.name && t.amount < 0)
       .forEach((t) => {
-        const subCat = t.sub_category || "Uncategorized";
+        const subCat = t.sub_category || fallbackUncategorized;
         const convertedAmount = convertBetweenCurrencies(
           Math.abs(t.amount),
           t.currency || selectedCurrency,
@@ -112,6 +117,7 @@ export function SpendingCategoriesChart({
     accountFilteredTransactions,
     convertBetweenCurrencies,
     selectedCurrency,
+    fallbackUncategorized,
   ]);
 
   const currentData = selectedCategory ? subCategoryData : categoriesData;
@@ -132,11 +138,18 @@ export function SpendingCategoriesChart({
 
         // Sync with global filters
         const subCatSlug =
-          data.name === "Uncategorized" ? "uncategorized" : slugify(data.name);
+          data.name === fallbackUncategorized
+            ? "uncategorized"
+            : slugify(data.name);
         setSelectedSubCategories([subCatSlug]);
       }
     },
-    [selectedCategory, setSelectedCategories, setSelectedSubCategories],
+    [
+      selectedCategory,
+      setSelectedCategories,
+      setSelectedSubCategories,
+      fallbackUncategorized,
+    ],
   );
 
   const handleBackToCategories = useCallback(() => {
@@ -169,11 +182,17 @@ export function SpendingCategoriesChart({
       <ThemedCard className="flex flex-col h-full">
         <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
           <div className="flex flex-col space-y-1.5">
-            <ThemedCardTitle>Spending by Category</ThemedCardTitle>
+            <ThemedCardTitle>
+              {t("analytics.chart.spendingByCategory", {
+                defaultValue: "Spending by Category",
+              })}
+            </ThemedCardTitle>
           </div>
         </ThemedCardHeader>
         <ThemedCardContent className="flex items-center justify-center h-64 text-muted-foreground">
-          No spending data for this period
+          {t("analytics.chart.noData", {
+            defaultValue: "No spending data for this period",
+          })}
         </ThemedCardContent>
       </ThemedCard>
     );
@@ -193,11 +212,17 @@ export function SpendingCategoriesChart({
                 <ArrowLeft className="h-4 w-4" /> {selectedCategory.name}
               </Button>
             ) : (
-              "Spending by Category"
+              t("analytics.chart.spendingByCategory", {
+                defaultValue: "Spending by Category",
+              })
             )}
           </ThemedCardTitle>
           {!selectedCategory && (
-            <ThemedCardDescription>TAP TO DRILL DOWN</ThemedCardDescription>
+            <ThemedCardDescription>
+              {t("analytics.chart.tapToDrillDown", {
+                defaultValue: "Tap to drill down",
+              })}
+            </ThemedCardDescription>
           )}
         </div>
       </ThemedCardHeader>

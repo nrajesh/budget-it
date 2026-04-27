@@ -149,7 +149,7 @@ export const CurrencyManagement = () => {
               <ThemedCardDescription>
                 Manage exchange rates relative to your base currency (
                 {selectedCurrency}).
-                <span className="block mt-2 text-xs text-muted-foreground/80">
+                <span className="block mt-2 max-w-xs text-xs leading-snug text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
                     href="https://frankfurter.dev"
@@ -158,8 +158,8 @@ export const CurrencyManagement = () => {
                     className="underline hover:text-primary transition-colors"
                   >
                     Frankfurter API
-                  </a>{" "}
-                  (Open Source, No API Key).
+                  </a>
+                  <span className="block">(Open source, no API key).</span>
                 </span>
               </ThemedCardDescription>
             </div>
@@ -219,7 +219,7 @@ export const CurrencyManagement = () => {
                       />
                       <CommandList>
                         <CommandEmpty>
-                          <div className="p-2 text-sm text-center text-muted-foreground">
+                          <div className="p-2 text-xs leading-tight text-center text-muted-foreground">
                             No API match found.
                           </div>
                           <div className="p-2 border-t">

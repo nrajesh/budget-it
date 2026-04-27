@@ -66,7 +66,7 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
       </CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-2">
         <div>
-          <h3 className="text-lg font-semibold mb-2">Income</h3>
+          <h3 className="app-section-title mb-2">Income</h3>
           <Table>
             <TableHeader>
               <TableRow>
@@ -95,7 +95,7 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
           </Table>
         </div>
         <div>
-          <h3 className="text-lg font-semibold mb-2">Expenses</h3>
+          <h3 className="app-section-title mb-2">Expenses</h3>
           <Table>
             <TableHeader>
               <TableRow>

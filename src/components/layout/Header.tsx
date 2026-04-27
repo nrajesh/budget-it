@@ -5,10 +5,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import React from "react";
 import MobileNavContent from "../navigation/MobileNavContent.tsx"; // Explicitly added .tsx extension
 import { useTour } from "@/contexts/TourContext";
+import { useTranslation } from "react-i18next";
 
 const Header = () => {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const { startTour, hasTourForCurrentRoute } = useTour();
+  const { t } = useTranslation();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -23,19 +25,19 @@ const Header = () => {
               to="/dashboard"
               className="text-sm font-medium text-muted-foreground hover:text-primary"
             >
-              Dashboard
+              {t("layout.nav.dashboard", { defaultValue: "Dashboard" })}
             </Link>
             <Link
               to="/transactions"
               className="text-sm font-medium text-muted-foreground hover:text-primary"
             >
-              Transactions
+              {t("layout.nav.transactions", { defaultValue: "Transactions" })}
             </Link>
             <Link
               to="/analytics"
               className="text-sm font-medium text-muted-foreground hover:text-primary"
             >
-              Analytics
+              {t("layout.nav.analytics", { defaultValue: "Analytics" })}
             </Link>
           </nav>
         </div>
@@ -45,7 +47,9 @@ const Header = () => {
               variant="ghost"
               size="icon"
               onClick={startTour}
-              aria-label="Start Help Tour"
+              aria-label={t("helpTour.start", {
+                defaultValue: "Start Help Tour",
+              })}
             >
               <HelpCircle className="h-5 w-5" />
             </Button>
@@ -55,7 +59,9 @@ const Header = () => {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle menu</span>
+                <span className="sr-only">
+                  {t("layout.nav.toggleMenu", { defaultValue: "Toggle menu" })}
+                </span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">

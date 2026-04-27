@@ -3,6 +3,7 @@ import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface NLPSearchInputProps {
   value: string;
@@ -27,6 +28,7 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
   isLoading,
   placeholder,
 }) => {
+  const { t } = useTranslation();
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
   const [isFocused, setIsFocused] = React.useState(false);
 
@@ -44,7 +46,6 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
     <div
       className={cn(
         "relative flex items-center w-full transition-all duration-300",
-        isFocused ? "scale-[1.01]" : "",
       )}
     >
       <div className="absolute left-3 text-muted-foreground pointer-events-none">
@@ -63,9 +64,11 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder || PLACEHOLDERS[placeholderIndex]}
-        aria-label="Search transactions"
+        aria-label={t("filters.input.searchTransactions", {
+          defaultValue: "Search transactions",
+        })}
         className={cn(
-          "pl-10 pr-10 h-12 text-lg bg-white/80 dark:bg-background/50 backdrop-blur-md border-slate-200 dark:border-muted-foreground/20",
+          "pl-10 pr-10 h-12 text-base bg-white/80 dark:bg-background/50 backdrop-blur-md border-slate-200 dark:border-muted-foreground/20",
           "hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/20",
           "transition-all duration-300 shadow-sm text-slate-900 dark:text-slate-100",
         )}
@@ -77,7 +80,9 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
           size="icon"
           className="absolute right-2 size-8 text-muted-foreground hover:text-foreground"
           onClick={onClear}
-          aria-label="Clear search"
+          aria-label={t("filters.input.clearSearch", {
+            defaultValue: "Clear search",
+          })}
         >
           <X className="size-4" />
         </Button>
@@ -87,10 +92,14 @@ export const NLPSearchInput: React.FC<NLPSearchInputProps> = ({
         <div
           className="absolute right-12 top-1/2 -translate-y-1/2"
           role="status"
-          aria-label="Loading search results"
+          aria-label={t("filters.input.loadingSearchResults", {
+            defaultValue: "Loading search results",
+          })}
         >
           <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="sr-only">Loading...</span>
+          <span className="sr-only">
+            {t("filters.input.loading", { defaultValue: "Loading..." })}
+          </span>
         </div>
       )}
     </div>

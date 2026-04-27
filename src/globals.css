@@ -57,6 +57,26 @@
     --chart-6: 300 60% 50%;
     --chart-7: 240 50% 60%;
     --chart-8: 60 80% 50%;
+
+    --brand-title-from: 32 83% 72%;
+    --brand-title-via: 27 72% 67%;
+    --brand-title-to: 20 73% 61%;
+    --brand-accent: 24 74% 58%;
+    --brand-accent-soft: 30 78% 74%;
+    --brand-accent-strong: 18 74% 52%;
+
+    --analytics-grid: 214 32% 91%;
+    --analytics-axis: 215 16% 47%;
+    --analytics-cursor: 30 62% 70%;
+    --analytics-line-previous: 31 58% 70%;
+    --analytics-line-current-from: 32 83% 72%;
+    --analytics-line-current-to: 20 73% 61%;
+    --analytics-dot: 18 74% 52%;
+    --analytics-bar-from: 34 86% 75%;
+    --analytics-bar-to: 22 80% 61%;
+    --analytics-bar-stroke: 18 74% 52%;
+    --analytics-reference-mean: 24 74% 58%;
+    --analytics-reference-max: 14 69% 48%;
   }
 
   .dark {
@@ -105,6 +125,26 @@
     --chart-6: 300 60% 50%;
     --chart-7: 240 50% 60%;
     --chart-8: 60 80% 50%;
+
+    --brand-title-from: 183 51% 74%;
+    --brand-title-via: 187 55% 61%;
+    --brand-title-to: 199 54% 42%;
+    --brand-accent: 188 57% 59%;
+    --brand-accent-soft: 184 47% 74%;
+    --brand-accent-strong: 199 54% 42%;
+
+    --analytics-grid: 217 19% 26%;
+    --analytics-axis: 215 20% 65%;
+    --analytics-cursor: 193 44% 68%;
+    --analytics-line-previous: 191 36% 55%;
+    --analytics-line-current-from: 183 51% 74%;
+    --analytics-line-current-to: 199 54% 42%;
+    --analytics-dot: 188 57% 59%;
+    --analytics-bar-from: 184 47% 74%;
+    --analytics-bar-to: 199 54% 42%;
+    --analytics-bar-stroke: 199 54% 42%;
+    --analytics-reference-mean: 188 57% 59%;
+    --analytics-reference-max: 205 61% 54%;
   }
 }
 
@@ -123,6 +163,76 @@
   /* Default Budget Bar (Standard Theme uses Primary/Black) */
   .bg-budget-bar {
     background-color: hsl(var(--primary));
+  }
+
+  .app-gradient-title {
+    @apply inline-block bg-clip-text text-transparent;
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--brand-title-from)),
+      hsl(var(--brand-title-via)),
+      hsl(var(--brand-title-to))
+    );
+  }
+
+  .app-page-title {
+    @apply text-3xl sm:text-4xl font-black tracking-tighter;
+  }
+
+  .app-page-subtitle {
+    @apply mt-2 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-500 dark:text-slate-400;
+  }
+
+  .app-page-header {
+    @apply mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4;
+  }
+
+  .app-action-panel {
+    @apply w-full rounded-xl border border-slate-200 bg-white/60 p-3 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
+  }
+
+  .app-filter-panel {
+    @apply w-full rounded-xl border border-slate-200 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
+  }
+
+  .app-table-shell {
+    @apply overflow-hidden rounded-xl bg-transparent;
+  }
+
+  .app-table-toolbar {
+    @apply sticky top-0 z-10 rounded-xl border px-3 py-2.5 shadow-sm backdrop-blur-sm transition-all;
+  }
+
+  .app-table-toolbar-active {
+    @apply border-border bg-muted/70 dark:bg-slate-800/70 animate-in slide-in-from-top-2;
+  }
+
+  .app-table-toolbar-idle {
+    @apply border-border/70 bg-card/90 dark:bg-slate-950/70;
+  }
+
+  .app-mobile-row {
+    @apply rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors;
+  }
+
+  .app-row-selected {
+    @apply border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))];
+  }
+
+  .app-section-title {
+    @apply text-base sm:text-lg font-semibold leading-tight tracking-normal;
+  }
+
+  .app-section-header {
+    @apply border-b border-slate-200/50 dark:border-slate-800/50;
+  }
+
+  .app-accent-text {
+    color: hsl(var(--brand-accent));
+  }
+
+  .app-accent-strong-text {
+    color: hsl(var(--brand-accent-strong));
   }
 
   /* Financial Pulse Override (Uses Indigo) */

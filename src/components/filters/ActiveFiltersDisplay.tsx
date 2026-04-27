@@ -2,11 +2,13 @@ import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilter
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { slugify } from "@/lib/utils";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 
 export const ActiveFiltersDisplay = () => {
+  const { t } = useTranslation();
   const {
     dateRange,
     setDateRange,
@@ -43,17 +45,33 @@ export const ActiveFiltersDisplay = () => {
     const fromStr = format(dateRange.from, "MMM d, yyyy");
     const toStr = format(dateRange.to || dateRange.from, "MMM d, yyyy"); // Fallback to from if to is undefined
     const label =
-      fromStr === toStr ? `Date: ${fromStr}` : `Date: ${fromStr} - ${toStr}`;
+      fromStr === toStr
+        ? t("filters.active.dateSingle", {
+            date: fromStr,
+            defaultValue: `Date: ${fromStr}`,
+          })
+        : t("filters.active.dateRange", {
+            from: fromStr,
+            to: toStr,
+            defaultValue: `Date: ${fromStr} - ${toStr}`,
+          });
     chips.push(renderChip(label, () => setDateRange(undefined), "date-chip"));
   }
 
   // Accounts
   selectedAccounts.forEach((slug) => {
     const acc = accounts.find((a) => slugify(a.name) === slug);
-    const name = acc ? acc.name : slug === "__no_match__" ? "No Match" : slug;
+    const name = acc
+      ? acc.name
+      : slug === "__no_match__"
+        ? t("filters.active.noMatch", { defaultValue: "No Match" })
+        : slug;
     chips.push(
       renderChip(
-        `Account: ${name}`,
+        t("filters.active.account", {
+          name,
+          defaultValue: `Account: ${name}`,
+        }),
         () => {
           setSelectedAccounts(selectedAccounts.filter((s) => s !== slug));
         },
@@ -68,7 +86,10 @@ export const ActiveFiltersDisplay = () => {
     const name = cat ? cat.name : slug;
     chips.push(
       renderChip(
-        `Category: ${name}`,
+        t("filters.active.category", {
+          name,
+          defaultValue: `Category: ${name}`,
+        }),
         () => {
           setSelectedCategories(selectedCategories.filter((s) => s !== slug));
         },
@@ -85,7 +106,10 @@ export const ActiveFiltersDisplay = () => {
       .join(" ");
     chips.push(
       renderChip(
-        `Sub: ${name}`,
+        t("filters.active.subCategory", {
+          name,
+          defaultValue: `Sub: ${name}`,
+        }),
         () => {
           setSelectedSubCategories(
             selectedSubCategories.filter((s) => s !== slug),
@@ -102,7 +126,10 @@ export const ActiveFiltersDisplay = () => {
     const name = vendor ? vendor.name : slug;
     chips.push(
       renderChip(
-        `Payee: ${name}`,
+        t("filters.active.vendor", {
+          name,
+          defaultValue: `Payee: ${name}`,
+        }),
         () => {
           setSelectedVendors(selectedVendors.filter((s) => s !== slug));
         },
@@ -115,7 +142,10 @@ export const ActiveFiltersDisplay = () => {
   if (searchTerm) {
     chips.push(
       renderChip(
-        `Search: "${searchTerm}"`,
+        t("filters.active.search", {
+          query: searchTerm,
+          defaultValue: `Search: "${searchTerm}"`,
+        }),
         () => setSearchTerm(""),
         "search-term",
       ),

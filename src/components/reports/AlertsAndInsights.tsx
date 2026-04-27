@@ -248,7 +248,9 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
   return (
     <ThemedCard>
       <ThemedCardHeader>
-        <ThemedCardTitle>Alerts and Insights</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Alerts and Insights
+        </ThemedCardTitle>
         <ThemedCardDescription>
           Automated analysis of your financial data based on the selected
           filters.
@@ -256,7 +258,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
       </ThemedCardHeader>
       <ThemedCardContent className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center">
+          <h3 className="app-section-title flex items-center">
             <AlertTriangle className="h-5 w-5 mr-2 text-destructive" />
             Financial Alerts
           </h3>
@@ -351,7 +353,7 @@ const AlertsAndInsights: React.FC<AlertsAndInsightsProps> = ({
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Key Insights</h3>
+          <h3 className="app-section-title">Key Insights</h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-start">
               <BarChart2 className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
