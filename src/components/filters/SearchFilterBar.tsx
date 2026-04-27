@@ -11,12 +11,14 @@ import { ActiveFiltersDisplay } from "@/components/filters/ActiveFiltersDisplay"
 import { useTheme } from "@/contexts/ThemeContext";
 import { ParsedFilterState } from "@/utils/searchParser";
 import { slugify } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 /**
  * Common component for Search and Filtering across the app.
  * Persists state via useTransactionFilters hook.
  */
 export const SearchFilterBar = () => {
+  const { t } = useTranslation();
   const {
     setSearchTerm,
     setDateRange,
@@ -196,7 +198,9 @@ export const SearchFilterBar = () => {
             htmlFor="exclude-transfers"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700 dark:text-slate-300"
           >
-            Exclude Transfers
+            {t("filters.searchBar.excludeTransfers", {
+              defaultValue: "Exclude Transfers",
+            })}
           </label>
         </div>
 
@@ -207,7 +211,7 @@ export const SearchFilterBar = () => {
           className="h-8"
         >
           <RefreshCw className="mr-2 h-3 w-3" />
-          Reset
+          {t("filters.searchBar.reset", { defaultValue: "Reset" })}
         </Button>
       </div>
     </div>

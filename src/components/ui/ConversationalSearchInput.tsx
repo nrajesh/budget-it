@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ParsedFilterState, parseSearchQuery } from "@/utils/searchParser";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 interface ConversationalSearchInputProps {
   onUpdate: (update: Partial<ParsedFilterState>) => void;
@@ -38,6 +39,7 @@ export function ConversationalSearchInput({
   vendors,
   className,
 }: ConversationalSearchInputProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [step, setStep] = React.useState<SearchStep>("ROOT");
   const [input, setInput] = React.useState("");
@@ -122,27 +124,33 @@ export function ConversationalSearchInput({
     // If input is empty, show types
     if (!input.trim()) {
       return (
-        <CommandGroup heading="Filter Type">
+        <CommandGroup
+          heading={t("filters.conversational.filterType", {
+            defaultValue: "Filter Type",
+          })}
+        >
           <CommandItem
             value="category"
             onSelect={() => handleSelectType("CATEGORY")}
           >
             <Tag className="mr-2 h-4 w-4" />
-            Category
+            {t("filters.conversational.category", { defaultValue: "Category" })}
           </CommandItem>
           <CommandItem
             value="account"
             onSelect={() => handleSelectType("ACCOUNT")}
           >
             <CreditCard className="mr-2 h-4 w-4" />
-            Account
+            {t("filters.conversational.account", { defaultValue: "Account" })}
           </CommandItem>
           <CommandItem
             value="vendor"
             onSelect={() => handleSelectType("VENDOR")}
           >
             <Store className="mr-2 h-4 w-4" />
-            Vendor / Payee
+            {t("filters.conversational.vendor", {
+              defaultValue: "Vendor / Payee",
+            })}
           </CommandItem>
         </CommandGroup>
       );
@@ -152,7 +160,11 @@ export function ConversationalSearchInput({
     return (
       <>
         {nlpDate && (
-          <CommandGroup heading="Detected Date">
+          <CommandGroup
+            heading={t("filters.conversational.detectedDate", {
+              defaultValue: "Detected Date",
+            })}
+          >
             <CommandItem
               value={"date-" + input}
               onSelect={() => {
@@ -161,14 +173,22 @@ export function ConversationalSearchInput({
               }}
             >
               <Calendar className="mr-2 h-4 w-4 text-primary" />
-              Use Date: {format(nlpDate.from!, "MMM d")} -{" "}
-              {nlpDate.to ? format(nlpDate.to, "MMM d, yyyy") : ""}
+              {t("filters.conversational.useDate", {
+                range: nlpDate.to
+                  ? `${format(nlpDate.from!, "MMM d")} - ${format(nlpDate.to, "MMM d, yyyy")}`
+                  : format(nlpDate.from!, "MMM d, yyyy"),
+                defaultValue: `Use Date: ${format(nlpDate.from!, "MMM d")} - ${nlpDate.to ? format(nlpDate.to, "MMM d, yyyy") : ""}`,
+              })}
             </CommandItem>
           </CommandGroup>
         )}
 
         {isAllTime && (
-          <CommandGroup heading="Detected Date">
+          <CommandGroup
+            heading={t("filters.conversational.detectedDate", {
+              defaultValue: "Detected Date",
+            })}
+          >
             <CommandItem
               value="date-all-time"
               onSelect={() => {
@@ -177,7 +197,9 @@ export function ConversationalSearchInput({
               }}
             >
               <Calendar className="mr-2 h-4 w-4 text-primary" />
-              Time Range: All Time
+              {t("filters.conversational.timeRangeAllTime", {
+                defaultValue: "Time Range: All Time",
+              })}
             </CommandItem>
           </CommandGroup>
         )}
@@ -185,7 +207,11 @@ export function ConversationalSearchInput({
         {/* Show top entity matches mixed in, or grouped? Command filters for us if we render them. 
                     Lets render a subset of everything if input length > 1 */}
 
-        <CommandGroup heading="Categories">
+        <CommandGroup
+          heading={t("filters.conversational.categories", {
+            defaultValue: "Categories",
+          })}
+        >
           {categories.map((c) => (
             <CommandItem
               key={c.slug}
@@ -203,12 +229,18 @@ export function ConversationalSearchInput({
               onSelect={() => onUpdate({ selectedSubCategories: [s.slug] })}
             >
               <Tag className="mr-2 h-4 w-4 opacity-50" />
-              {s.name} (Sub)
+              {`${s.name} ${t("filters.conversational.subCategorySuffix", {
+                defaultValue: "(Sub)",
+              })}`}
             </CommandItem>
           ))}
         </CommandGroup>
 
-        <CommandGroup heading="Accounts">
+        <CommandGroup
+          heading={t("filters.conversational.accounts", {
+            defaultValue: "Accounts",
+          })}
+        >
           {accounts.map((a) => (
             <CommandItem
               key={a.slug}
@@ -221,7 +253,11 @@ export function ConversationalSearchInput({
           ))}
         </CommandGroup>
 
-        <CommandGroup heading="Vendors">
+        <CommandGroup
+          heading={t("filters.conversational.vendors", {
+            defaultValue: "Vendors",
+          })}
+        >
           {/* Render all vendors for local filtering */}
           {vendors.map((v) => (
             <CommandItem
@@ -235,13 +271,20 @@ export function ConversationalSearchInput({
           ))}
         </CommandGroup>
 
-        <CommandGroup heading="Search">
+        <CommandGroup
+          heading={t("filters.conversational.search", {
+            defaultValue: "Search",
+          })}
+        >
           <CommandItem
             value={"search-" + input}
             onSelect={() => handleGenericSearch()}
           >
             <Search className="mr-2 h-4 w-4" />
-            Search Text "{input}"
+            {t("filters.conversational.searchText", {
+              input,
+              defaultValue: `Search Text "${input}"`,
+            })}
           </CommandItem>
         </CommandGroup>
       </>
@@ -252,13 +295,17 @@ export function ConversationalSearchInput({
     // Keep explicit browsing logic if user Selected "Category" specifically
     if (step === "CATEGORY") {
       return (
-        <CommandGroup heading="All Categories">
+        <CommandGroup
+          heading={t("filters.conversational.allCategories", {
+            defaultValue: "All Categories",
+          })}
+        >
           <CommandItem
             value="back"
             onSelect={handleBack}
             className="text-muted-foreground font-medium"
           >
-            ← Back
+            ← {t("filters.conversational.back", { defaultValue: "Back" })}
           </CommandItem>
           {categories.map((c) => (
             <CommandItem
@@ -274,13 +321,17 @@ export function ConversationalSearchInput({
     }
     if (step === "ACCOUNT") {
       return (
-        <CommandGroup heading="All Accounts">
+        <CommandGroup
+          heading={t("filters.conversational.allAccounts", {
+            defaultValue: "All Accounts",
+          })}
+        >
           <CommandItem
             value="back"
             onSelect={handleBack}
             className="text-muted-foreground font-medium"
           >
-            ← Back
+            ← {t("filters.conversational.back", { defaultValue: "Back" })}
           </CommandItem>
           {accounts.map((a) => (
             <CommandItem
@@ -296,13 +347,17 @@ export function ConversationalSearchInput({
     }
     if (step === "VENDOR") {
       return (
-        <CommandGroup heading="All Vendors">
+        <CommandGroup
+          heading={t("filters.conversational.allVendors", {
+            defaultValue: "All Vendors",
+          })}
+        >
           <CommandItem
             value="back"
             onSelect={handleBack}
             className="text-muted-foreground font-medium"
           >
-            ← Back
+            ← {t("filters.conversational.back", { defaultValue: "Back" })}
           </CommandItem>
           {vendors.map((v) => (
             <CommandItem
@@ -327,13 +382,20 @@ export function ConversationalSearchInput({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between h-12 text-lg text-muted-foreground bg-white/80 dark:bg-background/50 backdrop-blur-md font-normal",
+            "w-full justify-between h-11 text-base text-muted-foreground bg-white/80 dark:bg-background/50 backdrop-blur-md font-normal",
             className,
           )}
         >
           {step === "ROOT"
-            ? "Filter transactions..."
-            : `Filter by ${step.toLowerCase()}...`}
+            ? t("filters.searchBar.placeholder", {
+                defaultValue: "Filter transactions...",
+              })
+            : t("filters.conversational.filterBy", {
+                step: t(`filters.conversational.${step.toLowerCase()}`, {
+                  defaultValue: step.toLowerCase(),
+                }).toLowerCase(),
+                defaultValue: `Filter by ${step.toLowerCase()}...`,
+              })}
           <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -343,7 +405,10 @@ export function ConversationalSearchInput({
       >
         <Command shouldFilter={true}>
           <CommandInput
-            placeholder="Type to filter (e.g. 'Groceries', 'Next Week', 'Checking')..."
+            placeholder={t("filters.conversational.typePlaceholder", {
+              defaultValue:
+                "Type to filter (e.g. 'Groceries', 'Next Week', 'Checking')...",
+            })}
             onValueChange={setInput}
             value={input}
             onKeyDown={(e) => {
@@ -358,14 +423,19 @@ export function ConversationalSearchInput({
                 onClick={() => handleGenericSearch()}
               >
                 <span className="text-muted-foreground">
-                  Search text "{input}"
+                  {t("filters.conversational.searchText", {
+                    input,
+                    defaultValue: `Search Text "${input}"`,
+                  })}
                 </span>
                 <Button
                   size="sm"
                   variant="secondary"
                   onClick={() => handleGenericSearch()}
                 >
-                  Search
+                  {t("filters.conversational.search", {
+                    defaultValue: "Search",
+                  })}
                 </Button>
               </div>
             </CommandEmpty>

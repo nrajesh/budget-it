@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 interface EntityBreakdownTableProps {
   transactions: Transaction[];
@@ -21,11 +22,11 @@ interface EntityBreakdownTableProps {
   onEntitySelect: (entityName: string | null) => void;
 }
 
-const ENTITY_LABELS: Record<EntityType, string> = {
-  category: "Category",
-  vendor: "Merchant",
-  currency: "Currency",
-  account: "Account",
+const ENTITY_LABEL_KEYS: Record<EntityType, string> = {
+  category: "analytics.breakdown.byCategory",
+  vendor: "analytics.breakdown.byMerchant",
+  currency: "analytics.breakdown.byCurrency",
+  account: "analytics.breakdown.byAccount",
 };
 
 const ENTITY_ICONS: Record<EntityType, string> = {
@@ -46,6 +47,7 @@ function computeBreakdown(
   transactions: Transaction[],
   entityType: EntityType,
   selectedEntity: string | null,
+  labels: { unknown: string; uncategorized: string },
 ): BreakdownItem[] {
   let spendingTxs = transactions.filter(
     (t) => t.amount < 0 && t.category !== "Transfer",
@@ -58,7 +60,7 @@ function computeBreakdown(
 
     const map = new Map<string, { amount: number; count: number }>();
     spendingTxs.forEach((t) => {
-      const key = t.sub_category || "Uncategorized";
+      const key = t.sub_category || labels.uncategorized;
       const existing = map.get(key) || { amount: 0, count: 0 };
       existing.amount += Math.abs(t.amount);
       existing.count += 1;
@@ -87,19 +89,19 @@ function computeBreakdown(
     let key: string;
     switch (entityType) {
       case "category":
-        key = t.category || "Uncategorized";
+        key = t.category || labels.uncategorized;
         break;
       case "vendor":
-        key = t.vendor || "Unknown";
+        key = t.vendor || labels.unknown;
         break;
       case "currency":
-        key = t.currency || "Unknown";
+        key = t.currency || labels.unknown;
         break;
       case "account":
-        key = t.account || "Unknown";
+        key = t.account || labels.unknown;
         break;
       default:
-        key = "Unknown";
+        key = labels.unknown;
     }
 
     const existing = map.get(key) || { amount: 0, count: 0 };
@@ -125,6 +127,7 @@ function getSubCategoryTransactions(
   transactions: Transaction[],
   category: string,
   subCategory: string,
+  labels: { uncategorized: string },
 ): Transaction[] {
   return transactions
     .filter(
@@ -132,7 +135,7 @@ function getSubCategoryTransactions(
         t.amount < 0 &&
         t.category !== "Transfer" &&
         t.category === category &&
-        (t.sub_category || "Uncategorized") === subCategory,
+        (t.sub_category || labels.uncategorized) === subCategory,
     )
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
@@ -145,14 +148,31 @@ export function EntityBreakdownTable({
   onEntitySelect,
 }: EntityBreakdownTableProps) {
   const { formatCurrency } = useCurrency();
+  const { t } = useTranslation();
   // Track the selected sub-category for transaction drill-down
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(
     null,
   );
 
+  const fallbackLabels = useMemo(
+    () => ({
+      unknown: t("analytics.breakdown.unknown", { defaultValue: "Unknown" }),
+      uncategorized: t("analytics.breakdown.uncategorized", {
+        defaultValue: "Uncategorized",
+      }),
+    }),
+    [t],
+  );
+
   const breakdown = useMemo(
-    () => computeBreakdown(transactions, entityType, selectedEntity),
-    [transactions, entityType, selectedEntity],
+    () =>
+      computeBreakdown(
+        transactions,
+        entityType,
+        selectedEntity,
+        fallbackLabels,
+      ),
+    [transactions, entityType, selectedEntity, fallbackLabels],
   );
 
   // Get transactions when a sub-category is selected
@@ -162,8 +182,14 @@ export function EntityBreakdownTable({
       transactions,
       selectedEntity,
       selectedSubCategory,
+      { uncategorized: fallbackLabels.uncategorized },
     );
-  }, [transactions, selectedEntity, selectedSubCategory]);
+  }, [
+    transactions,
+    selectedEntity,
+    selectedSubCategory,
+    fallbackLabels.uncategorized,
+  ]);
 
   // Determine the current view depth
   const isSubCategoryView =
@@ -173,9 +199,11 @@ export function EntityBreakdownTable({
   // Build title and breadcrumb
   const title = isTransactionView
     ? selectedSubCategory
-    : selectedEntity
+      : selectedEntity
       ? selectedEntity
-      : `By ${ENTITY_LABELS[entityType]}`;
+      : t(ENTITY_LABEL_KEYS[entityType], {
+          defaultValue: `By ${entityType}`,
+        });
 
   // Handle back navigation
   const handleBack = () => {
@@ -216,7 +244,9 @@ export function EntityBreakdownTable({
             <button
               onClick={handleBack}
               className="p-1 rounded-full hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-              aria-label="Go back"
+              aria-label={t("analytics.breakdown.goBack", {
+                defaultValue: "Go back",
+              })}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -232,7 +262,7 @@ export function EntityBreakdownTable({
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                {(Object.keys(ENTITY_LABELS) as EntityType[]).map((type) => (
+                {(Object.keys(ENTITY_LABEL_KEYS) as EntityType[]).map((type) => (
                   <DropdownMenuItem
                     key={type}
                     onClick={() => onEntityTypeChange(type)}
@@ -241,7 +271,9 @@ export function EntityBreakdownTable({
                     }
                   >
                     <span className="mr-2">{ENTITY_ICONS[type]}</span>
-                    {ENTITY_LABELS[type]}
+                    {t(ENTITY_LABEL_KEYS[type], {
+                      defaultValue: type,
+                    })}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -258,7 +290,7 @@ export function EntityBreakdownTable({
             }}
             className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-3 py-1 rounded-full bg-primary/10 hover:bg-primary/15"
           >
-            Clear
+            {t("analytics.breakdown.clear", { defaultValue: "Clear" })}
           </button>
         )}
       </div>
@@ -273,7 +305,7 @@ export function EntityBreakdownTable({
             }}
             className="hover:text-foreground transition-colors"
           >
-            All
+            {t("analytics.breakdown.all", { defaultValue: "All" })}
           </button>
           <span>›</span>
           <button
@@ -298,9 +330,11 @@ export function EntityBreakdownTable({
       {/* Transaction list view */}
       {isTransactionView ? (
         subCategoryTransactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            No transactions found
-          </p>
+        <p className="text-sm text-muted-foreground text-center py-6">
+          {t("analytics.breakdown.noTransactionsFound", {
+            defaultValue: "No transactions found",
+          })}
+        </p>
         ) : (
           <div className="space-y-0.5">
             {subCategoryTransactions.map((tx) => (
@@ -310,7 +344,7 @@ export function EntityBreakdownTable({
               >
                 <div className="flex flex-col min-w-0 flex-1 mr-4">
                   <span className="text-sm font-medium text-foreground truncate">
-                    {tx.vendor || "Unknown"}
+                    {tx.vendor || fallbackLabels.unknown}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {format(new Date(tx.date), "MMM d, yyyy")}
@@ -326,7 +360,9 @@ export function EntityBreakdownTable({
         )
       ) : breakdown.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">
-          No data for this view
+          {t("analytics.breakdown.noDataForView", {
+            defaultValue: "No data for this view",
+          })}
         </p>
       ) : (
         <div className="space-y-1">
@@ -343,7 +379,10 @@ export function EntityBreakdownTable({
                     {item.name}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {item.count} transaction{item.count !== 1 ? "s" : ""}
+                    {t("analytics.breakdown.transactionCount", {
+                      count: item.count,
+                      defaultValue: "{{count}} transactions",
+                    })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

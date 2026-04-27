@@ -185,14 +185,14 @@ const LanguagePage = () => {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+      <div className="app-page-header flex flex-col items-start justify-between md:flex-row md:items-center">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          <h1 className="app-gradient-title app-page-title">
             {t("settings.cards.language.title", {
               defaultValue: "Language and Localization",
             })}
           </h1>
-          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+          <p className="app-page-subtitle">
             {t("settings.cards.language.description", {
               defaultValue:
                 "Use one primary language (mother tongue). Add custom languages by code and translation JSON.",

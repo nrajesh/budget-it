@@ -127,7 +127,9 @@ const SankeyChart: React.FC<SankeyChartProps> = ({
   return (
     <ThemedCard className="col-span-1 md:col-span-2">
       <ThemedCardHeader>
-        <ThemedCardTitle>Financial Flow (Sankey Chart)</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Financial Flow (Sankey Chart)
+        </ThemedCardTitle>
         <ThemedCardDescription>
           Visualizes the flow of money from income sources through accounts to
           expense categories.

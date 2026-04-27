@@ -113,14 +113,16 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
   return (
     <ThemedCard>
       <ThemedCardHeader>
-        <ThemedCardTitle>Income and Expense Summary</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Income and Expense Summary
+        </ThemedCardTitle>
         <ThemedCardDescription>
           A breakdown of your income and expenses by category.
         </ThemedCardDescription>
       </ThemedCardHeader>
       <ThemedCardContent className="grid gap-6 md:grid-cols-2">
         <div>
-          <h3 className="text-lg font-semibold mb-2">Income</h3>
+          <h3 className="app-section-title mb-2">Income</h3>
           {/* Mobile View */}
           <div className="md:hidden space-y-2 mt-2">
             {Object.entries(summary.incomeByCategory).map(
@@ -209,7 +211,7 @@ const IncomeExpenseSummary: React.FC<IncomeExpenseSummaryProps> = ({
           </div>
         </div>
         <div>
-          <h3 className="text-lg font-semibold mb-2">Expenses</h3>
+          <h3 className="app-section-title mb-2">Expenses</h3>
           {/* Mobile View */}
           <div className="md:hidden space-y-3 mt-2">
             {summary.expensesWithBudget.map(

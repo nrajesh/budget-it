@@ -12,6 +12,7 @@ import { SpendingPieChart, type EntityType } from "./SpendingPieChart";
 import { PeriodSelector } from "./PeriodSelector";
 import { EntityBreakdownTable } from "./EntityBreakdownTable";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type ChartMode = "line" | "bar" | "pie";
 
@@ -20,6 +21,7 @@ interface AnalyticsChartViewProps {
 }
 
 export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
+  const { t } = useTranslation();
   const [chartMode, setChartMode] = useState<ChartMode>("line");
   const [entityType, setEntityType] = useState<EntityType>("category");
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
@@ -76,7 +78,9 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
               onClick={handleNavigateBack}
               disabled={!analytics.canNavigateBack}
               className="p-1.5 rounded-full hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              aria-label="Previous period"
+              aria-label={t("analytics.chart.previousPeriod", {
+                defaultValue: "Previous period",
+              })}
             >
               <ChevronLeft className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -90,8 +94,12 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
                     ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                aria-label="Line chart"
-                title="Line chart"
+                aria-label={t("analytics.chart.lineChart", {
+                  defaultValue: "Line chart",
+                })}
+                title={t("analytics.chart.lineChart", {
+                  defaultValue: "Line chart",
+                })}
               >
                 <svg
                   width="18"
@@ -113,8 +121,12 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
                     ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                aria-label="Bar chart"
-                title="Bar chart"
+                aria-label={t("analytics.chart.barChart", {
+                  defaultValue: "Bar chart",
+                })}
+                title={t("analytics.chart.barChart", {
+                  defaultValue: "Bar chart",
+                })}
               >
                 <svg
                   width="18"
@@ -138,8 +150,12 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
                     ? "bg-foreground text-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                aria-label="Pie chart"
-                title="Pie chart"
+                aria-label={t("analytics.chart.pieChart", {
+                  defaultValue: "Pie chart",
+                })}
+                title={t("analytics.chart.pieChart", {
+                  defaultValue: "Pie chart",
+                })}
               >
                 <svg
                   width="18"
@@ -162,7 +178,9 @@ export function AnalyticsChartView({ transactions }: AnalyticsChartViewProps) {
               onClick={handleNavigateForward}
               disabled={!analytics.canNavigateForward}
               className="p-1.5 rounded-full hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              aria-label="Next period"
+              aria-label={t("analytics.chart.nextPeriod", {
+                defaultValue: "Next period",
+              })}
             >
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>

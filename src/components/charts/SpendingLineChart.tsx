@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import {
   ComposedChart,
   Line,
@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { type Transaction } from "@/data/finance-data";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTranslation } from "react-i18next";
 import {
   format,
   differenceInDays,
@@ -21,7 +22,6 @@ import {
   isBefore,
 } from "date-fns";
 import { type PeriodRange, type PeriodType } from "@/hooks/useAnalyticsPeriod";
-import { useTheme as useNextTheme } from "next-themes";
 
 interface SpendingLineChartProps {
   currentTransactions: Transaction[];
@@ -206,6 +206,7 @@ const CustomTooltip = ({
   payload,
   formatCurrency,
 }: CustomTooltipProps) => {
+  const { t } = useTranslation();
   if (!active || !payload || payload.length === 0) return null;
 
   const dataPoint = payload[0]?.payload as DataPoint | undefined;
@@ -221,12 +222,12 @@ const CustomTooltip = ({
   return (
     <div className="bg-popover text-popover-foreground rounded-xl shadow-xl border border-border p-3 min-w-[160px]">
       <div className="flex items-center justify-between gap-4 mb-2">
-        <span className="text-xs font-semibold text-muted-foreground">
-          Spent
+        <span className="text-sm font-semibold text-muted-foreground">
+          {t("analytics.chart.spent", { defaultValue: "Spent" })}
         </span>
         {hasPrevious && (
           <span
-            className={`text-xs font-bold ${isLower ? "text-emerald-600 dark:text-emerald-400" : isHigher ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
+            className={`text-sm font-bold ${isLower ? "text-emerald-600 dark:text-emerald-400" : isHigher ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
           >
             {isLower ? "▼" : isHigher ? "▲" : ""}{" "}
             {formatCurrency(Math.abs(delta))}
@@ -235,19 +236,20 @@ const CustomTooltip = ({
       </div>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-4">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {dataPoint.currentDate || dataPoint.label}
           </span>
-          <span className="text-sm font-bold text-foreground">
+          <span className="text-[11px] font-bold text-foreground">
             {formatCurrency(currentVal)}
           </span>
         </div>
         {hasPrevious && (
           <div className="flex items-center justify-between gap-4">
-            <span className="text-xs text-muted-foreground">
-              {dataPoint.previousDate || "prev"}
+            <span className="text-[11px] text-muted-foreground">
+              {dataPoint.previousDate ||
+                t("analytics.chart.previousShort", { defaultValue: "prev" })}
             </span>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground">
               {formatCurrency(previousVal)}
             </span>
           </div>
@@ -265,15 +267,16 @@ export function SpendingLineChart({
   period,
 }: SpendingLineChartProps) {
   const { formatCurrency } = useCurrency();
-  const { resolvedTheme } = useNextTheme();
-  const isDark = resolvedTheme === "dark";
+  const { t } = useTranslation();
+  const currentLineGradientId = useId().replace(/:/g, "");
 
-  // Theme-aware colors for axis text
-  const tickColor = isDark ? "#94a3b8" : "#64748b";
-  const gridColor = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const currentLineColor = isDark ? "#e2e8f0" : "#1e293b";
-  const previousLineColor = isDark ? "#64748b" : "#94a3b8";
-  const cursorColor = isDark ? "#64748b" : "#94a3b8";
+  const tickColor = "hsl(var(--analytics-axis))";
+  const gridColor = "hsl(var(--analytics-grid))";
+  const currentLineColor = `url(#${currentLineGradientId})`;
+  const previousLineColor = "hsl(var(--foreground))";
+  const cursorColor = "hsl(var(--analytics-cursor))";
+  const activeDotColor = "hsl(var(--analytics-dot))";
+  const activeDotOutline = "hsl(var(--background))";
 
   const chartData = useMemo(
     () =>
@@ -307,7 +310,9 @@ export function SpendingLineChart({
   ) {
     return (
       <div className="w-full h-[220px] sm:h-[260px] flex items-center justify-center text-muted-foreground text-sm">
-        No spending data for this period
+        {t("analytics.chart.noData", {
+          defaultValue: "No spending data for this period",
+        })}
       </div>
     );
   }
@@ -319,19 +324,37 @@ export function SpendingLineChart({
           data={chartData}
           margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
         >
+          <defs>
+            <linearGradient
+              id={currentLineGradientId}
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="0"
+            >
+              <stop
+                offset="0%"
+                stopColor="hsl(var(--analytics-line-current-from))"
+              />
+              <stop
+                offset="100%"
+                stopColor="hsl(var(--analytics-line-current-to))"
+              />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} stroke={gridColor} />
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: tickColor, fontSize: 12 }}
+            tick={{ fill: tickColor, fontSize: 11 }}
             tickMargin={8}
             interval={computeTickInterval(chartData.length)}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fill: tickColor, fontSize: 12 }}
+            tick={{ fill: tickColor, fontSize: 11 }}
             tickFormatter={(v) => {
               if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
               return String(Math.round(v));
@@ -354,6 +377,7 @@ export function SpendingLineChart({
               dataKey="previous"
               type="monotone"
               stroke={previousLineColor}
+              strokeOpacity={0.65}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, fill: previousLineColor, strokeWidth: 0 }}
@@ -370,8 +394,8 @@ export function SpendingLineChart({
             dot={false}
             activeDot={{
               r: 5,
-              fill: currentLineColor,
-              stroke: isDark ? "#1e293b" : "#ffffff",
+              fill: activeDotColor,
+              stroke: activeDotOutline,
               strokeWidth: 2,
             }}
             connectNulls

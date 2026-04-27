@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sector } from "recharts";
+import { useTranslation } from "react-i18next";
 
 export interface ActivePieShapeProps {
   cx: number;
@@ -37,7 +38,11 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
     formatCurrency,
     onCenterClick,
   } = props;
-  const name = payload.name || payload.vendor_name || "Unknown";
+  const { t } = useTranslation();
+  const name =
+    payload.name ||
+    payload.vendor_name ||
+    t("analytics.chart.unknown", { defaultValue: "Unknown" });
   const amount = payload.total_amount || payload.amount || 0;
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -146,7 +151,7 @@ export const ActivePieShape: React.FC<ActivePieShapeProps> = (props) => {
               textTransform: "uppercase",
             }}
           >
-            Reset
+            {t("analytics.chart.reset", { defaultValue: "Reset" })}
           </text>
         </g>
       )}

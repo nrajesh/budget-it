@@ -15,7 +15,15 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { PlusCircle, Loader2, RotateCcw, Upload, Download } from "lucide-react";
+import {
+  PlusCircle,
+  Loader2,
+  RotateCcw,
+  Upload,
+  Download,
+  Trash2,
+  X,
+} from "lucide-react";
 import LoadingOverlay from "@/components/feedback/LoadingOverlay";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { EntityTable, ColumnDefinition } from "./EntityTable";
@@ -168,6 +176,9 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
   const endIndex = startIndex + itemsPerPage;
 
   const numSelected = selectedRows.length;
+  const clearSelection = () => {
+    selectedRows.forEach((id) => handleRowSelect(id, false));
+  };
 
   return (
     <div className="page-container">
@@ -179,87 +190,75 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
             : `Loading ${entityNamePlural}...`
         }
       />
-      <div className="flex flex-col md:flex-row items-center justify-between space-y-2 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+      <div className="app-page-header flex flex-col items-start gap-4">
         <div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
-            {title}
-          </h2>
+          <h2 className="app-gradient-title app-page-title">{title}</h2>
           {subtitle && (
-            <div className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+            <div className="app-page-subtitle">
               {subtitle}
             </div>
           )}
         </div>
-        <div className="tour-entity-actions flex flex-wrap items-center gap-2 mt-4 md:mt-0">
-          {numSelected > 0 && (
+        <div className="tour-entity-actions app-action-panel">
+          <div className="flex flex-wrap items-center gap-2">
+            {BalanceReconciliationDialogComponent && (
+              <Button
+                variant="outline"
+                onClick={() => setIsBalanceReconcileOpen(true)}
+              >
+                Reconcile Balance
+              </Button>
+            )}
+            {CleanupDialogComponent && (
+              <Button variant="outline" onClick={() => setIsCleanupOpen(true)}>
+                Cleanup Unused
+              </Button>
+            )}
+            {DeduplicationDialogComponent && (
+              <Button
+                variant="outline"
+                onClick={() => setIsDeduplicateOpen(true)}
+              >
+                De-duplicate
+              </Button>
+            )}
+            {extraActions}
             <Button
-              variant="destructive"
-              onClick={handleBulkDeleteClick}
-              disabled={isLoadingMutation}
+              onClick={handleImportClick}
+              variant="outline"
+              disabled={isImporting}
             >
-              {isLoadingMutation && (
+              {isImporting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
               )}
-              Delete ({numSelected})
+              Import CSV
             </Button>
-          )}
-          {BalanceReconciliationDialogComponent && (
+            <Button onClick={() => handleExportClick(data)} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              onClick={handleAddClick}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
+            </Button>
             <Button
               variant="outline"
-              onClick={() => setIsBalanceReconcileOpen(true)}
+              size="icon"
+              onClick={async () => await refetch?.()}
+              disabled={isLoading}
             >
-              Reconcile Balance
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+              <span className="sr-only">Refresh</span>
             </Button>
-          )}
-          {CleanupDialogComponent && (
-            <Button variant="outline" onClick={() => setIsCleanupOpen(true)}>
-              Cleanup Unused
-            </Button>
-          )}
-          {DeduplicationDialogComponent && (
-            <Button
-              variant="outline"
-              onClick={() => setIsDeduplicateOpen(true)}
-            >
-              De-duplicate
-            </Button>
-          )}
-          {extraActions}
-          <Button
-            onClick={handleImportClick}
-            variant="outline"
-            disabled={isImporting}
-          >
-            {isImporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            Import CSV
-          </Button>
-          <Button onClick={() => handleExportClick(data)} variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button
-            onClick={handleAddClick}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" /> Add {entityName}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={async () => await refetch?.()}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RotateCcw className="h-4 w-4" />
-            )}
-            <span className="sr-only">Refresh</span>
-          </Button>
+          </div>
         </div>
       </div>
       <input
@@ -269,25 +268,69 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
         className="hidden"
         accept=".csv"
       />
-      <Card className="bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800">
+      <div className="tour-entity-search app-filter-panel">
+        <Input
+          placeholder={
+            customFilter
+              ? "Search by name, currency, e.g. 'negative', '> 1000'..."
+              : "Search by name..."
+          }
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full sm:max-w-md"
+        />
+      </div>
+      <Card className="app-table-shell">
         <CardHeader>
           <CardTitle className="text-slate-900 dark:text-slate-100">
             Manage Your {title}
           </CardTitle>
-          <div className="tour-entity-search mt-4">
-            <Input
-              placeholder={
-                customFilter
-                  ? "Search by name, currency, e.g. 'negative', '> 1000'..."
-                  : "Search by name..."
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:max-w-md"
-            />
-          </div>
         </CardHeader>
-        <CardContent className="tour-entity-table">
+        <CardContent className="tour-entity-table space-y-4">
+          <div
+            className={`app-table-toolbar ${
+              numSelected > 0
+                ? "app-table-toolbar-active"
+                : "app-table-toolbar-idle"
+            }`}
+          >
+            <div className="flex min-h-12 flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="px-1 text-sm font-medium">
+                  {numSelected} selected
+                </span>
+                <div className="h-4 w-px bg-border" />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearSelection}
+                  disabled={numSelected === 0}
+                  className="h-10 w-10 p-0 disabled:pointer-events-none disabled:opacity-45 sm:h-9 sm:w-auto sm:px-3"
+                  title="Clear selection"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Clear selection</span>
+                  <span className="hidden sm:inline sm:ml-1">Clear</span>
+                </Button>
+              </div>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleBulkDeleteClick}
+                disabled={numSelected === 0 || isLoadingMutation}
+                className="h-10 w-10 p-0 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:h-9 sm:w-auto sm:px-3"
+                title="Delete selected"
+              >
+                {isLoadingMutation ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span className="sr-only">Delete selected</span>
+                <span className="hidden sm:inline sm:ml-1">Delete</span>
+              </Button>
+            </div>
+          </div>
           <TableComponent
             data={currentData}
             columns={columns}

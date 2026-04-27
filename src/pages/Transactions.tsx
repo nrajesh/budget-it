@@ -712,7 +712,7 @@ const Transactions = () => {
         </div>
       </div>
 
-      <div className="tour-transaction-list bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="tour-transaction-list app-table-shell">
         <TransactionTable
           transactions={filteredTransactions}
           allData={combinedTransactions}

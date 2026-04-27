@@ -85,10 +85,8 @@ export const EntityTable = <T extends { id: string; name: string }>({
                 <ContextMenu>
                   <ContextMenuTrigger asChild>
                     <div
-                      className={`p-4 border rounded-xl bg-card text-card-foreground shadow-sm flex flex-col gap-3 transition-colors ${
-                        selectedRows.includes(item.id)
-                          ? "ring-2 ring-primary bg-muted/50"
-                          : ""
+                      className={`app-mobile-row flex flex-col gap-3 ${
+                        selectedRows.includes(item.id) ? "app-row-selected" : ""
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -199,7 +197,7 @@ export const EntityTable = <T extends { id: string; name: string }>({
       </div>
 
       {/* Desktop View */}
-      <div className="hidden md:block border rounded-md overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

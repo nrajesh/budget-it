@@ -53,9 +53,7 @@ export const RecentActivityFeed = ({
   return (
     <Card className={cn("h-full", className)}>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          Recent Activity Feed
-        </CardTitle>
+        <CardTitle>Recent Activity Feed</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {recentTransactions.length === 0 ? (

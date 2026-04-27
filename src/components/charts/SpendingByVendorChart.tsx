@@ -14,6 +14,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { ActivePieShape, ActivePieShapeProps } from "./ActivePieShape";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const COLORS = [
   "#8884d8",
@@ -35,6 +36,10 @@ export function SpendingByVendorChart({
 }: SpendingByVendorChartProps) {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
+  const { t } = useTranslation();
+  const fallbackUnknownVendor = t("analytics.chart.unknown", {
+    defaultValue: "Unknown",
+  });
   const { setSelectedVendors, handleResetFilters, selectedAccounts } =
     useTransactionFilters();
 
@@ -53,7 +58,7 @@ export function SpendingByVendorChart({
 
     accountFilteredTransactions.forEach((t) => {
       if (t.amount < 0 && t.category !== "Transfer") {
-        const vendor = t.vendor || "Unknown Vendor";
+        const vendor = t.vendor || fallbackUnknownVendor;
         const convertedAmount = convertBetweenCurrencies(
           Math.abs(t.amount),
           t.currency,
@@ -72,7 +77,12 @@ export function SpendingByVendorChart({
       .filter((v) => v.amount > 0)
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 15); // Show top 15 vendors
-  }, [accountFilteredTransactions, convertBetweenCurrencies, selectedCurrency]);
+  }, [
+    accountFilteredTransactions,
+    convertBetweenCurrencies,
+    selectedCurrency,
+    fallbackUnknownVendor,
+  ]);
 
   const onPieClick = useCallback(
     (data: { name: string; amount: number }, index: number) => {
@@ -108,11 +118,17 @@ export function SpendingByVendorChart({
       <ThemedCard className="flex flex-col h-full">
         <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
           <div className="flex flex-col space-y-1.5">
-            <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+            <ThemedCardTitle>
+              {t("analytics.chart.spendingByVendor", {
+                defaultValue: "Spending by Vendor",
+              })}
+            </ThemedCardTitle>
           </div>
         </ThemedCardHeader>
         <ThemedCardContent className="flex items-center justify-center h-64 text-muted-foreground">
-          No spending data for this period
+          {t("analytics.chart.noData", {
+            defaultValue: "No spending data for this period",
+          })}
         </ThemedCardContent>
       </ThemedCard>
     );
@@ -127,9 +143,14 @@ export function SpendingByVendorChart({
     <ThemedCard className="flex flex-col h-full">
       <ThemedCardHeader className="flex flex-row items-center justify-between space-y-0 border-b p-6">
         <div className="flex flex-col space-y-1.5">
-          <ThemedCardTitle>Spending by Vendor</ThemedCardTitle>
+          <ThemedCardTitle>
+            {t("analytics.chart.spendingByVendor", {
+              defaultValue: "Spending by Vendor",
+            })}
+          </ThemedCardTitle>
           <ThemedCardDescription>
-            Total: {formatCurrency(totalSpending)}
+            {t("analytics.chart.total", { defaultValue: "Total" })}:{" "}
+            {formatCurrency(totalSpending)}
           </ThemedCardDescription>
         </div>
       </ThemedCardHeader>

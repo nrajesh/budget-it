@@ -357,27 +357,48 @@ const TransactionMobileCard = React.memo(
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
-            className={`flex flex-col gap-2 p-3 rounded-xl border bg-card text-card-foreground shadow-sm relative transition-colors ${isSelected ? "ring-2 ring-primary bg-muted/50" : ""} ${isFuture ? "opacity-70 italic bg-slate-50/50 dark:bg-slate-900/50" : ""}`}
+            className={`app-mobile-row ${isSelected ? "app-row-selected" : ""} ${
+              isFuture
+                ? "opacity-70 italic bg-slate-50/50 dark:bg-slate-900/50"
+                : ""
+            }`}
             onClick={(e) => {
               if (onRowDoubleClick && !transaction.is_projected) {
                 onRowDoubleClick(transaction, e);
               }
             }}
           >
-            <div className="flex justify-between items-start">
-              <div className="flex items-start gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-start gap-3">
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={() => onToggleSelect(transaction.id)}
                   onClick={(e) => e.stopPropagation()}
-                  className="mt-1"
+                  className="mt-1 flex-shrink-0"
                 />
-                <div className="flex flex-col">
-                  <div className="font-semibold text-sm leading-tight">
-                    {transaction.vendor || "No Payee"}
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-center gap-2">
+                    <div className="truncate text-base font-bold leading-tight">
+                      {transaction.vendor || "No Payee"}
+                    </div>
+                    {transaction.transfer_id && isValidTransfer && (
+                      <button
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 transition-colors hover:bg-red-100 dark:bg-blue-900/30 dark:hover:bg-red-900/30"
+                        title="Unlink Transfer"
+                        aria-label="Unlink Transfer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onUnlinkTransaction && transaction.transfer_id)
+                            onUnlinkTransaction(transaction.transfer_id);
+                        }}
+                      >
+                        <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" />
+                      </button>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                    {new Date(transaction.date).toLocaleDateString()} &middot;{" "}
+                  <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                    {new Date(transaction.date).toLocaleDateString()}{" "}
+                    {" \u00b7 "}
                     <span
                       className={
                         !accountCurrencyMap?.has(transaction.account)
@@ -393,69 +414,53 @@ const TransactionMobileCard = React.memo(
                       </span>
                     )}
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                      {transaction.category}
+                    </span>
+                    {transaction.sub_category && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                        {transaction.sub_category}
+                      </span>
+                    )}
+                  </div>
+
+                  {transaction.remarks && (
+                    <div className="mt-2 truncate text-sm text-slate-600 dark:text-slate-400">
+                      {transaction.remarks}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 <div
-                  className={`font-semibold text-sm ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                  className={`text-lg font-bold ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
                 >
                   {formattedAmount}
                 </div>
-                {transaction.transfer_id && isValidTransfer && (
+                {transaction.is_scheduled_origin && (
                   <button
-                    className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 group/link transition-colors ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    title="Unlink Transfer"
-                    aria-label="Unlink Transfer"
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (onUnlinkTransaction && transaction.transfer_id)
-                        onUnlinkTransaction(transaction.transfer_id);
+                      if (transaction.recurrence_id) {
+                        navigate(`/scheduled?id=${transaction.recurrence_id}`);
+                      } else {
+                        toast({
+                          title: "Reference Missing",
+                          description:
+                            "Could not find the original scheduled transaction.",
+                          variant: "destructive",
+                        });
+                      }
                     }}
+                    className="rounded-full bg-blue-100 p-1.5 dark:bg-blue-900/30"
                   >
-                    <Link className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400 group-hover/link:text-red-500" />
+                    <CalendarClock className="h-3.5 w-3.5 text-blue-500" />
                   </button>
                 )}
               </div>
-            </div>
-
-            <div className="flex justify-between items-end mt-1 pl-7">
-              <div className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider">
-                  {transaction.category}
-                </span>
-                {transaction.sub_category && (
-                  <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-medium tracking-wider">
-                    {transaction.sub_category}
-                  </span>
-                )}
-                {transaction.remarks && (
-                  <span className="text-xs truncate max-w-[150px] italic">
-                    {transaction.remarks}
-                  </span>
-                )}
-              </div>
-
-              {transaction.is_scheduled_origin && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (transaction.recurrence_id) {
-                      navigate(`/scheduled?id=${transaction.recurrence_id}`);
-                    } else {
-                      toast({
-                        title: "Reference Missing",
-                        description:
-                          "Could not find the original scheduled transaction.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="p-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30"
-                >
-                  <CalendarClock className="h-3.5 w-3.5 text-blue-500" />
-                </button>
-              )}
             </div>
           </div>
         </ContextMenuTrigger>
@@ -660,6 +665,8 @@ const TransactionTable = ({
     }
   };
 
+  const numSelected = selectedIds.size;
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -678,46 +685,93 @@ const TransactionTable = ({
   return (
     <div className="space-y-4">
       {/* Bulk Toolbar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md animate-in slide-in-from-top-2 sticky top-0 z-10 backdrop-blur-sm">
-          <span className="text-sm font-medium px-2">
-            {selectedIds.size} selected
-          </span>
-          <div className="h-4 w-px bg-border" />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            <X className="h-4 w-4 mr-1" /> Clear
-          </Button>
-          <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
-            <Trash className="h-4 w-4 mr-1" /> Delete
-          </Button>
-          <Button size="sm" variant="secondary" onClick={handleBulkDuplicate}>
-            <Copy className="h-4 w-4 mr-1" /> Duplicate
-          </Button>
-          <Button size="sm" variant="secondary" onClick={handleBulkSchedule}>
-            <CalendarClock className="h-4 w-4 mr-1" /> Schedule
-          </Button>
-          {selectedIds.size === 2 && onLinkTransactions && (
+      <div
+        className={`app-table-toolbar ${
+          numSelected > 0
+            ? "app-table-toolbar-active"
+            : "app-table-toolbar-idle"
+        }`}
+      >
+        <div className="flex min-h-12 flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="px-1 text-sm font-medium">
+              {numSelected} selected
+            </span>
+            <div className="h-4 w-px bg-border" />
             <Button
               size="sm"
-              variant="default" // Use default variant to highlight this action
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                const ids = Array.from(selectedIds);
-                if (ids.length === 2 && onLinkTransactions) {
-                  onLinkTransactions(ids[0], ids[1]);
-                  setSelectedIds(new Set()); // Clear selection after linking
-                }
-              }}
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={numSelected === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:opacity-45 sm:h-9 sm:w-auto sm:px-3"
+              title="Clear selection"
             >
-              <Link className="h-4 w-4 mr-1" /> Link Pair
+              <X className="h-4 w-4" />
+              <span className="sr-only">Clear selection</span>
+              <span className="hidden sm:inline sm:ml-1">Clear</span>
             </Button>
-          )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={numSelected === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 sm:h-9 sm:w-auto sm:px-3"
+              title="Delete selected"
+            >
+              <Trash className="h-4 w-4" />
+              <span className="sr-only">Delete selected</span>
+              <span className="hidden sm:inline sm:ml-1">Delete</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleBulkDuplicate}
+              disabled={numSelected === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:opacity-45 sm:h-9 sm:w-auto sm:px-3"
+              title="Duplicate selected"
+            >
+              <Copy className="h-4 w-4" />
+              <span className="sr-only">Duplicate selected</span>
+              <span className="hidden sm:inline sm:ml-1">Duplicate</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleBulkSchedule}
+              disabled={numSelected === 0}
+              className="h-10 w-10 p-0 disabled:pointer-events-none disabled:opacity-45 sm:h-9 sm:w-auto sm:px-3"
+              title="Schedule selected"
+            >
+              <CalendarClock className="h-4 w-4" />
+              <span className="sr-only">Schedule selected</span>
+              <span className="hidden sm:inline sm:ml-1">Schedule</span>
+            </Button>
+            {onLinkTransactions && (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-10 w-10 bg-blue-600 p-0 text-white hover:bg-blue-700 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground sm:h-9 sm:w-auto sm:px-3"
+                disabled={numSelected !== 2}
+                title="Link selected pair"
+                onClick={() => {
+                  const ids = Array.from(selectedIds);
+                  if (ids.length === 2 && onLinkTransactions) {
+                    onLinkTransactions(ids[0], ids[1]);
+                    setSelectedIds(new Set()); // Clear selection after linking
+                  }
+                }}
+              >
+                <Link className="h-4 w-4" />
+                <span className="sr-only">Link selected pair</span>
+                <span className="hidden sm:inline sm:ml-1">Link Pair</span>
+              </Button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Mobile View */}
       <div className="block md:hidden space-y-3">

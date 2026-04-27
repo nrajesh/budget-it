@@ -10,6 +10,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
 import { slugify } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 const COLORS = [
   "#0088FE",
@@ -24,6 +25,7 @@ const COLORS = [
 
 const CategoryPieChart = () => {
   const { formatCurrency } = useCurrency(); // Get formatCurrency from context
+  const { t } = useTranslation();
   const { transactions, categories, isLoadingTransactions } = useTransactions();
   const { setSelectedCategories, setSelectedVendors, handleResetFilters } =
     useTransactionFilters();
@@ -32,6 +34,9 @@ const CategoryPieChart = () => {
     name: string;
   } | null>(null);
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined); // Local activeIndex for current view
+  const fallbackUnknown = t("analytics.chart.unknown", {
+    defaultValue: "Unknown",
+  });
 
   // Calculate category data from transactions in context
   const categoriesData = React.useMemo(() => {
@@ -67,7 +72,7 @@ const CategoryPieChart = () => {
     transactions
       .filter((t) => t.category === selectedCategory.name && t.amount < 0)
       .forEach((t) => {
-        const vendor = t.vendor || "Unknown";
+        const vendor = t.vendor || fallbackUnknown;
         const current = vendorMap.get(vendor) || 0;
         vendorMap.set(vendor, current + Math.abs(t.amount));
       });
@@ -78,7 +83,7 @@ const CategoryPieChart = () => {
         total_amount: amount,
       }))
       .sort((a, b) => b.total_amount - a.total_amount);
-  }, [selectedCategory, transactions]);
+  }, [selectedCategory, transactions, fallbackUnknown]);
 
   const chartData = selectedCategory ? drilledDownData : categoriesData;
   const isLoading = isLoadingTransactions;
@@ -147,11 +152,17 @@ const CategoryPieChart = () => {
   if (isLoading)
     return (
       <div className="flex justify-center items-center h-64">
-        Loading chart data...
+        {t("analytics.chart.loading", { defaultValue: "Loading chart data..." })}
       </div>
     );
   if (!chartData || chartData.length === 0)
-    return <div className="text-center py-4">No data to display.</div>;
+    return (
+      <div className="text-center py-4">
+        {t("analytics.chart.noData", {
+          defaultValue: "No data to display.",
+        })}
+      </div>
+    );
 
   const renderLabel = (props: unknown) => {
     const { name, percent } = props as { name: string; percent: number };
@@ -172,12 +183,16 @@ const CategoryPieChart = () => {
                 <ArrowLeft className="h-4 w-4" /> {selectedCategory.name}
               </Button>
             ) : (
-              "Spending by Category"
+              t("analytics.chart.spendingByCategory", {
+                defaultValue: "Spending by Category",
+              })
             )}
           </span>
           {!selectedCategory && (
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Tap to drill down
+              {t("analytics.chart.tapToDrillDown", {
+                defaultValue: "Tap to drill down",
+              })}
             </span>
           )}
         </CardTitle>

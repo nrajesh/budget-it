@@ -493,10 +493,10 @@ const LedgerEntryPage = () => {
       <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="tour-ledger-title text-center space-y-2">
           <LogoImage />
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:via-teal-400 dark:to-cyan-400">
+          <h1 className="app-gradient-title text-3xl sm:text-4xl font-black tracking-tighter">
             Vaulted Money
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="app-page-subtitle">
             Select a budget ledger to continue.
           </p>
         </div>

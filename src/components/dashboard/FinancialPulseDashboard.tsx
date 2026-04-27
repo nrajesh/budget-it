@@ -168,10 +168,10 @@ export const FinancialPulseDashboard = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+            <h1 className="app-gradient-title text-4xl md:text-5xl font-black tracking-tighter">
               Financial Pulse
             </h1>
-            <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+            <p className="app-page-subtitle">
               Your wealth at a glance.
             </p>
           </div>

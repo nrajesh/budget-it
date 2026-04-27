@@ -98,12 +98,12 @@ const SettingsPage = () => {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+      <div className="app-page-header flex flex-col items-start justify-between md:flex-row md:items-center">
         <div>
-          <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          <h1 className="app-gradient-title app-page-title">
             Ledger
           </h1>
-          <p className="mt-2 text-lg text-slate-500 dark:text-slate-400">
+          <p className="app-page-subtitle">
             Manage application preferences and data
           </p>
         </div>
@@ -160,10 +160,10 @@ const SettingsPage = () => {
               })}
             </ThemedCardDescription>
           </ThemedCardHeader>
-          <ThemedCardContent className="flex flex-col gap-2">
+          <ThemedCardContent className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => setIsManageLedgerOpen(true)}
-              className="w-full bg-primary text-primary-foreground"
+              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm bg-primary text-primary-foreground"
             >
               {t("settings.cards.ledger.edit", {
                 defaultValue: "Edit Current Ledger",
@@ -172,7 +172,7 @@ const SettingsPage = () => {
             <Button
               onClick={() => setIsCreateLedgerOpen(true)}
               variant="outline"
-              className="w-full"
+              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm"
             >
               {t("settings.cards.ledger.create", {
                 defaultValue: "Create New Ledger",

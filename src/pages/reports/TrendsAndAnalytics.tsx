@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 import { Transaction } from "@/types/dataProvider";
 
@@ -29,6 +30,7 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
 }) => {
   const { formatCurrency, convertBetweenCurrencies, selectedCurrency } =
     useCurrency();
+  const { isFinancialPulse } = useTheme();
 
   const monthlyData = React.useMemo(() => {
     const dataByMonth: Record<string, { income: number; expenses: number }> =
@@ -73,10 +75,40 @@ const TrendsAndAnalytics: React.FC<TrendsAndAnalyticsProps> = ({
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
-            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-            <Legend />
+            <XAxis
+              dataKey="month"
+              tick={{
+                fill: isFinancialPulse ? "#94a3b8" : "#666",
+                fontSize: 11,
+              }}
+              stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
+            />
+            <YAxis
+              tickFormatter={(value) => formatCurrency(Number(value))}
+              tick={{
+                fill: isFinancialPulse ? "#94a3b8" : "#666",
+                fontSize: 11,
+              }}
+              stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
+            />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value))}
+              contentStyle={{
+                backgroundColor: isFinancialPulse ? "rgba(0,0,0,0.8)" : "white",
+                borderColor: isFinancialPulse
+                  ? "rgba(255,255,255,0.1)"
+                  : "#e5e7eb",
+                color: isFinancialPulse ? "white" : "black",
+                fontSize: "11px",
+              }}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: "11px" }}
+              iconSize={8}
+              formatter={(value) => (
+                <span style={{ fontSize: "11px" }}>{value}</span>
+              )}
+            />
             <Bar dataKey="income" fill="#22c55e" name="Income" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
           </BarChart>

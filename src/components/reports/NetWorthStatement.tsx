@@ -115,7 +115,9 @@ const NetWorthStatement: React.FC<NetWorthStatementProps> = ({
   return (
     <ThemedCard>
       <ThemedCardHeader>
-        <ThemedCardTitle>Net Worth Statement</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Net Worth Statement
+        </ThemedCardTitle>
         <ThemedCardDescription>
           A summary of your assets and liabilities.
         </ThemedCardDescription>

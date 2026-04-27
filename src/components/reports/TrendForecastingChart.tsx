@@ -145,7 +145,9 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
   return (
     <ThemedCard>
       <ThemedCardHeader>
-        <ThemedCardTitle>Net Income Trend & Forecast</ThemedCardTitle>
+        <ThemedCardTitle className="app-gradient-title">
+          Net Income Trend & Forecast
+        </ThemedCardTitle>
         <ThemedCardDescription>
           Historical net income with a 6-month forecast, including scheduled
           transactions.
@@ -179,7 +181,7 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
                 dataKey="month"
                 tick={{
                   fill: isFinancialPulse ? "#94a3b8" : "#666",
-                  fontSize: 12,
+                  fontSize: 11,
                 }}
                 stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
               />
@@ -187,7 +189,7 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
                 tickFormatter={(value) => formatCurrency(Number(value))}
                 tick={{
                   fill: isFinancialPulse ? "#94a3b8" : "#666",
-                  fontSize: 12,
+                  fontSize: 11,
                 }}
                 stroke={isFinancialPulse ? "rgba(255,255,255,0.1)" : "#e5e7eb"}
               />
@@ -208,9 +210,16 @@ const TrendForecastingChart: React.FC<TrendForecastingChartProps> = ({
                     ? "rgba(255,255,255,0.1)"
                     : "#e5e7eb",
                   color: isFinancialPulse ? "white" : "black",
+                  fontSize: "11px",
                 }}
               />
-              <Legend />
+              <Legend
+                wrapperStyle={{ fontSize: "11px" }}
+                iconSize={8}
+                formatter={(value) => (
+                  <span style={{ fontSize: "11px" }}>{value}</span>
+                )}
+              />
               <Area
                 type="monotone"
                 dataKey="actual"

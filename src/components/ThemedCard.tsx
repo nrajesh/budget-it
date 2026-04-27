@@ -13,8 +13,7 @@ import { cn } from "@/lib/utils";
 // Light: Clean white/glass, Dark: Subtle dark glass
 const GLASS_CARD_CLASS =
   "relative overflow-hidden rounded-xl border backdrop-blur-sm shadow-sm transition-all duration-300 bg-white/50 dark:bg-black/20 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100";
-const GLASS_HEADER_CLASS =
-  "border-b border-slate-200/50 dark:border-slate-800/50";
+const GLASS_HEADER_CLASS = "app-section-header";
 const GLASS_TITLE_CLASS = "text-slate-900 dark:text-slate-100";
 const GLASS_DESCRIPTION_CLASS = "text-slate-500 dark:text-slate-400";
 

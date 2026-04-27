@@ -157,8 +157,7 @@ export const CurrencyConversionDialog: React.FC<
           <DialogDescription>
             Manage exchange rates relative to your base currency (
             {selectedCurrency}).
-            <br />
-            <span className="text-xs text-muted-foreground mt-1 block">
+            <span className="mt-2 block max-w-xs text-xs leading-snug text-muted-foreground">
               Rates sourced from{" "}
               <a
                 href="https://frankfurter.dev"
@@ -167,9 +166,9 @@ export const CurrencyConversionDialog: React.FC<
                 className="font-semibold underline hover:text-foreground"
               >
                 Frankfurter API
-              </a>{" "}
-              (Open Source). No tracking or API key involved. Cryptocurrencies
-              are check manually.
+              </a>
+              <span className="block">Open source, no API key involved.</span>
+              <span className="block">Cryptocurrencies are checked manually.</span>
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -213,7 +212,7 @@ export const CurrencyConversionDialog: React.FC<
                     />
                     <CommandList>
                       <CommandEmpty>
-                        <div className="p-2 text-sm text-center text-muted-foreground">
+                        <div className="p-2 text-xs leading-tight text-center text-muted-foreground">
                           No API match found.
                         </div>
                         <div className="p-2 border-t">
