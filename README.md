@@ -7,13 +7,13 @@
 <!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
 <p align="center">
   <a href="https://app.circleci.com/pipelines/github/nrajesh/vaulted.money">
-    <img src="https://dl.circleci.com/status-badge/img/gh/nrajesh/vaulted.money/tree/main.svg?style=shield&circle-token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
+    <img src="https://img.shields.io/circleci/build/github/nrajesh/vaulted.money/main?logo=circleci&style=for-the-badge&token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
   </a>
   <a href="https://github.com/nrajesh/vaulted.money">
-    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=flat&logo=github&logoColor=white" alt="GitHub">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
   </a>
   <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License: MIT">
   </a>
 </p>
 
@@ -54,6 +54,14 @@
 ## 🏗️ System Architecture
 
 For a detailed view of the system architecture, including web and desktop component diagrams, data flow sequences, and technical decisions, please refer to the [**Architecture Documentation**](documentation/ARCHITECTURE.md).
+
+---
+
+## 🏠 Public Homepage (`/`)
+
+The root route (`/`) is a public landing page that runs without an active ledger. It covers the privacy-first / local-first / open-source positioning, a ledger workspace preview, backup and CSV-import guidance, and copy-paste install commands. The authenticated app lives under `/ledgers`.
+
+> The homepage is implemented in `src/pages/HomePage.tsx` and is kept outside the authenticated `Layout` route so it never triggers the active-ledger redirect.
 
 ---
 
@@ -176,6 +184,8 @@ vaulted.money/
 │   ├── providers/             # Context Providers (Data, Theme, etc.)
 │   ├── hooks/                 # Custom React hooks
 │   ├── pages/                 # Route-level page components
+│   │   ├── HomePage.tsx       #   Public landing page (route: /)
+│   │   └── ...                #   Authenticated app pages
 │   ├── types/                 # TypeScript type definitions
 │   ├── utils/                 # Helper functions (currency, date, etc.)
 │   └── tests/                 # Test files
@@ -219,6 +229,7 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 | File                                                                         | Purpose                                                                                                             |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **[`DESIGN.md`](documentation/DESIGN.md)**                                   | **Brand Identity Manual**. Philosophy, logo geometry, and color strategies for light/dark modes.                     |
 | **[`WHY_VAULTED_MONEY.md`](documentation/WHY_VAULTED_MONEY.md)**                     | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.              |
 | **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
 | **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |

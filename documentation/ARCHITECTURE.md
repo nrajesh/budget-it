@@ -2,6 +2,20 @@
 
 ## System Overview
 
+### Routing Overview
+
+The application uses `react-router-dom` with two distinct route trees:
+
+| Route | Component | Auth required? | Purpose |
+|---|---|---|---|
+| `/` | `HomePage.tsx` | No | Public landing page: trust signals, install commands, backup guidance, links to `/ledgers` |
+| `/ledgers` | `LedgersPage.tsx` | No | Ledger selector — entry point for the authenticated app |
+| `/ledgers/:id/*` | `Layout` (nested) | Yes (active ledger) | All authenticated modules: dashboard, transactions, budgets, reports, settings |
+
+`HomePage.tsx` lives outside the authenticated `Layout` route so it never triggers the active-ledger redirect. It retains the language switcher and light/dark toggle but has its own header rather than the app sidebar.
+
+---
+
 ### Web Application Architecture
 
 ```mermaid
