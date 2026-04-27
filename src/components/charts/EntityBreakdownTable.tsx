@@ -199,7 +199,7 @@ export function EntityBreakdownTable({
   // Build title and breadcrumb
   const title = isTransactionView
     ? selectedSubCategory
-      : selectedEntity
+    : selectedEntity
       ? selectedEntity
       : t(ENTITY_LABEL_KEYS[entityType], {
           defaultValue: `By ${entityType}`,
@@ -262,20 +262,22 @@ export function EntityBreakdownTable({
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                {(Object.keys(ENTITY_LABEL_KEYS) as EntityType[]).map((type) => (
-                  <DropdownMenuItem
-                    key={type}
-                    onClick={() => onEntityTypeChange(type)}
-                    className={
-                      entityType === type ? "bg-accent font-medium" : ""
-                    }
-                  >
-                    <span className="mr-2">{ENTITY_ICONS[type]}</span>
-                    {t(ENTITY_LABEL_KEYS[type], {
-                      defaultValue: type,
-                    })}
-                  </DropdownMenuItem>
-                ))}
+                {(Object.keys(ENTITY_LABEL_KEYS) as EntityType[]).map(
+                  (type) => (
+                    <DropdownMenuItem
+                      key={type}
+                      onClick={() => onEntityTypeChange(type)}
+                      className={
+                        entityType === type ? "bg-accent font-medium" : ""
+                      }
+                    >
+                      <span className="mr-2">{ENTITY_ICONS[type]}</span>
+                      {t(ENTITY_LABEL_KEYS[type], {
+                        defaultValue: type,
+                      })}
+                    </DropdownMenuItem>
+                  ),
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -330,11 +332,11 @@ export function EntityBreakdownTable({
       {/* Transaction list view */}
       {isTransactionView ? (
         subCategoryTransactions.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-6">
-          {t("analytics.breakdown.noTransactionsFound", {
-            defaultValue: "No transactions found",
-          })}
-        </p>
+          <p className="text-sm text-muted-foreground text-center py-6">
+            {t("analytics.breakdown.noTransactionsFound", {
+              defaultValue: "No transactions found",
+            })}
+          </p>
         ) : (
           <div className="space-y-0.5">
             {subCategoryTransactions.map((tx) => (

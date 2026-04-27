@@ -207,7 +207,8 @@ export function SpendingPieChart({
   // Center display content
   const activeItem =
     activeIndex !== undefined ? pieData[activeIndex] : undefined;
-  const centerName = activeItem?.name || t("analytics.chart.spent", { defaultValue: "Spent" });
+  const centerName =
+    activeItem?.name || t("analytics.chart.spent", { defaultValue: "Spent" });
   const centerAmount = activeItem
     ? formatCurrency(activeItem.amount)
     : formatCurrency(totalSpent);

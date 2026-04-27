@@ -47,7 +47,9 @@ const Header = () => {
               variant="ghost"
               size="icon"
               onClick={startTour}
-              aria-label={t("helpTour.start", { defaultValue: "Start Help Tour" })}
+              aria-label={t("helpTour.start", {
+                defaultValue: "Start Help Tour",
+              })}
             >
               <HelpCircle className="h-5 w-5" />
             </Button>

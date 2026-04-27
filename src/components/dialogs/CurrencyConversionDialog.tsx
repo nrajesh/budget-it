@@ -168,7 +168,9 @@ export const CurrencyConversionDialog: React.FC<
                 Frankfurter API
               </a>
               <span className="block">Open source, no API key involved.</span>
-              <span className="block">Cryptocurrencies are checked manually.</span>
+              <span className="block">
+                Cryptocurrencies are checked manually.
+              </span>
             </span>
           </DialogDescription>
         </DialogHeader>

@@ -193,11 +193,7 @@ const EntityManagementPage = <T extends { id: string; name: string }>({
       <div className="app-page-header flex flex-col items-start gap-4">
         <div>
           <h2 className="app-gradient-title app-page-title">{title}</h2>
-          {subtitle && (
-            <div className="app-page-subtitle">
-              {subtitle}
-            </div>
-          )}
+          {subtitle && <div className="app-page-subtitle">{subtitle}</div>}
         </div>
         <div className="tour-entity-actions app-action-panel">
           <div className="flex flex-wrap items-center gap-2">

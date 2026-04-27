@@ -231,9 +231,7 @@ export default function BudgetsPage() {
     <div className="space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="app-page-header flex flex-col items-start justify-between md:flex-row md:items-center">
         <div>
-          <h1 className="app-gradient-title app-page-title">
-            Budgets
-          </h1>
+          <h1 className="app-gradient-title app-page-title">Budgets</h1>
           <p className="app-page-subtitle">
             Track your spending limits and goals
           </p>

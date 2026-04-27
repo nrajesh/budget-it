@@ -171,9 +171,7 @@ export const FinancialPulseDashboard = () => {
             <h1 className="app-gradient-title text-4xl md:text-5xl font-black tracking-tighter">
               Financial Pulse
             </h1>
-            <p className="app-page-subtitle">
-              Your wealth at a glance.
-            </p>
+            <p className="app-page-subtitle">Your wealth at a glance.</p>
           </div>
           {/* Search Bar - Moved to top right for compact layout */}
           <div className="w-full md:w-auto min-w-[300px]">

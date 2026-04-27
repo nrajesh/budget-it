@@ -152,7 +152,9 @@ const CategoryPieChart = () => {
   if (isLoading)
     return (
       <div className="flex justify-center items-center h-64">
-        {t("analytics.chart.loading", { defaultValue: "Loading chart data..." })}
+        {t("analytics.chart.loading", {
+          defaultValue: "Loading chart data...",
+        })}
       </div>
     );
   if (!chartData || chartData.length === 0)

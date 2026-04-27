@@ -354,12 +354,8 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
     <div className="space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="app-page-header flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="app-gradient-title app-page-title">
-            {title}
-          </h2>
-          <div className="app-page-subtitle">
-            {description}
-          </div>
+          <h2 className="app-gradient-title app-page-title">{title}</h2>
+          <div className="app-page-subtitle">{description}</div>
         </div>
         <div className="tour-report-export">
           <ExportButtons

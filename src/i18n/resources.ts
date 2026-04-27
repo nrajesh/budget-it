@@ -1052,8 +1052,7 @@ export const resources: Resource = {
           allVendors: "所有商家",
           back: "返回",
           searchText: '搜索文本 "{{input}}"',
-          typePlaceholder:
-            "输入以筛选（例如 '杂货'、'下周'、'支票账户'）...",
+          typePlaceholder: "输入以筛选（例如 '杂货'、'下周'、'支票账户'）...",
           filterBy: "按{{step}}筛选...",
           subCategorySuffix: "（子类）",
         },
@@ -1336,8 +1335,7 @@ export const resources: Resource = {
       },
       calendar: {
         header: {
-          subtitle:
-            "Bekijk maandpatronen en de transacties achter elke dag.",
+          subtitle: "Bekijk maandpatronen en de transacties achter elke dag.",
         },
       },
       scheduled: {
