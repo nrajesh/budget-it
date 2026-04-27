@@ -1032,7 +1032,7 @@ export const resources: Resource = {
           category: "分类：{{name}}",
           subCategory: "子类：{{name}}",
           vendor: "收款方：{{name}}",
-          search: '搜索：\"{{query}}\"',
+          search: '搜索："{{query}}"',
           noMatch: "无匹配",
         },
         conversational: {
