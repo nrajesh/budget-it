@@ -16,11 +16,17 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "validate": "tsc --noEmit && eslint . --max-warnings 0 && prettier --check \"src/**/*.{ts,tsx,css}\"",
-    "electron:compile": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 --esModuleInterop --skipLibCheck && echo '{\"type\": \"commonjs\"}' > dist-electron/package.json",
+    "electron:compile": "tsc --ignoreConfig electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 --esModuleInterop --skipLibCheck && echo '{\"type\": \"commonjs\"}' > dist-electron/package.json",
     "electron:run": "wait-on tcp:8081 && pnpm run electron:compile && cross-env VITE_DEV_SERVER_URL=http://localhost:8081 electron .",
     "electron": "node scripts/electron-dev-runner.mjs",
-    "electron:build": "tsc electron/main.ts electron/preload.ts --outDir dist-electron --module commonjs --target es6 && electron-builder",
-    "electron:dev": "pnpm run electron"
+    "electron:build": "pnpm run build && pnpm run electron:compile && electron-builder --publish never",
+    "electron:dev": "pnpm run electron",
+    "mobile:refresh": "pnpm run build && pnpm exec cap sync ios && pnpm exec cap sync android",
+    "mobile:sync": "pnpm run build && cap sync",
+    "android:build:apk": "pnpm run build && cap sync android && cd android && ./gradlew assembleDebug",
+    "android:build:apk:release": "pnpm run build && cap sync android && cd android && ./gradlew assembleRelease",
+    "ios:build:simulator": "pnpm run build && cap sync ios && xcodebuild -workspace ios/App/App.xcodeproj/project.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath ios/build/DerivedData CODE_SIGNING_ALLOWED=NO build",
+    "release:local": "cross-env ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm run electron:build && pnpm run android:build:apk && pnpm run ios:build:simulator"
   },
   "dependencies": {
     "@capacitor/core": "^8.3.1",
@@ -45,7 +51,7 @@
     "@radix-ui/react-toast": "^1.2.1",
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
-    "@tanstack/react-query": "^5.99.0",
+    "@tanstack/react-query": "^5.100.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -78,7 +84,7 @@
     "@capacitor/cli": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
     "@eslint/js": "^10.0.1",
-    "@tailwindcss/postcss": "4.2.2",
+    "@tailwindcss/postcss": "4.2.4",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -130,11 +136,15 @@
     },
     "onlyBuiltDependencies": [
       "electron"
-    ]
+    ],
+    "patchedDependencies": {
+      "plist@3.1.0": "patches/plist@3.1.0.patch"
+    }
   },
   "build": {
     "appId": "com.vaultedmoney.app",
     "productName": "Vaulted Money",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },

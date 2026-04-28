@@ -37,6 +37,26 @@ pnpm build
 
 We also provide a handy `pnpm validate` script that runs type checking and linting.
 
+### Mobile Changes
+
+If your change affects Capacitor assets, native icons, splash screens, or mobile-only behavior, refresh both native targets before asking for review:
+
+```bash
+pnpm run mobile:refresh
+```
+
+For simulator/emulator verification, use a clean reinstall so cached launcher assets do not hide the result:
+
+```bash
+# iOS
+xcrun simctl uninstall booted com.vaultedmoney.app || true
+
+# Android
+adb uninstall com.vaultedmoney.app || true
+cd android
+./gradlew clean
+```
+
 ## Development Workflow
 If you are adding a new feature, please take a look at our [Speckit Workflows](documentation/SPEC_DRIVEN_DEVELOPMENT.md), specifically the `speckit.feature` workflow to help define specifications and implementations.
 

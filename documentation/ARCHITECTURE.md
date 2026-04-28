@@ -9,8 +9,10 @@ The application uses `react-router-dom` with two distinct route trees:
 | Route | Component | Auth required? | Purpose |
 |---|---|---|---|
 | `/` | `HomePage.tsx` | No | Public landing page: trust signals, install commands, backup guidance, links to `/ledgers` |
-| `/ledgers` | `LedgersPage.tsx` | No | Ledger selector — entry point for the authenticated app |
-| `/ledgers/:id/*` | `Layout` (nested) | Yes (active ledger) | All authenticated modules: dashboard, transactions, budgets, reports, settings |
+| `/ledgers` | `LedgerEntryPage.tsx` | No | Ledger selector — entry point for the authenticated app |
+| `/dashboard`, `/transactions`, `/budgets`, etc. | `Layout` (nested) | Yes (active ledger) | All authenticated modules: dashboard, transactions, budgets, reports, settings |
+
+On Electron and Capacitor, the app uses `HashRouter` so native shells can boot directly into `/#/ledgers` without server-side route handling. The browser build uses `BrowserRouter`.
 
 `HomePage.tsx` lives outside the authenticated `Layout` route so it never triggers the active-ledger redirect. It retains the language switcher and light/dark toggle but has its own header rather than the app sidebar.
 
@@ -43,6 +45,22 @@ graph TB
     style Contexts fill:#764abc,stroke:#20232A,color:#fff
     style DB fill:#ff6f00,stroke:#20232A,color:#fff
     style IDB fill:#2e7d32,stroke:#1b5e20,color:#fff
+```
+
+### Platform Build and Delivery
+
+```mermaid
+flowchart LR
+    A["Source code<br/>(React + Electron + Capacitor projects)"] --> B["pnpm build<br/>(Vite production bundle)"]
+    B --> C["dist/"]
+    C --> D["Web hosting / preview"]
+    C --> E["Electron packaging<br/>(pnpm run electron:build)"]
+    C --> F["Capacitor sync<br/>(ios / android)"]
+    E --> G["Desktop artifacts<br/>(DMG / EXE / AppImage)"]
+    F --> H["iOS native project<br/>(Xcode)"]
+    F --> I["Android native project<br/>(Gradle)"]
+    H --> J["iOS simulator build"]
+    I --> K["Android APK"]
 ```
 
 ### Electron Desktop Architecture
@@ -82,6 +100,83 @@ graph TB
     style IPC fill:#ff9800,stroke:#e65100,color:#000
     style FS fill:#2e7d32,stroke:#1b5e20,color:#fff
     style Dialog fill:#5c6bc0,stroke:#3949ab,color:#fff
+```
+
+### Native Mobile Architecture
+
+```mermaid
+graph TB
+    subgraph NativeShell["📱 Capacitor Shell"]
+        direction TB
+        IOS["iOS Target<br/>(Xcode project)"]
+        Android["Android Target<br/>(Gradle project)"]
+        Cap["Capacitor Runtime<br/>(WebView + Plugins)"]
+        Assets["Native Assets<br/>(App icons / splash / synced web bundle)"]
+    end
+
+    subgraph WebBundle["Shared App Bundle"]
+        direction TB
+        Build["Vite production build<br/>(dist/)"]
+        Router["HashRouter on native"]
+        ReactApp["React application"]
+    end
+
+    IOS --> Cap
+    Android --> Cap
+    Cap --> Assets
+    Cap --> Build
+    Build --> Router
+    Router --> ReactApp
+```
+
+### iOS Runtime Architecture
+
+```mermaid
+graph TB
+    subgraph IOS["🍎 iOS App"]
+        direction TB
+        Xcode["Xcode project<br/>(ios/App)"]
+        WebView["Capacitor WKWebView"]
+        Plugins["Capacitor plugins<br/>(Filesystem, File Picker)"]
+        Assets["Asset catalog<br/>(AppIcon, Splash)"]
+        Docs["iOS Documents storage"]
+    end
+
+    Xcode --> Assets
+    Xcode --> WebView
+    WebView --> Plugins
+    Plugins --> Docs
+```
+
+### Android Runtime Architecture
+
+```mermaid
+graph TB
+    subgraph Android["🤖 Android App"]
+        direction TB
+        Gradle["Gradle app module<br/>(android/app)"]
+        Activity["MainActivity + WebView"]
+        Plugins["Capacitor plugins<br/>(Filesystem, File Picker)"]
+        Res["Launcher resources<br/>(mipmap + adaptive icon XML)"]
+        Storage["App sandbox / Documents access"]
+    end
+
+    Gradle --> Res
+    Gradle --> Activity
+    Activity --> Plugins
+    Plugins --> Storage
+```
+
+### Native Asset Refresh Flow
+
+```mermaid
+flowchart LR
+    A["Brand asset update<br/>(icons / splash)"] --> B["Generate native asset files<br/>(iOS asset catalog + Android mipmaps)"]
+    B --> C["pnpm run mobile:refresh"]
+    C --> D["cap sync ios"]
+    C --> E["cap sync android"]
+    D --> F["Uninstall + rebuild in Xcode simulator"]
+    E --> G["adb uninstall + Gradle clean + rebuild"]
 ```
 
 ### File System Abstraction (Web, Electron, Capacitor Support)
