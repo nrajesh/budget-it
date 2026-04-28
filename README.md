@@ -1,31 +1,17 @@
-<h1 align="center">💰 Vaulted Money - Secure Finance Tracker</h1>
+# Vaulted Money - Secure Finance Tracker
 
-<p align="center">
-  <i>A privacy-focused, local-first Secure Finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud.</i>
-</p>
+_A privacy-focused, local-first Secure Finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud._
 
-<!-- ─── Dynamic Status Badges ─────────────────────────────────── -->
-<p align="center">
-  <a href="https://app.circleci.com/pipelines/github/nrajesh/vaulted.money">
-    <img src="https://img.shields.io/circleci/build/github/nrajesh/vaulted.money/main?logo=circleci&style=for-the-badge&token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9" alt="CircleCI Build">
-  </a>
-  <a href="https://github.com/nrajesh/vaulted.money">
-    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
-  </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" alt="License: MIT">
-  </a>
-</p>
+[![CircleCI Build](https://img.shields.io/circleci/build/github/nrajesh/vaulted.money/main?logo=circleci&style=for-the-badge&token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9)](https://app.circleci.com/pipelines/github/nrajesh/vaulted.money)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nrajesh/vaulted.money)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-<!-- ─── Tech Stack Badges ─────────────────────────────────────── -->
-<p align="center">
-  <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React">
-  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
-  <img src="https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=electron&logoColor=white" alt="Electron">
-  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="TailwindCSS">
-  <img src="https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white" alt="Google Gemini">
-</p>
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=electron&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
 
 ---
 
@@ -35,19 +21,19 @@
 
 ## 🌟 Key Features
 
-| Category                | Feature                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------- |
-| 🔒 **Privacy**          | 100% local - data lives in your browser's IndexedDB. No cloud, no servers.                        |
-| 📚 **Multi-Ledger**     | Separate ledgers for Personal, Business, Joint finances.                                          |
-| 💳 **Transactions**     | Track with categories, sub-categories, vendors, and account groups.                               |
-| 📊 **Budgets**          | Monthly, quarterly, yearly, or one-time budgets with progress tracking.                           |
-| 🔁 **Scheduled**        | Recurring transactions with smart deduplication on import.                                        |
-| 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                        |
-| 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                     |
-| 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                               |
+| Category                | Feature                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| 🔒 **Privacy**          | 100% local - data lives in your browser's IndexedDB. No cloud, no servers.                                                              |
+| 📚 **Multi-Ledger**     | Separate ledgers for Personal, Business, Joint finances.                                                                                |
+| 💳 **Transactions**     | Track with categories, sub-categories, vendors, and account groups.                                                                     |
+| 📊 **Budgets**          | Monthly, quarterly, yearly, or one-time budgets with progress tracking.                                                                 |
+| 🔁 **Scheduled**        | Recurring transactions with smart deduplication on import.                                                                              |
+| 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                                                              |
+| 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                                                           |
+| 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                                                                     |
 | 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, Anthropic, Mistral, Perplexity, or Custom endpoints. |
-| 💾 **Backup & Restore** | Encrypted or plain JSON backups - import instantly without page reloads.                          |
-| ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).               |
+| 💾 **Backup & Restore** | Encrypted or plain JSON backups - import instantly without page reloads.                                                                |
+| ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).                                                     |
 
 ---
 
@@ -147,14 +133,95 @@ This single command does everything:
 
 > Electron cannot run on mobile devices. For mobile access, either host the web version or build the native apps using the provided Capactior iOS/Android targets for local continuity features.
 
+### Build Paths
+
+Use these command sets depending on what you are trying to produce:
+
+| Goal | What it builds | Command(s) |
+| --- | --- | --- |
+| Web only | Production web bundle in `dist/` | `pnpm build` |
+| Web only (local preview) | Production web bundle plus local preview server | `pnpm build` then `pnpm preview` |
+| Electron only | Electron desktop packages using the current web bundle | `pnpm run electron:build` |
+| Electron dev | Local desktop app with live Vite dev server | `pnpm run electron:dev` |
+| Mobile only (shared sync) | Rebuild web assets and sync both native Capacitor projects | `pnpm run mobile:refresh` |
+| Android only | Rebuild web assets, sync Android, assemble debug APK | `pnpm run android:build:apk` |
+| Android release APK | Rebuild web assets, sync Android, assemble release APK | `pnpm run android:build:apk:release` |
+| iOS simulator only | Rebuild web assets, sync iOS, build simulator app | `pnpm run ios:build:simulator` |
+| Full local release sweep | Electron package + Android debug APK + iOS simulator build | `pnpm run release:local` |
+
+Notes:
+- Electron packaging always depends on a fresh web build because the renderer ships from `dist/`.
+- Capacitor mobile builds always depend on a fresh web build because `cap sync` copies `dist/` into the native shells.
+- `pnpm run mobile:sync` is a lower-level helper that rebuilds the web app and runs `cap sync` without opening, uninstalling, or producing native binaries.
+
+### Mobile Refresh and Clean Reinstall
+
+Use the shared refresh script whenever web assets, native icons, or Capacitor configuration change:
+
+```bash
+pnpm run mobile:refresh
+```
+
+That script runs:
+
+```bash
+pnpm run build
+pnpm exec cap sync ios
+pnpm exec cap sync android
+```
+
+For a full clean reinstall on each simulator/emulator after syncing:
+
+```bash
+# iOS
+xcrun simctl uninstall booted com.vaultedmoney.app || true
+pnpm exec cap open ios
+```
+
+Then in Xcode:
+1. `Product > Clean Build Folder`
+2. `Product > Run`
+
+```bash
+# Android
+adb uninstall com.vaultedmoney.app || true
+cd android
+./gradlew clean
+pnpm exec cap open android
+```
+
+Then in Android Studio:
+1. let Gradle sync
+2. run the `app` target again
+
+> Use the clean reinstall flow after icon updates. Both iOS and Android aggressively cache launcher assets, so `cap sync` alone is not always enough to surface the latest icon.
+
 ---
 
 ### 🔨 Building for Production
 
-| Target                  | Command                   | Output                          |
-| ----------------------- | ------------------------- | ------------------------------- |
-| Web                     | `pnpm build`              | `dist/`                         |
-| Desktop (all platforms) | `pnpm run electron:build` | `release/` (DMG, EXE, AppImage) |
+| Target                  | Command                        | Output                                                          |
+| ----------------------- | ------------------------------ | --------------------------------------------------------------- |
+| Web                     | `pnpm build`                   | `dist/`                                                         |
+| Desktop (all platforms) | `pnpm run electron:build`      | `release/` (DMG, EXE, AppImage)                                 |
+| Mobile sync only        | `pnpm run mobile:sync`         | Rebuilds web assets and syncs Capacitor without native compile  |
+| Shared mobile refresh   | `pnpm run mobile:refresh`      | Rebuilds web assets and syncs both Capacitor targets            |
+| Android APK             | `pnpm run android:build:apk`   | `android/app/build/outputs/apk/debug/`                          |
+| Android release APK     | `pnpm run android:build:apk:release` | `android/app/build/outputs/apk/release/`                  |
+| iOS simulator app       | `pnpm run ios:build:simulator` | `ios/build/DerivedData/Build/Products/Release-iphonesimulator/` |
+| Full local release sweep| `pnpm run release:local`       | Electron package + Android debug APK + iOS simulator build      |
+
+### GitHub Release Assets
+
+Publishing a GitHub release now keeps GitHub's default source ZIP/TAR assets and also uploads:
+
+- macOS Electron DMG
+- Android release APK
+- unsigned iOS simulator app ZIP
+
+The iOS artifact is a simulator build. Producing a device-installable IPA requires Apple signing certificates and provisioning profiles, which should be provided as repository secrets before enabling an IPA export step.
+
+For local Android testing, `pnpm run android:build:apk` builds the debug APK, which is already signed by Gradle and installable with `adb`.
 
 ---
 
@@ -229,8 +296,8 @@ The `documentation/` folder serves as the "Constitution" and "Operating System" 
 
 | File                                                                         | Purpose                                                                                                             |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **[`DESIGN.md`](documentation/DESIGN.md)**                                   | **Brand Identity Manual**. Philosophy, logo geometry, and color strategies for light/dark modes.                     |
-| **[`WHY_VAULTED_MONEY.md`](documentation/WHY_VAULTED_MONEY.md)**                     | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.              |
+| **[`DESIGN.md`](documentation/DESIGN.md)**                                   | **Brand Identity Manual**. Philosophy, logo geometry, and color strategies for light/dark modes.                    |
+| **[`WHY_VAULTED_MONEY.md`](documentation/WHY_VAULTED_MONEY.md)**             | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.             |
 | **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
 | **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |
 | **[`SUPPORT.md`](documentation/SUPPORT.md)**                                 | **Support Policy**. How to get help and file issues.                                                                |
@@ -278,9 +345,9 @@ Vaulted Money supports "Bring Your Own Key" (BYOK) AI categorization. You can ma
 
 1.  **AI Provider Management**: Navigate to **Management > AI Providers** in the sidebar.
 2.  **Add/Edit Provider**:
-    *   Click **Add AI Provider** to add a new endpoint.
-    *   Set the **Name**, **Model ID**, and **Base URL**.
-    *   **Provider Type**: Choose Gemini, OpenAI, Anthropic, Mistral, Perplexity, or Custom (OpenAI compatible).
+    - Click **Add AI Provider** to add a new endpoint.
+    - Set the **Name**, **Model ID**, and **Base URL**.
+    - **Provider Type**: Choose Gemini, OpenAI, Anthropic, Mistral, Perplexity, or Custom (OpenAI compatible).
 3.  **Configure API Key**: Go to **Settings**, select your new provider as the default, and enter your API key. Keys are stored safely and locally in your browser's IndexedDB.
 4.  **Local LLMs**: Add a provider with Type `Custom` and Base URL `http://localhost:11434/v1` (for Ollama) to use local models securely without any internet access required.
 
@@ -289,7 +356,7 @@ Vaulted Money supports "Bring Your Own Key" (BYOK) AI categorization. You can ma
 
 ### ⚠️ Important: Content Security Policy (CSP)
 
-Because Vaulted Money is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default. 
+Because Vaulted Money is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default.
 
 **If you add a completely new API domain via the UI (e.g. `https://api.my-new-ai.com`), you MUST add it to the allowed domains list in the code.**
 
@@ -313,7 +380,6 @@ const aiDomains = [
 
 > [!TIP]
 > You rarely need to write new code to support a new AI provider! Simply select `Custom` as the Provider Type in the UI. Our robust JSON parser handles OpenAI-compatible JSON responses automatically. You only need to edit `useAutoCategorize.ts` if the new provider has a completely unique request structure (like Anthropic).
-
 
 ### Adding New Components
 

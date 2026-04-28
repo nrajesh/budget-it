@@ -1,0 +1,132 @@
+name: Release Assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing GitHub release tag to upload assets to
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+jobs:
+  electron-dmg:
+    name: Electron DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build DMG
+        run: pnpm run electron:build
+
+      - name: Collect DMG
+        run: |
+          mkdir -p release-assets
+          find release -type f -name "*.dmg" -exec cp {} release-assets/ \;
+          test -n "$(find release-assets -type f -name "*.dmg" -print -quit)"
+
+      - name: Upload DMG to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" release-assets/*.dmg --clobber
+
+  android-apk:
+    name: Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Android release APK
+        run: pnpm run android:build:apk:release
+
+      - name: Collect APK
+        run: |
+          mkdir -p release-assets
+          cp android/app/build/outputs/apk/release/*.apk release-assets/
+          for apk in release-assets/*.apk; do
+            mv "$apk" "release-assets/vaulted-money-android-${apk##*/}"
+          done
+
+      - name: Upload APK to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" release-assets/*.apk --clobber
+
+  ios-simulator:
+    name: iOS Simulator App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare Xcode
+        run: sudo xcodebuild -runFirstLaunch || true
+
+      - name: Build iOS simulator app
+        run: pnpm run ios:build:simulator
+
+      - name: Collect iOS simulator app
+        run: |
+          mkdir -p release-assets
+          IOS_APP="$(find ios/build/DerivedData/Build/Products/Release-iphonesimulator -maxdepth 1 -type d -name "*.app" -print -quit)"
+          test -n "$IOS_APP"
+          ditto -c -k --sequesterRsrc --keepParent "$IOS_APP" release-assets/vaulted-money-ios-simulator-app.zip
+
+      - name: Upload iOS image to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" release-assets/vaulted-money-ios-simulator-app.zip --clobber

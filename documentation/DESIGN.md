@@ -22,6 +22,14 @@ The Vaulted Money logo is a masterwork of geometric precision, composed as a mul
 | ![Dark Icon](../assets/brand/dark-icon.png) | ![Light Icon](../assets/brand/light-icon.png) |
 | *Silver / Cyan / Negative Space* | *Navy / Gold / Metallic Asset* |
 
+### Native App Icon Usage
+
+Native launcher icons are slightly stricter than in-app logo usage:
+
+* **iOS app icon**: Must remain fully opaque. Use the **Dark Icon** centered on a solid dark brand background instead of trying to preserve transparency.
+* **Android app icon**: Use the **Dark Icon** as the adaptive foreground layer with a solid dark brand background, plus matching legacy launcher bitmaps for older launchers.
+* **Reasoning**: The Dark Icon reads more cleanly against dark native launcher surfaces and avoids the "white tile inside a white tile" effect that can happen when the Light Icon is reused as a launcher asset.
+
 ---
 
 ## 3. Color Strategy: Dark Environment (High-Tech)

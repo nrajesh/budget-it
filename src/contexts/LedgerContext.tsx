@@ -9,6 +9,7 @@ import {
 import { Ledger } from "@/types/dataProvider";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { navigateAppPath } from "@/utils/navigation";
 // import { db } from '@/lib/dexieDB'; // Unused if accessing via dataProvider only
 
 interface LedgerContextType {
@@ -105,31 +106,36 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     // If directLedger is provided (e.g. just created), use it directly to avoid stale state issues
     const target = directLedger || ledgers.find((l) => l.id === ledgerId);
     if (target) {
-      setActiveLedger(target);
-      localStorage.setItem("activeLedgerId", target.id);
-      await dataProvider.updateLedger({
-        ...target,
-        last_accessed: new Date().toISOString(),
-      });
+      setIsLoading(true);
 
-      // Sync global currency with ledger currency (Force update localStorage before reload)
-      if (target.currency) {
-        localStorage.setItem("selectedCurrency", target.currency);
+      try {
+        setActiveLedger(target);
+        localStorage.setItem("activeLedgerId", target.id);
+        await dataProvider.updateLedger({
+          ...target,
+          last_accessed: new Date().toISOString(),
+        });
+
+        // Keep the in-memory currency context and persistence in sync immediately.
+        if (target.currency) {
+          setCurrency(target.currency);
+          localStorage.setItem("selectedCurrency", target.currency);
+        }
+
+        // Clear filters to prevent stale selections from leaking across ledgers.
+        localStorage.removeItem("filter_selectedAccounts");
+        localStorage.removeItem("filter_selectedCategories");
+        localStorage.removeItem("filter_selectedSubCategories");
+        localStorage.removeItem("filter_selectedVendors");
+        localStorage.removeItem("filter_searchTerm");
+
+        // Clear logout flag as we are now entering a ledger
+        localStorage.removeItem("userLoggedOut");
+
+        navigateAppPath("/dashboard");
+      } finally {
+        setIsLoading(false);
       }
-
-      // Clear filters to prevent crossing the streams (ghostbusters style)
-      // We keep dateRange and maybe sortOrder, but clear entity selections
-      localStorage.removeItem("filter_selectedAccounts");
-      localStorage.removeItem("filter_selectedCategories");
-      localStorage.removeItem("filter_selectedSubCategories");
-      localStorage.removeItem("filter_selectedVendors");
-      localStorage.removeItem("filter_searchTerm");
-
-      // Clear logout flag as we are now entering a ledger
-      localStorage.removeItem("userLoggedOut");
-
-      // Force reload of page to clean context states (transactions etc).
-      window.location.href = "/dashboard";
     }
   };
 
@@ -148,7 +154,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
 
     // if (!startFromScratch) { ... }
 
-    // No need to refreshLedgers() as switchLedger triggers a hard reload
+    // No need to refreshLedgers() here because switchLedger updates the active context.
     await switchLedger(newLedger.id, newLedger);
   };
 
@@ -173,7 +179,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     if (activeLedger?.id === ledgerId) {
       setActiveLedger(null);
       localStorage.removeItem("activeLedgerId");
-      window.location.reload();
+      navigateAppPath("/ledgers");
     }
   };
 

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { navigateAppPath } from "@/utils/navigation";
 import {
   LayoutGrid,
   BarChart3,
@@ -603,7 +604,7 @@ const Layout = () => {
                 onClick={() => {
                   localStorage.removeItem("activeLedgerId");
                   localStorage.setItem("userLoggedOut", "true");
-                  window.location.href = "/ledgers";
+                  navigateAppPath("/ledgers");
                 }}
               >
                 {t("layout.nav.logout", { defaultValue: "Log out" })}

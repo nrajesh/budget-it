@@ -1,5 +1,12 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  HashRouter,
+  Navigate,
+  Routes,
+  Route,
+} from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import Layout from "@/components/Layout";
 import { Toaster } from "@/components/ui/sonner";
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster";
@@ -45,10 +52,14 @@ const DonationPage = lazy(() => import("@/pages/DonationPage"));
 import { ContinuitySyncManager } from "@/components/ContinuitySyncManager";
 import { TourProvider } from "./contexts/TourContext";
 import HelpTour from "./components/ui/help-tour";
+import { isElectron } from "@/utils/electron";
 
 // ... existing imports
 
 function App() {
+  const usesAppShellRouting = isElectron() || Capacitor.isNativePlatform();
+  const Router = usesAppShellRouting ? HashRouter : BrowserRouter;
+
   return (
     <QueryClientProvider client={queryClient}>
       <DataProviderProvider>
@@ -68,7 +79,16 @@ function App() {
                               path="/ledgers"
                               element={<LedgerEntryPage />}
                             />
-                            <Route path="/" element={<HomePage />} />
+                            <Route
+                              path="/"
+                              element={
+                                usesAppShellRouting ? (
+                                  <Navigate to="/ledgers" replace />
+                                ) : (
+                                  <HomePage />
+                                )
+                              }
+                            />
                             <Route path="/" element={<Layout />}>
                               <Route path="dashboard" element={<Index />} />
                               <Route

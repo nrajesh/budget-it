@@ -20,10 +20,14 @@ function createWindow() {
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    mainWindow.loadURL(
+      `${process.env.VITE_DEV_SERVER_URL.replace(/\/$/, "")}/#/ledgers`,
+    );
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+    mainWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
+      hash: "/ledgers",
+    });
   }
 
   mainWindow.on("close", (event) => {
