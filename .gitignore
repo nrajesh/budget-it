@@ -24,6 +24,10 @@ release
 *.njsproj
 *.sln
 *.sw?
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.swiftpm/xcode/xcuserdata/
 
 # Dyad-specific files
 AI_RULES.md
