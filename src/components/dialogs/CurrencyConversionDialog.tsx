@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 import {
   FRANKFURTER_WEB_URL,
+  type FrankfurterCurrency,
   frankfurterCurrenciesUrl,
 } from "@/constants/frankfurter";
 
@@ -80,12 +81,12 @@ export const CurrencyConversionDialog: React.FC<
           if (!res.ok) throw new Error("Failed to fetch currencies");
           return res.json();
         })
-        .then((data: Record<string, string>) => {
-          const formatted = Object.entries(data)
-            .filter(([code]) => code.trim() !== "")
-            .map(([code, name]) => ({
-              code: code.toUpperCase(),
-              name: name as string,
+        .then((data: FrankfurterCurrency[]) => {
+          const formatted = data
+            .filter((currency) => currency.iso_code.trim() !== "")
+            .map((currency) => ({
+              code: currency.iso_code.toUpperCase(),
+              name: currency.name,
             }));
           setApiCurrencies(formatted);
         })

@@ -34,6 +34,8 @@ import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 import {
   FRANKFURTER_WEB_URL,
+  type FrankfurterCurrency,
+  type FrankfurterRate,
   frankfurterCurrenciesUrl,
   frankfurterLatestRatesUrl,
 } from "@/constants/frankfurter";
@@ -76,12 +78,12 @@ export const CurrencyManagement = () => {
         if (!res.ok) throw new Error("Failed to fetch currencies");
         return res.json();
       })
-      .then((data: Record<string, string>) => {
-        const formatted = Object.entries(data)
-          .filter(([code]) => code.trim() !== "")
-          .map(([code, name]) => ({
-            code: code.toUpperCase(),
-            name: name as string,
+      .then((data: FrankfurterCurrency[]) => {
+        const formatted = data
+          .filter((currency) => currency.iso_code.trim() !== "")
+          .map((currency) => ({
+            code: currency.iso_code.toUpperCase(),
+            name: currency.name,
           }));
         setApiCurrencies(formatted);
       })
@@ -286,16 +288,15 @@ export const CurrencyManagement = () => {
                                         throw new Error("Failed to fetch rate");
                                       return res.json();
                                     })
-                                    .then(
-                                      (data: {
-                                        rates: Record<string, number>;
-                                      }) => {
+                                    .then((data: FrankfurterRate[]) => {
                                         let rateUSDToNew = 1;
                                         if (currency.code !== "USD") {
                                           rateUSDToNew =
-                                            data.rates[
-                                              currency.code.toUpperCase()
-                                            ];
+                                            data.find(
+                                              ({ quote }) =>
+                                                quote.toUpperCase() ===
+                                                currency.code.toUpperCase(),
+                                            )?.rate ?? 0;
                                         }
 
                                         if (rateUSDToNew) {
@@ -317,8 +318,7 @@ export const CurrencyManagement = () => {
                                             ).toString(),
                                           );
                                         }
-                                      },
-                                    )
+                                      })
                                     .catch((e: unknown) => {
                                       console.error(
                                         "Failed to fetch initial rate",
