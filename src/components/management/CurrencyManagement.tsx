@@ -289,36 +289,35 @@ export const CurrencyManagement = () => {
                                       return res.json();
                                     })
                                     .then((data: FrankfurterRate[]) => {
-                                        let rateUSDToNew = 1;
-                                        if (currency.code !== "USD") {
-                                          rateUSDToNew =
-                                            data.find(
-                                              ({ quote }) =>
-                                                quote.toUpperCase() ===
-                                                currency.code.toUpperCase(),
-                                            )?.rate ?? 0;
-                                        }
+                                      let rateUSDToNew = 1;
+                                      if (currency.code !== "USD") {
+                                        rateUSDToNew =
+                                          data.find(
+                                            ({ quote }) =>
+                                              quote.toUpperCase() ===
+                                              currency.code.toUpperCase(),
+                                          )?.rate ?? 0;
+                                      }
 
-                                        if (rateUSDToNew) {
-                                          // We want: 1 Selected = ? New
-                                          // 1 USD = rateUSDToNew New
-                                          // 1 USD = exchangeRates[selected] Selected
-                                          // => 1 Selected = (1/exchangeRates[selected]) USD
-                                          // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
-                                          // => rate = rateUSDToNew / exchangeRates[selected]
+                                      if (rateUSDToNew) {
+                                        // We want: 1 Selected = ? New
+                                        // 1 USD = rateUSDToNew New
+                                        // 1 USD = exchangeRates[selected] Selected
+                                        // => 1 Selected = (1/exchangeRates[selected]) USD
+                                        // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
+                                        // => rate = rateUSDToNew / exchangeRates[selected]
 
-                                          const selectedRate =
-                                            exchangeRates[selectedCurrency] ||
-                                            1;
-                                          const finalRate =
-                                            rateUSDToNew / selectedRate;
-                                          setCustomRate(
-                                            parseFloat(
-                                              finalRate.toFixed(4),
-                                            ).toString(),
-                                          );
-                                        }
-                                      })
+                                        const selectedRate =
+                                          exchangeRates[selectedCurrency] || 1;
+                                        const finalRate =
+                                          rateUSDToNew / selectedRate;
+                                        setCustomRate(
+                                          parseFloat(
+                                            finalRate.toFixed(4),
+                                          ).toString(),
+                                        );
+                                      }
+                                    })
                                     .catch((e: unknown) => {
                                       console.error(
                                         "Failed to fetch initial rate",
