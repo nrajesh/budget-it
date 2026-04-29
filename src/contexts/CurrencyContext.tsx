@@ -11,6 +11,7 @@ import {
   availableCurrencies,
   defaultExchangeRates,
 } from "@/constants/currency";
+import { frankfurterLatestRatesUrl } from "@/constants/frankfurter";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 
 interface CurrencyContextType {
@@ -151,7 +152,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Using Frankfurter open API logic for rates relative to USD
       const response = await fetchWithTimeout(
-        "https://api.frankfurter.app/latest?from=USD",
+        frankfurterLatestRatesUrl("USD"),
         {},
         5000,
       );

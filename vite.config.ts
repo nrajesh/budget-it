@@ -32,7 +32,7 @@ export default defineConfig(() => ({
       transformIndexHtml(html) {
         const connectSrc = [
           "'self'",
-          "https://api.frankfurter.app",
+          "https://api.frankfurter.dev",
           "wss://ws-us3.pusher.com",
           ...aiDomains,
         ].join(" ");

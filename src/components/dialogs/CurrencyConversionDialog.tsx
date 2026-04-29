@@ -35,6 +35,10 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/utils/apiUtils";
+import {
+  FRANKFURTER_WEB_URL,
+  frankfurterCurrenciesUrl,
+} from "@/constants/frankfurter";
 
 interface CurrencyConversionDialogProps {
   isOpen: boolean;
@@ -71,7 +75,7 @@ export const CurrencyConversionDialog: React.FC<
   // Fetch available currencies from Frankfurter API for the dropdown
   React.useEffect(() => {
     if (isOpen) {
-      fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+      fetchWithTimeout(frankfurterCurrenciesUrl, {}, 5000)
         .then((res: Response) => {
           if (!res.ok) throw new Error("Failed to fetch currencies");
           return res.json();
@@ -160,7 +164,7 @@ export const CurrencyConversionDialog: React.FC<
             <span className="mt-2 block max-w-xs text-xs leading-snug text-muted-foreground">
               Rates sourced from{" "}
               <a
-                href="https://frankfurter.dev"
+                href={FRANKFURTER_WEB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold underline hover:text-foreground"

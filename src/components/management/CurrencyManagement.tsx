@@ -33,6 +33,11 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 import {
+  FRANKFURTER_WEB_URL,
+  frankfurterCurrenciesUrl,
+  frankfurterLatestRatesUrl,
+} from "@/constants/frankfurter";
+import {
   ThemedCard,
   ThemedCardContent,
   ThemedCardHeader,
@@ -66,7 +71,7 @@ export const CurrencyManagement = () => {
 
   // Fetch available currencies from jsDelivr API for the dropdown
   React.useEffect(() => {
-    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+    fetchWithTimeout(frankfurterCurrenciesUrl, {}, 5000)
       .then((res: Response) => {
         if (!res.ok) throw new Error("Failed to fetch currencies");
         return res.json();
@@ -152,7 +157,7 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 max-w-xs text-xs leading-snug text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://frankfurter.dev"
+                    href={FRANKFURTER_WEB_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"
@@ -272,7 +277,7 @@ export const CurrencyManagement = () => {
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
                                   fetchWithTimeout(
-                                    `https://api.frankfurter.app/latest?from=USD`,
+                                    frankfurterLatestRatesUrl("USD"),
                                     {},
                                     5000,
                                   )
