@@ -11,6 +11,10 @@ import {
   availableCurrencies,
   defaultExchangeRates,
 } from "@/constants/currency";
+import {
+  frankfurterLatestRatesUrl,
+  type FrankfurterRate,
+} from "@/constants/frankfurter";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 
 interface CurrencyContextType {
@@ -151,16 +155,18 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Using Frankfurter open API logic for rates relative to USD
       const response = await fetchWithTimeout(
-        "https://api.frankfurter.app/latest?from=USD",
+        frankfurterLatestRatesUrl("USD"),
         {},
         5000,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch rates from Frankfurter API");
       }
-      const data = await response.json();
-      const rates = data.rates || {};
-      rates["USD"] = 1.0; // Frankfurter omits the base currency from the rates object
+      const data = (await response.json()) as FrankfurterRate[];
+      const rates = Object.fromEntries(
+        data.map(({ quote, rate }) => [quote.toUpperCase(), rate]),
+      );
+      rates["USD"] = 1.0;
 
       // Filter only currencies we support
       const newRates: { [key: string]: number } = {};

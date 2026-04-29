@@ -33,6 +33,13 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/utils/apiUtils";
 import {
+  FRANKFURTER_WEB_URL,
+  type FrankfurterCurrency,
+  type FrankfurterRate,
+  frankfurterCurrenciesUrl,
+  frankfurterLatestRatesUrl,
+} from "@/constants/frankfurter";
+import {
   ThemedCard,
   ThemedCardContent,
   ThemedCardHeader,
@@ -66,17 +73,17 @@ export const CurrencyManagement = () => {
 
   // Fetch available currencies from jsDelivr API for the dropdown
   React.useEffect(() => {
-    fetchWithTimeout("https://api.frankfurter.app/currencies", {}, 5000)
+    fetchWithTimeout(frankfurterCurrenciesUrl, {}, 5000)
       .then((res: Response) => {
         if (!res.ok) throw new Error("Failed to fetch currencies");
         return res.json();
       })
-      .then((data: Record<string, string>) => {
-        const formatted = Object.entries(data)
-          .filter(([code]) => code.trim() !== "")
-          .map(([code, name]) => ({
-            code: code.toUpperCase(),
-            name: name as string,
+      .then((data: FrankfurterCurrency[]) => {
+        const formatted = data
+          .filter((currency) => currency.iso_code.trim() !== "")
+          .map((currency) => ({
+            code: currency.iso_code.toUpperCase(),
+            name: currency.name,
           }));
         setApiCurrencies(formatted);
       })
@@ -152,7 +159,7 @@ export const CurrencyManagement = () => {
                 <span className="block mt-2 max-w-xs text-xs leading-snug text-muted-foreground/80">
                   Data sourced from{" "}
                   <a
-                    href="https://frankfurter.dev"
+                    href={FRANKFURTER_WEB_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-primary transition-colors"
@@ -272,7 +279,7 @@ export const CurrencyManagement = () => {
                                   // Fetch Rate
                                   // 1 USD = ? NewCurrency
                                   fetchWithTimeout(
-                                    `https://api.frankfurter.app/latest?from=USD`,
+                                    frankfurterLatestRatesUrl("USD"),
                                     {},
                                     5000,
                                   )
@@ -281,39 +288,36 @@ export const CurrencyManagement = () => {
                                         throw new Error("Failed to fetch rate");
                                       return res.json();
                                     })
-                                    .then(
-                                      (data: {
-                                        rates: Record<string, number>;
-                                      }) => {
-                                        let rateUSDToNew = 1;
-                                        if (currency.code !== "USD") {
-                                          rateUSDToNew =
-                                            data.rates[
-                                              currency.code.toUpperCase()
-                                            ];
-                                        }
+                                    .then((data: FrankfurterRate[]) => {
+                                      let rateUSDToNew = 1;
+                                      if (currency.code !== "USD") {
+                                        rateUSDToNew =
+                                          data.find(
+                                            ({ quote }) =>
+                                              quote.toUpperCase() ===
+                                              currency.code.toUpperCase(),
+                                          )?.rate ?? 0;
+                                      }
 
-                                        if (rateUSDToNew) {
-                                          // We want: 1 Selected = ? New
-                                          // 1 USD = rateUSDToNew New
-                                          // 1 USD = exchangeRates[selected] Selected
-                                          // => 1 Selected = (1/exchangeRates[selected]) USD
-                                          // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
-                                          // => rate = rateUSDToNew / exchangeRates[selected]
+                                      if (rateUSDToNew) {
+                                        // We want: 1 Selected = ? New
+                                        // 1 USD = rateUSDToNew New
+                                        // 1 USD = exchangeRates[selected] Selected
+                                        // => 1 Selected = (1/exchangeRates[selected]) USD
+                                        // => 1 Selected = (1/exchangeRates[selected]) * rateUSDToNew New
+                                        // => rate = rateUSDToNew / exchangeRates[selected]
 
-                                          const selectedRate =
-                                            exchangeRates[selectedCurrency] ||
-                                            1;
-                                          const finalRate =
-                                            rateUSDToNew / selectedRate;
-                                          setCustomRate(
-                                            parseFloat(
-                                              finalRate.toFixed(4),
-                                            ).toString(),
-                                          );
-                                        }
-                                      },
-                                    )
+                                        const selectedRate =
+                                          exchangeRates[selectedCurrency] || 1;
+                                        const finalRate =
+                                          rateUSDToNew / selectedRate;
+                                        setCustomRate(
+                                          parseFloat(
+                                            finalRate.toFixed(4),
+                                          ).toString(),
+                                        );
+                                      }
+                                    })
                                     .catch((e: unknown) => {
                                       console.error(
                                         "Failed to fetch initial rate",
