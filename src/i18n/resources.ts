@@ -1,11 +1,36 @@
 import type { Resource } from "i18next";
 
 export const builtInLanguageOptions = [
-  { code: "zh", name: "Chinese (Mandarin)" },
-  { code: "en", name: "English" },
-  { code: "es", name: "Spanish" },
-  { code: "nl", name: "Dutch (Nederlands)" },
-  { code: "ta", name: "Tamil (தமிழ்)" },
+  {
+    code: "zh",
+    name: "Chinese (Mandarin)",
+    nativeName: "中文",
+    translationKey: "language.chinese",
+  },
+  {
+    code: "en",
+    name: "English",
+    nativeName: "English",
+    translationKey: "language.english",
+  },
+  {
+    code: "es",
+    name: "Spanish",
+    nativeName: "Español",
+    translationKey: "language.spanish",
+  },
+  {
+    code: "nl",
+    name: "Dutch",
+    nativeName: "Nederlands",
+    translationKey: "language.dutch",
+  },
+  {
+    code: "ta",
+    name: "Tamil",
+    nativeName: "தமிழ்",
+    translationKey: "language.tamil",
+  },
 ] as const;
 
 export const resources: Resource = {
@@ -15,8 +40,8 @@ export const resources: Resource = {
         label: "Language",
         english: "English",
         spanish: "Spanish",
-        chinese: "Chinese (Mandarin)",
-        tamil: "Tamil (தமிழ்)",
+        chinese: "Mandarin Chinese",
+        tamil: "Tamil",
         dutch: "Dutch",
         removeCustomAria: "Remove {{name}}",
         removeCustomConfirm:
@@ -464,10 +489,10 @@ export const resources: Resource = {
     translation: {
       language: {
         label: "Idioma",
-        english: "Ingles",
-        spanish: "Espanol",
-        chinese: "Chino (Mandarin)",
-        tamil: "Tamil (தமிழ்)",
+        english: "Inglés",
+        spanish: "Español",
+        chinese: "Chino mandarín",
+        tamil: "Tamil",
         dutch: "Neerlandés",
         removeCustomAria: "Quitar {{name}}",
         removeCustomConfirm:
@@ -839,7 +864,7 @@ export const resources: Resource = {
         label: "语言",
         english: "英语",
         spanish: "西班牙语",
-        chinese: "中文（普通话）",
+        chinese: "中文",
         tamil: "泰米尔语",
         dutch: "荷兰语",
         removeCustomAria: "移除 {{name}}",
@@ -1107,8 +1132,8 @@ export const resources: Resource = {
         label: "Taal",
         english: "Engels",
         spanish: "Spaans",
-        chinese: "Chinees (Mandarijn)",
-        tamil: "Tamil (தமிழ்)",
+        chinese: "Mandarijn",
+        tamil: "Tamil",
         dutch: "Nederlands",
         removeCustomAria: "{{name}} verwijderen",
         removeCustomConfirm:
@@ -1558,7 +1583,7 @@ export const resources: Resource = {
         label: "மொழி",
         english: "ஆங்கிலம்",
         spanish: "ஸ்பானிஷ்",
-        chinese: "சீனம் (மாண்டரின்)",
+        chinese: "மாண்டரின் சீனம்",
         tamil: "தமிழ்",
         dutch: "டச்",
         removeCustomAria: "{{name}} ஐ நீக்கு",

@@ -23,39 +23,55 @@ import i18n, { unregisterCustomLanguage } from "@/i18n/config";
 import { showSuccess } from "@/utils/toast";
 import { cn } from "@/lib/utils";
 
+const getBuiltInLanguageLabel = (
+  t: ReturnType<typeof useTranslation>["t"],
+  code: SupportedLanguage,
+) => {
+  const language = builtInLanguageOptions.find((item) => item.code === code);
+  if (!language) {
+    return code;
+  }
+
+  const translatedName = t(language.translationKey, {
+    defaultValue: language.name,
+  });
+
+  if (
+    translatedName.localeCompare(language.nativeName, undefined, {
+      sensitivity: "base",
+    }) === 0
+  ) {
+    return language.nativeName;
+  }
+
+  return `${language.nativeName} (${translatedName})`;
+};
+
 export const LanguageSwitcher = () => {
-  const { t } = useTranslation();
-  const [allLanguages, setAllLanguages] = React.useState(() =>
-    sortLanguageOptionsByEnglishName([
-      ...builtInLanguageOptions.map((language) => ({
-        value: language.code,
-        label: language.name,
-      })),
-      ...getCustomLanguages().map((language) => ({
-        value: language.code,
-        label: language.name,
-      })),
-    ]),
+  const { t, i18n: i18nInstance } = useTranslation();
+  const [, bumpLanguageListVersion] = React.useReducer(
+    (value: number) => value + 1,
+    0,
   );
 
-  const customCodes = new Set(
-    getCustomLanguages().map((language) => language.code),
-  );
+  const customLanguages = getCustomLanguages();
+  const allLanguages = sortLanguageOptionsByEnglishName([
+    ...builtInLanguageOptions.map((language) => ({
+      value: language.code,
+      label: getBuiltInLanguageLabel(t, language.code),
+      sortLabel: language.name,
+    })),
+    ...customLanguages.map((language) => ({
+      value: language.code,
+      label: language.name,
+      sortLabel: language.name,
+    })),
+  ]);
+  const customCodes = new Set(customLanguages.map((language) => language.code));
 
   React.useEffect(() => {
     const onLanguagesChanged = () => {
-      setAllLanguages(
-        sortLanguageOptionsByEnglishName([
-          ...builtInLanguageOptions.map((language) => ({
-            value: language.code,
-            label: language.name,
-          })),
-          ...getCustomLanguages().map((language) => ({
-            value: language.code,
-            label: language.name,
-          })),
-        ]),
-      );
+      bumpLanguageListVersion();
     };
 
     window.addEventListener(
@@ -99,7 +115,7 @@ export const LanguageSwitcher = () => {
     );
   };
 
-  const active = i18n.resolvedLanguage as SupportedLanguage;
+  const active = i18nInstance.resolvedLanguage as SupportedLanguage;
 
   return (
     <DropdownMenu>
