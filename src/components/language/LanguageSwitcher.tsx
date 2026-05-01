@@ -49,32 +49,25 @@ const getBuiltInLanguageLabel = (
 
 export const LanguageSwitcher = () => {
   const { t, i18n: i18nInstance } = useTranslation();
-  const [languageListVersion, bumpLanguageListVersion] = React.useReducer(
+  const [, bumpLanguageListVersion] = React.useReducer(
     (value: number) => value + 1,
     0,
   );
 
-  const allLanguages = React.useMemo(
-    () =>
-      sortLanguageOptionsByEnglishName([
-        ...builtInLanguageOptions.map((language) => ({
-          value: language.code,
-          label: getBuiltInLanguageLabel(t, language.code),
-          sortLabel: language.name,
-        })),
-        ...getCustomLanguages().map((language) => ({
-          value: language.code,
-          label: language.name,
-          sortLabel: language.name,
-        })),
-      ]),
-    [languageListVersion, i18nInstance.resolvedLanguage, t],
-  );
-
-  const customCodes = React.useMemo(
-    () => new Set(getCustomLanguages().map((language) => language.code)),
-    [languageListVersion],
-  );
+  const customLanguages = getCustomLanguages();
+  const allLanguages = sortLanguageOptionsByEnglishName([
+    ...builtInLanguageOptions.map((language) => ({
+      value: language.code,
+      label: getBuiltInLanguageLabel(t, language.code),
+      sortLabel: language.name,
+    })),
+    ...customLanguages.map((language) => ({
+      value: language.code,
+      label: language.name,
+      sortLabel: language.name,
+    })),
+  ]);
+  const customCodes = new Set(customLanguages.map((language) => language.code));
 
   React.useEffect(() => {
     const onLanguagesChanged = () => {
