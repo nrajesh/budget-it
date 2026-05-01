@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { MemoryRouter } from "react-router-dom";
@@ -77,7 +83,9 @@ describe("Runtime i18n switching", () => {
   it("lists built-in languages in header menu and switches from there", async () => {
     const user = userEvent.setup();
     localStorage.setItem("app-enabled-languages", JSON.stringify(["zh"]));
-    await i18n.changeLanguage("zh");
+    await act(async () => {
+      await i18n.changeLanguage("zh");
+    });
 
     render(
       <MemoryRouter>
@@ -107,5 +115,81 @@ describe("Runtime i18n switching", () => {
       localStorage.getItem("app-enabled-languages") || "[]",
     ) as string[];
     expect(stored).toEqual(["en"]);
+  });
+
+  it("rebuilds dropdown labels when the active language changes", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["zh"]));
+
+    render(
+      <MemoryRouter>
+        <I18nextProvider i18n={i18n}>
+          <LanguageSwitcher />
+        </I18nextProvider>
+      </MemoryRouter>,
+    );
+
+    await i18n.changeLanguage("zh");
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("language.label") }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /English \(英语\)/ }))
+        .toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: /தமிழ் \(泰米尔语\)/ }))
+        .toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: /Nederlands \(荷兰语\)/ }))
+        .toBeInTheDocument();
+    });
+  });
+
+  it("does not show bracket text for the active language when the localized name matches the native name", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["es"]));
+
+    await act(async () => {
+      await i18n.changeLanguage("es");
+    });
+
+    render(
+      <MemoryRouter>
+        <I18nextProvider i18n={i18n}>
+          <LanguageSwitcher />
+        </I18nextProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("language.label") }),
+    );
+
+    expect(
+      screen.getByRole("menuitem", { name: /^Español$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show bracket text for Chinese when Chinese is the active language", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("app-enabled-languages", JSON.stringify(["zh"]));
+
+    await act(async () => {
+      await i18n.changeLanguage("zh");
+    });
+
+    render(
+      <MemoryRouter>
+        <I18nextProvider i18n={i18n}>
+          <LanguageSwitcher />
+        </I18nextProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("language.label") }),
+    );
+
+    expect(screen.getByRole("menuitem", { name: /^中文$/ })).toBeInTheDocument();
   });
 });
