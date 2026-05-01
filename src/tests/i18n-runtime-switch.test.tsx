@@ -136,12 +136,15 @@ describe("Runtime i18n switching", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("menuitem", { name: /English \(英语\)/ }))
-        .toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: /தமிழ் \(泰米尔语\)/ }))
-        .toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: /Nederlands \(荷兰语\)/ }))
-        .toBeInTheDocument();
+      expect(
+        screen.getByRole("menuitem", { name: /English \(英语\)/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("menuitem", { name: /தமிழ் \(泰米尔语\)/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("menuitem", { name: /Nederlands \(荷兰语\)/ }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -190,6 +193,8 @@ describe("Runtime i18n switching", () => {
       screen.getByRole("button", { name: i18n.t("language.label") }),
     );
 
-    expect(screen.getByRole("menuitem", { name: /^中文$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: /^中文$/ }),
+    ).toBeInTheDocument();
   });
 });
