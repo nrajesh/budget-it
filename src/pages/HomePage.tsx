@@ -30,6 +30,8 @@ import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { GITHUB_REPO_URL } from "@/utils/feedbackLinks";
 import { showSuccess } from "@/utils/toast";
 import { cn } from "@/lib/utils";
+import SiteFooter from "@/components/SiteFooter";
+import BrandLockup from "@/components/BrandLockup";
 
 const webInstallCommand = `git clone https://github.com/nrajesh/vaulted.money.git
 cd vaulted.money
@@ -167,34 +169,34 @@ const HomePage = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/85">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3">
+    <main className="min-h-screen overflow-x-hidden bg-background pt-20 text-foreground sm:pt-24">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 px-4 shadow-sm backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/90">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 sm:h-24">
           <Link
             to="/"
             className="flex min-w-0 items-center gap-3"
             aria-label="Vaulted Money home"
           >
-            <img
-              src={
-                resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"
-              }
-              alt=""
-              className="h-12 w-12 shrink-0 object-contain sm:h-14 sm:w-14"
-            />
-            <span className="truncate text-base font-semibold tracking-normal">
-              Vaulted Money
-            </span>
+            <BrandLockup size="header" />
           </Link>
 
-          <nav className="hidden items-center gap-5 text-sm text-muted-foreground md:flex">
-            <a href="#trust" className="hover:text-primary">
+          <nav className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 p-1 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900/70 md:flex">
+            <a
+              href="#trust"
+              className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200"
+            >
               {t("home.nav.trust", { defaultValue: "Trust" })}
             </a>
-            <a href="#workflow" className="hover:text-primary">
+            <a
+              href="#workflow"
+              className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-sky-50 hover:text-sky-700 dark:text-slate-300 dark:hover:bg-sky-950/60 dark:hover:text-sky-200"
+            >
               {t("home.nav.workflow", { defaultValue: "Workflow" })}
             </a>
-            <a href="#install" className="hover:text-primary">
+            <a
+              href="#install"
+              className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-amber-800 dark:text-slate-300 dark:hover:bg-amber-950/60 dark:hover:text-amber-200"
+            >
               {t("home.nav.install", { defaultValue: "Install" })}
             </a>
           </nav>
@@ -393,7 +395,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section id="trust" className="px-4 pt-8 pb-8 sm:py-12">
+      <section id="trust" className="scroll-mt-24 px-4 pt-8 pb-8 sm:scroll-mt-28 sm:py-12">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
             <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
@@ -446,7 +448,7 @@ const HomePage = () => {
 
       <section
         id="workflow"
-        className="border-y border-slate-200 bg-slate-50 px-4 py-10 dark:border-slate-800 dark:bg-slate-900/55 sm:py-12"
+        className="scroll-mt-24 border-y border-slate-200 bg-slate-50 px-4 py-10 dark:border-slate-800 dark:bg-slate-900/55 sm:scroll-mt-28 sm:py-12"
       >
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
@@ -523,7 +525,7 @@ const HomePage = () => {
 
       <section
         id="install"
-        className="border-t border-slate-200 bg-slate-950 px-4 py-10 text-slate-50 dark:border-slate-800 sm:py-12"
+        className="scroll-mt-24 border-t border-slate-200 bg-slate-950 px-4 py-10 text-slate-50 dark:border-slate-800 sm:scroll-mt-28 sm:py-12"
       >
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -583,29 +585,7 @@ const HomePage = () => {
           </div>
         </div>
       </section>
-      <footer
-        className="shrink-0 border-t border-border/60 bg-background px-4 py-3 sm:px-6"
-        role="contentinfo"
-      >
-        <p className="mx-auto max-w-md text-center text-xs leading-relaxed text-muted-foreground">
-          {t("layout.footer.tagline", {
-            defaultValue: "Privacy-first | Data local | Open sourced",
-          })}
-        </p>
-        <a
-          href={GITHUB_REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-          aria-label={t("layout.footer.githubAria", {
-            defaultValue: "Open Vaulted Money on GitHub",
-          })}
-        >
-          {t("layout.footer.heartLink", {
-            defaultValue: "Made with ❤️ for your financial freedom",
-          })}
-        </a>
-      </footer>
+      <SiteFooter />
     </main>
   );
 };

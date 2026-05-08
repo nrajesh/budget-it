@@ -57,7 +57,8 @@ import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
 import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
-import { GITHUB_REPO_URL } from "@/utils/feedbackLinks";
+import SiteFooter from "@/components/SiteFooter";
+import BrandLockup from "@/components/BrandLockup";
 
 const LedgerEntryPage = () => {
   const { t } = useTranslation();
@@ -449,17 +450,6 @@ const LedgerEntryPage = () => {
     }
   };
 
-  const LogoImage = () => {
-    const { resolvedTheme } = useTheme();
-    return (
-      <img
-        src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-        alt="Vaulted Money"
-        className="h-24 w-auto mx-auto"
-      />
-    );
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <header className="sticky top-0 z-40 flex min-h-[calc(4rem+env(safe-area-inset-top))] w-full items-center justify-end border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
@@ -513,20 +503,17 @@ const LedgerEntryPage = () => {
           <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
         </div>
       </header>
-      <div className="flex flex-1 flex-col items-center justify-center p-4">
-        <div className="w-full max-w-2xl space-y-8 animate-in fade-in zoom-in duration-500">
-          <div className="tour-ledger-title text-center space-y-2">
-            <LogoImage />
-            <h1 className="app-gradient-title text-3xl sm:text-4xl font-black tracking-tighter">
-              Vaulted Money
-            </h1>
+      <div className="flex flex-1 flex-col items-center justify-start p-4 pt-3">
+        <div className="w-full max-w-2xl space-y-5 animate-in fade-in zoom-in duration-500">
+          <div className="tour-ledger-title text-center space-y-1">
+            <BrandLockup size="hero" className="justify-center" />
             <p className="app-page-subtitle">
               Select a budget ledger to continue.
             </p>
           </div>
 
           {/* Search and Bulk Actions */}
-          <div className="tour-ledger-search flex flex-col sm:flex-row gap-4 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
+          <div className="tour-ledger-search flex flex-col sm:flex-row gap-3 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -568,7 +555,7 @@ const LedgerEntryPage = () => {
                 ? "text-center text-muted-foreground py-10"
                 : ledgers.length === 0
                   ? "flex justify-center"
-                  : "grid grid-cols-1 md:grid-cols-2 gap-4",
+                  : "grid grid-cols-1 md:grid-cols-2 gap-3",
             )}
           >
             {filteredLedgers.length === 0 && ledgers.length > 0 && (
@@ -596,7 +583,7 @@ const LedgerEntryPage = () => {
                     className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
                     onClick={() => handleSelectLedger(ledger.id)}
                   >
-                    <ThemedCardHeader className="flex flex-row items-center gap-4 pb-2 space-y-0 pr-10">
+                  <ThemedCardHeader className="flex flex-row items-center gap-3 pb-1 space-y-0 pr-10">
                       <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                         {getIcon(ledger.icon)}
                       </div>
@@ -623,7 +610,7 @@ const LedgerEntryPage = () => {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </ThemedCardHeader>
-                    <ThemedCardContent>
+                    <ThemedCardContent className="pt-0">
                       <p className="text-sm text-muted-foreground">
                         {ledger.short_name ? `(${ledger.short_name})` : ""}
                         <span className="block mt-1 text-xs opacity-70">
@@ -642,7 +629,7 @@ const LedgerEntryPage = () => {
             })}
 
             <ThemedCard
-              className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-6 min-h-[140px] ${
+              className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-5 min-h-[124px] ${
                 filteredLedgers.length === 0 && ledgers.length > 0
                   ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
                   : ""
@@ -705,7 +692,7 @@ const LedgerEntryPage = () => {
 
           {ledgers.length > 0 && (
             <>
-              <div className="tour-import-backup flex flex-col justify-center items-center pt-8 gap-2">
+              <div className="tour-import-backup flex flex-col justify-center items-center pt-5 gap-2">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -753,29 +740,7 @@ const LedgerEntryPage = () => {
         </div>
       </div>
 
-      <footer
-        className="shrink-0 border-t border-border/60 bg-background px-4 py-3 sm:px-6"
-        role="contentinfo"
-      >
-        <p className="mx-auto max-w-md text-center text-xs leading-relaxed text-muted-foreground">
-          {t("layout.footer.tagline", {
-            defaultValue: "Privacy-first | Data local | Open sourced",
-          })}
-        </p>
-        <a
-          href={GITHUB_REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-          aria-label={t("layout.footer.githubAria", {
-            defaultValue: "Open Vaulted Money on GitHub",
-          })}
-        >
-          {t("layout.footer.heartLink", {
-            defaultValue: "Made with ❤️ for your financial freedom",
-          })}
-        </a>
-      </footer>
+      <SiteFooter />
 
       <ManageLedgerDialog
         isOpen={isCreateOpen}

@@ -224,9 +224,15 @@ const SettingsPage = () => {
                   AI Integrations (BYOK)
                 </ThemedCardTitle>
                 <ThemedCardDescription>
-                  Manage your AI model providers. Keys are stored safely and
-                  locally in your browser.
+                  Manage your AI model providers. Keys are stored locally in
+                  your browser.
                 </ThemedCardDescription>
+                <Link
+                  to="/privacy"
+                  className="mt-2 inline-flex text-xs text-indigo-600 hover:underline"
+                >
+                  Review privacy policy →
+                </Link>
               </div>
               <Button
                 variant="outline"
