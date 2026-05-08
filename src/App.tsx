@@ -25,6 +25,7 @@ const queryClient = new QueryClient();
 // Lazy load page components
 const Index = lazy(() => import("@/pages/Index"));
 const HomePage = lazy(() => import("@/pages/HomePage"));
+const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const CalendarView = lazy(() => import("@/pages/CalendarView"));
 const Transactions = lazy(() => import("@/pages/Transactions"));
@@ -88,6 +89,10 @@ function App() {
                                   <HomePage />
                                 )
                               }
+                            />
+                            <Route
+                              path="/privacy"
+                              element={<PrivacyPolicyPage />}
                             />
                             <Route path="/" element={<Layout />}>
                               <Route path="dashboard" element={<Index />} />

@@ -83,7 +83,8 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { LanguageIcon } from "@/components/language/LanguageIcon";
 import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
-import { GITHUB_REPO_URL } from "@/utils/feedbackLinks";
+import SiteFooter from "@/components/SiteFooter";
+import BrandLockup from "@/components/BrandLockup";
 
 const PinTrigger = () => {
   const { state, toggleSidebar } = useSidebar();
@@ -95,7 +96,7 @@ const PinTrigger = () => {
         e.stopPropagation();
         toggleSidebar();
       }}
-      className="hidden md:flex"
+      className="hidden md:flex group-data-[collapsible=icon]:hidden"
       aria-label={state === "collapsed" ? "Pin Sidebar" : "Unpin Sidebar"}
     >
       {state === "collapsed" ? (
@@ -226,21 +227,12 @@ const Layout = () => {
       <MobileSidebarCloser />
       <Sidebar collapsible="icon" className="tour-sidebar-nav">
         <SidebarHeader className="pt-[env(safe-area-inset-top)]">
-          <div className="flex items-center justify-between gap-2 px-1">
-            <div className="flex items-center gap-2">
-              <img
-                src={
-                  resolvedTheme === "dark"
-                    ? "/logo-dark.png"
-                    : "/logo-light.png"
-                }
-                alt="Vaulted Money"
-                className="h-10 w-10 shrink-0 object-contain sm:h-12 sm:w-12"
-              />
-              <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
-                Vaulted Money
-              </span>
-            </div>
+          <div className="flex items-center justify-between gap-2 px-1 group-data-[collapsible=icon]:justify-center">
+            <BrandLockup
+              size="sidebar"
+              className="group-data-[collapsible=icon]:gap-0"
+              nameClassName="group-data-[collapsible=icon]:hidden"
+            />
             <PinTrigger />
             <SidebarTrigger className="flex md:hidden" />
           </div>
@@ -677,29 +669,7 @@ const Layout = () => {
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background">
           <Outlet />
         </main>
-        <footer
-          className="shrink-0 border-t border-border/60 bg-background px-4 py-3 sm:px-6"
-          role="contentinfo"
-        >
-          <p className="text-center text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-            {t("layout.footer.tagline", {
-              defaultValue: "Privacy-first | Data local | Open sourced",
-            })}
-          </p>
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 block text-center text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-            aria-label={t("layout.footer.githubAria", {
-              defaultValue: "Open Vaulted Money on GitHub",
-            })}
-          >
-            {t("layout.footer.heartLink", {
-              defaultValue: "Made with ❤️ for your financial freedom",
-            })}
-          </a>
-        </footer>
+        <SiteFooter />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
