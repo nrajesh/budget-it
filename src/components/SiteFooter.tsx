@@ -60,7 +60,11 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
             {extraLinks.map((link) =>
               link.to ? (
-                <Link key={link.label} to={link.to} className={footerLinkClassName}>
+                <Link
+                  key={link.label}
+                  to={link.to}
+                  className={footerLinkClassName}
+                >
                   {link.label}
                 </Link>
               ) : (

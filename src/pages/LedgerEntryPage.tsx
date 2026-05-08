@@ -583,7 +583,7 @@ const LedgerEntryPage = () => {
                     className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
                     onClick={() => handleSelectLedger(ledger.id)}
                   >
-                  <ThemedCardHeader className="flex flex-row items-center gap-3 pb-1 space-y-0 pr-10">
+                    <ThemedCardHeader className="flex flex-row items-center gap-3 pb-1 space-y-0 pr-10">
                       <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                         {getIcon(ledger.icon)}
                       </div>

@@ -395,7 +395,10 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section id="trust" className="scroll-mt-24 px-4 pt-8 pb-8 sm:scroll-mt-28 sm:py-12">
+      <section
+        id="trust"
+        className="scroll-mt-24 px-4 pt-8 pb-8 sm:scroll-mt-28 sm:py-12"
+      >
         <div className="mx-auto max-w-7xl">
           <div className="mb-8">
             <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
