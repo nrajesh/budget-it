@@ -111,12 +111,12 @@ export default function DonationPage() {
                   aria-label="Open Revolut checkout"
                   className="block"
                 >
-                  <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
+                  <div className="relative group flex h-48 w-48 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-border bg-white p-2 shadow-sm">
                     <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <img
                       src="/assets/qrcode_revolut.jpg"
                       alt="Revolut QR Code"
-                      className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
+                      className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                 </a>
@@ -126,18 +126,18 @@ export default function DonationPage() {
                   PayPal
                 </span>
                 <a
-                  href="https://paypal.me/rjshn"
+                  href="https://www.paypal.com/donate/?hosted_button_id=4AFPCKPWTGFUU"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Open PayPal donation link"
                   className="block"
                 >
-                  <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
+                  <div className="relative group flex h-48 w-48 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-border bg-white p-2 shadow-sm">
                     <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <img
                       src="/assets/qrcode_paypal.jpg"
                       alt="PayPal QR Code"
-                      className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
+                      className="h-40 w-40 object-contain [image-rendering:pixelated] transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                 </a>
