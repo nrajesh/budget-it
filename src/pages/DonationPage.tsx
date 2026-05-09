@@ -104,27 +104,43 @@ export default function DonationPage() {
                 <span className="font-semibold text-lg text-emerald-800 dark:text-emerald-200">
                   Revolut
                 </span>
-                <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <img
-                    src="/assets/qrcode_revolut.png"
-                    alt="Revolut QR Code"
-                    className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
+                <a
+                  href="https://checkout.revolut.com/pay/f98ac0fd-41f3-4a09-9a61-7ab6c70717f3"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Revolut checkout"
+                  className="block"
+                >
+                  <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <img
+                      src="/assets/qrcode_revolut.jpg"
+                      alt="Revolut QR Code"
+                      className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                </a>
               </div>
               <div className="flex flex-col items-center gap-3">
                 <span className="font-semibold text-lg text-emerald-800 dark:text-emerald-200">
                   PayPal
                 </span>
-                <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <img
-                    src="/assets/qrcode_paypal.png"
-                    alt="PayPal QR Code"
-                    className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
+                <a
+                  href="https://paypal.me/rjshn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open PayPal donation link"
+                  className="block"
+                >
+                  <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border shadow-sm bg-white p-2">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <img
+                      src="/assets/qrcode_paypal.jpg"
+                      alt="PayPal QR Code"
+                      className="w-48 h-48 object-contain transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                </a>
               </div>
             </div>
             <p className="text-sm text-center text-muted-foreground max-w-xs mt-4">
