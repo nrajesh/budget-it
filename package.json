@@ -29,7 +29,7 @@
     "release:local": "cross-env ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm run electron:build && pnpm run android:build:apk && pnpm run ios:build:simulator"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.1",
+    "@capacitor/core": "^8.3.3",
     "@capacitor/filesystem": "^8.1.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@hookform/resolvers": "^5.2.2",
@@ -66,7 +66,7 @@
     "next-themes": "^0.4.6",
     "papaparse": "^5.5.3",
     "react": "^19.2.4",
-    "react-day-picker": "^9.14.0",
+    "react-day-picker": "^10.0.0",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.53.0",
     "react-i18next": "^17.0.2",
@@ -84,7 +84,7 @@
     "@capacitor/cli": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
     "@eslint/js": "^10.0.1",
-    "@tailwindcss/postcss": "4.2.4",
+    "@tailwindcss/postcss": "4.3.0",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
