@@ -7,6 +7,8 @@ interface BrandLockupProps {
   size?: BrandLockupSize;
   className?: string;
   nameClassName?: string;
+  iconWrapperClassName?: string;
+  imageClassName?: string;
   showName?: boolean;
 }
 
@@ -14,29 +16,29 @@ const sizeStyles: Record<
   BrandLockupSize,
   {
     wrapper: string;
-    image: string;
+    iconWrapper: string;
     title: string;
   }
 > = {
   header: {
-    wrapper: "gap-1.5 sm:gap-2",
-    image: "h-18 w-18 sm:h-24 sm:w-24",
-    title: "text-[2.2rem] sm:text-[2.7rem]",
+    wrapper: "gap-2 sm:gap-2.5",
+    iconWrapper: "h-10 w-10 sm:h-20 sm:w-20 lg:h-24 lg:w-24",
+    title: "text-[clamp(1.55rem,7vw,2rem)] sm:text-[2.45rem] lg:text-[2.7rem]",
   },
   sidebar: {
     wrapper: "gap-0",
-    image: "h-12 w-12 sm:h-14 sm:w-14",
+    iconWrapper: "h-12 w-12 sm:h-14 sm:w-14",
     title: "text-[1.05rem] sm:text-[1.12rem]",
   },
   hero: {
     wrapper: "flex-col gap-0.5 text-center",
-    image: "h-44 w-44 sm:h-52 sm:w-52",
-    title: "text-5xl sm:text-6xl",
+    iconWrapper: "h-28 w-28 sm:h-40 sm:w-40 lg:h-48 lg:w-48",
+    title: "text-[2.85rem] sm:text-5xl lg:text-6xl",
   },
   mobile: {
-    wrapper: "gap-2",
-    image: "h-10 w-10",
-    title: "text-[1.2rem]",
+    wrapper: "gap-2.5",
+    iconWrapper: "h-11 w-11",
+    title: "text-[1.4rem]",
   },
 };
 
@@ -44,6 +46,8 @@ const BrandLockup = ({
   size = "header",
   className,
   nameClassName,
+  iconWrapperClassName,
+  imageClassName,
   showName = true,
 }: BrandLockupProps) => {
   const { resolvedTheme } = useTheme();
@@ -51,16 +55,27 @@ const BrandLockup = ({
 
   return (
     <div className={cn("flex items-center", styles.wrapper, className)}>
-      <img
-        src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-        alt="Vaulted Money"
-        className={cn("shrink-0 object-contain", styles.image)}
-      />
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-center overflow-hidden",
+          styles.iconWrapper,
+          iconWrapperClassName,
+        )}
+      >
+        <img
+          src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+          alt="Vaulted Money"
+          className={cn(
+            "h-full w-full shrink-0 object-contain transition-transform",
+            imageClassName,
+          )}
+        />
+      </div>
 
       {showName && (
         <span
           className={cn(
-            "app-gradient-title min-w-0 whitespace-nowrap font-black leading-none tracking-[-0.06em]",
+            "app-gradient-title min-w-0 whitespace-nowrap font-black leading-none tracking-normal",
             styles.title,
             nameClassName,
           )}

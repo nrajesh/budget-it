@@ -6,13 +6,7 @@ import { useLedger } from "@/contexts/LedgerContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useTour } from "@/contexts/TourContext";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
-import {
-  ThemedCard,
-  ThemedCardContent,
-  ThemedCardDescription,
-  ThemedCardHeader,
-  ThemedCardTitle,
-} from "@/components/ThemedCard";
+import { ThemedCard, ThemedCardContent } from "@/components/ThemedCard";
 import {
   Building2,
   Home,
@@ -26,7 +20,10 @@ import {
   FileText,
   Moon,
   Sun,
+  ChevronRight,
   HelpCircle,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import {
   ImportConfig,
@@ -43,6 +40,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +79,7 @@ const LedgerEntryPage = () => {
   const [selectedLedgers, setSelectedLedgers] = useState<Set<string>>(
     new Set(),
   );
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [ledgerToDelete, setLedgerToDelete] = useState<string | null>(null); // For single delete
   const [isMassDelete, setIsMassDelete] = useState(false);
@@ -363,12 +369,11 @@ const LedgerEntryPage = () => {
   };
 
   const handleSelectLedger = async (id: string) => {
-    // Prevent navigation if clicking checkbox or delete button
-    // Or if in "Selection Mode" (implied if items are selected)?
-    // Requirement: "Give a mass select option". Let's say if we are clicking the card, we select it if selection mode is active?
-    // For now, let's keep it simple: Card click = open, unless clicking specific controls.
+    if (isSelectionMode) {
+      handleToggleSelect(id, !selectedLedgers.has(id));
+      return;
+    }
 
-    // Clear logout flag BEFORE switching
     localStorage.removeItem("userLoggedOut");
     await switchLedger(id);
   };
@@ -403,6 +408,7 @@ const LedgerEntryPage = () => {
           await deleteLedger(id);
         }
         setSelectedLedgers(new Set());
+        setIsSelectionMode(false);
         showSuccess(`Deleted ${selectedLedgers.size} ledgers.`);
       } else if (ledgerToDelete) {
         await deleteLedger(ledgerToDelete);
@@ -450,10 +456,23 @@ const LedgerEntryPage = () => {
     }
   };
 
+  const formatLastAccessed = (lastAccessed?: string) =>
+    lastAccessed ? new Date(lastAccessed).toLocaleDateString() : "Never";
+
+  const toggleSelectionMode = () => {
+    if (isSelectionMode) {
+      setSelectedLedgers(new Set());
+      setIsSelectionMode(false);
+      return;
+    }
+
+    setIsSelectionMode(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <header className="sticky top-0 z-40 flex min-h-[calc(4rem+env(safe-area-inset-top))] w-full items-center justify-end border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
-        <div className="tour-theme-toggle flex items-center gap-2">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
+        <div className="mx-auto flex min-h-16 w-full max-w-3xl items-center justify-between gap-3">
           <Button
             asChild
             variant="ghost"
@@ -470,92 +489,168 @@ const LedgerEntryPage = () => {
               </span>
             </Link>
           </Button>
-          <LanguageSwitcher />
-          {hasTourForCurrentRoute && (
+
+          <div className="tour-theme-toggle hidden items-center gap-2 sm:flex">
+            <LanguageSwitcher />
+            {hasTourForCurrentRoute && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                onClick={startTour}
+                aria-label={t("helpTour.start")}
+              >
+                <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">{t("helpTour.start")}</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
               className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-              onClick={startTour}
-              aria-label={t("helpTour.start")}
+              onClick={() =>
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
+              }
+              aria-label={t("layout.toggleTheme", {
+                defaultValue: "Toggle theme",
+              })}
             >
-              <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-              <span className="sr-only">{t("helpTour.start")}</span>
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-5 w-5 text-amber-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            onClick={() =>
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-            aria-label={t("layout.toggleTheme", {
-              defaultValue: "Toggle theme",
-            })}
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="h-5 w-5 text-amber-400" />
-            ) : (
-              <Moon className="h-5 w-5 text-slate-600" />
-            )}
-          </Button>
-          <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+          </div>
+
+          <div className="flex items-center gap-2 sm:hidden">
+            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                  aria-label="More actions"
+                >
+                  <MoreHorizontal className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                  <span className="sr-only">More actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-[min(100vw-2rem,16rem)]"
+              >
+                <DropdownMenuLabel>Ledger actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/language">
+                    {t("layout.nav.languages", { defaultValue: "Languages" })}
+                  </Link>
+                </DropdownMenuItem>
+                {hasTourForCurrentRoute && (
+                  <DropdownMenuItem onClick={startTour}>
+                    {t("helpTour.start", { defaultValue: "Start tour" })}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() =>
+                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                  }
+                >
+                  {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
       <div className="flex flex-1 flex-col items-center justify-start p-4 pt-3">
-        <div className="w-full max-w-2xl space-y-5 animate-in fade-in zoom-in duration-500">
-          <div className="tour-ledger-title text-center space-y-1">
+        <div className="w-full max-w-3xl space-y-5 animate-in fade-in zoom-in duration-500">
+          <div className="tour-ledger-title space-y-2 px-2 text-center">
             <BrandLockup size="hero" className="justify-center" />
-            <p className="app-page-subtitle">
+            <p className="app-page-subtitle mx-auto max-w-xl">
               Select a budget ledger to continue.
             </p>
           </div>
 
-          {/* Search and Bulk Actions */}
-          <div className="tour-ledger-search flex flex-col sm:flex-row gap-3 items-center justify-center sticky top-2 z-10 bg-gray-50/95 dark:bg-gray-900/95 p-2 rounded-lg backdrop-blur supports-[backdrop-filter]:bg-gray-50/50">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="tour-ledger-search sticky top-[calc(0.5rem+env(safe-area-inset-top))] z-20 rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:border-slate-800/80 dark:bg-slate-950/85">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search ledgers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="h-11 rounded-xl border-slate-200 bg-background/70 pl-10 pr-11 dark:border-slate-700"
               />
-            </div>
-
-            {selectedLedgers.size > 0 && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-5">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {selectedLedgers.size} selected
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleMassDeleteClick}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Selected
-                </Button>
+              {searchTerm && (
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedLedgers(new Set())}
+                  size="icon"
+                  className="absolute right-1 top-1/2 h-9 w-9 -translate-y-1/2 rounded-full"
+                  onClick={() => setSearchTerm("")}
+                  aria-label="Clear search"
                 >
-                  Cancel
+                  <X className="h-4 w-4" />
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                variant={isSelectionMode ? "default" : "outline"}
+                size="sm"
+                onClick={toggleSelectionMode}
+                className="rounded-full"
+              >
+                {isSelectionMode ? "Done managing" : "Manage"}
+              </Button>
+              {isSelectionMode ? (
+                <>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {selectedLedgers.size} selected
+                  </span>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleMassDeleteClick}
+                    disabled={selectedLedgers.size === 0}
+                    className="rounded-full"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete selected
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Tap a ledger to open it.
+                </p>
+              )}
+            </div>
           </div>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".json,.lock"
+          />
+          <input
+            type="file"
+            ref={csvFileInputRef}
+            onChange={handleCSVFileChange}
+            className="hidden"
+            accept=".csv"
+          />
 
           <div
             className={cn(
               "tour-ledger-list",
               filteredLedgers.length === 0 && ledgers.length > 0
-                ? "text-center text-muted-foreground py-10"
-                : ledgers.length === 0
-                  ? "flex justify-center"
-                  : "grid grid-cols-1 md:grid-cols-2 gap-3",
+                ? "py-10 text-center text-muted-foreground"
+                : "space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0",
             )}
           >
             {filteredLedgers.length === 0 && ledgers.length > 0 && (
@@ -565,178 +660,178 @@ const LedgerEntryPage = () => {
             {filteredLedgers.map((ledger) => {
               const isSelected = selectedLedgers.has(ledger.id);
               return (
-                <div key={ledger.id} className="relative group/card">
-                  {/* Selection Checkbox (Visible on hover or if selected) */}
-                  <div
-                    className={`absolute top-3 right-3 z-20 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover/card:opacity-100"}`}
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={(c) =>
-                        handleToggleSelect(ledger.id, c as boolean)
-                      }
-                      className="h-5 w-5 bg-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground border-primary/50"
-                    />
-                  </div>
+                <ThemedCard
+                  key={ledger.id}
+                  className={cn(
+                    "group/card cursor-pointer rounded-2xl border-emerald-200 bg-gradient-to-br from-emerald-50/90 via-white to-white dark:border-emerald-900/50 dark:from-emerald-950/30 dark:via-slate-950 dark:to-slate-950",
+                    "shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:hover:bg-emerald-900/35",
+                    isSelected &&
+                      "border-emerald-500 bg-emerald-100/80 dark:bg-emerald-900/60",
+                  )}
+                  onClick={() => handleSelectLedger(ledger.id)}
+                >
+                  <ThemedCardContent className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      {isSelectionMode && (
+                        <div
+                          className="pt-1"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) =>
+                              handleToggleSelect(ledger.id, checked as boolean)
+                            }
+                            className="h-5 w-5 border-primary/50 bg-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                          />
+                        </div>
+                      )}
 
-                  <ThemedCard
-                    className={`cursor-pointer transition-all bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 group h-full ${isSelected ? "border-emerald-500 bg-emerald-100 dark:bg-emerald-900/60" : "border-emerald-200 dark:border-emerald-900/50"}`}
-                    onClick={() => handleSelectLedger(ledger.id)}
-                  >
-                    <ThemedCardHeader className="flex flex-row items-center gap-3 pb-1 space-y-0 pr-10">
-                      <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
                         {getIcon(ledger.icon)}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <ThemedCardTitle className="text-xl text-emerald-800 dark:text-emerald-300">
-                            {ledger.name}
-                          </ThemedCardTitle>
-                          {/* Delete Button (Visible on hover, if not selected mode maybe? Let's just put it next to title or separate) */}
-                        </div>
-                        <ThemedCardDescription className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded-sm inline-block mt-1">
-                          {ledger.currency}
-                        </ThemedCardDescription>
-                      </div>
 
-                      {/* Delete Individual Action */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity h-10 w-10 p-2"
-                        onClick={(e) => handleDeleteClick(ledger.id, e)}
-                        title="Delete Ledger"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </ThemedCardHeader>
-                    <ThemedCardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground">
-                        {ledger.short_name ? `(${ledger.short_name})` : ""}
-                        <span className="block mt-1 text-xs opacity-70">
-                          Last:{" "}
-                          {ledger.last_accessed
-                            ? new Date(
-                                ledger.last_accessed,
-                              ).toLocaleDateString()
-                            : "Never"}
-                        </span>
-                      </p>
-                    </ThemedCardContent>
-                  </ThemedCard>
-                </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h2 className="truncate text-lg font-semibold text-emerald-900 dark:text-emerald-200">
+                              {ledger.name}
+                            </h2>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {ledger.short_name && (
+                                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200">
+                                  {ledger.short_name}
+                                </span>
+                              )}
+                              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                                {ledger.currency}
+                              </span>
+                            </div>
+                          </div>
+
+                          {!isSelectionMode && (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hidden h-9 w-9 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
+                                onClick={(event) =>
+                                  handleDeleteClick(ledger.id, event)
+                                }
+                                title="Delete Ledger"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white/80 text-emerald-700 dark:border-emerald-800 dark:bg-slate-950/70 dark:text-emerald-300">
+                                <ChevronRight className="h-4 w-4" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-4 flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80 dark:text-emerald-300/80">
+                              Last opened
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {formatLastAccessed(ledger.last_accessed)}
+                            </p>
+                          </div>
+                          {isSelectionMode && (
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {isSelected ? "Selected" : "Tap to select"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </ThemedCardContent>
+                </ThemedCard>
               );
             })}
 
             <ThemedCard
-              className={`tour-create-ledger cursor-pointer border-dashed border-2 hover:border-emerald-500 hover:bg-emerald-100/30 dark:hover:bg-emerald-900/30 transition-all flex items-center justify-center p-5 min-h-[124px] ${
+              className={cn(
+                "tour-create-ledger cursor-pointer rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 transition-all hover:border-emerald-500 hover:bg-emerald-100/40 dark:border-emerald-800 dark:bg-emerald-950/15 dark:hover:bg-emerald-900/25",
                 filteredLedgers.length === 0 && ledgers.length > 0
-                  ? "col-span-1 md:col-span-2 mx-auto w-full max-w-md"
-                  : ""
-              } border-emerald-300 dark:border-emerald-800 bg-emerald-50/10 dark:bg-emerald-950/10`}
+                  ? "mx-auto w-full max-w-md md:col-span-2"
+                  : "",
+              )}
               onClick={() => setIsCreateOpen(true)}
             >
-              <div className="flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                <Plus className="h-8 w-8" />
-                <span className="font-semibold">Create New Ledger</span>
-              </div>
+              <ThemedCardContent className="flex items-center gap-4 p-4 sm:p-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-base font-semibold text-foreground">
+                    Create new ledger
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Separate personal, family, or business budgets cleanly.
+                  </p>
+                </div>
+              </ThemedCardContent>
             </ThemedCard>
           </div>
 
-          {/* Import Backup Controls */}
-          {ledgers.length === 0 && (
-            <>
-              <div className="tour-import-backup w-full flex flex-col justify-center items-center mt-4 gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".json,.lock"
-                />
-                <input
-                  type="file"
-                  ref={csvFileInputRef}
-                  onChange={handleCSVFileChange}
-                  className="hidden"
-                  accept=".csv"
-                />
-                <Button
-                  variant="ghost"
-                  className="text-muted-foreground hover:text-primary"
-                  onClick={handleImportClick}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import Backup (JSON / Encrypted)
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="text-muted-foreground hover:text-primary"
-                  onClick={handleImportCSVClick}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Import Transactions CSV (Experimental)
-                </Button>
-              </div>
-              <div className="w-full flex justify-center mt-2">
-                <Button
-                  onClick={() => setIsGenerateConfirmOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Generate Data
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="tour-import-backup rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/40">
+            <div className="mb-3">
+              <h2 className="text-base font-semibold">Import and setup</h2>
+              <p className="text-sm text-muted-foreground">
+                Bring in a backup, start from CSV, or load demo data for
+                testing.
+              </p>
+            </div>
 
-          {ledgers.length > 0 && (
-            <>
-              <div className="tour-import-backup flex flex-col justify-center items-center pt-5 gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".json,.lock"
-                />
-                <input
-                  type="file"
-                  ref={csvFileInputRef}
-                  onChange={handleCSVFileChange}
-                  className="hidden"
-                  accept=".csv"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleImportClick}
-                  className="text-muted-foreground hover:text-primary w-full max-w-xs"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import Backup
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleImportCSVClick}
-                  className="text-muted-foreground hover:text-primary w-full max-w-xs"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Import Transactions CSV
-                </Button>
-              </div>
-              <div className="flex justify-center mt-2">
-                <Button
-                  onClick={() => setIsGenerateConfirmOpen(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Generate Data
-                </Button>
-              </div>
-            </>
-          )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                variant="outline"
+                onClick={handleImportClick}
+                className="h-auto justify-start rounded-xl px-4 py-4 text-left whitespace-normal"
+              >
+                <Upload className="mt-0.5 h-5 w-5" />
+                <span className="min-w-0">
+                  <span className="block font-semibold">Import backup</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Restore a JSON or encrypted export.
+                  </span>
+                </span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleImportCSVClick}
+                className="h-auto justify-start rounded-xl px-4 py-4 text-left whitespace-normal"
+              >
+                <FileText className="mt-0.5 h-5 w-5" />
+                <span className="min-w-0">
+                  <span className="block font-semibold">
+                    Import transactions CSV
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Map columns with a mobile-friendly import flow.
+                  </span>
+                </span>
+              </Button>
+
+              <Button
+                onClick={() => setIsGenerateConfirmOpen(true)}
+                className="h-auto justify-start rounded-xl bg-indigo-600 px-4 py-4 text-left text-white hover:bg-indigo-700 whitespace-normal sm:col-span-2"
+              >
+                <RotateCcw className="mt-0.5 h-5 w-5" />
+                <span className="min-w-0">
+                  <span className="block font-semibold">
+                    Generate demo data
+                  </span>
+                  <span className="block text-xs text-indigo-100">
+                    Populate the app quickly when you want sample ledgers.
+                  </span>
+                </span>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

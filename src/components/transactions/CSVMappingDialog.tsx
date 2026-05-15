@@ -204,125 +204,136 @@ const CSVMappingDialog = ({
     onClose();
   };
 
+  const previewRows = csvData.slice(0, 3);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="w-[calc(100%-1rem)] max-w-3xl gap-0 overflow-hidden rounded-2xl p-0">
+        <DialogHeader className="border-b px-4 pb-3 pt-4 sm:px-6">
           <DialogTitle>
             {step === "config" ? "Import Settings" : "Map Columns"}
           </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {step === "config"
+              ? "Choose how the CSV should be read before importing it."
+              : "Match each Vaulted Money field to the correct CSV column."}
+          </p>
         </DialogHeader>
 
-        <div className="py-4 space-y-6">
+        <div className="max-h-[calc(100dvh-10rem)] overflow-y-auto px-4 py-4 sm:px-6">
           {step === "config" && (
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label>CSV Delimiter</Label>
-                <Select
-                  value={config.delimiter}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({ ...prev, delimiter: val }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=",">Comma (,)</SelectItem>
-                    <SelectItem value=";">Semicolon (;)</SelectItem>
-                    <SelectItem value="\t">Tab (\t)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>CSV Delimiter</Label>
+                  <Select
+                    value={config.delimiter}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({ ...prev, delimiter: val }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=",">Comma (,)</SelectItem>
+                      <SelectItem value=";">Semicolon (;)</SelectItem>
+                      <SelectItem value="\t">Tab (\t)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label>Date Format (in CSV)</Label>
-                <Select
-                  value={config.dateFormat}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({ ...prev, dateFormat: val }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto-detect</SelectItem>
-                    <SelectItem value="d/M/yyyy">
-                      Day/Month/Year (e.g. 31/01/2024)
-                    </SelectItem>
-                    <SelectItem value="M/d/yyyy">
-                      Month/Day/Year (e.g. 01/31/2024)
-                    </SelectItem>
-                    <SelectItem value="yyyy-MM-dd">
-                      Year-Month-Day (e.g. 2024-01-31)
-                    </SelectItem>
-                    <SelectItem value="d.M.yyyy">
-                      Day.Month.Year (e.g. 31.01.2024)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label>Date Format (in CSV)</Label>
+                  <Select
+                    value={config.dateFormat}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({ ...prev, dateFormat: val }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                      <SelectItem value="d/M/yyyy">
+                        Day/Month/Year (e.g. 31/01/2024)
+                      </SelectItem>
+                      <SelectItem value="M/d/yyyy">
+                        Month/Day/Year (e.g. 01/31/2024)
+                      </SelectItem>
+                      <SelectItem value="yyyy-MM-dd">
+                        Year-Month-Day (e.g. 2024-01-31)
+                      </SelectItem>
+                      <SelectItem value="d.M.yyyy">
+                        Day.Month.Year (e.g. 31.01.2024)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label>Decimal Format</Label>
-                <Select
-                  value={config.decimalSeparator}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      decimalSeparator: val as "." | ",",
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=".">1,234.56 (Dot decimal)</SelectItem>
-                    <SelectItem value=",">1.234,56 (Comma decimal)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="grid gap-2">
+                  <Label>Decimal Format</Label>
+                  <Select
+                    value={config.decimalSeparator}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        decimalSeparator: val as "." | ",",
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=".">1,234.56 (Dot decimal)</SelectItem>
+                      <SelectItem value=",">
+                        1.234,56 (Comma decimal)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label>Amount Sign Convention</Label>
-                <Select
-                  value={config.expenseSign}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      expenseSign: val as "negative" | "positive",
-                    }))
-                  }
-                  disabled={hasNegativeValues}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="negative">
-                      Negative is Expense (-100)
-                    </SelectItem>
-                    <SelectItem value="positive">
-                      Positive is Expense (100)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {hasNegativeValues
-                    ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
-                    : config.expenseSign === "positive"
-                      ? "Expenses entered as positive numbers"
-                      : "Expenses entered as negative numbers"}
-                </p>
+                <div className="grid gap-2">
+                  <Label>Amount Sign Convention</Label>
+                  <Select
+                    value={config.expenseSign}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        expenseSign: val as "negative" | "positive",
+                      }))
+                    }
+                    disabled={hasNegativeValues}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="negative">
+                        Negative is Expense (-100)
+                      </SelectItem>
+                      <SelectItem value="positive">
+                        Positive is Expense (100)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {hasNegativeValues
+                      ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
+                      : config.expenseSign === "positive"
+                        ? "Expenses entered as positive numbers"
+                        : "Expenses entered as negative numbers"}
+                  </p>
+                </div>
               </div>
 
               {!isNewLedger && (
                 <div className="grid gap-2">
                   <Label>Import Mode</Label>
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex items-start gap-3 rounded-xl border border-border/70 px-3 py-3 transition-colors hover:border-primary/40">
                       <input
                         type="radio"
                         id="append"
@@ -337,14 +348,16 @@ const CSVMappingDialog = ({
                         }
                         className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                       />
-                      <Label
-                        htmlFor="append"
-                        className="font-normal cursor-pointer"
-                      >
-                        Append to existing
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                      <span className="space-y-1">
+                        <span className="block font-medium text-foreground">
+                          Append to existing
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Keep current transactions and add the new rows.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 rounded-xl border border-border/70 px-3 py-3 transition-colors hover:border-primary/40">
                       <input
                         type="radio"
                         id="replace"
@@ -359,13 +372,15 @@ const CSVMappingDialog = ({
                         }
                         className="h-4 w-4 border-gray-300 text-primary focus:ring-primary"
                       />
-                      <Label
-                        htmlFor="replace"
-                        className="font-normal cursor-pointer"
-                      >
-                        Replace existing
-                      </Label>
-                    </div>
+                      <span className="space-y-1">
+                        <span className="block font-medium text-foreground">
+                          Replace existing
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Clear the destination before importing the CSV.
+                        </span>
+                      </span>
+                    </label>
                   </div>
                 </div>
               )}
@@ -374,31 +389,60 @@ const CSVMappingDialog = ({
                 <Label className="mb-2 block">
                   Available Data Preview (First 3 rows)
                 </Label>
-                {csvData.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="text-xs w-full text-left">
-                      <thead>
-                        <tr className="border-b">
-                          {csvHeaders.map((h) => (
-                            <th key={h} className="p-1 font-medium">
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {csvData.slice(0, 3).map((row, i) => (
-                          <tr key={i} className="border-b last:border-0">
+                {previewRows.length > 0 ? (
+                  <>
+                    <div className="space-y-3 md:hidden">
+                      {previewRows.map((row, rowIndex) => (
+                        <div
+                          key={rowIndex}
+                          className="rounded-xl border bg-background/80 p-3"
+                        >
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                            Row {rowIndex + 1}
+                          </p>
+                          <div className="space-y-2">
+                            {csvHeaders.map((header) => (
+                              <div
+                                key={`${rowIndex}-${header}`}
+                                className="grid gap-1"
+                              >
+                                <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                                  {header}
+                                </span>
+                                <span className="break-words text-sm text-foreground">
+                                  {String(row[header] ?? "") || "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="hidden overflow-x-auto md:block">
+                      <table className="text-xs w-full text-left">
+                        <thead>
+                          <tr className="border-b">
                             {csvHeaders.map((h) => (
-                              <td key={h} className="p-1 whitespace-nowrap">
-                                {String(row[h] ?? "")}
-                              </td>
+                              <th key={h} className="p-1 font-medium">
+                                {h}
+                              </th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {previewRows.map((row, i) => (
+                            <tr key={i} className="border-b last:border-0">
+                              {csvHeaders.map((h) => (
+                                <td key={h} className="p-1 whitespace-nowrap">
+                                  {String(row[h] ?? "")}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-xs text-muted-foreground p-2 text-center">
                     {isLoading ? "Reading..." : "No data properly parsed."}
@@ -426,10 +470,10 @@ const CSVMappingDialog = ({
                 {requiredHeaders.map((header) => (
                   <div
                     key={header}
-                    className="grid grid-cols-3 items-center gap-4"
+                    className="rounded-xl border border-border/70 bg-background/70 p-3 sm:grid sm:grid-cols-[minmax(0,10rem)_1fr] sm:items-center sm:gap-4"
                   >
-                    <Label className="col-span-1">{header}</Label>
-                    <div className="col-span-2">
+                    <Label className="mb-2 sm:mb-0">{header}</Label>
+                    <div>
                       <Select
                         value={mapping[header] || ""}
                         onValueChange={(value) =>
@@ -455,24 +499,46 @@ const CSVMappingDialog = ({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+        <DialogFooter className="border-t px-4 py-4 sm:px-6">
           {step === "config" ? (
-            <Button
-              onClick={() => handleParse(true)}
-              disabled={!file || isLoading}
-            >
-              {isLoading ? "Reading..." : "Next"}
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep("config")}>
-                Back
+            <>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Cancel
               </Button>
-              <Button onClick={handleConfirm}>Import Transactions</Button>
-            </div>
+              <Button
+                onClick={() => handleParse(true)}
+                disabled={!file || isLoading}
+                className="w-full sm:w-auto"
+              >
+                {isLoading ? "Reading..." : "Next"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep("config")}
+                  className="w-full sm:w-auto"
+                >
+                  Back
+                </Button>
+                <Button onClick={handleConfirm} className="w-full sm:w-auto">
+                  Import Transactions
+                </Button>
+              </div>
+            </>
           )}
         </DialogFooter>
       </DialogContent>

@@ -184,8 +184,8 @@ export const SearchFilterBar = () => {
       <ActiveFiltersDisplay />
 
       {/* Additional Controls */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2">
           <Switch
             id="exclude-transfers"
             checked={excludeTransfers}
@@ -196,7 +196,7 @@ export const SearchFilterBar = () => {
           />
           <label
             htmlFor="exclude-transfers"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700 dark:text-slate-300"
+            className="min-w-0 text-sm font-medium leading-none text-slate-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-slate-300"
           >
             {t("filters.searchBar.excludeTransfers", {
               defaultValue: "Exclude Transfers",
@@ -208,7 +208,7 @@ export const SearchFilterBar = () => {
           variant="outline"
           size="sm"
           onClick={handleReset}
-          className="h-8"
+          className="h-9 w-full justify-center sm:h-8 sm:w-auto"
         >
           <RefreshCw className="mr-2 h-3 w-3" />
           {t("filters.searchBar.reset", { defaultValue: "Reset" })}

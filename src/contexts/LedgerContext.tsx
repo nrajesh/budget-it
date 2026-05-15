@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { Ledger } from "@/types/dataProvider";
@@ -17,6 +18,7 @@ interface LedgerContextType {
   ledgers: Ledger[];
   isLoading: boolean;
   switchLedger: (ledgerId: string, directLedger?: Ledger) => Promise<void>;
+  logout: () => void;
   createLedger: (
     name: string,
     currency: string,
@@ -40,6 +42,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
   const [activeLedger, setActiveLedger] = useState<Ledger | null>(null);
   const [ledgers, setLedgers] = useState<Ledger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isLoggingOutRef = useRef(false);
 
   const refreshLedgers = useCallback(async () => {
     // We use dataProvider directly or db? dataProvider has getLedgers
@@ -106,6 +109,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     // If directLedger is provided (e.g. just created), use it directly to avoid stale state issues
     const target = directLedger || ledgers.find((l) => l.id === ledgerId);
     if (target) {
+      isLoggingOutRef.current = false;
       setIsLoading(true);
 
       try {
@@ -132,12 +136,25 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
         // Clear logout flag as we are now entering a ledger
         localStorage.removeItem("userLoggedOut");
 
-        navigateAppPath("/dashboard");
+        if (!isLoggingOutRef.current) {
+          navigateAppPath("/dashboard");
+        }
       } finally {
-        setIsLoading(false);
+        if (!isLoggingOutRef.current) {
+          setIsLoading(false);
+        }
       }
     }
   };
+
+  const logout = useCallback(() => {
+    isLoggingOutRef.current = true;
+    setActiveLedger(null);
+    setIsLoading(false);
+    localStorage.removeItem("activeLedgerId");
+    localStorage.setItem("userLoggedOut", "true");
+    navigateAppPath("/ledgers");
+  }, []);
 
   const createLedger = async (
     name: string,
@@ -145,17 +162,35 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
     icon?: string,
     shortName?: string /*, startFromScratch: boolean = true */,
   ) => {
-    const newLedger = await dataProvider.addLedger({
-      name,
-      currency,
-      icon,
-      short_name: shortName,
-    });
+    let newLedger: Ledger;
+
+    try {
+      newLedger = await dataProvider.addLedger({
+        name,
+        currency,
+        icon,
+        short_name: shortName,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown storage error";
+      throw new Error(`Failed to create ledger record: ${message}`, {
+        cause: error,
+      });
+    }
 
     // if (!startFromScratch) { ... }
 
     // No need to refreshLedgers() here because switchLedger updates the active context.
-    await switchLedger(newLedger.id, newLedger);
+    try {
+      await switchLedger(newLedger.id, newLedger);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown navigation error";
+      throw new Error(`Ledger was created, but opening it failed: ${message}`, {
+        cause: error,
+      });
+    }
   };
 
   const updateLedgerDetails = async (
@@ -190,6 +225,7 @@ export const LedgerProvider = ({ children }: { children: ReactNode }) => {
         ledgers,
         isLoading,
         switchLedger,
+        logout,
         createLedger,
         updateLedgerDetails,
         deleteLedger,

@@ -52,7 +52,7 @@ export function Combobox({
   }, [selectedOption, value]);
 
   return (
-    <div className={className}>
+    <div className={cn("min-w-0", className)}>
       <Command className="overflow-visible bg-transparent">
         <div
           className={cn(
@@ -60,7 +60,7 @@ export function Combobox({
             disabled && "opacity-50 cursor-not-allowed",
           )}
         >
-          <div className="flex flex-wrap gap-1">
+          <div className="flex min-w-0 flex-wrap gap-1">
             <CommandPrimitive.Input
               id={inputId}
               aria-label={ariaLabel}
@@ -105,7 +105,7 @@ export function Combobox({
               }}
               placeholder={searchPlaceholder || placeholder}
               disabled={disabled}
-              className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground ml-1"
+              className="ml-1 min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
             />
           </div>
         </div>
