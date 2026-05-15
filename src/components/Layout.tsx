@@ -2,7 +2,6 @@ import * as React from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { navigateAppPath } from "@/utils/navigation";
 import {
   LayoutGrid,
   BarChart3,
@@ -34,6 +33,8 @@ import {
   PiggyBank,
   Brain,
   HelpCircle,
+  LogOut,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,6 +86,7 @@ import { LanguageIcon } from "@/components/language/LanguageIcon";
 import { FeedbackLauncher } from "@/components/feedback/FeedbackLauncher";
 import SiteFooter from "@/components/SiteFooter";
 import BrandLockup from "@/components/BrandLockup";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PinTrigger = () => {
   const { state, toggleSidebar } = useSidebar();
@@ -132,11 +134,289 @@ const MobileSidebarCloser = () => {
   return null;
 };
 
+type SidebarLedgerFooterProps = {
+  activeLedgerId?: string;
+  avatarFallback: React.ReactNode;
+  displayEmail: string;
+  displayName: string;
+  ledgers: Array<{
+    id: string;
+    name: string;
+    short_name?: string;
+  }>;
+  logout: () => void;
+  switchLedger: (ledgerId: string) => Promise<void>;
+  t: ReturnType<typeof useTranslation>["t"];
+};
+
+const SidebarLedgerFooter = ({
+  activeLedgerId,
+  avatarFallback,
+  displayEmail,
+  displayName,
+  ledgers,
+  logout,
+  switchLedger,
+  t,
+}: SidebarLedgerFooterProps) => {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const [mobileLedgersOpen, setMobileLedgersOpen] = React.useState(false);
+
+  const handleSwitchLedger = async (ledgerId: string) => {
+    await switchLedger(ledgerId);
+    setMobileLedgersOpen(false);
+    setOpenMobile(false);
+  };
+
+  const handleLogout = () => {
+    setMobileLedgersOpen(false);
+    setOpenMobile(false);
+    logout();
+  };
+
+  if (isMobile) {
+    return (
+      <div className="border-t border-sidebar-border/70 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+        <Collapsible
+          open={mobileLedgersOpen}
+          onOpenChange={setMobileLedgersOpen}
+        >
+          <div className="rounded-2xl border border-sidebar-border/70 bg-sidebar-accent/30 p-2">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-3 text-left hover:bg-sidebar-accent/80"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-accent text-sidebar-accent-foreground">
+                  {avatarFallback}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold">
+                    {displayName}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {displayEmail}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
+                    mobileLedgersOpen && "rotate-180",
+                  )}
+                />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 px-1 pb-1 pt-2">
+              <p className="px-2 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {t("layout.nav.myLedgers", { defaultValue: "My Ledgers" })}
+              </p>
+              {ledgers.map((ledger) => (
+                <Button
+                  key={ledger.id}
+                  variant={activeLedgerId === ledger.id ? "secondary" : "ghost"}
+                  className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-3 text-left"
+                  onClick={() => void handleSwitchLedger(ledger.id)}
+                >
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center text-sm",
+                      activeLedgerId === ledger.id
+                        ? "opacity-100"
+                        : "opacity-30",
+                    )}
+                  >
+                    ✓
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-base font-medium">
+                      {ledger.name}
+                    </span>
+                    {ledger.short_name && (
+                      <span className="block truncate text-sm text-muted-foreground">
+                        {ledger.short_name}
+                      </span>
+                    )}
+                  </span>
+                </Button>
+              ))}
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="h-11 rounded-xl border-sidebar-border/70 bg-transparent text-sm"
+          >
+            <Link to="/settings" onClick={() => setOpenMobile(false)}>
+              <BookOpen className="h-4 w-4" />
+              {t("layout.nav.settings", { defaultValue: "Settings" })}
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 rounded-xl border-sidebar-border/70 bg-transparent text-sm"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            {t("layout.nav.logout", { defaultValue: "Log out" })}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="h-auto w-full justify-start gap-2 p-2"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-primary">
+            {avatarFallback}
+          </div>
+          <div className="text-left flex-1 truncate group-data-[collapsible=icon]:hidden">
+            <p className="text-sm font-medium truncate">{displayName}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {displayEmail}
+            </p>
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50 group-data-[collapsible=icon]:hidden" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end">
+        <DropdownMenuLabel>
+          {t("layout.nav.myLedgers", { defaultValue: "My Ledgers" })}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          {ledgers.map((ledger) => (
+            <DropdownMenuItem
+              key={ledger.id}
+              onClick={() => switchLedger(ledger.id)}
+            >
+              <span
+                className={cn(
+                  "mr-2 flex h-4 w-4 items-center justify-center",
+                  activeLedgerId === ledger.id ? "opacity-100" : "opacity-0",
+                )}
+              >
+                ✓
+              </span>
+              <span>{ledger.name}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link to="/settings">
+            {t("layout.nav.settings", { defaultValue: "Settings" })}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={logout}>
+          {t("layout.nav.logout", { defaultValue: "Log out" })}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+type MobileHeaderActionsMenuProps = {
+  displayName: string;
+  hasTourForCurrentRoute: boolean;
+  logout: () => void;
+  resolvedTheme?: string;
+  setTheme: (theme: string) => void;
+  startTour: () => void;
+  t: ReturnType<typeof useTranslation>["t"];
+};
+
+const MobileHeaderActionsMenu = ({
+  displayName,
+  hasTourForCurrentRoute,
+  logout,
+  resolvedTheme,
+  setTheme,
+  startTour,
+  t,
+}: MobileHeaderActionsMenuProps) => {
+  const actionItemClassName =
+    "min-h-14 rounded-xl px-4 py-3 text-[1.05rem] font-medium text-foreground gap-3";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+          <span className="sr-only">More actions</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="w-[min(100vw-1.5rem,20rem)] rounded-2xl p-2 shadow-xl"
+      >
+        <div className="rounded-xl px-3 py-3">
+          <p className="truncate text-lg font-semibold text-foreground">
+            {displayName}
+          </p>
+          <p className="text-sm text-muted-foreground">Quick actions</p>
+        </div>
+        <DropdownMenuSeparator className="mx-1" />
+        <DropdownMenuItem asChild className={actionItemClassName}>
+          <Link to="/">
+            <Home className="h-5 w-5" />
+            {t("home.actions.home", { defaultValue: "Home" })}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className={actionItemClassName}>
+          <Link to="/language">
+            <LanguageIcon className="h-5 w-5" />
+            {t("layout.nav.languages", { defaultValue: "Languages" })}
+          </Link>
+        </DropdownMenuItem>
+        {hasTourForCurrentRoute && (
+          <DropdownMenuItem onClick={startTour} className={actionItemClassName}>
+            <HelpCircle className="h-5 w-5" />
+            {t("helpTour.start", { defaultValue: "Start help tour" })}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className={actionItemClassName}
+        >
+          {resolvedTheme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+          {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="mx-1" />
+        <DropdownMenuItem onClick={logout} className={actionItemClassName}>
+          <LogOut className="h-5 w-5" />
+          {t("layout.nav.logout", { defaultValue: "Log out" })}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 const Layout = () => {
   const { t } = useTranslation();
   const { setTheme, resolvedTheme } = useTheme();
   // const { user, userProfile, isLoadingUser } = useUser();
-  const { activeLedger, ledgers, switchLedger, isLoading } = useLedger();
+  const { activeLedger, ledgers, switchLedger, logout, isLoading } =
+    useLedger();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -150,56 +430,6 @@ const Layout = () => {
 
   // Initialize default account selection globally
   useDefaultAccountSelection();
-
-  const getPageTitle = (pathname: string) => {
-    if (pathname.startsWith("/reports/essential")) {
-      return t("layout.nav.reportsEssential", { defaultValue: "Essential" });
-    }
-    if (pathname.startsWith("/reports/advanced")) {
-      return t("layout.nav.reportsAdvanced", { defaultValue: "Advanced" });
-    }
-    switch (pathname) {
-      case "/dashboard":
-        return t("layout.nav.dashboard", { defaultValue: "Dashboard" });
-      case "/calendar":
-        return t("layout.nav.calendar", { defaultValue: "Calendar" });
-      case "/transactions":
-        return t("layout.nav.transactions", { defaultValue: "Transactions" });
-      case "/analytics":
-        return t("layout.nav.analytics", { defaultValue: "Analytics" });
-      case "/insights":
-        return t("layout.nav.insights", { defaultValue: "Insights" });
-      case "/settings":
-        return t("layout.nav.ledger", { defaultValue: "Ledger" });
-      case "/language":
-        return t("layout.nav.languages", { defaultValue: "Languages" });
-      case "/data-management":
-        return t("layout.nav.data", { defaultValue: "Data" });
-      case "/vendors":
-        return t("layout.nav.vendors", { defaultValue: "Vendors" });
-      case "/currencies":
-        return t("layout.nav.currencies", { defaultValue: "Currencies" });
-      case "/accounts":
-        return t("layout.nav.accounts", { defaultValue: "Accounts" });
-      case "/categories":
-        return t("layout.nav.categories", { defaultValue: "Categories" });
-      case "/scheduled":
-        return t("layout.nav.scheduled", { defaultValue: "Scheduled" });
-      case "/budgets":
-        return t("layout.nav.budgets", { defaultValue: "Budgets" });
-      case "/ai-providers":
-        return t("layout.nav.aiProviders", { defaultValue: "AI Providers" });
-      case "/backup":
-        return t("layout.nav.backup", { defaultValue: "Backup" });
-      case "/donate":
-        return t("layout.nav.donate", { defaultValue: "Donate" });
-      default:
-        return "Page Not Found";
-    }
-  };
-
-  const pageTitle = getPageTitle(location.pathname);
-  const showMobilePageTitle = location.pathname === "/ledgers";
 
   const displayName = activeLedger?.name || "Select Ledger";
   const displayEmail = activeLedger?.short_name || "Budget";
@@ -229,8 +459,10 @@ const Layout = () => {
         <SidebarHeader className="pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between gap-2 px-1 group-data-[collapsible=icon]:justify-center">
             <BrandLockup
-              size="sidebar"
+              size={isMobile ? "mobile" : "sidebar"}
               className="group-data-[collapsible=icon]:gap-0"
+              iconWrapperClassName="group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
+              imageClassName="group-data-[collapsible=icon]:scale-[2.35]"
               nameClassName="group-data-[collapsible=icon]:hidden"
             />
             <PinTrigger />
@@ -542,78 +774,42 @@ const Layout = () => {
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="h-auto w-full justify-start gap-2 p-2"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg text-primary">
-                  {typeof avatarFallback === "string"
-                    ? avatarFallback
-                    : avatarFallback}
-                </div>
-                <div className="text-left flex-1 truncate group-data-[collapsible=icon]:hidden">
-                  <p className="text-sm font-medium truncate">{displayName}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {displayEmail}
-                  </p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground opacity-50 group-data-[collapsible=icon]:hidden" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
-              <DropdownMenuLabel>
-                {t("layout.nav.myLedgers", { defaultValue: "My Ledgers" })}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                {ledgers.map((l) => (
-                  <DropdownMenuItem
-                    key={l.id}
-                    onClick={() => switchLedger(l.id)}
-                  >
-                    <span
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center",
-                        activeLedger?.id === l.id ? "opacity-100" : "opacity-0",
-                      )}
-                    >
-                      ✓
-                    </span>
-                    <span>{l.name}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-
-              <DropdownMenuItem asChild>
-                <Link to="/settings">
-                  {t("layout.nav.settings", { defaultValue: "Settings" })}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  localStorage.removeItem("activeLedgerId");
-                  localStorage.setItem("userLoggedOut", "true");
-                  navigateAppPath("/ledgers");
-                }}
-              >
-                {t("layout.nav.logout", { defaultValue: "Log out" })}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SidebarLedgerFooter
+            activeLedgerId={activeLedger?.id}
+            avatarFallback={avatarFallback}
+            displayEmail={displayEmail}
+            displayName={displayName}
+            ledgers={ledgers}
+            logout={logout}
+            switchLedger={switchLedger}
+            t={t}
+          />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col bg-background">
         <header className="flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between border-b bg-background px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="sm:hidden" />
-            {showMobilePageTitle && (
-              <h1 className="text-lg font-semibold sm:text-xl">{pageTitle}</h1>
-            )}
+          <div className="flex min-w-0 items-center gap-3">
+            <SidebarTrigger className="h-10 w-10 rounded-full border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:hidden">
+              <img
+                src={
+                  resolvedTheme === "dark"
+                    ? "/logo-dark.png"
+                    : "/logo-light.png"
+                }
+                alt=""
+                className="h-7 w-7 object-contain"
+              />
+            </SidebarTrigger>
+            <div className="min-w-0 md:hidden">
+              <p className="truncate text-base font-semibold leading-tight">
+                Vaulted Money
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {displayName}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden items-center gap-2 sm:gap-4 md:flex">
             <Button
               asChild
               variant="ghost"
@@ -665,8 +861,20 @@ const Layout = () => {
             </Button>
             <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
           </div>
+          <div className="flex items-center gap-2 md:hidden">
+            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+            <MobileHeaderActionsMenu
+              displayName={displayName}
+              hasTourForCurrentRoute={hasTourForCurrentRoute}
+              logout={logout}
+              resolvedTheme={resolvedTheme}
+              setTheme={setTheme}
+              startTour={startTour}
+              t={t}
+            />
+          </div>
         </header>
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background pb-24 md:pb-0">
           <Outlet />
         </main>
         <SiteFooter />
@@ -674,7 +882,7 @@ const Layout = () => {
           <TooltipTrigger asChild>
             <Button
               onClick={() => setIsAddDialogOpen(true)}
-              className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-50 h-12 w-12 rounded-full px-0 shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white sm:bottom-6 sm:right-6 sm:h-14 sm:w-14"
               aria-label={t("layout.addTransaction", {
                 defaultValue: "Add Transaction",
               })}

@@ -126,15 +126,15 @@ const PrivacyPolicyPage = () => {
             </Link>
           </Button>
 
-          <div className="max-w-3xl">
+          <div className="max-w-6xl">
             <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               Privacy Policy
             </p>
-            <h1 className="app-gradient-title text-4xl font-black leading-[1.02] tracking-normal sm:text-5xl">
+            <h1 className="app-gradient-title max-w-4xl text-4xl font-black leading-[1.02] tracking-normal sm:text-5xl">
               How Vaulted Money handles your data
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-              Last updated on May 8, 2026. This policy is based on the current
+              Last updated on May 15, 2026. This policy is based on the current
               behavior of Vaulted Money as a local-first budgeting and finance
               app.
             </p>
@@ -144,6 +144,31 @@ const PrivacyPolicyPage = () => {
               categorization, some financial context can be sent directly from
               your device to the provider you choose.
             </p>
+            <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/35 dark:text-emerald-50">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/80 text-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-200">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold">
+                    Local-first privacy statement
+                  </h2>
+                  <p className="mt-2 text-sm leading-7">
+                    Vaulted Money is designed without centralized financial-data
+                    collection, without a required Vaulted Money sign-in, and
+                    without transfer of personally identifiable information to a
+                    Vaulted Money server. You keep ownership and control of the
+                    information you enter.
+                  </p>
+                  <p className="mt-2 text-sm leading-7">
+                    Vaulted Money does not claim ownership of, control, or
+                    accept responsibility for information you choose to share
+                    with any third-party app, browser extension, plugin, AI
+                    provider, storage service, or other external tool.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

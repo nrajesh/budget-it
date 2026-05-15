@@ -148,6 +148,54 @@ const commands = [
   },
 ];
 
+const roadmapMilestones = [
+  {
+    window: "August-September 2026",
+    title: "Native iOS and Android apps",
+    summary:
+      "Planned mobile releases will bring Vaulted Money into dedicated iPhone and Android app experiences while keeping the local-first model intact.",
+    label: "Planned",
+    status: "Next",
+    accent: "violet",
+  },
+  {
+    window: "May 2026",
+    title: "Privacy and public branding refresh",
+    summary:
+      "The public-facing experience expanded with a dedicated privacy page, updated branding, and sharper trust messaging for new users.",
+    label: "Current",
+    status: "Released",
+    accent: "emerald",
+  },
+  {
+    window: "April 2026",
+    title: "Vaulted Money brand and public homepage launch",
+    summary:
+      "The app was renamed to Vaulted Money, the public homepage landed, and the install story became much clearer for web and desktop users.",
+    label: "v1.5-v1.6",
+    status: "Released",
+    accent: "orange",
+  },
+  {
+    window: "March 2026",
+    title: "Language management and localization rollout",
+    summary:
+      "Multi-language support, language management UX, and broader translation coverage shipped as a major usability milestone.",
+    label: "v1.4 era",
+    status: "Released",
+    accent: "red",
+  },
+  {
+    window: "January 2026",
+    title: "Core local-first ledger release",
+    summary:
+      "The first tagged release established the web app foundation for ledgers, transactions, categories, budgets, and local data ownership.",
+    label: "v1.0.0",
+    status: "Released",
+    accent: "blue",
+  },
+] as const;
+
 const HomePage = () => {
   const { t } = useTranslation();
   const { setTheme, resolvedTheme } = useTheme();
@@ -169,12 +217,12 @@ const HomePage = () => {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background pt-20 text-foreground sm:pt-24">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 px-4 shadow-sm backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/90">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 sm:h-24">
+    <main className="min-h-screen overflow-x-hidden bg-background pt-16 text-foreground sm:pt-24">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 px-3 shadow-sm backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/90 sm:px-4">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 sm:h-24">
           <Link
             to="/"
-            className="flex min-w-0 items-center gap-3"
+            className="flex min-w-0 flex-1 items-center"
             aria-label="Vaulted Money home"
           >
             <BrandLockup size="header" />
@@ -194,6 +242,12 @@ const HomePage = () => {
               {t("home.nav.workflow", { defaultValue: "Workflow" })}
             </a>
             <a
+              href="#roadmap"
+              className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-slate-300 dark:hover:bg-rose-950/60 dark:hover:text-rose-200"
+            >
+              {t("home.nav.roadmap", { defaultValue: "Roadmap" })}
+            </a>
+            <a
               href="#install"
               className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-amber-50 hover:text-amber-800 dark:text-slate-300 dark:hover:bg-amber-950/60 dark:hover:text-amber-200"
             >
@@ -202,11 +256,13 @@ const HomePage = () => {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full border border-slate-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
+              className="h-9 w-9 rounded-full border border-slate-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800 sm:h-10 sm:w-10"
               onClick={() =>
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
               }
@@ -297,8 +353,8 @@ const HomePage = () => {
 
           <div className="relative">
             <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-200/70 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
+                <div className="flex min-w-0 items-center gap-2">
                   <img
                     src={
                       resolvedTheme === "dark"
@@ -308,14 +364,16 @@ const HomePage = () => {
                     alt=""
                     className="h-8 w-8 object-contain"
                   />
-                  <div>
-                    <p className="text-sm font-semibold">Ledger workspaces</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">
+                      Ledger workspaces
+                    </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Isolate accounts by person or purpose
                     </p>
                   </div>
                 </div>
-                <span className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-200">
+                <span className="hidden shrink-0 rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-200 sm:inline-flex">
                   Multi-currency
                 </span>
               </div>
@@ -324,7 +382,7 @@ const HomePage = () => {
                 {ledgerPreviewRows.map((ledger) => (
                   <div
                     key={ledger.name}
-                    className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/60"
+                    className="grid grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/60 sm:grid-cols-[2rem_minmax(0,1fr)_auto]"
                   >
                     <div
                       className={cn(
@@ -347,7 +405,7 @@ const HomePage = () => {
                         {ledger.scope}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="hidden text-right sm:block">
                       <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                         {ledger.currency}
                       </p>
@@ -504,23 +562,101 @@ const HomePage = () => {
         </div>
       </section>
 
-      <section className="px-4 py-10 sm:py-12">
+      <section
+        id="roadmap"
+        className="scroll-mt-24 border-y border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.98))] px-4 py-10 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.96))] sm:scroll-mt-28 sm:py-12"
+      >
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/60 dark:bg-amber-950/30">
-            <div className="grid gap-4 md:grid-cols-3">
-              {usageFundamentals.map((item) => (
-                <div key={item.title} className="flex gap-3">
-                  <item.icon className="mt-1 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
-                  <div>
-                    <h2 className="app-gradient-title text-base font-semibold">
-                      {item.title}
-                    </h2>
-                    <p className="mt-1 text-sm leading-6 text-amber-900/80 dark:text-amber-100/80">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <h2 className="app-gradient-title text-3xl font-bold tracking-normal sm:text-4xl">
+                {t("home.nav.roadmap", { defaultValue: "Roadmap" })}
+              </h2>
+              <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
+                Based on tagged releases and major shipped milestones so far,
+                with the next planned platform expansion penciled in for
+                August-September 2026.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,15rem)_1fr]">
+            <div className="rounded-xl border border-slate-200 bg-white/85 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/65">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                Snapshot
+              </p>
+              <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
+                5 milestones
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Four major items already shipped in 2026, with native iOS and
+                Android apps lined up next.
+              </p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-[1.1rem] top-0 bottom-0 hidden w-px bg-slate-200 dark:bg-slate-800 sm:block" />
+              <div className="space-y-4">
+                {roadmapMilestones.map((item) => (
+                  <article
+                    key={`${item.window}-${item.title}`}
+                    className="relative sm:pl-12"
+                  >
+                    <div
+                      className={cn(
+                        "absolute left-0 top-6 hidden h-9 w-9 items-center justify-center rounded-full border-4 border-white shadow-sm dark:border-slate-950 sm:flex",
+                        item.accent === "emerald" &&
+                          "bg-emerald-500 shadow-emerald-500/25",
+                        item.accent === "blue" &&
+                          "bg-blue-500 shadow-blue-500/25",
+                        item.accent === "orange" &&
+                          "bg-orange-500 shadow-orange-500/25",
+                        item.accent === "red" &&
+                          "bg-red-500 shadow-red-500/25",
+                        item.accent === "violet" &&
+                          "bg-violet-500 shadow-violet-500/25",
+                      )}
+                    />
+                    <div className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                            {item.window}
+                          </p>
+                          <h3 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-50">
+                            {item.title}
+                          </h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <span
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-semibold",
+                              item.accent === "red" &&
+                                "bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-200",
+                              item.accent === "orange" &&
+                                "bg-orange-100 text-orange-800 dark:bg-orange-950/70 dark:text-orange-200",
+                              item.accent === "blue" &&
+                                "bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-200",
+                              item.accent === "emerald" &&
+                                "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200",
+                              item.accent === "violet" &&
+                                "bg-violet-100 text-violet-800 dark:bg-violet-950/70 dark:text-violet-200",
+                            )}
+                          >
+                            {item.status}
+                          </span>
+                          <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                            {item.label}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300">
+                        {item.summary}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -585,6 +721,28 @@ const HomePage = () => {
                 </pre>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-10 sm:py-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 dark:border-amber-700/60 dark:bg-amber-950/30">
+            <div className="grid gap-4 md:grid-cols-3">
+              {usageFundamentals.map((item) => (
+                <div key={item.title} className="flex gap-3">
+                  <item.icon className="mt-1 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
+                  <div>
+                    <h2 className="app-gradient-title text-base font-semibold">
+                      {item.title}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-amber-900/80 dark:text-amber-100/80">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

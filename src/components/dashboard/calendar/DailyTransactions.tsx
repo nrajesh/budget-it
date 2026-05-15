@@ -48,9 +48,11 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
 
   if (!date) {
     return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle>Transaction Details</CardTitle>
+      <Card className="h-full overflow-hidden">
+        <CardHeader className="border-b border-border/60 pb-4">
+          <CardTitle className="text-lg sm:text-xl">
+            Transaction Details
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground flex items-center justify-center h-[200px]">
           Select a date to view transactions
@@ -61,12 +63,14 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
 
   return (
     <Card className="h-full flex flex-col overflow-hidden">
-      <CardHeader className="shrink-0">
-        <CardTitle>Transactions for {format(date, "MMMM d, yyyy")}</CardTitle>
+      <CardHeader className="shrink-0 border-b border-border/60 pb-4">
+        <CardTitle className="text-lg leading-tight sm:text-xl">
+          Transactions for {format(date, "MMMM d, yyyy")}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 p-0">
         <ScrollArea className="h-full">
-          <div className="space-y-4 p-4">
+          <div className="space-y-3 p-4 sm:space-y-4">
             {dailyTransactions.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 No transactions on this date.
@@ -82,7 +86,7 @@ export const DailyTransactions: React.FC<DailyTransactionsProps> = ({
                   <div
                     key={t.id}
                     className={cn(
-                      "flex flex-col space-y-2 p-4 border rounded-lg bg-card hover:bg-accent/50 transition-colors",
+                      "flex flex-col space-y-2 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/50",
                       isProjected &&
                         "opacity-70 italic text-slate-500 bg-slate-50/50 dark:bg-slate-900/50 border-dashed",
                     )}

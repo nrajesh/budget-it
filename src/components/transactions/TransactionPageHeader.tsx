@@ -29,7 +29,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-start gap-4">
+    <div className="flex w-full min-w-0 flex-col items-start gap-4 overflow-hidden">
       <div>
         <h1 className="app-gradient-title app-page-title">
           {t("transactions.header.title", { defaultValue: "Transactions" })}
@@ -40,8 +40,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           })}
         </p>
       </div>
-      <div className="app-action-panel">
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+      <div className="app-action-panel overflow-hidden">
+        <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:flex-wrap">
           <Input
             type="file"
             ref={fileInputRef as React.Ref<HTMLInputElement>}
@@ -52,7 +52,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           <Button
             variant="outline"
             onClick={onDetectTransfers}
-            className="justify-center sm:flex-none"
+            className="min-w-0 justify-center px-2 sm:flex-none sm:px-3"
             title={t("transactions.header.detectTransfers", {
               defaultValue: "Detect Transfers",
             })}
@@ -60,8 +60,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
               defaultValue: "Detect Transfers",
             })}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            <span className="text-sm">
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+            <span className="hidden text-sm sm:inline">
               {t("transactions.header.detectTransfers", {
                 defaultValue: "Detect Transfers",
               })}
@@ -70,7 +70,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           <Button
             variant="outline"
             onClick={onCleanUpDuplicates}
-            className="justify-center text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200 sm:flex-none dark:bg-amber-950/20 dark:hover:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+            className="min-w-0 justify-center bg-amber-50 px-2 text-amber-600 hover:bg-amber-100 hover:text-amber-700 border-amber-200 sm:flex-none sm:px-3 dark:bg-amber-950/20 dark:hover:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
             title={t("transactions.header.cleanupDuplicates", {
               defaultValue: "Cleanup Duplicates",
             })}
@@ -78,8 +78,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
               defaultValue: "Cleanup Duplicates",
             })}
           >
-            <Sparkles className="mr-2 h-4 w-4" />
-            <span className="text-sm">
+            <Sparkles className="h-4 w-4 sm:mr-2" />
+            <span className="hidden text-sm sm:inline">
               {t("transactions.header.cleanupDuplicates", {
                 defaultValue: "Cleanup Duplicates",
               })}
@@ -90,7 +90,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
               variant="outline"
               onClick={onBulkCategorize}
               disabled={!isBulkCategorizeEnabled}
-              className="tour-bulk-categorize col-span-2 justify-center text-purple-600 hover:text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-200 sm:col-span-1 sm:flex-none dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
+              className="tour-bulk-categorize min-w-0 justify-center bg-purple-50 px-2 text-purple-600 hover:bg-purple-100 hover:text-purple-700 border-purple-200 sm:flex-none sm:px-3 dark:bg-purple-950/20 dark:hover:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800"
               title={t("transactions.header.categorizeMissing", {
                 defaultValue: "Categorize Missing",
               })}
@@ -98,8 +98,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
                 defaultValue: "Categorize Missing",
               })}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
-              <span className="text-sm">
+              <Sparkles className="h-4 w-4 sm:mr-2" />
+              <span className="hidden text-sm sm:inline">
                 {t("transactions.header.categorizeMissing", {
                   defaultValue: "Categorize Missing",
                 })}
@@ -109,7 +109,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           <Button
             variant="outline"
             onClick={onImportClick}
-            className="justify-center border-slate-300 hover:border-slate-400 hover:bg-slate-100 sm:flex-none dark:border-slate-700 dark:hover:border-sky-500/70 dark:hover:bg-sky-950/40 dark:hover:text-sky-100"
+            className="min-w-0 justify-center border-slate-300 px-2 hover:border-slate-400 hover:bg-slate-100 sm:flex-none sm:px-3 dark:border-slate-700 dark:hover:border-sky-500/70 dark:hover:bg-sky-950/40 dark:hover:text-sky-100"
             title={t("transactions.header.importCsv", {
               defaultValue: "Import CSV",
             })}
@@ -117,8 +117,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
               defaultValue: "Import CSV",
             })}
           >
-            <Upload className="mr-2 h-4 w-4" />
-            <span className="text-sm">
+            <Upload className="h-4 w-4 sm:mr-2" />
+            <span className="hidden text-sm sm:inline">
               {t("transactions.header.importCsv", {
                 defaultValue: "Import CSV",
               })}
@@ -127,7 +127,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           <Button
             variant="outline"
             onClick={onExportClick}
-            className="tour-export-transactions justify-center sm:flex-none"
+            className="tour-export-transactions min-w-0 justify-center px-2 sm:flex-none sm:px-3"
             title={t("transactions.header.exportCsv", {
               defaultValue: "Export CSV",
             })}
@@ -135,8 +135,8 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
               defaultValue: "Export CSV",
             })}
           >
-            <Download className="mr-2 h-4 w-4" />
-            <span className="text-sm">
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden text-sm sm:inline">
               {t("transactions.header.exportCsv", {
                 defaultValue: "Export CSV",
               })}
@@ -144,7 +144,7 @@ export const TransactionPageHeader: React.FC<TransactionPageHeaderProps> = ({
           </Button>
           <Button
             onClick={onAddTransaction}
-            className="col-span-2 justify-center bg-indigo-600 hover:bg-indigo-700 text-white sm:col-span-1 sm:flex-none"
+            className="col-span-4 min-w-0 justify-center bg-indigo-600 text-white hover:bg-indigo-700 sm:col-span-1 sm:flex-none"
           >
             <Plus className="mr-2 h-4 w-4" />
             {t("transactions.header.addTransaction", {

@@ -21,23 +21,23 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
 
   return (
     <footer
-      className="shrink-0 border-t border-border/60 bg-background px-4 py-3 sm:px-6"
+      className="shrink-0 border-t border-border/60 bg-background px-4 pb-[calc(4.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 md:pb-3"
       role="contentinfo"
     >
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-2 text-center">
-        <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-medium">
-          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
+      <div className="mx-auto flex max-w-3xl min-w-0 flex-col items-center gap-2 text-center">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-2 text-xs font-medium">
+          <span className="max-w-full truncate rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
             {t("home.badges.private", { defaultValue: "Privacy-first" })}
           </span>
-          <span className="rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700 dark:border-sky-700/60 dark:bg-sky-950/50 dark:text-sky-200">
+          <span className="max-w-full truncate rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700 dark:border-sky-700/60 dark:bg-sky-950/50 dark:text-sky-200">
             {t("home.badges.local", { defaultValue: "Data local" })}
           </span>
-          <span className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-200">
+          <span className="max-w-full truncate rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-200">
             {t("home.badges.open", { defaultValue: "Open sourced" })}
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <Link to="/privacy" className={footerLinkClassName}>
             Privacy Policy
           </Link>

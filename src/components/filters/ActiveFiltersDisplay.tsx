@@ -31,19 +31,21 @@ export const ActiveFiltersDisplay = () => {
   const renderChip = (label: string, onRemove: () => void, key: string) => (
     <Badge
       variant="secondary"
-      className="flex items-center gap-1 cursor-pointer hover:bg-secondary/80"
+      className="flex max-w-full min-w-0 cursor-pointer items-center gap-1 hover:bg-secondary/80"
       onClick={onRemove}
       key={key}
     >
-      {label}
-      <X className="h-3 w-3" />
+      <span className="min-w-0 truncate">{label}</span>
+      <X className="h-3 w-3 shrink-0" />
     </Badge>
   );
 
   // Date Range
   if (dateRange?.from) {
-    const fromStr = format(dateRange.from, "MMM d, yyyy");
-    const toStr = format(dateRange.to || dateRange.from, "MMM d, yyyy"); // Fallback to from if to is undefined
+    const toDate = dateRange.to || dateRange.from;
+    const sameYear = dateRange.from.getFullYear() === toDate.getFullYear();
+    const fromStr = format(dateRange.from, sameYear ? "MMM d" : "MMM d, yyyy");
+    const toStr = format(toDate, "MMM d, yyyy"); // Fallback to from if to is undefined
     const label =
       fromStr === toStr
         ? t("filters.active.dateSingle", {

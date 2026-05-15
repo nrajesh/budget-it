@@ -144,13 +144,13 @@ export default function CalendarView() {
   }, [selectedDate, transactions, scheduledOccurrences]);
 
   return (
-    <div className="h-full flex flex-col space-y-4 sm:space-y-6 p-3 sm:p-6 rounded-xl overflow-hidden transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <div className="app-page-header flex flex-col items-start justify-between gap-4 md:flex-row md:items-center shrink-0">
+    <div className="flex h-full flex-col space-y-4 overflow-hidden rounded-xl bg-slate-50 p-3 transition-all duration-500 sm:space-y-6 sm:p-6 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+      <div className="app-page-header flex shrink-0 flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
           <h1 className="app-gradient-title app-page-title">
             {t("layout.nav.calendar", { defaultValue: "Calendar" })}
           </h1>
-          <p className="app-page-subtitle">
+          <p className="app-page-subtitle max-w-2xl">
             {t("calendar.header.subtitle", {
               defaultValue:
                 "Explore monthly patterns and the transactions behind each day.",
@@ -158,7 +158,7 @@ export default function CalendarView() {
           </p>
         </div>
       </div>
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4 min-h-0">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
         <div className="tour-calendar-grid h-full min-h-0 overflow-hidden">
           <CalendarGrid
             currentDate={currentDate}
@@ -168,7 +168,7 @@ export default function CalendarView() {
             dayData={dayData}
           />
         </div>
-        <div className="tour-calendar-daily h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="tour-calendar-daily flex h-full min-h-0 flex-col overflow-hidden">
           <DailyTransactions
             date={selectedDate}
             transactions={combinedDailyTransactions}

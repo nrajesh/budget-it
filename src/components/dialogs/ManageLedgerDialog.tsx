@@ -61,6 +61,8 @@ export function ManageLedgerDialog({
     useLedger();
   const { toast } = useToast();
   const isEditing = !!ledgerToEdit;
+  const formatErrorMessage = (error: unknown) =>
+    error instanceof Error ? error.message : "Unknown error";
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -130,8 +132,18 @@ export function ManageLedgerDialog({
       }
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
-      toast({ title: "Error saving ledger", variant: "destructive" });
+      const message = formatErrorMessage(error);
+      console.error("Error saving ledger", {
+        error,
+        isEditing,
+        ledgerId: ledgerToEdit?.id,
+        values,
+      });
+      toast({
+        title: "Error saving ledger",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -139,7 +151,7 @@ export function ManageLedgerDialog({
     if (!ledgerToEdit) return;
     if (
       confirm(
-        "Are you sure you want to delete this ledger? This will hide it but retain data for recovery (soft delete implementation dependent).",
+        "Are you sure you want to permanently delete this ledger? This will permanently delete the ledger and all its data (transactions, budgets, accounts, payees, categories, and settings). This action cannot be undone.",
       )
     ) {
       try {
@@ -154,8 +166,8 @@ export function ManageLedgerDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="w-[calc(100%-1rem)] max-w-md gap-0 overflow-hidden rounded-2xl p-0">
+        <DialogHeader className="border-b px-4 pb-3 pt-4 sm:px-6">
           <DialogTitle>
             {isEditing ? "Edit Ledger" : "Create New Ledger"}
           </DialogTitle>
@@ -166,129 +178,140 @@ export function ManageLedgerDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ledger Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Home Budget" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className={isEditing ? "space-y-4" : "grid grid-cols-2 gap-4"}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col"
+          >
+            <div className="max-h-[calc(100dvh-12rem)] space-y-4 overflow-y-auto px-4 py-4 sm:px-6">
               <FormField
                 control={form.control}
-                name="short_name"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Short Name</FormLabel>
+                    <FormLabel>Ledger Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Home" {...field} />
+                      <Input placeholder="e.g. Home Budget" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {!isEditing && (
+              <div
+                className={isEditing ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}
+              >
                 <FormField
                   control={form.control}
-                  name="currency"
+                  name="short_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Default Currency</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR (€)</SelectItem>
-                          <SelectItem value="USD">USD ($)</SelectItem>
-                          <SelectItem value="GBP">GBP (£)</SelectItem>
-                          <SelectItem value="INR">INR (₹)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Short Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Home" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
+                {!isEditing && (
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Currency</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Currency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                            <SelectItem value="USD">USD ($)</SelectItem>
+                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                            <SelectItem value="INR">INR (₹)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Icon</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Icon" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="building">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" /> Building
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="home">
+                          <div className="flex items-center gap-2">
+                            <Home className="h-4 w-4" /> Home
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="globe">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4" /> Globe
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="baby">
+                          <div className="flex items-center gap-2">
+                            <Baby className="h-4 w-4" /> Child
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="wallet">
+                          <div className="flex items-center gap-2">
+                            <Wallet className="h-4 w-4" /> Wallet
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="landmark">
+                          <div className="flex items-center gap-2">
+                            <Landmark className="h-4 w-4" /> Bank
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Icon</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Icon" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="building">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4" /> Building
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="home">
-                        <div className="flex items-center gap-2">
-                          <Home className="h-4 w-4" /> Home
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="globe">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" /> Globe
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="baby">
-                        <div className="flex items-center gap-2">
-                          <Baby className="h-4 w-4" /> Child
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="wallet">
-                        <div className="flex items-center gap-2">
-                          <Wallet className="h-4 w-4" /> Wallet
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="landmark">
-                        <div className="flex items-center gap-2">
-                          <Landmark className="h-4 w-4" /> Bank
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="border-t px-4 py-4 sm:px-6">
               {isEditing && (
                 <Button
                   type="button"
                   variant="destructive"
                   onClick={handleDelete}
-                  className="mr-auto"
+                  className="w-full sm:mr-auto sm:w-auto"
                 >
                   Delete
                 </Button>
               )}
-              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+              <Button
+                type="submit"
+                onClick={form.handleSubmit(onSubmit)}
+                className="w-full sm:w-auto"
+              >
                 {submitLabel || "Save Changes"}
               </Button>
             </DialogFooter>

@@ -368,7 +368,7 @@ const TransactionMobileCard = React.memo(
               }
             }}
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="flex min-w-0 flex-1 items-start gap-3">
                 <Checkbox
                   checked={isSelected}
@@ -377,7 +377,7 @@ const TransactionMobileCard = React.memo(
                   className="mt-1 flex-shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="mb-1 flex items-center gap-2">
+                  <div className="mb-1 flex min-w-0 items-center gap-2">
                     <div className="truncate text-base font-bold leading-tight">
                       {transaction.vendor || "No Payee"}
                     </div>
@@ -396,7 +396,7 @@ const TransactionMobileCard = React.memo(
                       </button>
                     )}
                   </div>
-                  <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="mb-2 min-w-0 truncate text-sm text-slate-500 dark:text-slate-400">
                     {new Date(transaction.date).toLocaleDateString()}{" "}
                     {" \u00b7 "}
                     <span
@@ -416,11 +416,11 @@ const TransactionMobileCard = React.memo(
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                    <span className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
                       {transaction.category}
                     </span>
                     {transaction.sub_category && (
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
+                      <span className="max-w-full truncate rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider">
                         {transaction.sub_category}
                       </span>
                     )}
@@ -433,9 +433,9 @@ const TransactionMobileCard = React.memo(
                   )}
                 </div>
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-2">
+              <div className="flex max-w-[42%] shrink-0 flex-col items-end gap-2">
                 <div
-                  className={`text-lg font-bold ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
+                  className={`max-w-full truncate text-right text-base font-bold sm:text-lg ${transaction.amount < 0 ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}
                 >
                   {formattedAmount}
                 </div>
@@ -690,11 +690,11 @@ const TransactionTable = ({
           numSelected > 0
             ? "app-table-toolbar-active"
             : "app-table-toolbar-idle"
-        }`}
+        } ${numSelected === 0 ? "hidden md:block" : ""}`}
       >
-        <div className="flex min-h-12 flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="px-1 text-sm font-medium">
+        <div className="flex min-h-12 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 px-1 text-sm font-medium">
               {numSelected} selected
             </span>
             <div className="h-4 w-px bg-border" />
@@ -712,7 +712,7 @@ const TransactionTable = ({
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <Button
               size="sm"
               variant="destructive"
@@ -919,7 +919,7 @@ const TransactionTable = ({
       {/* Pagination Footer */}
       {totalItems > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
             <span>Rows per page</span>
             <Select
               value={pageSize.toString()}
@@ -945,18 +945,20 @@ const TransactionTable = ({
             </span>
           </div>
 
-          <Pagination className="justify-end w-auto order-1 sm:order-2">
-            <PaginationContent>
+          <Pagination className="w-full justify-center order-1 sm:w-auto sm:justify-end sm:order-2">
+            <PaginationContent className="w-full justify-between sm:w-auto sm:justify-start">
               <PaginationItem>
                 <PaginationFirst
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-2.5 [&_span]:hidden sm:[&_span]:inline"
                 />
               </PaginationItem>
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-2.5 [&_span]:hidden sm:[&_span]:inline"
                 />
               </PaginationItem>
 
@@ -968,12 +970,14 @@ const TransactionTable = ({
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-2.5 [&_span]:hidden sm:[&_span]:inline"
                 />
               </PaginationItem>
               <PaginationItem>
                 <PaginationLast
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
+                  className="h-9 w-9 p-0 sm:w-auto sm:px-2.5 [&_span]:hidden sm:[&_span]:inline"
                 />
               </PaginationItem>
             </PaginationContent>
