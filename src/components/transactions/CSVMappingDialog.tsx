@@ -243,88 +243,90 @@ const CSVMappingDialog = ({
                   </Select>
                 </div>
 
-              <div className="grid gap-2 sm:col-span-2">
-                <Label>Date Format (in CSV)</Label>
-                <Select
-                  value={config.dateFormat}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({ ...prev, dateFormat: val }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto-detect</SelectItem>
-                    <SelectItem value="d/M/yyyy">
-                      Day/Month/Year (e.g. 31/01/2024)
-                    </SelectItem>
-                    <SelectItem value="M/d/yyyy">
-                      Month/Day/Year (e.g. 01/31/2024)
-                    </SelectItem>
-                    <SelectItem value="yyyy-MM-dd">
-                      Year-Month-Day (e.g. 2024-01-31)
-                    </SelectItem>
-                    <SelectItem value="d.M.yyyy">
-                      Day.Month.Year (e.g. 31.01.2024)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label>Date Format (in CSV)</Label>
+                  <Select
+                    value={config.dateFormat}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({ ...prev, dateFormat: val }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto-detect</SelectItem>
+                      <SelectItem value="d/M/yyyy">
+                        Day/Month/Year (e.g. 31/01/2024)
+                      </SelectItem>
+                      <SelectItem value="M/d/yyyy">
+                        Month/Day/Year (e.g. 01/31/2024)
+                      </SelectItem>
+                      <SelectItem value="yyyy-MM-dd">
+                        Year-Month-Day (e.g. 2024-01-31)
+                      </SelectItem>
+                      <SelectItem value="d.M.yyyy">
+                        Day.Month.Year (e.g. 31.01.2024)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label>Decimal Format</Label>
-                <Select
-                  value={config.decimalSeparator}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      decimalSeparator: val as "." | ",",
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value=".">1,234.56 (Dot decimal)</SelectItem>
-                    <SelectItem value=",">1.234,56 (Comma decimal)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="grid gap-2">
+                  <Label>Decimal Format</Label>
+                  <Select
+                    value={config.decimalSeparator}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        decimalSeparator: val as "." | ",",
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=".">1,234.56 (Dot decimal)</SelectItem>
+                      <SelectItem value=",">
+                        1.234,56 (Comma decimal)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="grid gap-2">
-                <Label>Amount Sign Convention</Label>
-                <Select
-                  value={config.expenseSign}
-                  onValueChange={(val) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      expenseSign: val as "negative" | "positive",
-                    }))
-                  }
-                  disabled={hasNegativeValues}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="negative">
-                      Negative is Expense (-100)
-                    </SelectItem>
-                    <SelectItem value="positive">
-                      Positive is Expense (100)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {hasNegativeValues
-                    ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
-                    : config.expenseSign === "positive"
-                      ? "Expenses entered as positive numbers"
-                      : "Expenses entered as negative numbers"}
-                </p>
-              </div>
+                <div className="grid gap-2">
+                  <Label>Amount Sign Convention</Label>
+                  <Select
+                    value={config.expenseSign}
+                    onValueChange={(val) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        expenseSign: val as "negative" | "positive",
+                      }))
+                    }
+                    disabled={hasNegativeValues}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="negative">
+                        Negative is Expense (-100)
+                      </SelectItem>
+                      <SelectItem value="positive">
+                        Positive is Expense (100)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {hasNegativeValues
+                      ? "Negative values detected in CSV. 'Negative is Expense' setting enforced."
+                      : config.expenseSign === "positive"
+                        ? "Expenses entered as positive numbers"
+                        : "Expenses entered as negative numbers"}
+                  </p>
+                </div>
               </div>
 
               {!isNewLedger && (

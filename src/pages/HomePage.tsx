@@ -611,8 +611,7 @@ const HomePage = () => {
                           "bg-blue-500 shadow-blue-500/25",
                         item.accent === "orange" &&
                           "bg-orange-500 shadow-orange-500/25",
-                        item.accent === "red" &&
-                          "bg-red-500 shadow-red-500/25",
+                        item.accent === "red" && "bg-red-500 shadow-red-500/25",
                         item.accent === "violet" &&
                           "bg-violet-500 shadow-violet-500/25",
                       )}

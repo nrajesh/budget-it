@@ -197,7 +197,9 @@ export function ManageLedgerDialog({
                 )}
               />
               <div
-                className={isEditing ? "space-y-4" : "grid gap-4 sm:grid-cols-2"}
+                className={
+                  isEditing ? "space-y-4" : "grid gap-4 sm:grid-cols-2"
+                }
               >
                 <FormField
                   control={form.control}

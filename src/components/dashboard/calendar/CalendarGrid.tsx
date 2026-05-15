@@ -236,9 +236,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </div>
                 )}
 
-                {count === 0 && (
-                  <div className="h-4 sm:h-[18px]" aria-hidden />
-                )}
+                {count === 0 && <div className="h-4 sm:h-[18px]" aria-hidden />}
               </div>
             );
           })}

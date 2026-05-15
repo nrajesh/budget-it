@@ -6,10 +6,7 @@ import { useLedger } from "@/contexts/LedgerContext";
 import { useTransactions } from "@/contexts/TransactionsContext";
 import { useTour } from "@/contexts/TourContext";
 import { GlobalProgressDialog } from "@/components/dialogs/GlobalProgressDialog";
-import {
-  ThemedCard,
-  ThemedCardContent,
-} from "@/components/ThemedCard";
+import { ThemedCard, ThemedCardContent } from "@/components/ThemedCard";
 import {
   Building2,
   Home,
@@ -825,7 +822,9 @@ const LedgerEntryPage = () => {
               >
                 <RotateCcw className="mt-0.5 h-5 w-5" />
                 <span className="min-w-0">
-                  <span className="block font-semibold">Generate demo data</span>
+                  <span className="block font-semibold">
+                    Generate demo data
+                  </span>
                   <span className="block text-xs text-indigo-100">
                     Populate the app quickly when you want sample ledgers.
                   </span>
