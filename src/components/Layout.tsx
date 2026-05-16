@@ -787,7 +787,7 @@ const Layout = () => {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col bg-background">
-        <header className="flex h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] items-center justify-between border-b bg-background px-4 sm:px-6">
+        <header className="fixed inset-x-0 top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b bg-background px-4 pt-[env(safe-area-inset-top)] sm:px-6 md:static">
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="h-10 w-10 rounded-full border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:hidden">
               <img
@@ -801,7 +801,7 @@ const Layout = () => {
               />
             </SidebarTrigger>
             <div className="min-w-0 md:hidden">
-              <p className="truncate text-base font-semibold leading-tight">
+              <p className="app-gradient-title block truncate text-xl font-black leading-none tracking-normal">
                 Vaulted Money
               </p>
               <p className="truncate text-xs text-muted-foreground">
@@ -874,7 +874,7 @@ const Layout = () => {
             />
           </div>
         </header>
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background pb-24 md:pb-0">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background pb-24 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 md:pb-0">
           <Outlet />
         </main>
         <SiteFooter />
