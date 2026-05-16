@@ -245,9 +245,13 @@ const DataManagementPage = () => {
                 className="hidden"
                 accept=".json,.lock"
               />
-              <Button onClick={handleImportClick} variant="secondary">
+              <Button
+                onClick={handleImportClick}
+                variant="outline"
+                className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
+              >
                 <Upload className="mr-2 h-4 w-4" />
-                Import Backup
+                Import JSON
               </Button>
             </div>
           </div>
