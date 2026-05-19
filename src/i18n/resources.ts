@@ -85,6 +85,9 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacy-first | Data local | Open sourced",
           heartLink: "Made with ❤️ for your financial freedom",
+          madeBy: "Made by ",
+          withHeart: " with ❤️ for your financial ",
+          freedom: "freedom",
           githubAria: "Open Vaulted Money on GitHub",
         },
       },
@@ -536,6 +539,9 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacidad primero | Datos locales | Codigo abierto",
           heartLink: "Hecho con ❤️ para tu libertad financiera",
+          madeBy: "Hecho por ",
+          withHeart: " con ❤️ para tu libertad ",
+          freedom: "financiera",
           githubAria: "Abrir Vaulted Money en GitHub",
         },
       },
@@ -903,6 +909,9 @@ export const resources: Resource = {
         footer: {
           tagline: "隐私优先 | 数据本地 | 开源",
           heartLink: "用 ❤️ 助你实现财务自由",
+          madeBy: "由 ",
+          withHeart: " 用 ❤️ 制作，助你实现财务 ",
+          freedom: "自由",
           githubAria: "在 GitHub 上打开 Vaulted Money",
         },
       },
@@ -1177,6 +1186,9 @@ export const resources: Resource = {
         footer: {
           tagline: "Privacy eerst | Gegevens lokaal | Open source",
           heartLink: "Met ❤️ gemaakt voor jouw financiële vrijheid",
+          madeBy: "Gemaakt door ",
+          withHeart: " met ❤️ voor jouw financiële ",
+          freedom: "vrijheid",
           githubAria: "Vaulted Money openen op GitHub",
         },
       },
@@ -1628,6 +1640,9 @@ export const resources: Resource = {
         footer: {
           tagline: "தனியுரிமை முதலில் | தரவு உள்ளமை | திறந்த மூலம்",
           heartLink: "உங்கள் நிதி சுதந்திரத்திற்காக ❤️ உடன் உருவாக்கப்பட்டது",
+          madeBy: "உருவாக்கியவர்: ",
+          withHeart: " (உங்கள் நிதி சுதந்திரத்திற்காக ❤️ உடன்) ",
+          freedom: "நிதி சுதந்திரம்",
           githubAria: "GitHub இல் Vaulted Money ஐ திறக்கவும்",
         },
       },

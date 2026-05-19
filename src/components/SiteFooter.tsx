@@ -41,19 +41,30 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
           <Link to="/privacy" className={footerLinkClassName}>
             Privacy Policy
           </Link>
-          <a
-            href={GITHUB_REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={footerLinkClassName}
-            aria-label={t("layout.footer.githubAria", {
-              defaultValue: "Open Vaulted Money on GitHub",
-            })}
-          >
-            {t("layout.footer.heartLink", {
-              defaultValue: "Made with ❤️ for your financial freedom",
-            })}
-          </a>
+          <span className="text-muted-foreground/30" aria-hidden="true">|</span>
+          <span>
+            {t("layout.footer.madeBy", { defaultValue: "Made by " })}
+            <a
+              href="https://imaginest.nl"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={footerLinkClassName}
+            >
+              Imaginest
+            </a>
+            {t("layout.footer.withHeart", { defaultValue: " with ❤️ for your financial " })}
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={footerLinkClassName}
+              aria-label={t("layout.footer.githubAria", {
+                defaultValue: "Open Vaulted Money on GitHub",
+              })}
+            >
+              {t("layout.footer.freedom", { defaultValue: "freedom" })}
+            </a>
+          </span>
         </div>
 
         {extraLinks.length > 0 && (

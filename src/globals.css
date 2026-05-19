@@ -159,6 +159,18 @@
   }
 }
 
+.homepage-mobile-preview,
+.homepage-mobile-preview body {
+  overflow: hidden !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+.homepage-mobile-preview .page-container {
+  overflow: visible !important;
+  min-height: 0 !important;
+}
+
 @layer components {
   /* Default Budget Bar (Standard Theme uses Primary/Black) */
   .bg-budget-bar {

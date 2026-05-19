@@ -6,7 +6,6 @@ import {
   Archive,
   ArrowRight,
   BookOpen,
-  Building2,
   Check,
   Coins,
   Copy,
@@ -32,6 +31,7 @@ import { showSuccess } from "@/utils/toast";
 import { cn } from "@/lib/utils";
 import SiteFooter from "@/components/SiteFooter";
 import BrandLockup from "@/components/BrandLockup";
+import HomeHeroDemo from "@/components/homepage/HomeHeroDemo";
 
 const webInstallCommand = `git clone https://github.com/nrajesh/vaulted.money.git
 cd vaulted.money
@@ -83,33 +83,6 @@ const moneyTools = [
   { icon: Receipt, label: "CSV transaction imports" },
   { icon: Wallet, label: "Accounts, vendors, categories" },
   { icon: Lock, label: "Encrypted backup options" },
-];
-
-const ledgerPreviewRows = [
-  {
-    icon: Wallet,
-    name: "Personal",
-    scope: "Only you",
-    currency: "USD",
-    balance: "$24,860",
-    tone: "emerald",
-  },
-  {
-    icon: Users,
-    name: "Family",
-    scope: "Shared bills",
-    currency: "EUR",
-    balance: "€8,430",
-    tone: "sky",
-  },
-  {
-    icon: Building2,
-    name: "Business",
-    scope: "Accountant view",
-    currency: "INR",
-    balance: "₹6.2L",
-    tone: "amber",
-  },
 ];
 
 const usageFundamentals = [
@@ -287,7 +260,7 @@ const HomePage = () => {
       </header>
 
       <section className="border-b border-slate-200 bg-[linear-gradient(180deg,hsl(var(--background)),rgba(248,250,252,0.72))] px-4 pt-6 pb-2 dark:border-slate-800 dark:bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--secondary)/0.45))] sm:py-8 lg:py-10">
-        <div className="mx-auto grid max-w-7xl items-center gap-5 sm:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
+        <div className="mx-auto grid max-w-7xl items-center gap-5 sm:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,42rem)]">
           <div className="max-w-3xl">
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-medium">
               <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
@@ -352,103 +325,7 @@ const HomePage = () => {
           </div>
 
           <div className="relative">
-            <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-200/70 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
-              <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3 dark:border-slate-800">
-                <div className="flex min-w-0 items-center gap-2">
-                  <img
-                    src={
-                      resolvedTheme === "dark"
-                        ? "/logo-dark.png"
-                        : "/logo-light.png"
-                    }
-                    alt=""
-                    className="h-8 w-8 object-contain"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      Ledger workspaces
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Isolate accounts by person or purpose
-                    </p>
-                  </div>
-                </div>
-                <span className="hidden shrink-0 rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-200 sm:inline-flex">
-                  Multi-currency
-                </span>
-              </div>
-
-              <div className="grid gap-2 py-3">
-                {ledgerPreviewRows.map((ledger) => (
-                  <div
-                    key={ledger.name}
-                    className="grid grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/60 sm:grid-cols-[2rem_minmax(0,1fr)_auto]"
-                  >
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-md",
-                        ledger.tone === "emerald" &&
-                          "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200",
-                        ledger.tone === "sky" &&
-                          "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-200",
-                        ledger.tone === "amber" &&
-                          "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200",
-                      )}
-                    >
-                      <ledger.icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
-                        {ledger.name}
-                      </p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                        {ledger.scope}
-                      </p>
-                    </div>
-                    <div className="hidden text-right sm:block">
-                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                        {ledger.currency}
-                      </p>
-                      <p className="text-sm font-bold">{ledger.balance}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="hidden rounded-lg border border-slate-200 p-4 dark:border-slate-800 sm:block">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">Share only what fits</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Keep account groups separate before exporting or sharing.
-                    </p>
-                  </div>
-                  <Lock className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-                </div>
-                <div className="grid gap-2 text-sm">
-                  {[
-                    ["Partner", "Household ledger", "EUR"],
-                    ["Accountant", "Business accounts", "INR"],
-                    ["You", "All personal accounts", "USD"],
-                  ].map(([person, access, currency]) => (
-                    <div
-                      key={person}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-md bg-slate-50 px-3 py-2 dark:bg-slate-950/70"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{person}</p>
-                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                          {access}
-                        </p>
-                      </div>
-                      <span className="self-center rounded-md border border-slate-200 px-2 py-1 text-xs font-medium dark:border-slate-800">
-                        {currency}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <HomeHeroDemo />
           </div>
         </div>
       </section>

@@ -332,6 +332,7 @@ type MobileHeaderActionsMenuProps = {
   setTheme: (theme: string) => void;
   startTour: () => void;
   t: ReturnType<typeof useTranslation>["t"];
+  isHomepageMobilePreview?: boolean;
 };
 
 const MobileHeaderActionsMenu = ({
@@ -342,6 +343,7 @@ const MobileHeaderActionsMenu = ({
   setTheme,
   startTour,
   t,
+  isHomepageMobilePreview,
 }: MobileHeaderActionsMenuProps) => {
   const actionItemClassName =
     "min-h-14 rounded-xl px-4 py-3 text-[1.05rem] font-medium text-foreground gap-3";
@@ -371,12 +373,19 @@ const MobileHeaderActionsMenu = ({
           <p className="text-sm text-muted-foreground">Quick actions</p>
         </div>
         <DropdownMenuSeparator className="mx-1" />
-        <DropdownMenuItem asChild className={actionItemClassName}>
-          <Link to="/">
+        {isHomepageMobilePreview ? (
+          <DropdownMenuItem disabled className={actionItemClassName}>
             <Home className="h-5 w-5" />
             {t("home.actions.home", { defaultValue: "Home" })}
-          </Link>
-        </DropdownMenuItem>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild className={actionItemClassName}>
+            <Link to="/">
+              <Home className="h-5 w-5" />
+              {t("home.actions.home", { defaultValue: "Home" })}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild className={actionItemClassName}>
           <Link to="/language">
             <LanguageIcon className="h-5 w-5" />
@@ -419,6 +428,9 @@ const Layout = () => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+  const isHomepageMobilePreview =
+    new URLSearchParams(location.search).get("preview") === "homepage-mobile" ||
+    (typeof window !== "undefined" && window.self !== window.top);
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const { startTour, hasTourForCurrentRoute } = useTour();
 
@@ -427,6 +439,15 @@ const Layout = () => {
       navigate("/ledgers");
     }
   }, [isLoading, activeLedger, navigate]);
+
+  React.useEffect(() => {
+    if (isHomepageMobilePreview) {
+      document.documentElement.classList.add("homepage-mobile-preview");
+      return () => {
+        document.documentElement.classList.remove("homepage-mobile-preview");
+      };
+    }
+  }, [isHomepageMobilePreview]);
 
   // Initialize default account selection globally
   useDefaultAccountSelection();
@@ -453,7 +474,12 @@ const Layout = () => {
   );
 
   return (
-    <SidebarProvider className="min-h-screen">
+    <SidebarProvider
+      className={cn(
+        "min-h-screen",
+        isHomepageMobilePreview && "h-screen overflow-hidden",
+      )}
+    >
       <MobileSidebarCloser />
       <Sidebar collapsible="icon" className="tour-sidebar-nav">
         <SidebarHeader className="pt-[env(safe-area-inset-top)]">
@@ -461,8 +487,14 @@ const Layout = () => {
             <BrandLockup
               size={isMobile ? "mobile" : "sidebar"}
               className="group-data-[collapsible=icon]:gap-0"
-              iconWrapperClassName="group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
-              imageClassName="group-data-[collapsible=icon]:scale-[2.35]"
+              iconWrapperClassName={cn(
+                "group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8",
+                isHomepageMobilePreview && "h-14 w-14",
+              )}
+              imageClassName={cn(
+                "group-data-[collapsible=icon]:scale-[2.35]",
+                isHomepageMobilePreview && "scale-[1.35]",
+              )}
               nameClassName="group-data-[collapsible=icon]:hidden"
             />
             <PinTrigger />
@@ -786,7 +818,12 @@ const Layout = () => {
           />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="flex flex-col bg-background">
+      <SidebarInset
+        className={cn(
+          "flex flex-col bg-background",
+          isHomepageMobilePreview && "h-screen overflow-hidden",
+        )}
+      >
         <header className="fixed inset-x-0 top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top))] items-center justify-between border-b bg-background px-4 pt-[env(safe-area-inset-top)] sm:px-6 md:static">
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="h-10 w-10 rounded-full border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:hidden">
@@ -797,7 +834,12 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt=""
-                className="h-7 w-7 object-contain"
+                className={cn(
+                  "object-contain",
+                  isHomepageMobilePreview
+                    ? "h-9 w-9 scale-[1.35]"
+                    : "h-7 w-7",
+                )}
               />
             </SidebarTrigger>
             <div className="min-w-0 md:hidden">
@@ -810,22 +852,37 @@ const Layout = () => {
             </div>
           </div>
           <div className="hidden items-center gap-2 sm:gap-4 md:flex">
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-            >
-              <Link
-                to="/"
-                aria-label={t("home.actions.home", { defaultValue: "Home" })}
+            {isHomepageMobilePreview ? (
+              <Button
+                type="button"
+                disabled
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
               >
                 <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
                 <span className="sr-only">
                   {t("home.actions.home", { defaultValue: "Home" })}
                 </span>
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+              >
+                <Link
+                  to="/"
+                  aria-label={t("home.actions.home", { defaultValue: "Home" })}
+                >
+                  <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                  <span className="sr-only">
+                    {t("home.actions.home", { defaultValue: "Home" })}
+                  </span>
+                </Link>
+              </Button>
+            )}
             <LanguageSwitcher />
             {hasTourForCurrentRoute && (
               <Button
@@ -871,13 +928,19 @@ const Layout = () => {
               setTheme={setTheme}
               startTour={startTour}
               t={t}
+              isHomepageMobilePreview={isHomepageMobilePreview}
             />
           </div>
         </header>
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background pb-24 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 md:pb-0">
+        <main
+          className={cn(
+            "flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-background pb-24 pt-[calc(4rem+env(safe-area-inset-top))] md:pt-0 md:pb-0",
+            isHomepageMobilePreview && "h-full overscroll-none",
+          )}
+        >
           <Outlet />
         </main>
-        <SiteFooter />
+        {!isHomepageMobilePreview && <SiteFooter />}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
