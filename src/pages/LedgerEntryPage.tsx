@@ -621,9 +621,7 @@ const LedgerEntryPage = () => {
               iconWrapperClassName={
                 isHomepageMobilePreview ? "h-40 w-40" : undefined
               }
-              nameClassName={
-                isHomepageMobilePreview ? "text-5xl" : undefined
-              }
+              nameClassName={isHomepageMobilePreview ? "text-5xl" : undefined}
             />
             <p className="app-page-subtitle mx-auto max-w-xl">
               Select a budget ledger to continue.

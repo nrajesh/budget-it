@@ -836,9 +836,7 @@ const Layout = () => {
                 alt=""
                 className={cn(
                   "object-contain",
-                  isHomepageMobilePreview
-                    ? "h-9 w-9 scale-[1.35]"
-                    : "h-7 w-7",
+                  isHomepageMobilePreview ? "h-9 w-9 scale-[1.35]" : "h-7 w-7",
                 )}
               />
             </SidebarTrigger>

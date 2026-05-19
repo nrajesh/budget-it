@@ -14,8 +14,10 @@ const HomeHeroDemo = () => {
   const [deviceHeight, setDeviceHeight] = useState<number | "">(852);
 
   // Use fallback values if inputs are empty or invalid
-  const width = typeof deviceWidth === "number" && deviceWidth > 0 ? deviceWidth : 393;
-  const height = typeof deviceHeight === "number" && deviceHeight > 0 ? deviceHeight : 852;
+  const width =
+    typeof deviceWidth === "number" && deviceWidth > 0 ? deviceWidth : 393;
+  const height =
+    typeof deviceHeight === "number" && deviceHeight > 0 ? deviceHeight : 852;
 
   // The iframe renders at the real device resolution.
   // The outer wrapper is sized to the *visual* (scaled-down) dimensions
@@ -115,4 +117,3 @@ const HomeHeroDemo = () => {
 };
 
 export default HomeHeroDemo;
-

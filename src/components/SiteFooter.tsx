@@ -41,7 +41,9 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
           <Link to="/privacy" className={footerLinkClassName}>
             Privacy Policy
           </Link>
-          <span className="text-muted-foreground/30" aria-hidden="true">|</span>
+          <span className="text-muted-foreground/30" aria-hidden="true">
+            |
+          </span>
           <span>
             {t("layout.footer.madeBy", { defaultValue: "Made by " })}
             <a
@@ -52,7 +54,9 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
             >
               Imaginest
             </a>
-            {t("layout.footer.withHeart", { defaultValue: " with ❤️ for your financial " })}
+            {t("layout.footer.withHeart", {
+              defaultValue: " with ❤️ for your financial ",
+            })}
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
