@@ -29,7 +29,7 @@
     "release:local": "cross-env ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm run electron:build && pnpm run android:build:apk && pnpm run ios:build:simulator"
   },
   "dependencies": {
-    "@capacitor/core": "^8.3.3",
+    "@capacitor/core": "^8.3.4",
     "@capacitor/filesystem": "^8.1.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@hookform/resolvers": "^5.2.2",
@@ -133,7 +133,7 @@
       "minimatch@^3.0.0>brace-expansion": "1.1.13",
       "minimatch@^5.0.0>brace-expansion": "2.0.3",
       "minimatch@^9.0.0>brace-expansion": "2.0.3",
-      "minimatch@^10.0.0>brace-expansion": "5.0.5",
+      "minimatch@^10.0.0>brace-expansion": "5.0.6",
       "@xmldom/xmldom": ">=0.8.13"
     },
     "onlyBuiltDependencies": [

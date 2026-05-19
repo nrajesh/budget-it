@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useLedger } from "@/contexts/LedgerContext";
@@ -67,6 +67,7 @@ import BrandLockup from "@/components/BrandLockup";
 
 const LedgerEntryPage = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const { ledgers, switchLedger, refreshLedgers, deleteLedger } = useLedger();
   const { setTheme, resolvedTheme } = useTheme();
   const { startTour, hasTourForCurrentRoute } = useTour();
@@ -105,6 +106,19 @@ const LedgerEntryPage = () => {
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+
+  const isHomepageMobilePreview =
+    searchParams.get("preview") === "homepage-mobile" ||
+    (typeof window !== "undefined" && window.self !== window.top);
+
+  useEffect(() => {
+    if (isHomepageMobilePreview) {
+      document.documentElement.classList.add("homepage-mobile-preview");
+      return () => {
+        document.documentElement.classList.remove("homepage-mobile-preview");
+      };
+    }
+  }, [isHomepageMobilePreview]);
 
   const handleImportCSVClick = () => {
     csvFileInputRef.current?.click();
@@ -470,25 +484,45 @@ const LedgerEntryPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div
+      className={cn(
+        "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900",
+        isHomepageMobilePreview && "h-screen overflow-hidden",
+      )}
+    >
       <header className="sticky top-0 z-40 border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
         <div className="mx-auto flex min-h-16 w-full max-w-3xl items-center justify-between gap-3">
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-          >
-            <Link
-              to="/"
+          {isHomepageMobilePreview ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
               aria-label={t("home.actions.home", { defaultValue: "Home" })}
             >
               <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
               <span className="sr-only">
                 {t("home.actions.home", { defaultValue: "Home" })}
               </span>
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+            >
+              <Link
+                to="/"
+                aria-label={t("home.actions.home", { defaultValue: "Home" })}
+              >
+                <Home className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">
+                  {t("home.actions.home", { defaultValue: "Home" })}
+                </span>
+              </Link>
+            </Button>
+          )}
 
           <div className="tour-theme-toggle hidden items-center gap-2 sm:flex">
             <LanguageSwitcher />
@@ -566,10 +600,29 @@ const LedgerEntryPage = () => {
           </div>
         </div>
       </header>
-      <div className="flex flex-1 flex-col items-center justify-start p-4 pt-3">
-        <div className="w-full max-w-3xl space-y-5 animate-in fade-in zoom-in duration-500">
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center justify-start p-4 pt-3",
+          isHomepageMobilePreview && "overflow-y-auto overscroll-none",
+        )}
+      >
+        <div
+          className={cn(
+            "w-full max-w-3xl space-y-5",
+            isHomepageMobilePreview
+              ? "motion-safe:animate-none"
+              : "animate-in fade-in zoom-in duration-500",
+          )}
+        >
           <div className="tour-ledger-title space-y-2 px-2 text-center">
-            <BrandLockup size="hero" className="justify-center" />
+            <BrandLockup
+              size="hero"
+              className="justify-center"
+              iconWrapperClassName={
+                isHomepageMobilePreview ? "h-40 w-40" : undefined
+              }
+              nameClassName={isHomepageMobilePreview ? "text-5xl" : undefined}
+            />
             <p className="app-page-subtitle mx-auto max-w-xl">
               Select a budget ledger to continue.
             </p>
@@ -835,7 +888,7 @@ const LedgerEntryPage = () => {
         </div>
       </div>
 
-      <SiteFooter />
+      {!isHomepageMobilePreview && <SiteFooter />}
 
       <ManageLedgerDialog
         isOpen={isCreateOpen}

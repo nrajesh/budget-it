@@ -255,12 +255,7 @@ const PrivacyPolicyPage = () => {
         </div>
       </section>
 
-      <SiteFooter
-        extraLinks={[
-          { label: "Home", to: "/" },
-          { label: "Open app", to: "/ledgers" },
-        ]}
-      />
+      <SiteFooter />
     </main>
   );
 };

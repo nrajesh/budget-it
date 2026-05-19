@@ -144,7 +144,7 @@ export default function CalendarView() {
   }, [selectedDate, transactions, scheduledOccurrences]);
 
   return (
-    <div className="flex h-full flex-col space-y-4 overflow-hidden rounded-xl bg-slate-50 p-3 transition-all duration-500 sm:space-y-6 sm:p-6 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+    <div className="flex min-h-full lg:h-full flex-col space-y-4 lg:overflow-hidden rounded-xl bg-slate-50 p-3 transition-all duration-500 sm:space-y-6 sm:p-6 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
       <div className="app-page-header flex shrink-0 flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
           <h1 className="app-gradient-title app-page-title">
