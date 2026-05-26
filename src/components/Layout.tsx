@@ -834,10 +834,7 @@ const Layout = () => {
                     : "/logo-light.png"
                 }
                 alt=""
-                className={cn(
-                  "object-contain",
-                  isHomepageMobilePreview ? "h-9 w-9 scale-[1.35]" : "h-7 w-7",
-                )}
+                className="h-9 w-9 scale-[1.35] object-contain"
               />
             </SidebarTrigger>
             <div className="min-w-0 md:hidden">

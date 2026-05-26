@@ -1,0 +1,158 @@
+# Developer Guide
+
+This page keeps contributor and codebase details out of the README.
+
+## Project Shape
+
+Vaulted Money is a React, TypeScript, Vite, Tailwind, Electron, and Capacitor app. The web app is the shared renderer. Electron packages it for desktop, and Capacitor packages it for iOS and Android.
+
+For a detailed system view, read [Architecture](ARCHITECTURE.md).
+
+## Public Homepage
+
+The root route (`/`) is a public landing page that runs without an active ledger. It covers the privacy-first, local-first, and open-source positioning.
+
+The authenticated app lives under `/ledgers` and the app routes behind the main layout.
+
+The homepage is implemented in `src/pages/HomePage.tsx` and is kept outside the authenticated `Layout` route so it does not trigger active-ledger redirects.
+
+## Project Structure
+
+```text
+vaulted.money/
+├── electron/                  # Electron main and preload code
+├── src/
+│   ├── components/            # Reusable and feature UI
+│   ├── contexts/              # React context providers
+│   ├── hooks/                 # Custom hooks
+│   ├── pages/                 # Route-level pages
+│   ├── providers/             # Data provider implementations
+│   ├── types/                 # Shared TypeScript types
+│   └── utils/                 # Helpers and domain utilities
+├── android/                   # Capacitor Android project
+├── ios/                       # Capacitor iOS project
+├── documentation/             # Project docs
+├── specs/                     # Feature specifications
+├── scheduled-agents/          # AI agent rulesets
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
+```
+
+## Quality Checks
+
+| Check | Command | Purpose |
+| --- | --- | --- |
+| Lint | `pnpm lint` | ESLint checks. |
+| Type safety | `tsc --noEmit` | TypeScript verification. |
+| Formatting | `pnpm format:check` | Prettier verification for source files. |
+| Tests | `pnpm test:coverage` | Vitest with coverage. |
+| Build | `pnpm build` | Production compile check. |
+
+Run the combined local validation with:
+
+```bash
+pnpm validate
+```
+
+`package.json` includes `pnpm.overrides` for patched transitive dependencies pulled in by tooling. Run `pnpm audit` when checking dependency security.
+
+## Main Documentation
+
+| File | Purpose |
+| --- | --- |
+| [DESIGN.md](DESIGN.md) | Brand identity, logo geometry, and color strategy. |
+| [WHY_VAULTED_MONEY.md](WHY_VAULTED_MONEY.md) | Motivation and privacy philosophy. |
+| [SPEC_DRIVEN_DEVELOPMENT.md](SPEC_DRIVEN_DEVELOPMENT.md) | Feature planning workflow. |
+| [AGENTS.md](AGENTS.md) | Technical constraints for AI agents. |
+| [SUPPORT.md](SUPPORT.md) | How to get help. |
+| [UI_UX_STANDARDS.md](UI_UX_STANDARDS.md) | UI and UX expectations. |
+
+## Spec-Driven Development
+
+For the full workflow, read [Spec-Driven Development](SPEC_DRIVEN_DEVELOPMENT.md).
+
+Quick sequence:
+
+```text
+/speckit.specify "Build a new feature"
+/speckit.plan
+/speckit.tasks
+/speckit.implement
+```
+
+## AI Agent Workflows
+
+The project includes specialized AI agent rulesets in `scheduled-agents/` and workflow definitions in `.agent/workflows/`.
+
+| Command | Agent | Focus |
+| --- | --- | --- |
+| `/agent.palette` | Palette | UX, accessibility, visual polish. |
+| `/agent.bolt` | Bolt | Performance and bundle health. |
+| `/agent.sentinel` | Sentinel | Security, validation, and dependency risk. |
+
+IDEs that support the `.agent/workflows/` convention can expose these as slash commands. Otherwise, the ruleset files are plain Markdown and can be followed manually.
+
+## AI Provider Configuration
+
+Vaulted Money supports bring-your-own-key categorization. Users manage providers inside the app under Management > AI Providers and select a default provider in Settings.
+
+Provider types include Gemini, OpenAI, Anthropic, Mistral, Perplexity, and Custom OpenAI-compatible endpoints.
+
+API keys are stored locally and are never included in exports.
+
+## Content Security Policy
+
+Vaulted Money blocks outgoing network requests by default. If you add a new AI API domain, add it to the `aiDomains` list in `vite.config.ts`.
+
+Example:
+
+```typescript
+const aiDomains = [
+  "https://generativelanguage.googleapis.com",
+  "https://api.openai.com",
+  "https://api.anthropic.com",
+  "https://api.mistral.ai",
+  "https://api.perplexity.ai",
+  "https://api.your-custom-ai-provider.com",
+];
+```
+
+Restart the development server or rebuild the app after changing CSP domains.
+
+## Component Guidelines
+
+- Put generic UI primitives in `src/components/ui/`.
+- Put feature-specific components in `src/components/<feature>/`.
+- Use functional React components with TypeScript interfaces.
+- Style with Tailwind utilities and existing local patterns.
+- Keep responsive behavior mobile-first.
+- Add comments only where they clarify non-obvious logic.
+
+## State And Data
+
+- Global financial data comes through `useTransactions()`.
+- Ledger state comes through `useLedger()`.
+- UI-only state should usually stay local with `useState`.
+- Async data loading uses TanStack Query where appropriate.
+- Local persistence is implemented through Dexie and IndexedDB.
+
+## Deployment
+
+The web build is a static SPA in `dist/`. Any static host can serve it.
+
+Cloudflare Pages works well:
+
+1. Connect the Git repository.
+2. Set the build command to `pnpm run build`.
+3. Set the output directory to `dist`.
+4. Use Node 20+ for the build environment.
+
+The included `public/_redirects` file supports client-side routing on Cloudflare Pages.
+
+Manual deploy example:
+
+```bash
+pnpm run build
+npx wrangler pages deploy dist
+```
