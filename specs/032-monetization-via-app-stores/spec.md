@@ -44,7 +44,11 @@ There is **no feature difference** between the GitHub free build and the paid st
 
 - **No license keys, license files, or license server.** No code is added to check entitlement at runtime.
 - **No code obfuscation, anti-debug, or hardware fingerprinting.**
-- **No feature gating between free and paid builds** in this iteration. Source-built, GitHub-released, App Store, Play Store, and Lemon Squeezy binaries are produced from the same source and the same commit. The only behavioral difference at runtime is that the in-app DonationPage is hidden on native iOS and Android platforms (Apple App Store Review Guideline 3.1.1 prohibits in-app links to external payment methods for digital services). This is decided by a runtime platform check using `Capacitor.isNativePlatform()` — not a build flag, env var, or any build-time variation. The same compiled binary behaves correctly on each platform.
+- **No feature gating between free and paid builds** in this iteration. Source-built, GitHub-released, App Store, Play Store, and Lemon Squeezy binaries are produced from the same source and the same commit. The only behavioral differences at runtime are two platform-conditional renderings:
+  - The in-app DonationPage is hidden on native iOS and Android (Apple App Store Review Guideline 3.1.1 prohibits in-app links to external payment methods for digital services). See FR-021.
+  - The in-app report ExportButtons (PDF / CSV export from reporting modules) are hidden on native iOS and Android because the export output is not yet production-quality and should not be exposed to App Store / Play Store reviewers and end users until it is. See FR-022.
+
+  Both decisions are made via runtime `Capacitor.isNativePlatform()` checks — not build flags, env vars, or any build-time variation. The same compiled binary behaves correctly on each platform.
 - **No entity caps** (transactions, accounts, ledgers, categories, vendors).
 - **No session timeouts or nag dialogs.**
 - **No relicensing.** The project stays MIT.
@@ -136,6 +140,17 @@ There is **no feature difference** between the GitHub free build and the paid st
 4. **Given** the Electron desktop app (OSS or Lemon Squeezy distribution), **When** the user navigates the app, **Then** the DonationPage behaves as it does today.
 5. **Given** the source code, **When** searched, **Then** no `VITE_STORE_BUILD` or equivalent build-time flag exists; the per-platform behavior is implemented via a runtime `Capacitor.isNativePlatform()` check.
 
+### User Story 8 — In-development report exports are not surfaced to store users (Priority: P1)
+
+**As** the maintainer submitting Vaulted Money to App Store and Play Store,
+**I want** the report ExportButtons (PDF / CSV) to not appear in the iOS and Android builds while the export feature is still in development,
+**So that** App Store reviewers and end users do not encounter a half-finished feature that could harm the listing's reputation or trigger review concerns about quality.
+
+**Acceptance Scenarios**:
+1. **Given** the app running on iOS (App Store install) or Android (Play Store install or sideloaded `.apk`), **When** the user navigates to any report page (`ReportLayout`), **Then** the export buttons / export controls do not appear anywhere on the page.
+2. **Given** the app running in a web browser at vaulted.money or in the Electron desktop app, **When** the user navigates to a report page, **Then** the export buttons render exactly as they do today.
+3. **Given** the source code, **When** searched, **Then** the conditional that hides ExportButtons is a runtime check using `Capacitor.isNativePlatform()`, not a build-time flag or env var. Removing the conditional (a one-line change) restores the buttons on native platforms.
+
 ## Requirements
 
 ### Functional Requirements
@@ -182,11 +197,15 @@ There is **no feature difference** between the GitHub free build and the paid st
 
 - **FR-018**: No license-check code, license file parser, license server client, hardware fingerprint, or activation flow is added to the application.
 - **FR-019**: No private repository, build-time module aliasing, or feature flag system is introduced to gate features between builds.
-- **FR-020**: No code paths differ at build time between the GitHub-published binary and the App Store / Play Store / Lemon Squeezy binary. All builds are produced from the same commit on the public repo with no build flags, no env vars, and no per-channel build variants. The only behavioral difference at runtime is the platform-conditional DonationPage rendering described in FR-021.
+- **FR-020**: No code paths differ at build time between the GitHub-published binary and the App Store / Play Store / Lemon Squeezy binary. All builds are produced from the same commit on the public repo with no build flags, no env vars, and no per-channel build variants. The only behavioral differences at runtime are the two platform-conditional renderings described in FR-021 (DonationPage hiding) and FR-022 (ExportButtons hiding) — both decided by a single runtime `Capacitor.isNativePlatform()` check.
 
 #### Native-platform DonationPage hiding (policy compliance, runtime only)
 
 - **FR-021**: The in-app DonationPage route and any navigation entries that link to it (Settings entries, sidebar items, etc.) are conditionally not rendered when `Capacitor.isNativePlatform()` returns `true` (i.e., when running on iOS or Android). On all other platforms (web at vaulted.money, Electron desktop including both OSS GitHub releases and Lemon Squeezy distribution), the DonationPage and its links render exactly as they do today. This is a **runtime platform check, not a build-time flag**. It introduces no env vars, no build configuration, no secrets, and no deployment friction for OSS users. The same compiled binary behaves correctly on each platform because it asks "am I running on iOS/Android?" at runtime. The DonationPage source file remains in the repository under MIT and remains part of the bundle for non-native platforms; on native platforms it is simply unreachable. This satisfies Apple App Store Review Guideline 3.1.1 (no in-app links to external payment methods for digital services) and the analogous Google Play policy. Accepted trade-off: the Android `.apk` artifact published to GitHub Releases (intended for sideloading) is the same binary as the Play Store version and therefore also hides the DonationPage; this is acceptable because Android sideloaders are tech-savvy enough to find donation links via the GitHub repository or the web app at vaulted.money.
+
+#### Native-platform ExportButtons hiding (quality readiness, runtime only)
+
+- **FR-022**: The report ExportButtons UI (PDF / CSV export from reporting modules, currently rendered in `src/pages/reports/ReportLayout.tsx` at line ~361 via `<ExportButtons ... />`) is conditionally not rendered when `Capacitor.isNativePlatform()` returns `true`. On web and Electron desktop, the export buttons render exactly as they do today. Rationale: the PDF export is not yet production-quality (output formatting is rough), and the CSV export path is incomplete. Shipping these to App Store / Play Store users — who expect polished, production-ready features — would harm the store listings' reputation and risk App Store review concerns. Web and Electron audiences are more tolerant of in-development features. This is the same runtime platform-check mechanism as FR-021, applied to a different rationale (quality readiness, not policy compliance). When the export feature is polished and ready for native, the conditional can be removed in a one-line change. The ExportButtons and ReportLayout source files remain in the repository unchanged; the PDF generation code (`jspdf`, `html2canvas`) remains in dependencies. Accepted trade-off: Android sideloads of the GitHub-released `.apk` also hide the exports; this is acceptable for the same reason as FR-021.
 
 #### HomePage "Coming Soon" store placeholders (web-only by virtue of existing routing)
 
@@ -240,6 +259,7 @@ The HomePage is already web-only: `src/App.tsx` routes `/` to `<HomePage />` onl
 - `README.md` — pillars wording, Support-the-project section (FR-003, FR-004)
 - `package.json` — `build` script wired to invoke `generate-acknowledgments.mjs` (FR-006)
 - App router (`src/App.tsx` and wherever else routes are registered) — register the Acknowledgments route; conditionally register the DonationPage route based on `Capacitor.isNativePlatform()` (FR-021), reusing the same import pattern already used for `usesAppShellRouting` at `src/App.tsx:61`
+- `src/pages/reports/ReportLayout.tsx` — wrap the existing `<ExportButtons ... />` render (around line 361) in a `!Capacitor.isNativePlatform()` conditional (FR-022). No changes to `src/components/reports/ExportButtons.tsx` itself; the component stays intact for future re-enablement.
 
 #### Unchanged / explicitly preserved
 
@@ -269,6 +289,7 @@ The HomePage is already web-only: `src/App.tsx` routes `/` to `<HomePage />` onl
 - **SC-011**: The same compiled binary, when run on iOS or Android (Capacitor native platforms), does not expose the DonationPage via route navigation, deep link, or Settings entry. When the same binary is run in a web browser or in Electron, the DonationPage is reachable as it is today. Verifiable behaviorally: a single source tree + a single `pnpm run build` invocation produces artifacts whose runtime behavior differs only on the dimension of `Capacitor.isNativePlatform()`.
 - **SC-012**: A visitor to the live web app at https://vaulted.money (the only context in which HomePage is rendered, per existing `usesAppShellRouting` logic at `src/App.tsx:61`) sees a "Get Vaulted Money" section on HomePage containing exactly four placeholder cards (Apple App Store, Google Play Store, Lemon Squeezy, Polar.sh). Each card displays the store name and a "Coming Soon" indicator, is visually de-emphasized, and is non-interactive in placeholder state. Electron and native (iOS/Android) users do not see this section because they do not see HomePage at all.
 - **SC-013**: Editing a single entry in `src/data/storeChannels.ts` from `{active: false}` to `{active: true, url: "..."}` (without other code changes) flips the corresponding placeholder card on the HomePage to an active, styled, clickable link to the supplied URL with the "Coming Soon" label removed. Verification method (unit test, visual snapshot, or rendered-output check) is a planning-phase decision; the criterion is met by any reliable behavioral verification.
+- **SC-014**: The same compiled binary, when run on iOS or Android (Capacitor native platforms), does not render the report `ExportButtons` UI anywhere within the reporting pages. When the same binary is run in a web browser or in Electron, the `ExportButtons` render exactly as they do today (verifiable behaviorally). The conditional is implemented in `src/pages/reports/ReportLayout.tsx` (at the existing `<ExportButtons />` render site around line 361) using `Capacitor.isNativePlatform()` — no build flags, no env vars.
 
 ## Future-Proofing
 

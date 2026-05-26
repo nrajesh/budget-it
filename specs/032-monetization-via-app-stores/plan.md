@@ -664,6 +664,130 @@ git commit -m "feat: hide DonationPage on native platforms via Capacitor runtime
 
 ---
 
+### Task 5b: Native-platform ExportButtons hiding (FR-022)
+
+Mirrors Task 5 but for the report ExportButtons in `ReportLayout.tsx`. Same Capacitor mechanism, different rationale: PDF/CSV export output isn't production-ready yet and shouldn't be surfaced to App Store / Play Store users.
+
+**Files:**
+- Modify: `src/pages/reports/ReportLayout.tsx` (around line 361 — wrap the existing `<ExportButtons ... />` render)
+- Create: `src/tests/export-buttons-hiding.test.tsx`
+
+- [ ] **Step 5b.1: Confirm the render site**
+
+```bash
+grep -n "ExportButtons" src/pages/reports/ReportLayout.tsx
+```
+
+Expected: one import line near the top, one render site around line 361. If you see additional render sites elsewhere, document them and apply the same conditional to each.
+
+- [ ] **Step 5b.2: Write the failing test**
+
+Create `src/tests/export-buttons-hiding.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Capacitor } from "@capacitor/core";
+
+vi.mock("@capacitor/core", async () => {
+  const actual = await vi.importActual<typeof import("@capacitor/core")>("@capacitor/core");
+  return {
+    ...actual,
+    Capacitor: { ...actual.Capacitor, isNativePlatform: vi.fn() },
+  };
+});
+
+describe("ExportButtons hiding on native platforms (FR-022)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it("hides ExportButtons when Capacitor.isNativePlatform() is true", async () => {
+    (Capacitor.isNativePlatform as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    const { render, screen } = await import("@testing-library/react");
+    const { MemoryRouter } = await import("react-router-dom");
+    const ReportLayout = (await import("@/pages/reports/ReportLayout")).default;
+    // Render with whatever minimal props ReportLayout requires; adapt to the component's actual prop shape.
+    render(<MemoryRouter><ReportLayout {...({} as never)} /></MemoryRouter>);
+    // The export buttons typically render labels like "Export PDF" / "Export CSV" / "Download"
+    expect(screen.queryByRole("button", { name: /export|download.*pdf|download.*csv/i })).toBeNull();
+  });
+
+  it("shows ExportButtons when not native", async () => {
+    (Capacitor.isNativePlatform as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    const { render, screen } = await import("@testing-library/react");
+    const { MemoryRouter } = await import("react-router-dom");
+    const ReportLayout = (await import("@/pages/reports/ReportLayout")).default;
+    render(<MemoryRouter><ReportLayout {...({} as never)} /></MemoryRouter>);
+    // Implementer: adapt the label regex to the actual ExportButtons label text.
+    // The presence of at least one export-related control is what's being asserted.
+    expect(screen.queryByRole("button", { name: /export|download.*pdf|download.*csv/i })).toBeInTheDocument();
+  });
+});
+```
+
+**Note for implementer:** if `ReportLayout` has required props that prevent it from rendering with empty `{}`, you have two options: (a) pass a minimal fixture matching the prop shape, or (b) render a small wrapper component that mounts `ReportLayout` with realistic test data. Pick whichever requires less ceremony. The behavior under test is purely "is `<ExportButtons />` rendered or not."
+
+- [ ] **Step 5b.3: Run the test, expect failure**
+
+```bash
+pnpm test -- src/tests/export-buttons-hiding.test.tsx
+```
+
+Expected: the "hides" case FAILS (buttons currently render unconditionally on native).
+
+- [ ] **Step 5b.4: Add the conditional render**
+
+In `src/pages/reports/ReportLayout.tsx`:
+
+1. Add the Capacitor import near the top (if not already present):
+
+```typescript
+import { Capacitor } from "@capacitor/core";
+```
+
+2. Wrap the existing `<ExportButtons ... />` render (around line 361). Example pattern:
+
+```tsx
+{!Capacitor.isNativePlatform() && (
+  <ExportButtons /* ...existing props... */ />
+)}
+```
+
+Preserve all existing props verbatim — do not refactor the call site beyond adding the wrapping conditional.
+
+- [ ] **Step 5b.5: Run the test, expect pass**
+
+```bash
+pnpm test -- src/tests/export-buttons-hiding.test.tsx
+```
+
+Expected: PASS (both cases).
+
+- [ ] **Step 5b.6: Verify visually in dev (web context shows the buttons)**
+
+```bash
+pnpm dev
+```
+
+Navigate to a report page. Confirm the export buttons appear. Stop the server.
+
+- [ ] **Step 5b.7: Run validate**
+
+```bash
+pnpm run validate
+```
+
+Expected: passes.
+
+- [ ] **Step 5b.8: Commit**
+
+```bash
+git add src/pages/reports/ReportLayout.tsx src/tests/export-buttons-hiding.test.tsx
+git commit -m "feat: hide report ExportButtons on native platforms via Capacitor runtime check (FR-022)"
+```
+
+---
+
 ### Task 6: storeChannels.ts config + DonationPage copy update
 
 **Files:**
@@ -996,6 +1120,7 @@ Verify on a checklist (mark each yes/no):
 - SC-011 — Run a simulator/device check on iOS or Android (deferred to Phase B if device-build is not yet set up; otherwise verify DonationPage is unreachable)
 - SC-012 — HomePage shows exactly four Coming-Soon placeholder cards
 - SC-013 — Editing a single `storeChannels.ts` entry to `{active: true, url: "..."}` flips that card
+- SC-014 — Same simulator/device check as SC-011 also confirms the report ExportButtons do not appear on report pages
 
 All Phase A code changes are now complete. Move on to Phase B for the operational store-launch work.
 
@@ -1095,6 +1220,7 @@ These tasks do not produce code changes; they are real-world setup steps. They a
 | Acknowledgments page | Settings → Open Source Licenses → expand a couple of entries; verify license text appears |
 | DonationPage on web | All 5+ cards visible (GitHub Sponsors, PayPal, Bank, App Store CS, Play Store CS, Lemon Squeezy CS) |
 | DonationPage hidden on native | Build for iOS simulator; verify deep-linking to `/donation` falls through to 404 / Ledger; verify no Settings link to it |
+| ExportButtons hidden on native | Build for iOS/Android simulator; open any report page; verify no Export PDF / Export CSV / Download controls render |
 | HomePage placeholders web-only | Visit `localhost:8081/` in browser — section visible; run `pnpm run electron:dev` — section never appears because routing redirects to `/ledgers` |
 | Flip a card to active | Edit one `storeChannels.ts` entry locally, dev-server reload, verify card becomes a styled clickable link |
 | Build artifacts | `pnpm run electron:build` produces a signed/unsigned `.dmg` identical (modulo signing) to what would be uploaded to Lemon Squeezy |
@@ -1116,6 +1242,7 @@ These tasks do not produce code changes; they are real-world setup steps. They a
 | SC-011 | Phase A Task 5 test + iOS simulator manual check |
 | SC-012 | Phase A Task 7 + Step 9.5 |
 | SC-013 | Phase A Task 7 (last test case) + Task 17 (real activation) |
+| SC-014 | Phase A Task 5b test + iOS simulator manual check |
 
 ---
 
