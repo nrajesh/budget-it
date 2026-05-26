@@ -119,7 +119,7 @@ There is **no feature difference** between the GitHub free build and the paid st
 **So that** I have an easy path to contribute financially if I find the app valuable.
 
 **Acceptance Scenarios**:
-1. **Given** the existing DonationPage (visible only in the OSS / non-store build per FR-021), **When** the user opens it, **Then** it lists App Store / Play Store / Lemon Squeezy purchase as a supported channel alongside GitHub Sponsors, PayPal, and bank.
+1. **Given** the existing DonationPage (visible on non-native platforms — web and Electron — per FR-021), **When** the user opens it, **Then** it lists App Store / Play Store / Lemon Squeezy purchase as a supported channel alongside GitHub Sponsors, PayPal, and bank.
 2. **Given** the user clicks a store link, **When** the platform permits, **Then** the appropriate store page opens externally; otherwise the URL is shown for the user to visit manually.
 3. **Given** the HomePage in any build, **When** the user scrolls to the "Get Vaulted Money" section, **Then** they see all four store placeholders (Apple App Store, Google Play Store, Lemon Squeezy, Polar.sh) with their current state (Coming Soon or active link).
 
