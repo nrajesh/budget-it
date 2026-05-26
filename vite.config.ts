@@ -10,6 +10,10 @@ const aiDomains = [
   "https://api.mistral.ai",
   "http://localhost:*",
   "http://127.0.0.1:*",
+  // Set VITE_CUSTOM_AI_DOMAIN at build time to allow a custom OpenAI-compatible endpoint
+  ...(process.env.VITE_CUSTOM_AI_DOMAIN
+    ? [process.env.VITE_CUSTOM_AI_DOMAIN]
+    : []),
 ];
 
 export default defineConfig(() => ({
