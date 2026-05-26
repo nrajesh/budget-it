@@ -65,8 +65,10 @@ Smallest, safest change. Land first to validate the round-trip works.
 - [ ] **Step 1.1: Find every current occurrence of the old strings**
 
 ```bash
-grep -rn '"Data local"\|"Open sourced"\|"Privacy-first | Data local | Open sourced"' src/ README.md
+grep -rnE '"Data local"|"Open sourced"|"Privacy-first \| Data local \| Open sourced"' src/ README.md
 ```
+
+The `-E` flag enables extended regex (alternation via `|`) consistently across both GNU and BSD grep (macOS).
 
 Expected: matches in `src/pages/HomePage.tsx`, `src/components/SiteFooter.tsx`, `src/i18n/resources.ts` (English tagline + badge defaults), and the README pillars list. Document any other matches before proceeding.
 
@@ -931,8 +933,7 @@ Vaulted Money is free and open-source under the MIT license. If you find it usef
 |---|---|
 | Buy on Apple App Store (€9.99 one-time) | Coming soon |
 | Buy on Google Play Store (€9.99 one-time) | Coming soon |
-| Buy desktop binary on Lemon Squeezy (€9.99 one-time) | Coming soon |
-| Buy desktop binary on Polar.sh (€9.99 one-time) | Coming soon |
+| Buy desktop binary on Lemon Squeezy *or* Polar.sh (€9.99 one-time) | Coming soon |
 | [GitHub Sponsors](https://github.com/sponsors/nrajesh) | Active |
 | PayPal / direct transfer (see in-app Donation page) | Active |
 
@@ -1105,8 +1106,8 @@ These tasks do not produce code changes; they are real-world setup steps. They a
 | SC-001 | Task 14 (after App Store review approval) |
 | SC-002 | Task 15 (after Play Store approval) |
 | SC-003 | Task 16 |
-| SC-004 | Manual: build from clean checkout, compare hash to Lemon Squeezy artifact |
-| SC-005 | Manual: build APK from clean checkout, sideload, compare to Play Store version |
+| SC-004 | Manual: build from clean checkout, install, verify *functional* parity with Lemon Squeezy download (the spec wording is "functionally identical" — exact byte/hash equivalence will not hold because store-signed artifacts differ in their signature blocks from locally-signed or unsigned builds) |
+| SC-005 | Manual: build APK from clean checkout, sideload, verify *functional* parity with Play Store install (same signing caveat as SC-004) |
 | SC-006 | Phase A Task 3 + Step 9.5 |
 | SC-007 | Phase A Task 6 + Step 9.5 |
 | SC-008 | Phase A Task 1 + Step 9.5 |
