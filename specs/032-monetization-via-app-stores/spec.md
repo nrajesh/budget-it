@@ -44,7 +44,7 @@ There is **no feature difference** between the GitHub free build and the paid st
 
 - **No license keys, license files, or license server.** No code is added to check entitlement at runtime.
 - **No code obfuscation, anti-debug, or hardware fingerprinting.**
-- **No feature gating between free and paid builds** in this iteration. Source-built, GitHub-released, App Store, Play Store, and Lemon Squeezy binaries are functionally identical *with respect to the app's user-facing features*. The only permitted build-time difference is the policy-compliance omission described in FR-021 below (removing the in-app DonationPage from store builds because Apple App Store Review Guideline 3.1.1 prohibits in-app links to external payment methods for digital services). This is a content omission for store policy, not a monetization gate.
+- **No feature gating between free and paid builds** in this iteration. Source-built, GitHub-released, App Store, Play Store, and Lemon Squeezy binaries are produced from the same source and the same commit. The only behavioral difference at runtime is that the in-app DonationPage is hidden on native iOS and Android platforms (Apple App Store Review Guideline 3.1.1 prohibits in-app links to external payment methods for digital services). This is decided by a runtime platform check using `Capacitor.isNativePlatform()` — not a build flag, env var, or any build-time variation. The same compiled binary behaves correctly on each platform.
 - **No entity caps** (transactions, accounts, ledgers, categories, vendors).
 - **No session timeouts or nag dialogs.**
 - **No relicensing.** The project stays MIT.
@@ -126,13 +126,15 @@ There is **no feature difference** between the GitHub free build and the paid st
 ### User Story 7 — App Store submission is policy-compliant (Priority: P1)
 
 **As** the maintainer submitting Vaulted Money to the Apple App Store,
-**I want** the submitted binary to omit the in-app DonationPage and all external-payment links,
-**So that** the submission complies with Apple App Store Review Guideline 3.1.1 (which prohibits in-app links to external payment methods for digital services) and does not get rejected during review.
+**I want** the same source-built binary to omit the in-app DonationPage and all external-payment links when running on iOS,
+**So that** the submission complies with Apple App Store Review Guideline 3.1.1 (which prohibits in-app links to external payment methods for digital services) and does not get rejected during review — and I achieve this without introducing any build-time flag, env var, or release-time configuration friction.
 
 **Acceptance Scenarios**:
-1. **Given** a build produced with `VITE_STORE_BUILD=true`, **When** a user opens the app, **Then** there is no in-app DonationPage accessible via menu, deep link, or Settings, and no link to PayPal/bank/GitHub Sponsors visible inside the app.
-2. **Given** the same store-build, **When** the production bundle is inspected (e.g., via `pnpm run build && grep -r "DonationPage" dist/`), **Then** the DonationPage source is absent from the shipped JavaScript (tree-shaken).
-3. **Given** a build produced with the flag unset, **When** a user opens the app, **Then** the DonationPage behaves as it does today — fully present, all support channels listed.
+1. **Given** the app running on iOS (App Store install), **When** the user navigates the app, **Then** there is no in-app DonationPage accessible via menu, deep link, or Settings, and no link to PayPal/bank/GitHub Sponsors visible inside the app.
+2. **Given** the app running on Android (Play Store install or sideloaded `.apk`), **When** the user navigates the app, **Then** the DonationPage is similarly unreachable.
+3. **Given** the app running in a web browser at vaulted.money, **When** the user navigates the app, **Then** the DonationPage behaves as it does today — fully present, all support channels listed.
+4. **Given** the Electron desktop app (OSS or Lemon Squeezy distribution), **When** the user navigates the app, **Then** the DonationPage behaves as it does today.
+5. **Given** the source code, **When** searched, **Then** no `VITE_STORE_BUILD` or equivalent build-time flag exists; the per-platform behavior is implemented via a runtime `Capacitor.isNativePlatform()` check.
 
 ## Requirements
 
@@ -180,28 +182,23 @@ There is **no feature difference** between the GitHub free build and the paid st
 
 - **FR-018**: No license-check code, license file parser, license server client, hardware fingerprint, or activation flow is added to the application.
 - **FR-019**: No private repository, build-time module aliasing, or feature flag system is introduced to gate features between builds.
-- **FR-020**: No *monetization-driven* code paths differ between the GitHub-published binary and the App Store / Play Store / Lemon Squeezy binary. All builds are produced from the same commit on the public repo. The one permitted variation is the store-policy build flag described in FR-021, which strips the in-app DonationPage from store-bound builds for Apple compliance.
+- **FR-020**: No code paths differ at build time between the GitHub-published binary and the App Store / Play Store / Lemon Squeezy binary. All builds are produced from the same commit on the public repo with no build flags, no env vars, and no per-channel build variants. The only behavioral difference at runtime is the platform-conditional DonationPage rendering described in FR-021.
 
-#### Store-build variant (policy compliance)
+#### Native-platform DonationPage hiding (policy compliance, runtime only)
 
-- **FR-021**: Introduce a single Vite build-mode flag `VITE_STORE_BUILD` (boolean, default `false`). When set to `true` at build time:
-  - The DonationPage route is not registered with the app router.
-  - Any navigation entry (sidebar, Settings, HomePage, etc.) that links to the DonationPage is conditionally not rendered.
-  - The DonationPage source file remains in the repository under MIT; Vite's tree-shaking removes it from the production bundle when no import references it.
-  - No other functional behavior changes. Specifically: data model, ledger logic, transaction handling, reports, settings (other than the DonationPage link), and all other user-visible features are byte-identical to the default build's behavior.
-- **FR-022**: Document the build flag in `documentation/SETUP.md` so that maintainers building for App Store / Play Store / Lemon Squeezy can invoke `VITE_STORE_BUILD=true pnpm run build` (or the equivalent platform-build command with the variable set in env). Default builds (developer workflows, OSS source builds, GitHub Release artifacts) do not set the flag and retain the DonationPage as today.
-- **FR-023**: The store-build flag is the *only* permitted build-time variation introduced by this spec. Future variations require their own spec amendment and justification.
+- **FR-021**: The in-app DonationPage route and any navigation entries that link to it (Settings entries, sidebar items, etc.) are conditionally not rendered when `Capacitor.isNativePlatform()` returns `true` (i.e., when running on iOS or Android). On all other platforms (web at vaulted.money, Electron desktop including both OSS GitHub releases and Lemon Squeezy distribution), the DonationPage and its links render exactly as they do today. This is a **runtime platform check, not a build-time flag**. It introduces no env vars, no build configuration, no secrets, and no deployment friction for OSS users. The same compiled binary behaves correctly on each platform because it asks "am I running on iOS/Android?" at runtime. The DonationPage source file remains in the repository under MIT and remains part of the bundle for non-native platforms; on native platforms it is simply unreachable. This satisfies Apple App Store Review Guideline 3.1.1 (no in-app links to external payment methods for digital services) and the analogous Google Play policy. Accepted trade-off: the Android `.apk` artifact published to GitHub Releases (intended for sideloading) is the same binary as the Play Store version and therefore also hides the DonationPage; this is acceptable because Android sideloaders are tech-savvy enough to find donation links via the GitHub repository or the web app at vaulted.money.
 
-#### HomePage "Coming Soon" store placeholders
+#### HomePage "Coming Soon" store placeholders (web-only by virtue of existing routing)
 
-- **FR-024**: Add a new section to `src/pages/HomePage.tsx` (placement: below the existing pillars/features section, as the last in-page section of HomePage before the layout-level `SiteFooter` — exact position within HomePage to be confirmed during planning) titled "Get Vaulted Money" (or similar). The section contains four cards/badges, one per planned paid channel:
+The HomePage is already web-only: `src/App.tsx` routes `/` to `<HomePage />` only when `usesAppShellRouting === false` (i.e., not Electron, not a native Capacitor platform). On Electron / iOS / Android, `/` redirects to `/ledgers` and the HomePage is never rendered. The placeholders below are therefore visible **only to web visitors at vaulted.money**, and no additional per-platform conditional logic is needed.
+
+- **FR-024**: Add a new section to `src/pages/HomePage.tsx` (placement: as the last in-page section of HomePage before the layout-level `SiteFooter` — exact position within HomePage to be confirmed during planning) titled "Get Vaulted Money" (or similar). The section contains four cards/badges, one per planned paid channel:
   - Apple App Store
   - Google Play Store
   - Lemon Squeezy
   - Polar.sh
 - **FR-025**: Each card displays the store's logo (or text equivalent), the store's name, and a "Coming Soon" label. Cards are visually de-emphasized (e.g., reduced opacity, neutral background) and are non-interactive in the placeholder state (no link, no hover affordance suggesting clickability).
 - **FR-026**: The card's URL and active/placeholder state are sourced from a single configuration module (e.g., `src/data/storeChannels.ts`) so that each channel can be flipped from placeholder to active by editing one file as each store goes live. When a channel is marked active, the card becomes a styled, clickable link to the store URL, and the "Coming Soon" label is removed from that card (so the active card displays only the store name and link affordance).
-- **FR-027**: When `VITE_STORE_BUILD=true`, the HomePage placeholder section additionally hides the card corresponding to the build's own store, where determinable. **For v1, "own store" detection applies only when Capacitor reports the runtime platform as `ios` (hide the Apple App Store card) or `android` (hide the Google Play Store card). Desktop store-builds (Lemon Squeezy, Polar.sh) show all four cards unchanged.** This avoids requiring an additional desktop-specific build flag for v1. The Lemon Squeezy / Polar.sh-distributed desktop binary will display its own store's card; this is acceptable as the link points to the user's own listing or remains "Coming Soon." This is content tailoring, not a feature gate.
 
 ### Distribution Channel Matrix
 
@@ -238,13 +235,11 @@ There is **no feature difference** between the GitHub free build and the paid st
 - `src/pages/HomePage.tsx` — pillars wording (FR-001), new "Get Vaulted Money" placeholder section (FR-024)
 - `src/components/SiteFooter.tsx` — pillars wording (FR-001)
 - `src/i18n/resources.ts` — pillars wording, English only by default (FR-001); other locales unchanged unless a clean translation exists (FR-002)
-- `src/pages/SettingsPage.tsx` — link to Acknowledgments page (FR-007); link to DonationPage made conditional on `!VITE_STORE_BUILD` (FR-021)
-- `src/pages/DonationPage.tsx` — store purchase channels and copy update (FR-008, FR-009); page itself remains in source but is excluded from store builds via FR-021
+- `src/pages/SettingsPage.tsx` — link to Acknowledgments page (FR-007); link to DonationPage made conditional on `!Capacitor.isNativePlatform()` (FR-021)
+- `src/pages/DonationPage.tsx` — store purchase channels and copy update (FR-008, FR-009); page itself remains in source and bundle; route is conditionally registered per FR-021
 - `README.md` — pillars wording, Support-the-project section (FR-003, FR-004)
-- `documentation/SETUP.md` — document `VITE_STORE_BUILD` build flag (FR-022)
 - `package.json` — `build` script wired to invoke `generate-acknowledgments.mjs` (FR-006)
-- App router (wherever routes are registered) — register the Acknowledgments route; conditionally register the DonationPage route based on `VITE_STORE_BUILD` (FR-021)
-- `vite.config.ts` — expose `VITE_STORE_BUILD` to the app via `import.meta.env` (typical Vite practice; the variable already follows the `VITE_` prefix convention so no explicit `define` is required, but the planner should verify)
+- App router (`src/App.tsx` and wherever else routes are registered) — register the Acknowledgments route; conditionally register the DonationPage route based on `Capacitor.isNativePlatform()` (FR-021), reusing the same import pattern already used for `usesAppShellRouting` at `src/App.tsx:61`
 
 #### Unchanged / explicitly preserved
 
@@ -268,11 +263,11 @@ There is **no feature difference** between the GitHub free build and the paid st
 - **SC-005**: A user who sideloads the GitHub-released `.apk` on Android obtains a functionally identical experience to the Play Store purchase (same commit, same artifact).
 - **SC-006**: The in-app Settings page contains a working link to an Acknowledgments view that lists all bundled OSS dependencies with versions and license texts, auto-generated from the current lockfile during build.
 - **SC-007**: The DonationPage lists App Store, Play Store, and Lemon Squeezy as support channels alongside existing options, with copy that frames the purchase as supporting development.
-- **SC-008**: HomePage, SiteFooter, README, and i18n English/Dutch all render the pillars as `Privacy-first. Data-local. Open-sourced.` (or the locale-appropriate parallel form).
+- **SC-008**: HomePage, SiteFooter, README, and the English entries in `src/i18n/resources.ts` all render the pillars as `Privacy-first. Data-local. Open-sourced.`. Non-English locales (initially Dutch) remain unchanged unless a clean idiomatic parallel-hyphenated form exists in that locale (per FR-002).
 - **SC-009**: Application source contains no license-check code, license file parser, license server client, hardware fingerprint, or activation flow. Verifiable by inspecting the diff introduced by this spec: no new runtime code paths that read a license file, hit a license server, evaluate a per-user entitlement, fingerprint hardware, or branch the app's behavior on purchase state. Mechanical `grep` over the full repository is not a reliable check on its own, because terms like `license`, `purchase`, `entitlement`, and `activation` legitimately appear in (a) the existing `LICENSE` file, (b) the generated Acknowledgments content that renders bundled dependency licenses, (c) i18n strings and DonationPage copy referencing the store purchase as a support channel, and (d) Apple/Google store-side terminology in user-visible text. The success criterion is met if no *new runtime logic* of the listed kinds is introduced.
-- **SC-010**: No new environment variables, runtime configuration, or API keys are introduced beyond (a) platform-native code-signing requirements, which live in local developer config not in source, and (b) the single `VITE_STORE_BUILD` build-time flag from FR-021, which is a build-mode toggle (not a runtime configuration) and defaults to `false` so developer workflows are unaffected.
-- **SC-011**: A build produced with `VITE_STORE_BUILD=true` does not include the DonationPage in its routes, does not render any link to the DonationPage from Settings or HomePage, and (verifiable via bundle inspection) does not include the DonationPage source in the production JavaScript bundle (tree-shaken out). A build produced with the flag unset (default) includes the DonationPage normally.
-- **SC-012**: The HomePage renders a "Get Vaulted Money" section containing exactly four placeholder cards (Apple App Store, Google Play Store, Lemon Squeezy, Polar.sh) in the OSS default build. Each card displays the store name and a "Coming Soon" indicator, is visually de-emphasized, and is non-interactive in placeholder state.
+- **SC-010**: No new environment variables, build flags, runtime configuration, or API keys are introduced beyond platform-native code-signing requirements, which live in local developer config and not in source. The same `pnpm run build` command produces every distribution channel's binary; no per-channel build incantation exists. (Note: the existing `import.meta.env.DEV` and similar Vite-built-in vars are not "new" — they are part of the existing build system.)
+- **SC-011**: The same compiled binary, when run on iOS or Android (Capacitor native platforms), does not expose the DonationPage via route navigation, deep link, or Settings entry. When the same binary is run in a web browser or in Electron, the DonationPage is reachable as it is today. Verifiable behaviorally: a single source tree + a single `pnpm run build` invocation produces artifacts whose runtime behavior differs only on the dimension of `Capacitor.isNativePlatform()`.
+- **SC-012**: A visitor to the live web app at https://vaulted.money (the only context in which HomePage is rendered, per existing `usesAppShellRouting` logic at `src/App.tsx:61`) sees a "Get Vaulted Money" section on HomePage containing exactly four placeholder cards (Apple App Store, Google Play Store, Lemon Squeezy, Polar.sh). Each card displays the store name and a "Coming Soon" indicator, is visually de-emphasized, and is non-interactive in placeholder state. Electron and native (iOS/Android) users do not see this section because they do not see HomePage at all.
 - **SC-013**: Editing a single entry in `src/data/storeChannels.ts` from `{active: false}` to `{active: true, url: "..."}` (without other code changes) flips the corresponding placeholder card on the HomePage to an active, styled, clickable link to the supplied URL with the "Coming Soon" label removed. Verification method (unit test, visual snapshot, or rendered-output check) is a planning-phase decision; the criterion is met by any reliable behavioral verification.
 
 ## Future-Proofing
