@@ -139,7 +139,7 @@ There is **no feature difference** between the GitHub free build and the paid st
 #### Acknowledgments page
 
 - **FR-005**: Add an `Acknowledgments` page (route + Settings entry) that renders a generated list of bundled OSS dependencies with name, version, and license text.
-- **FR-006**: Add a build-time script (e.g., `scripts/generate-acknowledgments.mjs`) that walks `pnpm-lock.yaml` (or `node_modules`) and produces a JSON or TS module consumed by the Acknowledgments page. The script must run automatically as part of `pnpm run build` so the Acknowledgments output cannot fall stale relative to bundled dependencies.
+- **FR-006**: Add a build-time script (e.g., `scripts/generate-acknowledgments.mjs`) that walks `pnpm-lock.yaml` (or `node_modules`) and produces a TypeScript module at `src/data/acknowledgments.generated.ts` consumed by the Acknowledgments page. The script must run automatically as part of `pnpm run build` (prepended to the existing `tsc --noEmit && vite build` chain) so the Acknowledgments output cannot fall stale relative to bundled dependencies.
 - **FR-007**: Link the Acknowledgments page from the existing `SettingsPage.tsx` under a clearly labeled section (e.g., "About → Open Source Licenses").
 
 #### Donation page update
@@ -160,7 +160,7 @@ There is **no feature difference** between the GitHub free build and the paid st
 
 #### Build, release, and CI
 
-- **FR-015**: No changes are required to existing `package.json` scripts, the Electron build pipeline, Capacitor configuration, or the CircleCI release pipeline to support paid distribution. The artifacts submitted to stores are produced by the existing scripts.
+- **FR-015**: No changes are required to the platform-build scripts (`electron:build`, `electron:compile`, `android:build:apk`, `android:build:apk:release`, `ios:build:simulator`, `release:local`), the Electron build pipeline, Capacitor configuration, or the CircleCI release pipeline to support paid distribution. The artifacts submitted to stores are produced by the existing platform-build commands. (The `build` script itself is extended per FR-006 to prepend the Acknowledgments generator step; this is the only `package.json` change in scope.)
 - **FR-016**: Configure release signing for iOS (Apple distribution certificate, provisioning profile) and Android (release keystore). Keystore and certificate management is one-time setup; subsequent releases reuse the same signing identities.
 - **FR-017**: No environment variables, secrets, or API keys are introduced to the codebase or its build process beyond those required for platform-native code signing (which live in the developer's local signing config, not in source).
 
@@ -232,7 +232,7 @@ There is **no feature difference** between the GitHub free build and the paid st
 - **SC-006**: The in-app Settings page contains a working link to an Acknowledgments view that lists all bundled OSS dependencies with versions and license texts, auto-generated from the current lockfile during build.
 - **SC-007**: The DonationPage lists App Store, Play Store, and Lemon Squeezy as support channels alongside existing options, with copy that frames the purchase as supporting development.
 - **SC-008**: HomePage, SiteFooter, README, and i18n English/Dutch all render the pillars as `Privacy-first. Data-local. Open-sourced.` (or the locale-appropriate parallel form).
-- **SC-009**: Application source contains no license-check code, license file parser, license server client, hardware fingerprint, or activation flow (verifiable by `grep` for typical patterns: `license`, `activation`, `entitlement`, `purchase_verify`, etc., excluding strings that legitimately reference store-side terminology in copy).
+- **SC-009**: Application source contains no license-check code, license file parser, license server client, hardware fingerprint, or activation flow. Verifiable by inspecting the diff introduced by this spec: no new runtime code paths that read a license file, hit a license server, evaluate a per-user entitlement, fingerprint hardware, or branch the app's behavior on purchase state. Mechanical `grep` over the full repository is not a reliable check on its own, because terms like `license`, `purchase`, `entitlement`, and `activation` legitimately appear in (a) the existing `LICENSE` file, (b) the generated Acknowledgments content that renders bundled dependency licenses, (c) i18n strings and DonationPage copy referencing the store purchase as a support channel, and (d) Apple/Google store-side terminology in user-visible text. The success criterion is met if no *new runtime logic* of the listed kinds is introduced.
 - **SC-010**: No new environment variables, runtime configuration, or API keys are introduced beyond platform-native code-signing requirements (which live in local developer config, not in source).
 
 ## Future-Proofing
