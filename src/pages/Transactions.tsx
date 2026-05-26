@@ -689,7 +689,7 @@ const Transactions = () => {
 
   return (
     <div className="page-container">
-      <div className="flex flex-col gap-6 mb-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+      <div className="app-page-header flex flex-col gap-6">
         <div className="tour-add-transaction">
           <TransactionPageHeader
             onImportClick={handleImportClick}

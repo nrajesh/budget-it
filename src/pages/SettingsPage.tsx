@@ -107,7 +107,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ThemedCard className="tour-settings-currency">
           <ThemedCardHeader>
             <ThemedCardTitle>
@@ -161,7 +161,7 @@ const SettingsPage = () => {
           <ThemedCardContent className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => setIsManageLedgerOpen(true)}
-              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm bg-primary text-primary-foreground"
+              className="h-9 w-full px-2 text-xs sm:text-sm bg-primary text-primary-foreground"
             >
               {t("settings.cards.ledger.edit", {
                 defaultValue: "Edit Current Ledger",
@@ -170,7 +170,7 @@ const SettingsPage = () => {
             <Button
               onClick={() => setIsCreateLedgerOpen(true)}
               variant="outline"
-              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm"
+              className="h-9 w-full px-2 text-xs sm:text-sm"
             >
               {t("settings.cards.ledger.create", {
                 defaultValue: "Create New Ledger",
@@ -364,7 +364,7 @@ const SettingsPage = () => {
                     </p>
                   </div>
 
-                  <Alert className="bg-white/50 dark:bg-black/20 border-indigo-100 dark:border-indigo-900/30">
+                  <Alert className="border-indigo-100 dark:border-indigo-900/30">
                     <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     <AlertDescription className="text-xs font-mono">
                       <div className="grid grid-cols-[80px_1fr] gap-x-2">

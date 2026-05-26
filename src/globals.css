@@ -207,6 +207,10 @@
     @apply w-full rounded-xl border border-slate-200 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
   }
 
+  .app-section-card {
+    @apply w-full rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
+  }
+
   .app-table-shell {
     @apply overflow-hidden rounded-xl bg-transparent;
   }

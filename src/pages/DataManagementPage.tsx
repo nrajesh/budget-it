@@ -217,18 +217,13 @@ const DataManagementPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleExportPlain}
-                variant="outline"
-                className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
-              >
+              <Button onClick={handleExportPlain} variant="outline">
                 <FileJson className="mr-2 h-4 w-4" />
                 Export JSON
               </Button>
               <Button
                 onClick={() => setIsExportPasswordOpen(true)}
                 variant="outline"
-                className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
               >
                 <FileLock className="mr-2 h-4 w-4" />
                 Export Encrypted
@@ -245,11 +240,7 @@ const DataManagementPage = () => {
                 className="hidden"
                 accept=".json,.lock"
               />
-              <Button
-                onClick={handleImportClick}
-                variant="outline"
-                className="bg-white/50 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/40"
-              >
+              <Button onClick={handleImportClick} variant="outline">
                 <Upload className="mr-2 h-4 w-4" />
                 Import JSON
               </Button>

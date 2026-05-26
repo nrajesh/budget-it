@@ -228,60 +228,64 @@ export default function BudgetsPage() {
   }, [selectedBudgetIds.size, filteredBudgets]);
 
   return (
-    <div className="space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
-      <div className="app-page-header flex flex-col items-start justify-between md:flex-row md:items-center">
+    <div className="page-container">
+      <div className="app-page-header flex flex-col items-start gap-4">
         <div>
           <h1 className="app-gradient-title app-page-title">Budgets</h1>
           <p className="app-page-subtitle">
             Track your spending limits and goals
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="tour-smart-budget"
-            onClick={() => setIsSmartBudgetOpen(true)}
-          >
-            <Wand2 className="mr-2 h-4 w-4" />
-            Smart Create
-          </Button>
-          <Button
-            onClick={() => handleOpenDialog()}
-            className="tour-create-budget bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
-          </Button>
+        <div className="app-action-panel">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              className="tour-smart-budget"
+              onClick={() => setIsSmartBudgetOpen(true)}
+            >
+              <Wand2 className="mr-2 h-4 w-4" />
+              Smart Create
+            </Button>
+            <Button
+              onClick={() => handleOpenDialog()}
+              className="tour-create-budget bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Budget
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="space-y-6">
-        <div className="tour-budget-search-bar mb-6 flex gap-4 items-center">
-          <Input
-            placeholder="Search budgets by category name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-lg bg-white/50 dark:bg-black/20 backdrop-blur-sm border-slate-200 dark:border-slate-800"
-          />
-          <Button
-            variant="outline"
-            onClick={handleSelectAll}
-            className="animate-in fade-in zoom-in duration-300"
-          >
-            {selectedBudgetIds.size === filteredBudgets.length &&
-            filteredBudgets.length > 0
-              ? "Deselect All"
-              : "Select All"}
-          </Button>
-          {selectedBudgetIds.size > 0 && (
+        <div className="tour-budget-search-bar app-filter-panel">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              placeholder="Search budgets by category name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:max-w-md"
+            />
             <Button
-              variant="destructive"
-              onClick={handleMassDelete}
+              variant="outline"
+              onClick={handleSelectAll}
               className="animate-in fade-in zoom-in duration-300"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete ({selectedBudgetIds.size})
+              {selectedBudgetIds.size === filteredBudgets.length &&
+              filteredBudgets.length > 0
+                ? "Deselect All"
+                : "Select All"}
             </Button>
-          )}
+            {selectedBudgetIds.size > 0 && (
+              <Button
+                variant="destructive"
+                onClick={handleMassDelete}
+                className="animate-in fade-in zoom-in duration-300"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete ({selectedBudgetIds.size})
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="tour-budget-list">
@@ -289,7 +293,7 @@ export default function BudgetsPage() {
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4">Active Budgets</h2>
+          <h2 className="app-section-title mb-4">Active Budgets</h2>
 
           <BudgetPaginationWrapper
             budgets={activeBudgets}
@@ -303,7 +307,7 @@ export default function BudgetsPage() {
 
           {inactiveBudgets.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4 text-muted-foreground">
+              <h2 className="app-section-title mb-4 text-muted-foreground">
                 Inactive Budgets
               </h2>
               <BudgetPaginationWrapper
