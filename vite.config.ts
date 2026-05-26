@@ -2,20 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-const aiDomains = [
-  "https://generativelanguage.googleapis.com",
-  "https://api.openai.com",
-  "https://api.perplexity.ai",
-  "https://api.anthropic.com",
-  "https://api.mistral.ai",
-  "http://localhost:*",
-  "http://127.0.0.1:*",
-  // Set VITE_CUSTOM_AI_DOMAIN at build time to allow a custom OpenAI-compatible endpoint
-  ...(process.env.VITE_CUSTOM_AI_DOMAIN
-    ? [process.env.VITE_CUSTOM_AI_DOMAIN]
-    : []),
-];
-
 export default defineConfig(() => ({
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
@@ -34,11 +20,15 @@ export default defineConfig(() => ({
       name: "html-csp",
       apply: "build",
       transformIndexHtml(html) {
+        // connect-src uses https: wildcard because users configure arbitrary
+        // BYOK AI endpoints — a hardcoded allowlist would break custom providers.
+        // script/style/font/frame remain tightly scoped.
         const connectSrc = [
           "'self'",
-          "https://api.frankfurter.dev",
+          "https:",
+          "http://localhost:*",
+          "http://127.0.0.1:*",
           "wss://ws-us3.pusher.com",
-          ...aiDomains,
         ].join(" ");
 
         return html.replace(
