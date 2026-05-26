@@ -5,12 +5,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -26,6 +26,8 @@ interface CSVMappingDialogProps {
   onConfirm: (results: Record<string, unknown>[], config: ImportConfig) => void;
   isNewLedger?: boolean;
 }
+
+const UNMAPPED_COLUMN_VALUE = "__csv_unmapped_column__";
 
 const CSVMappingDialog = ({
   isOpen,
@@ -183,10 +185,18 @@ const CSVMappingDialog = ({
   }, [config.delimiter, file, handleParse]);
 
   const handleMappingChange = (required: string, value: string) => {
-    setMapping((prev) => ({
-      ...prev,
-      [required]: value,
-    }));
+    setMapping((prev) => {
+      if (value === UNMAPPED_COLUMN_VALUE) {
+        const next = { ...prev };
+        delete next[required];
+        return next;
+      }
+
+      return {
+        ...prev,
+        [required]: value,
+      };
+    });
   };
 
   const handleConfirm = () => {
@@ -208,7 +218,7 @@ const CSVMappingDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100%-1rem)] max-w-3xl gap-0 overflow-hidden rounded-2xl p-0">
+      <DialogContent className="grid w-[calc(100%-1rem)] max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-2xl p-0">
         <DialogHeader className="border-b px-4 pb-3 pt-4 sm:px-6">
           <DialogTitle>
             {step === "config" ? "Import Settings" : "Map Columns"}
@@ -220,7 +230,7 @@ const CSVMappingDialog = ({
           </p>
         </DialogHeader>
 
-        <div className="max-h-[calc(100dvh-10rem)] overflow-y-auto px-4 py-4 sm:px-6">
+        <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-6">
           {step === "config" && (
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -475,7 +485,7 @@ const CSVMappingDialog = ({
                     <Label className="mb-2 sm:mb-0">{header}</Label>
                     <div>
                       <Select
-                        value={mapping[header] || ""}
+                        value={mapping[header] || UNMAPPED_COLUMN_VALUE}
                         onValueChange={(value) =>
                           handleMappingChange(header, value)
                         }
@@ -484,6 +494,10 @@ const CSVMappingDialog = ({
                           <SelectValue placeholder="Select column" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value={UNMAPPED_COLUMN_VALUE}>
+                            No column
+                          </SelectItem>
+                          <SelectSeparator />
                           {csvHeaders.map((csvHeader) => (
                             <SelectItem key={csvHeader} value={csvHeader}>
                               {csvHeader}
@@ -499,7 +513,7 @@ const CSVMappingDialog = ({
           )}
         </div>
 
-        <DialogFooter className="border-t px-4 py-4 sm:px-6">
+        <div className="flex shrink-0 flex-col gap-2 border-t px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:justify-end sm:px-6">
           {step === "config" ? (
             <>
               <Button
@@ -540,7 +554,7 @@ const CSVMappingDialog = ({
               </div>
             </>
           )}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

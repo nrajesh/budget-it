@@ -7,17 +7,24 @@ import { Smartphone } from "lucide-react";
  * 0.75 = 75 % of real size → gives the "looking at a phone on a desk" feel.
  */
 const PREVIEW_SCALE = 0.75;
+const DEFAULT_WIDTH = 393;
+const DEFAULT_HEIGHT = 852;
+type DimensionUnit = "pt" | "px";
 
 const HomeHeroDemo = () => {
-  const [deviceLabel, setDeviceLabel] = useState("iPhone 17");
-  const [deviceWidth, setDeviceWidth] = useState<number | "">(393);
-  const [deviceHeight, setDeviceHeight] = useState<number | "">(852);
+  const [deviceWidth, setDeviceWidth] = useState<number | "">(DEFAULT_WIDTH);
+  const [deviceHeight, setDeviceHeight] = useState<number | "">(DEFAULT_HEIGHT);
+  const [dimensionUnit, setDimensionUnit] = useState<DimensionUnit>("pt");
 
   // Use fallback values if inputs are empty or invalid
   const width =
-    typeof deviceWidth === "number" && deviceWidth > 0 ? deviceWidth : 393;
+    typeof deviceWidth === "number" && deviceWidth > 0
+      ? deviceWidth
+      : DEFAULT_WIDTH;
   const height =
-    typeof deviceHeight === "number" && deviceHeight > 0 ? deviceHeight : 852;
+    typeof deviceHeight === "number" && deviceHeight > 0
+      ? deviceHeight
+      : DEFAULT_HEIGHT;
 
   // The iframe renders at the real device resolution.
   // The outer wrapper is sized to the *visual* (scaled-down) dimensions
@@ -38,18 +45,12 @@ const HomeHeroDemo = () => {
       </div>
 
       {/* Editable Device config */}
-      <div className="relative mb-3 flex items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-white/90 px-3.5 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-        <div className="flex flex-1 items-center gap-2 min-w-0">
+      <div className="relative mb-3 flex items-center justify-center gap-3 rounded-xl border border-slate-200/80 bg-white/90 px-3.5 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+        <div className="flex items-center gap-2">
           <Smartphone className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
-          <input
-            type="text"
-            value={deviceLabel}
-            onChange={(e) => setDeviceLabel(e.target.value)}
-            placeholder="Phone name"
-            className="w-full bg-transparent text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-200 dark:placeholder:text-slate-500"
-          />
-        </div>
-        <div className="flex shrink-0 items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Dimensions
+          </span>
           <input
             type="number"
             value={deviceWidth}
@@ -58,9 +59,9 @@ const HomeHeroDemo = () => {
               setDeviceWidth(val === "" ? "" : Number(val));
             }}
             placeholder="W"
-            className="w-10 bg-transparent text-right focus:outline-none dark:text-slate-300"
+            className="w-10 bg-transparent text-right text-xs text-slate-500 focus:outline-none dark:text-slate-300"
           />
-          <span>×</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">×</span>
           <input
             type="number"
             value={deviceHeight}
@@ -69,9 +70,17 @@ const HomeHeroDemo = () => {
               setDeviceHeight(val === "" ? "" : Number(val));
             }}
             placeholder="H"
-            className="w-10 bg-transparent focus:outline-none dark:text-slate-300"
+            className="w-10 bg-transparent text-xs text-slate-500 focus:outline-none dark:text-slate-300"
           />
-          <span>pt</span>
+          <select
+            value={dimensionUnit}
+            onChange={(e) => setDimensionUnit(e.target.value as DimensionUnit)}
+            aria-label="Dimension unit"
+            className="bg-transparent text-xs font-medium text-slate-500 focus:outline-none dark:text-slate-300"
+          >
+            <option value="pt">pt</option>
+            <option value="px">px</option>
+          </select>
         </div>
       </div>
 
@@ -95,7 +104,7 @@ const HomeHeroDemo = () => {
             }}
           >
             <iframe
-              title={`Vaulted Money mobile ledger screen – ${deviceLabel || "Custom Phone"}`}
+              title="Vaulted Money mobile ledger screen"
               src="/ledgers?preview=homepage-mobile"
               className="border-0 bg-slate-950"
               style={{

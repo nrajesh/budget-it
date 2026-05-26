@@ -1,6 +1,8 @@
-# Vaulted Money - Secure Finance Tracker
+# Vaulted Money
 
-_A privacy-focused, local-first Secure Finance app. Track spending, manage budgets, and gain insights - without sending your data to the cloud._
+_A private, local-first money tracker for people who want to understand where their money goes without sending their financial life to somebody else's server._
+
+![Vaulted Money add transaction flow](documentation/readme/add-transaction-flow.gif)
 
 [![CircleCI Build](https://img.shields.io/circleci/build/github/nrajesh/vaulted.money/main?logo=circleci&style=for-the-badge&token=CCIPRJ_Vr8m8ZBprdRweVA3p3Zuf1_ec111876745b6b9fe207e3e3bbbfbbf28de994d9)](https://app.circleci.com/pipelines/github/nrajesh/vaulted.money)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nrajesh/vaulted.money)
@@ -11,420 +13,81 @@ _A privacy-focused, local-first Secure Finance app. Track spending, manage budge
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=electron&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google%20gemini&logoColor=white)
 
----
+## What Is Vaulted Money?
 
-**Motivation:** Vaulted Money exists because basic budgeting should not sit behind paywalls when the core idea is simple math and honest records - and because your data should stay yours. For the full story, local-first ethos, and visuals, see **[Why Vaulted Money exists](documentation/WHY_VAULTED_MONEY.md)**.
+Vaulted Money is a personal finance app you run on your own device. You create a ledger, add or import transactions, group them into accounts and categories, set budgets, and review reports.
 
----
+The important bit: your data stays local by default. There is no hosted Vaulted Money account, no central database, and no subscription wall around basic budgeting.
 
-## 🌟 Key Features
+## Who Is It For?
 
-| Category                | Feature                                                                                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 🔒 **Privacy**          | 100% local - data lives in your browser's IndexedDB. No cloud, no servers.                                                              |
-| 📚 **Multi-Ledger**     | Separate ledgers for Personal, Business, Joint finances.                                                                                |
-| 💳 **Transactions**     | Track with categories, sub-categories, vendors, and account groups.                                                                     |
-| 📊 **Budgets**          | Monthly, quarterly, yearly, or one-time budgets with progress tracking.                                                                 |
-| 🔁 **Scheduled**        | Recurring transactions with smart deduplication on import.                                                                              |
-| 📈 **Analytics**        | Visual breakdowns of income, expenses, and savings trends.                                                                              |
-| 🫀 **Financial Pulse**  | Premium dashboard for high-level financial health monitoring.                                                                           |
-| 💬 **Smart Search**     | Natural language filtering for transactions, categories, and dates.                                                                     |
-| 🤖 **Optional AI**      | BYOK (Bring Your Own Key) for auto-categorizing transactions using OpenAI, Gemini, Anthropic, Mistral, Perplexity, or Custom endpoints. |
-| 💾 **Backup & Restore** | Encrypted or plain JSON backups - import instantly without page reloads.                                                                |
-| ⏰ **Auto-Backup**      | Scheduled backups via File System Access API (web) or direct filesystem (Electron).                                                     |
+- People who want a simple private place to track income, expenses, accounts, and budgets.
+- People who are uncomfortable uploading bank exports to a cloud finance service.
+- Developers and self-hosters who want an auditable local-first finance app.
+- Families, freelancers, or small projects that want separate ledgers for different money contexts.
 
----
+## What Can It Do?
 
-## 🏗️ System Architecture
+| Area | Plain-English Meaning |
+| --- | --- |
+| Ledgers | Keep separate money books, such as Personal, Business, or Joint. |
+| Transactions | Record money coming in or going out. |
+| Accounts | Track where money lives, such as checking, savings, cash, or credit. |
+| Categories | Understand what the money was for. |
+| Budgets | Set limits or goals and see progress. |
+| Imports | Bring in bank CSV exports. |
+| Reports | See income, spending, net worth, trends, and summaries. |
+| Backups | Export your data as JSON, with encrypted backup options. |
+| Optional AI | Bring your own API key to help categorize transactions. |
 
-For a detailed view of the system architecture, including web and desktop component diagrams, data flow sequences, and technical decisions, please refer to the [**Architecture Documentation**](documentation/ARCHITECTURE.md).
+## Quick Setup
 
----
+You need three tools first:
 
-## 🏠 Public Homepage (`/`)
+- [Node.js](https://nodejs.org/) 18 or newer
+- [pnpm](https://pnpm.io/) 8 or newer
+- [Git](https://git-scm.com/)
 
-The root route (`/`) is a public landing page that runs without an active ledger. It covers the privacy-first / local-first / open-source positioning, a ledger workspace preview, backup and CSV-import guidance, and copy-paste install commands. The authenticated app lives under `/ledgers`.
-
-> The homepage is implemented in `src/pages/HomePage.tsx` and is kept outside the authenticated `Layout` route so it never triggers the active-ledger redirect.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-> [!IMPORTANT]
-> Before you begin, make sure you have the following installed:
-
-| Requirement | Version | How to Install                                          |
-| ----------- | ------- | ------------------------------------------------------- |
-| **Node.js** | v18+    | [Download](https://nodejs.org/) or use `nvm install 18` |
-| **pnpm**    | v8+     | `npm install -g pnpm`                                   |
-| **Git**     | Any     | [Download](https://git-scm.com/)                        |
-
-> [!NOTE]
-> **pnpm** is strongly recommended. The project uses `pnpm-lock.yaml`, and all scripts are configured for it.
-
-### Step-by-Step Setup
+Then run:
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/nrajesh/vaulted.money.git
 cd vaulted.money
-
-# 2. Install dependencies
 pnpm install
-
-# 3. Verify the setup (optional but recommended)
-pnpm lint && pnpm build
-```
-
-> [!TIP]
-> If `pnpm install` fails, try deleting `node_modules` and running `pnpm install` again:
->
-> ```bash
-> rm -rf node_modules && pnpm install
-> ```
-
----
-
-### 🌐 Running the Web App
-
-```bash
 pnpm dev
 ```
 
-Open **http://localhost:8081** in your browser or the port defined in vite.config.ts. That's it!
+Open [http://localhost:8081](http://localhost:8081) in your browser.
 
----
-
-### 🖥️ Running the Electron Desktop App
+For the desktop app:
 
 ```bash
 pnpm run electron:dev
 ```
 
-This single command does everything:
+That starts the local web app, compiles the Electron files, and opens the desktop window.
 
-1. Starts the Vite dev server on port `8081`
-2. Waits for the server to be ready (`wait-on`)
-3. Compiles Electron main & preload TypeScript
-4. Launches the Electron window
+## Read Next
 
-> [!WARNING]
-> **Do NOT run `pnpm dev` separately before `electron:dev`.**
-> The `electron:dev` script already starts Vite internally using `concurrently`. Running them separately will cause a port conflict on `8081`.
+The README is intentionally short. Use these pages for the details:
 
-> [!NOTE]
-> **First-time Electron run** may take longer as it compiles TypeScript files and downloads the Electron binary (~100 MB).
+| Page | Best For |
+| --- | --- |
+| [Getting Started](documentation/GETTING_STARTED.md) | A non-technical first run and first ledger walkthrough. |
+| [Setup and Builds](documentation/SETUP.md) | Full web, desktop, Android, iOS, and release commands. |
+| [User Guide](documentation/USER_GUIDE.md) | What the app does and how to use the main workflows. |
+| [Developer Guide](documentation/DEVELOPER_GUIDE.md) | Project structure, quality checks, AI provider notes, and contribution workflow. |
+| [Architecture](documentation/ARCHITECTURE.md) | Technical diagrams and system design. |
+| [Why Vaulted Money Exists](documentation/WHY_VAULTED_MONEY.md) | Motivation, privacy stance, and project philosophy. |
+| [Support](documentation/SUPPORT.md) | How to get help. |
 
----
+## Privacy In One Paragraph
 
-### 📱 Mobile Support
+Vaulted Money stores financial data in your browser or local app storage. Nothing is sent to a Vaulted Money server because there is no Vaulted Money server. If you enable optional AI categorization, only the data needed for that action is sent to the provider you configure with your own API key. Because the app is local-first, backups are your responsibility.
 
-| Platform          | Supported? | How                                         |
-| ----------------- | ---------- | ------------------------------------------- |
-| **macOS**         | ✅         | Electron desktop app or browser             |
-| **Windows**       | ✅         | Electron desktop app or browser             |
-| **Linux**         | ✅         | Electron desktop app or browser             |
-| **iOS / Android** | ✅ Native  | Run natively via Capacitor (`npx cap sync`) |
+## License
 
-> Electron cannot run on mobile devices. For mobile access, either host the web version or build the native apps using the provided Capactior iOS/Android targets for local continuity features.
+Vaulted Money is released under the [MIT License](LICENSE).
 
-### Build Paths
-
-Use these command sets depending on what you are trying to produce:
-
-| Goal | What it builds | Command(s) |
-| --- | --- | --- |
-| Web only | Production web bundle in `dist/` | `pnpm build` |
-| Web only (local preview) | Production web bundle plus local preview server | `pnpm build` then `pnpm preview` |
-| Electron only | Electron desktop packages using the current web bundle | `pnpm run electron:build` |
-| Electron dev | Local desktop app with live Vite dev server | `pnpm run electron:dev` |
-| Mobile only (shared sync) | Rebuild web assets and sync both native Capacitor projects | `pnpm run mobile:refresh` |
-| Android only | Rebuild web assets, sync Android, assemble debug APK | `pnpm run android:build:apk` |
-| Android release APK | Rebuild web assets, sync Android, assemble release APK | `pnpm run android:build:apk:release` |
-| iOS simulator only | Rebuild web assets, sync iOS, build simulator app | `pnpm run ios:build:simulator` |
-| Full local release sweep | Electron package + Android debug APK + iOS simulator build | `pnpm run release:local` |
-
-Notes:
-- Electron packaging always depends on a fresh web build because the renderer ships from `dist/`.
-- Capacitor mobile builds always depend on a fresh web build because `cap sync` copies `dist/` into the native shells.
-- `pnpm run mobile:sync` is a lower-level helper that rebuilds the web app and runs `cap sync` without opening, uninstalling, or producing native binaries.
-
-### Mobile Refresh and Clean Reinstall
-
-Use the shared refresh script whenever web assets, native icons, or Capacitor configuration change:
-
-```bash
-pnpm run mobile:refresh
-```
-
-That script runs:
-
-```bash
-pnpm run build
-pnpm exec cap sync ios
-pnpm exec cap sync android
-```
-
-For a full clean reinstall on each simulator/emulator after syncing:
-
-```bash
-# iOS
-xcrun simctl uninstall booted com.vaultedmoney.app || true
-pnpm exec cap open ios
-```
-
-Then in Xcode:
-1. `Product > Clean Build Folder`
-2. `Product > Run`
-
-```bash
-# Android
-adb uninstall com.vaultedmoney.app || true
-cd android
-./gradlew clean
-pnpm exec cap open android
-```
-
-Then in Android Studio:
-1. let Gradle sync
-2. run the `app` target again
-
-> Use the clean reinstall flow after icon updates. Both iOS and Android aggressively cache launcher assets, so `cap sync` alone is not always enough to surface the latest icon.
-
----
-
-### 🔨 Building for Production
-
-| Target                  | Command                        | Output                                                          |
-| ----------------------- | ------------------------------ | --------------------------------------------------------------- |
-| Web                     | `pnpm build`                   | `dist/`                                                         |
-| Desktop (all platforms) | `pnpm run electron:build`      | `release/` (DMG, EXE, AppImage)                                 |
-| Mobile sync only        | `pnpm run mobile:sync`         | Rebuilds web assets and syncs Capacitor without native compile  |
-| Shared mobile refresh   | `pnpm run mobile:refresh`      | Rebuilds web assets and syncs both Capacitor targets            |
-| Android APK             | `pnpm run android:build:apk`   | `android/app/build/outputs/apk/debug/`                          |
-| Android release APK     | `pnpm run android:build:apk:release` | `android/app/build/outputs/apk/release/`                  |
-| iOS simulator app       | `pnpm run ios:build:simulator` | `ios/build/DerivedData/Build/Products/Release-iphonesimulator/` |
-| Full local release sweep| `pnpm run release:local`       | Electron package + Android debug APK + iOS simulator build      |
-
-### GitHub Release Assets
-
-Publishing a GitHub release now keeps GitHub's default source ZIP/TAR assets and also uploads:
-
-- macOS Electron DMG
-- Android release APK
-- unsigned iOS simulator app ZIP
-
-The iOS artifact is a simulator build. Producing a device-installable IPA requires Apple signing certificates and provisioning profiles, which should be provided as repository secrets before enabling an IPA export step.
-
-For local Android testing, `pnpm run android:build:apk` builds the debug APK, which is already signed by Gradle and installable with `adb`.
-
----
-
-## 🔗 Live Demo
-
-Deploy a production build to your host (for example [Cloudflare Pages](https://pages.cloudflare.com/)) and use that URL as the public demo.
-
----
-
-## 📂 Project Structure
-
-```
-vaulted.money/
-├── electron/                  # Electron-specific code
-│   ├── main.ts                #   Main process (window, IPC, fs access)
-│   └── preload.ts             #   Preload script (contextBridge)
-├── src/
-│   ├── components/            # Reusable UI components
-│   │   ├── ui/                #   Shadcn primitives (Button, Dialog, etc.)
-│   │   ├── budgets/           #   Budget management
-│   │   ├── charts/            #   Visualizations
-│   │   ├── dashboard/         #   Home dashboard widgets
-│   │   ├── dialogs/           #   Modals and popups
-│   │   ├── filters/           #   Search & filtering logic
-│   │   └── transactions/      #   Transaction tables & logic
-│   ├── contexts/              # React Context Definitions
-│   ├── providers/             # Context Providers (Data, Theme, etc.)
-│   ├── hooks/                 # Custom React hooks
-│   ├── pages/                 # Route-level page components
-│   │   ├── HomePage.tsx       #   Public landing page (route: /)
-│   │   └── ...                #   Authenticated app pages
-│   ├── types/                 # TypeScript type definitions
-│   ├── utils/                 # Helper functions (currency, date, etc.)
-│   └── tests/                 # Test files
-├── .agent/workflows/          # AI agent slash command definitions
-├── scheduled-agents/          # AI agent rulesets (personality & rules)
-├── specs/                     # Feature specifications (Speckit artifacts)
-├── .circleci/                 # CircleCI Pipeline config
-├── package.json
-├── vite.config.ts
-└── tsconfig.json
-```
-
----
-
-## ✅ Quality Assurance
-
-We enforce high code quality standards using a strict **CircleCI** pipeline. Every pull request must pass the following checks before merging:
-
-| Check          | Command              | Description                                             |
-| -------------- | -------------------- | ------------------------------------------------------- |
-| **Linting**    | `pnpm lint`          | ESLint checks for code quality and best practices.      |
-| **Type Safe**  | `tsc --noEmit`       | Full TypeScript strict mode check.                      |
-| **Formatting** | `pnpm format:check`  | Prettier verification to ensure consistent style.       |
-| **Testing**    | `pnpm test:coverage` | Vitest unit tests with coverage reporting.              |
-| **Security**   | `pnpm audit`         | Checks dependencies for known vulnerabilities.          |
-| **Build**      | `pnpm build`         | Verifies that the production bundle compiles correctly. |
-
-> [!TIP]
-> You can run `pnpm validate` locally to run TypeScript and ESLint checks in one go.
-
-> [!NOTE]
-> **Security Overrides**: `package.json` includes a handful of `pnpm.overrides` that pin transitive dependencies (`tar`, `undici`, `flatted`, `yauzl`, `dompurify`, `@tootallnate/once`, `picomatch`) to patched versions. These resolve Dependabot alerts for packages we don't import directly - they're pulled in by tooling like Vitest, ESLint, Capacitor CLI, and Electron. Run `pnpm audit` to verify.
-
----
-
-## 📚 Documentation & Workflow
-
-### 1. Interpreting the Documentation Folder
-
-The `documentation/` folder serves as the "Constitution" and "Operating System" for the project.
-
-| File                                                                         | Purpose                                                                                                             |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **[`DESIGN.md`](documentation/DESIGN.md)**                                   | **Brand Identity Manual**. Philosophy, logo geometry, and color strategies for light/dark modes.                    |
-| **[`WHY_VAULTED_MONEY.md`](documentation/WHY_VAULTED_MONEY.md)**             | **Why this project**. Motivation, privacy stance, hopes for forks/localization, and story infographics.             |
-| **[`SPEC_DRIVEN_DEVELOPMENT.md`](documentation/SPEC_DRIVEN_DEVELOPMENT.md)** | **The Workflow Guide**. Comprehensive guide on how to build features using the Spec-Driven Development methodology. |
-| **[`AGENTS.md`](documentation/AGENTS.md)**                                   | **The Rulebook**. Technical constraints and boundaries for the AI agent (e.g., "Privacy First", "Use Tailwind").    |
-| **[`SUPPORT.md`](documentation/SUPPORT.md)**                                 | **Support Policy**. How to get help and file issues.                                                                |
-| **[`SECURITY.md`](documentation/SECURITY.md)**                               | **Security Policy**. Reporting vulnerabilities and privacy details.                                                 |
-
-### 2. How to Work with Speckit
-
-> **Note**: For a deep dive into the workflow, read the [**Spec-Driven Development Guide**](documentation/SPEC_DRIVEN_DEVELOPMENT.md).
-
-#### Quick Start
-
-1.  **Specify**: `/speckit.specify "Build a new feature"`
-2.  **Plan**: `/speckit.plan`
-3.  **Task**: `/speckit.tasks`
-4.  **Implement**: `/speckit.implement`
-
-### 3. AI Agent Workflows
-
-This project includes three specialized AI agents that can be invoked via slash commands in a compatible AI-powered IDE. Each agent focuses on a specific area of code quality and runs a self-contained workflow: it scans the codebase, identifies improvements, implements changes, and verifies them - all from a single command.
-
-| Command           | Agent       | What It Does                                                                                                                             |
-| ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `/agent.palette`  | 🎨 Palette  | Finds and fixes **UX and accessibility** issues - missing ARIA labels, poor color contrast, keyboard navigation gaps, and visual polish. |
-| `/agent.bolt`     | ⚡ Bolt     | Finds and fixes **performance** issues - unnecessary re-renders, missing memoization, bundle size optimizations, and slow queries.       |
-| `/agent.sentinel` | 🛡️ Sentinel | Finds and fixes **security** issues - XSS vulnerabilities, unsafe data handling, missing input validation, and dependency risks.         |
-
-#### How do they work?
-
-Each agent has two parts:
-
-1. **Ruleset** (`scheduled-agents/*.md`) - A detailed personality and checklist that tells the agent what to look for and how to behave. Think of it as the agent's "mission brief".
-2. **Workflow** (`.agent/workflows/agent.*.md`) - The step-by-step process the agent follows: create a branch → scan the codebase → implement fixes → run all quality checks → merge.
-
-#### Do I need a specific IDE?
-
-The slash commands (e.g., `/agent.palette`) work automatically in IDEs that support the `.agent/workflows/` convention. Even if your IDE doesn't support slash commands, the ruleset files in `scheduled-agents/` are plain markdown - you can read them and follow the instructions manually, or paste them as context for any AI assistant.
-
----
-
-## 🛠️ Development Guide
-
-### AI Provider Configuration
-
-Vaulted Money supports "Bring Your Own Key" (BYOK) AI categorization. You can manage AI providers directly in the application.
-
-1.  **AI Provider Management**: Navigate to **Management > AI Providers** in the sidebar.
-2.  **Add/Edit Provider**:
-    - Click **Add AI Provider** to add a new endpoint.
-    - Set the **Name**, **Model ID**, and **Base URL**.
-    - **Provider Type**: Choose Gemini, OpenAI, Anthropic, Mistral, Perplexity, or Custom (OpenAI compatible).
-3.  **Configure API Key**: Go to **Settings**, select your new provider as the default, and enter your API key. Keys are stored safely and locally in your browser's IndexedDB.
-4.  **Local LLMs**: Add a provider with Type `Custom` and Base URL `http://localhost:11434/v1` (for Ollama) to use local models securely without any internet access required.
-
-> [!NOTE]
-> AI providers are stored in the database and included in exports, but **API keys are never exported** for security reasons. You must re-enter keys on new devices.
-
-### ⚠️ Important: Content Security Policy (CSP)
-
-Because Vaulted Money is a strict local-first application, its Content Security Policy (CSP) blocks outgoing network requests by default.
-
-**If you add a completely new API domain via the UI (e.g. `https://api.my-new-ai.com`), you MUST add it to the allowed domains list in the code.**
-
-1. Open `vite.config.ts`.
-2. Add your new domain to the `aiDomains` array:
-
-```typescript
-// vite.config.ts
-const aiDomains = [
-  "https://generativelanguage.googleapis.com",
-  "https://api.openai.com",
-  "https://api.anthropic.com",
-  "https://api.mistral.ai",
-  "https://api.perplexity.ai",
-  // Add your new domain here:
-  "https://api.your-custom-ai-provider.com",
-];
-```
-
-3. Restart the development server (`pnpm dev`) or rebuild the app.
-
-> [!TIP]
-> You rarely need to write new code to support a new AI provider! Simply select `Custom` as the Provider Type in the UI. Our robust JSON parser handles OpenAI-compatible JSON responses automatically. You only need to edit `useAutoCategorize.ts` if the new provider has a completely unique request structure (like Anthropic).
-
-### Adding New Components
-
-1. `src/components/ui/` - Generic, reusable UI primitives
-2. `src/components/<feature>/` - Feature-specific components
-3. `src/components/layout/` - Layout wrappers
-
-**Guidelines:**
-
-- Use **functional components** with TypeScript interfaces
-- Style with **Tailwind CSS** utility classes
-- Ensure **responsive design** (mobile-first)
-- Add JSDoc comments for complex logic
-
-### State Management
-
-- `useTransactions()` - global financial data
-- `useState` - UI-only state (dialog open/close)
-- `useQuery` - async data fetching with TanStack Query
-
-### Testing
-
-```bash
-pnpm test              # Run unit tests (Vitest)
-pnpm test:coverage     # Run with coverage report
-pnpm lint              # Run ESLint checks
-pnpm validate          # TypeScript + ESLint in one shot
-```
-
----
-
-## 📦 Deployment
-
-The web build is a static SPA (`dist/`). Use any static host; **Cloudflare Pages** is a good fit: connect the Git repository, set the build command to `pnpm run build`, the build output directory to `dist`, and use Node 20+ to match local builds. The `public/_redirects` file is included for client-side routing on Cloudflare Pages.
-
-You can also deploy the `dist` folder with `npx wrangler pages deploy dist` (Wrangler from devDependencies or `npx`) after `pnpm run build`, if you are not using Git-integrated builds.
-
----
-
-## 🛡️ Privacy Note
-
-> This application runs entirely in your browser (or local Electron instance). **No data is ever sent to a server** unless you explicitly configure and trigger the completely optional AI auto-categorization feature using your own API key. Clearing your browser cache or site data will remove your financial data unless you have exported a backup. Always keep backups of your important data.
-
----
-
-<p align="center">
-  Made with ❤️ for your financial freedom
-</p>
+Made for calmer, more private money tracking.
