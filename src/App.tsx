@@ -150,10 +150,12 @@ function App() {
                                 path="/ai-providers"
                                 element={<AIProviders />}
                               />
-                              <Route
-                                path="/donate"
-                                element={<DonationPage />}
-                              />
+                              {!Capacitor.isNativePlatform() && (
+                                <Route
+                                  path="/donate"
+                                  element={<DonationPage />}
+                                />
+                              )}
                               <Route
                                 path="/acknowledgments"
                                 element={<AcknowledgmentsPage />}

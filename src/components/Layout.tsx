@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import {
@@ -789,19 +790,21 @@ const Layout = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname === "/donate"}
-                >
-                  <Link to="/donate">
-                    <Heart />
-                    <span>
-                      {t("layout.nav.donate", { defaultValue: "Donate" })}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {!Capacitor.isNativePlatform() && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === "/donate"}
+                  >
+                    <Link to="/donate">
+                      <Heart />
+                      <span>
+                        {t("layout.nav.donate", { defaultValue: "Donate" })}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>

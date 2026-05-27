@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { AIProvider } from "@/types/dataProvider";
 import { useTranslation } from "react-i18next";
@@ -505,13 +506,15 @@ const SettingsPage = () => {
                 <Scale className="h-4 w-4 text-muted-foreground" />
                 Open Source Licenses
               </Link>
-              <Link
-                to="/donate"
-                className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
-              >
-                <Heart className="h-4 w-4 text-pink-500" />
-                Support Development
-              </Link>
+              {!Capacitor.isNativePlatform() && (
+                <Link
+                  to="/donate"
+                  className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
+                >
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  Support Development
+                </Link>
+              )}
             </div>
           </ThemedCardContent>
         </ThemedCard>
