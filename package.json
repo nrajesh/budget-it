@@ -6,7 +6,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/generate-acknowledgments.mjs && tsc --noEmit && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
