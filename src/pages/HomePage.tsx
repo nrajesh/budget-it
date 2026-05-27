@@ -195,13 +195,13 @@ const HomePage = () => {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 sm:h-24">
           <Link
             to="/"
-            className="flex min-w-0 flex-1 items-center"
+            className="flex shrink-0 items-center"
             aria-label="Vaulted Money home"
           >
             <BrandLockup size="header" />
           </Link>
 
-          <nav className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 p-1 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900/70 md:flex">
+          <nav className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 p-1 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900/70 lg:flex">
             <a
               href="#trust"
               className="rounded-full px-4 py-2 font-medium text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-200"

@@ -21,10 +21,11 @@ const sizeStyles: Record<
   }
 > = {
   header: {
-    // Font-size on the wrapper becomes the shared scale unit.
-    // Icon is h-[2em]/w-[2em] so it is always exactly 2× the text — at every width.
+    // Font-size on the wrapper is the shared scale unit.
+    // Icon is h-[2.5em]/w-[2.5em] so it is always exactly 2.5× the text at every width.
+    // Square logo fills the container fully; rectangular logo would letterbox to ~56%.
     wrapper: "gap-2 sm:gap-3 text-[clamp(1.4rem,3.5vw,2.7rem)]",
-    iconWrapper: "h-[2em] w-[2em] shrink-0",
+    iconWrapper: "h-[2.5em] w-[2.5em] shrink-0",
     title: "text-[1em]",
   },
   sidebar: {
@@ -65,7 +66,11 @@ const BrandLockup = ({
         )}
       >
         <img
-          src={resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+          src={
+            resolvedTheme === "dark"
+              ? "/logo-square-dark.png"
+              : "/logo-square-light.png"
+          }
           alt="Vaulted Money"
           className={cn(
             "h-full w-full shrink-0 object-contain transition-transform",
