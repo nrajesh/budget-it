@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { execSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 const SCRIPT = resolve(__dirname, "../../scripts/generate-acknowledgments.mjs");
@@ -22,7 +22,8 @@ describe("generate-acknowledgments script", () => {
   });
 
   it("each entry has name, version, license, licenseText", async () => {
-    const { acknowledgments } = await import("../data/acknowledgments.generated");
+    const { acknowledgments } =
+      await import("../data/acknowledgments.generated");
     for (const entry of acknowledgments) {
       expect(entry).toHaveProperty("name");
       expect(entry).toHaveProperty("version");
@@ -34,9 +35,12 @@ describe("generate-acknowledgments script", () => {
   });
 
   it("entries are sorted alphabetically by name", async () => {
-    const { acknowledgments } = await import("../data/acknowledgments.generated");
+    const { acknowledgments } =
+      await import("../data/acknowledgments.generated");
     const names = acknowledgments.map((a: { name: string }) => a.name);
-    const sorted = [...names].sort((a: string, b: string) => a.localeCompare(b));
+    const sorted = [...names].sort((a: string, b: string) =>
+      a.localeCompare(b),
+    );
     expect(names).toEqual(sorted);
   });
 });

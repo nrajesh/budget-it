@@ -23,7 +23,14 @@ import { useSyncConfig } from "@/hooks/useSyncConfig";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, FolderOpen, ShieldAlert, Brain } from "lucide-react";
+import {
+  Info,
+  FolderOpen,
+  ShieldAlert,
+  Brain,
+  Scale,
+  Heart,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useDataProvider } from "@/context/DataProviderContext";
@@ -476,6 +483,36 @@ const SettingsPage = () => {
                 </div>
               </div>
             )}
+          </ThemedCardContent>
+        </ThemedCard>
+      </div>
+
+      {/* About section */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <ThemedCard className="md:col-span-2 lg:col-span-3">
+          <ThemedCardHeader>
+            <ThemedCardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-muted-foreground" />
+              About
+            </ThemedCardTitle>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/acknowledgments"
+                className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
+              >
+                <Scale className="h-4 w-4 text-muted-foreground" />
+                Open Source Licenses
+              </Link>
+              <Link
+                to="/donate"
+                className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
+              >
+                <Heart className="h-4 w-4 text-pink-500" />
+                Support Development
+              </Link>
+            </div>
           </ThemedCardContent>
         </ThemedCard>
       </div>

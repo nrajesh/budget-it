@@ -50,6 +50,7 @@ const CurrenciesPage = lazy(() => import("@/pages/CurrenciesPage"));
 const AIProviders = lazy(() => import("@/pages/AIProviders"));
 import BackupManager from "@/components/backup/BackupManager";
 const DonationPage = lazy(() => import("@/pages/DonationPage"));
+const AcknowledgmentsPage = lazy(() => import("@/pages/AcknowledgmentsPage"));
 import { ContinuitySyncManager } from "@/components/ContinuitySyncManager";
 import { TourProvider } from "./contexts/TourContext";
 import HelpTour from "./components/ui/help-tour";
@@ -152,6 +153,10 @@ function App() {
                               <Route
                                 path="/donate"
                                 element={<DonationPage />}
+                              />
+                              <Route
+                                path="/acknowledgments"
+                                element={<AcknowledgmentsPage />}
                               />
 
                               <Route path="*" element={<NotFound />} />
