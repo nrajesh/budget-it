@@ -9,12 +9,22 @@ import { Smartphone } from "lucide-react";
 const PREVIEW_SCALE = 0.75;
 const DEFAULT_WIDTH = 393;
 const DEFAULT_HEIGHT = 852;
-type DimensionUnit = "pt" | "px";
 
+/**
+ * Dimension limits.
+ * MAX_WIDTH is derived from the container's max-w-[26rem] (416 px):
+ *   phoneFrameWidth = visualWidth + 24  ≤ 416
+ *   visualWidth     = width × 0.75      ≤ 392
+ *   width                               ≤ 522  → floor to 520
+ * MAX_HEIGHT matches the tallest common iOS device (iPhone 14 Pro Max).
+ */
+const MIN_WIDTH = 320;
+const MAX_WIDTH = 520;
+const MIN_HEIGHT = 568;
+const MAX_HEIGHT = 932;
 const HomeHeroDemo = () => {
   const [deviceWidth, setDeviceWidth] = useState<number | "">(DEFAULT_WIDTH);
   const [deviceHeight, setDeviceHeight] = useState<number | "">(DEFAULT_HEIGHT);
-  const [dimensionUnit, setDimensionUnit] = useState<DimensionUnit>("pt");
 
   // Use fallback values if inputs are empty or invalid
   const width =
@@ -54,33 +64,43 @@ const HomeHeroDemo = () => {
           <input
             type="number"
             value={deviceWidth}
+            min={MIN_WIDTH}
+            max={MAX_WIDTH}
             onChange={(e) => {
               const val = e.target.value;
-              setDeviceWidth(val === "" ? "" : Number(val));
+              if (val === "") {
+                setDeviceWidth("");
+              } else {
+                setDeviceWidth(
+                  Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(val))),
+                );
+              }
             }}
             placeholder="W"
-            className="w-10 bg-transparent text-right text-xs text-slate-500 focus:outline-none dark:text-slate-300"
+            className="w-14 bg-transparent text-right text-xs text-slate-500 focus:outline-none dark:text-slate-300"
           />
           <span className="text-xs text-slate-400 dark:text-slate-500">×</span>
           <input
             type="number"
             value={deviceHeight}
+            min={MIN_HEIGHT}
+            max={MAX_HEIGHT}
             onChange={(e) => {
               const val = e.target.value;
-              setDeviceHeight(val === "" ? "" : Number(val));
+              if (val === "") {
+                setDeviceHeight("");
+              } else {
+                setDeviceHeight(
+                  Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, Number(val))),
+                );
+              }
             }}
             placeholder="H"
-            className="w-10 bg-transparent text-xs text-slate-500 focus:outline-none dark:text-slate-300"
+            className="w-14 bg-transparent text-xs text-slate-500 focus:outline-none dark:text-slate-300"
           />
-          <select
-            value={dimensionUnit}
-            onChange={(e) => setDimensionUnit(e.target.value as DimensionUnit)}
-            aria-label="Dimension unit"
-            className="bg-transparent text-xs font-medium text-slate-500 focus:outline-none dark:text-slate-300"
-          >
-            <option value="pt">pt</option>
-            <option value="px">px</option>
-          </select>
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            px
+          </span>
         </div>
       </div>
 
