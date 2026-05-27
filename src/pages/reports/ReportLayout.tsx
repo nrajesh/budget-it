@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { Capacitor } from "@capacitor/core";
 import { SearchFilterBar } from "@/components/filters/SearchFilterBar";
 import ExportButtons from "@/components/reports/ExportButtons";
 import { useTransactionFilters } from "@/hooks/transactions/useTransactionFilters";
@@ -357,13 +358,15 @@ const ReportLayout: React.FC<ReportLayoutProps> = ({
           <h2 className="app-gradient-title app-page-title">{title}</h2>
           <div className="app-page-subtitle">{description}</div>
         </div>
-        <div className="tour-report-export">
-          <ExportButtons
-            onPdfExport={handlePdfExport}
-            onExcelExport={handleExcelExport}
-            onCsvExport={handleCsvExport}
-          />
-        </div>
+        {!Capacitor.isNativePlatform() && (
+          <div className="tour-report-export">
+            <ExportButtons
+              onPdfExport={handlePdfExport}
+              onExcelExport={handleExcelExport}
+              onCsvExport={handleCsvExport}
+            />
+          </div>
+        )}
       </div>
 
       <div className="tour-report-filters">
