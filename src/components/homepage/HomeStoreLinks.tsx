@@ -1,0 +1,69 @@
+import { storeChannels } from "@/data/storeChannels";
+import {
+  ThemedCard,
+  ThemedCardContent,
+  ThemedCardHeader,
+  ThemedCardTitle,
+} from "@/components/ThemedCard";
+import { cn } from "@/lib/utils";
+
+export default function HomeStoreLinks() {
+  return (
+    <section className="mx-auto max-w-5xl px-6 py-12">
+      <h2 className="app-gradient-title text-2xl font-semibold mb-2">
+        Get Vaulted Money
+      </h2>
+      <p className="text-muted-foreground mb-6">
+        Coming soon to your favorite store. The same app is free on{" "}
+        <a
+          href="https://github.com/nrajesh/vaulted.money"
+          className="underline"
+        >
+          GitHub
+        </a>
+        . Buying through a store supports continued development.
+      </p>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {storeChannels.map((channel) => {
+          const isActive = channel.active && channel.url;
+          const cardClass = cn(
+            "transition",
+            isActive ? "hover:shadow-md" : "opacity-60",
+          );
+          const Inner = (
+            <ThemedCard className={cardClass}>
+              <ThemedCardHeader>
+                <ThemedCardTitle className="text-sm font-medium">
+                  {channel.label}
+                </ThemedCardTitle>
+              </ThemedCardHeader>
+              <ThemedCardContent>
+                {isActive ? (
+                  <span className="text-xs text-primary">Open store →</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    Coming Soon
+                  </span>
+                )}
+              </ThemedCardContent>
+            </ThemedCard>
+          );
+          if (isActive) {
+            return (
+              <a
+                key={channel.key}
+                href={channel.url ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                {Inner}
+              </a>
+            );
+          }
+          return <div key={channel.key}>{Inner}</div>;
+        })}
+      </div>
+    </section>
+  );
+}
