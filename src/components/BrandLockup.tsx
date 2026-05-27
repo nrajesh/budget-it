@@ -21,10 +21,11 @@ const sizeStyles: Record<
   }
 > = {
   header: {
-    wrapper: "gap-2 sm:gap-2.5",
-    iconWrapper:
-      "[height:clamp(2.5rem,10vw,6rem)] [width:clamp(2.5rem,10vw,6rem)]",
-    title: "text-[clamp(1.55rem,7vw,2rem)]",
+    // Font-size on the wrapper becomes the shared scale unit.
+    // Icon is h-[2em]/w-[2em] so it is always exactly 2× the text — at every width.
+    wrapper: "gap-2 sm:gap-3 text-[clamp(1.4rem,3.5vw,2.7rem)]",
+    iconWrapper: "h-[2em] w-[2em] shrink-0",
+    title: "text-[1em]",
   },
   sidebar: {
     wrapper: "gap-0",
