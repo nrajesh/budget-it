@@ -22,8 +22,9 @@ const sizeStyles: Record<
 > = {
   header: {
     wrapper: "gap-2 sm:gap-2.5",
-    iconWrapper: "h-10 w-10 sm:h-20 sm:w-20 lg:h-24 lg:w-24",
-    title: "text-[clamp(1.55rem,7vw,2rem)] sm:text-[2.45rem] lg:text-[2.7rem]",
+    iconWrapper:
+      "[height:clamp(2.5rem,10vw,6rem)] [width:clamp(2.5rem,10vw,6rem)]",
+    title: "text-[clamp(1.55rem,7vw,2rem)]",
   },
   sidebar: {
     wrapper: "gap-0",
