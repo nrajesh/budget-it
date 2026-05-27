@@ -1,4 +1,4 @@
-import { ArrowRight, Heart, Smartphone } from "lucide-react";
+import { ArrowRight, Heart, Smartphone, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ThemedCard,
@@ -8,6 +8,7 @@ import {
   ThemedCardTitle,
 } from "@/components/ThemedCard";
 import { Badge } from "@/components/ui/badge";
+import { storeChannels } from "@/data/storeChannels";
 
 export default function DonationPage() {
   return (
@@ -16,9 +17,9 @@ export default function DonationPage() {
         <div>
           <h1 className="app-gradient-title app-page-title">Donate</h1>
           <p className="app-page-subtitle">
-            If you find this project useful, consider supporting its
-            development. Your contribution helps keep the lights on and the code
-            flowing.
+            Vaulted Money is free and open-source. If you find it useful,
+            consider supporting development through a store purchase or direct
+            contribution.
           </p>
         </div>
       </div>
@@ -148,6 +149,83 @@ export default function DonationPage() {
             </p>
           </ThemedCardContent>
         </ThemedCard>
+      </div>
+
+      {/* Store Channels */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4 text-foreground">
+          Buy on a Store
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Buying through a store is the easiest way to support development. The
+          same app is free on{" "}
+          <a
+            href="https://github.com/nrajesh/vaulted.money"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            GitHub
+          </a>{" "}
+          for those who want to build it themselves.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {storeChannels
+            .filter((ch) => ch.key !== "polarSh")
+            .map((channel) => {
+              const isActive = channel.active && channel.url;
+              return (
+                <ThemedCard
+                  key={channel.key}
+                  className={
+                    isActive
+                      ? "border-blue-200 dark:border-blue-900/50"
+                      : "opacity-70"
+                  }
+                >
+                  <ThemedCardHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          isActive
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
+                        }
+                      >
+                        {isActive ? "Available" : "Coming Soon"}
+                      </Badge>
+                    </div>
+                    <ThemedCardTitle className="flex items-center gap-3 text-xl">
+                      <Store className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      {channel.label}
+                    </ThemedCardTitle>
+                    <ThemedCardDescription>
+                      €9.99 one-time — supports continued development
+                    </ThemedCardDescription>
+                  </ThemedCardHeader>
+                  <ThemedCardContent>
+                    {isActive ? (
+                      <Button size="lg" className="w-full gap-2 group" asChild>
+                        <a
+                          href={channel.url!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Get on {channel.label}
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        This channel will be available soon.
+                      </p>
+                    )}
+                  </ThemedCardContent>
+                </ThemedCard>
+              );
+            })}
+        </div>
       </div>
     </div>
   );
