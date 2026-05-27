@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execSync } from "node:child_process";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
@@ -89,3 +90,10 @@ export const acknowledgments: Acknowledgment[] = ${JSON.stringify(entries, null,
 `;
 writeFileSync(OUTPUT, header);
 console.log(`generate-acknowledgments: wrote ${entries.length} entries to ${OUTPUT}`);
+
+// Auto-format with prettier if available (keeps validate happy)
+try {
+  execSync(`npx prettier --write "${OUTPUT}"`, { stdio: "ignore" });
+} catch {
+  // prettier not available — skip formatting
+}
