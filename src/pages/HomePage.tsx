@@ -56,7 +56,7 @@ const trustPillars = [
   },
   {
     icon: HardDrive,
-    title: "Data local",
+    title: "Data-local",
     description:
       "Vaulted Money is built around local ledgers, IndexedDB, and optional file backups instead of a hosted database.",
     previewTitle: "Backup vault",
@@ -66,7 +66,7 @@ const trustPillars = [
   },
   {
     icon: GitFork,
-    title: "Open sourced",
+    title: "Open-sourced",
     description:
       "The code, roadmap, and privacy posture are auditable in the public repository.",
     previewTitle: "Auditable source",
@@ -267,10 +267,10 @@ const HomePage = () => {
                 {t("home.badges.private", { defaultValue: "Privacy-first" })}
               </span>
               <span className="rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700 dark:border-sky-700/60 dark:bg-sky-950/50 dark:text-sky-200">
-                {t("home.badges.local", { defaultValue: "Data local" })}
+                {t("home.badges.local", { defaultValue: "Data-local" })}
               </span>
               <span className="rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-200">
-                {t("home.badges.open", { defaultValue: "Open sourced" })}
+                {t("home.badges.open", { defaultValue: "Open-sourced" })}
               </span>
             </div>
 

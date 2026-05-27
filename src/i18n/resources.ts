@@ -83,7 +83,7 @@ export const resources: Resource = {
           setup: "Setup",
         },
         footer: {
-          tagline: "Privacy-first | Data local | Open sourced",
+          tagline: "Privacy-first | Data-local | Open-sourced",
           heartLink: "Made with ❤️ for your financial freedom",
           madeBy: "Made by ",
           withHeart: " with ❤️ for your financial ",
