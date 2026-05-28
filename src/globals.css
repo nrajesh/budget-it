@@ -207,6 +207,10 @@
     @apply w-full rounded-xl border border-slate-200 bg-white/50 p-3 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
   }
 
+  .app-section-card {
+    @apply w-full rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm dark:border-slate-800 dark:bg-black/20;
+  }
+
   .app-table-shell {
     @apply overflow-hidden rounded-xl bg-transparent;
   }
@@ -243,6 +247,32 @@
     color: hsl(var(--brand-accent));
   }
 
+  .icon-brand {
+    color: hsl(var(--brand-accent));
+  }
+}
+
+/* ── Sidebar: active nav items use brand accent ───────────────────────────── */
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: hsl(var(--brand-accent) / 0.12);
+  color: hsl(var(--brand-accent));
+}
+
+[data-sidebar="menu-button"][data-active="true"] svg {
+  color: hsl(var(--brand-accent));
+}
+
+/* Hover gets a subtle brand tint so hover→active feels continuous */
+[data-sidebar="menu-button"]:not([data-active="true"]):hover {
+  background-color: hsl(var(--brand-accent) / 0.07);
+  color: hsl(var(--brand-accent) / 0.85);
+}
+
+[data-sidebar="menu-button"]:not([data-active="true"]):hover svg {
+  color: hsl(var(--brand-accent) / 0.85);
+}
+
+@layer components {
   .app-accent-strong-text {
     color: hsl(var(--brand-accent-strong));
   }

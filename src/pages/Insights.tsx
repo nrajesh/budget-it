@@ -506,7 +506,7 @@ export default function Insights() {
   );
 
   return (
-    <div className="space-y-6 p-3 sm:p-6 rounded-xl min-h-[calc(100vh-100px)] transition-all duration-500 bg-slate-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-black">
+    <div className="page-container">
       <div className="app-page-header">
         <h1 className="app-gradient-title app-page-title">Insights</h1>
         <p className="app-page-subtitle">
@@ -516,7 +516,7 @@ export default function Insights() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Budget Analysis</h2>
+          <h2 className="app-section-title">Budget Analysis</h2>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
             {sortedInsights.length} Active Budgets
           </span>
@@ -648,11 +648,11 @@ export default function Insights() {
       {(topAccountTrends.length > 0 || topVendorTrends.length > 0) && (
         <div className="tour-insights-trends grid gap-6 md:grid-cols-2">
           {/* Account Trends */}
-          <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="app-section-card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-5 w-5 text-blue-500" />
               <div className="flex flex-col">
-                <h2 className="text-xl font-semibold">Top Account Activity</h2>
+                <h2 className="app-section-title">Top Account Activity</h2>
                 <span className="text-xs text-muted-foreground">
                   {hasInsufficientData
                     ? "Not enough data for comparison"
@@ -681,11 +681,11 @@ export default function Insights() {
           </div>
 
           {/* Vendor Trends */}
-          <div className="bg-white/50 dark:bg-black/20 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+          <div className="app-section-card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <Lightbulb className="h-5 w-5 text-yellow-500" />
               <div className="flex flex-col">
-                <h2 className="text-xl font-semibold">Top Vendor Spending</h2>
+                <h2 className="app-section-title">Top Vendor Spending</h2>
                 <span className="text-xs text-muted-foreground">
                   {hasInsufficientData
                     ? "Not enough data for comparison"

@@ -1,7 +1,10 @@
 import * as React from "react";
 import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 import {
   LayoutGrid,
   BarChart3,
@@ -491,10 +494,7 @@ const Layout = () => {
                 "group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8",
                 isHomepageMobilePreview && "h-14 w-14",
               )}
-              imageClassName={cn(
-                "group-data-[collapsible=icon]:scale-[2.35]",
-                isHomepageMobilePreview && "scale-[1.35]",
-              )}
+              imageClassName="scale-[1.35] group-data-[collapsible=icon]:scale-[2.35]"
               nameClassName="group-data-[collapsible=icon]:hidden"
             />
             <PinTrigger />
@@ -789,19 +789,21 @@ const Layout = () => {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname === "/donate"}
-                >
-                  <Link to="/donate">
-                    <Heart />
-                    <span>
-                      {t("layout.nav.donate", { defaultValue: "Donate" })}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {!Capacitor.isNativePlatform() && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === "/donate"}
+                  >
+                    <Link to="/donate">
+                      <Heart />
+                      <span>
+                        {t("layout.nav.donate", { defaultValue: "Donate" })}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
@@ -828,11 +830,7 @@ const Layout = () => {
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="h-10 w-10 rounded-full border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:hidden">
               <img
-                src={
-                  resolvedTheme === "dark"
-                    ? "/logo-dark.png"
-                    : "/logo-light.png"
-                }
+                src={resolvedTheme === "dark" ? logoDark : logoLight}
                 alt=""
                 className="h-9 w-9 scale-[1.35] object-contain"
               />

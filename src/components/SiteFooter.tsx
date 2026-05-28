@@ -30,16 +30,18 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
             {t("home.badges.private", { defaultValue: "Privacy-first" })}
           </span>
           <span className="max-w-full truncate rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1 text-sky-700 dark:border-sky-700/60 dark:bg-sky-950/50 dark:text-sky-200">
-            {t("home.badges.local", { defaultValue: "Data local" })}
+            {t("home.badges.local", { defaultValue: "Data-local" })}
           </span>
           <span className="max-w-full truncate rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-200">
-            {t("home.badges.open", { defaultValue: "Open sourced" })}
+            {t("home.badges.open", { defaultValue: "Open-sourced" })}
           </span>
         </div>
 
         <div className="flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <Link to="/privacy" className={footerLinkClassName}>
-            Privacy Policy
+            {t("layout.footer.privacyPolicy", {
+              defaultValue: "Privacy Policy",
+            })}
           </Link>
           <span className="text-muted-foreground/30" aria-hidden="true">
             |

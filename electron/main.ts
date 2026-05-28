@@ -124,6 +124,65 @@ app.whenReady().then(() => {
     },
   );
 
+  ipcMain.handle("select-directory", async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (result.canceled) return null;
+
+    const selectedPath = result.filePaths[0];
+    authorizedBackupFolders.add(selectedPath);
+    Security.saveAuthorizedFolders(backupConfigPath, authorizedBackupFolders);
+    return selectedPath;
+  });
+
+  ipcMain.handle(
+    "check-directory-access",
+    async (_event, dirPath: string) => {
+      try {
+        await fs.promises.access(
+          dirPath,
+          fs.constants.R_OK | fs.constants.W_OK,
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  );
+
+  ipcMain.handle("read-file", async (_event, filePath: string) => {
+    const dir = path.dirname(filePath);
+    if (!Security.isFolderAuthorized(dir, authorizedBackupFolders)) {
+      throw new Error("Unauthorized file path");
+    }
+    return await fs.promises.readFile(filePath, "utf-8");
+  });
+
+  ipcMain.handle(
+    "write-file",
+    async (_event, filePath: string, content: string) => {
+      const filename = path.basename(filePath);
+      if (
+        !filename.endsWith(".json") &&
+        !filename.endsWith(".csv") &&
+        !filename.endsWith(".lock")
+      ) {
+        throw new Error(
+          "Invalid file extension: only .json, .csv, and .lock are allowed",
+        );
+      }
+      const dir = path.dirname(filePath);
+      if (!Security.isFolderAuthorized(dir, authorizedBackupFolders)) {
+        throw new Error("Unauthorized file path");
+      }
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      await fs.promises.writeFile(filePath, content, "utf-8");
+    },
+  );
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();

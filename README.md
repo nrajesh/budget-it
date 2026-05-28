@@ -82,6 +82,20 @@ The README is intentionally short. Use these pages for the details:
 | [Why Vaulted Money Exists](documentation/WHY_VAULTED_MONEY.md) | Motivation, privacy stance, and project philosophy. |
 | [Support](documentation/SUPPORT.md) | How to get help. |
 
+## Support the Project
+
+Vaulted Money is free and open-source under the MIT license. If you find it useful and want to support development, you have several options:
+
+| Channel | Status |
+| --- | --- |
+| Buy on Apple App Store (€9.99 one-time) | Coming soon |
+| Buy on Google Play Store (€9.99 one-time) | Coming soon |
+| Buy desktop binary on Lemon Squeezy or Polar.sh (€9.99 one-time) | Coming soon |
+| [GitHub Sponsors](https://github.com/sponsors/nrajesh) | Active |
+| PayPal / direct transfer (see in-app Donation page) | Active |
+
+The same app is free to build from source, regardless of which channel you choose. Store purchases exist to make installation simpler for non-technical users and to support continued development.
+
 ## Privacy In One Paragraph
 
 Vaulted Money stores financial data in your browser or local app storage. Nothing is sent to a Vaulted Money server because there is no Vaulted Money server. If you enable optional AI categorization, only the data needed for that action is sent to the provider you configure with your own API key. Because the app is local-first, backups are your responsibility.

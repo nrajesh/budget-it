@@ -23,9 +23,17 @@ import { useSyncConfig } from "@/hooks/useSyncConfig";
 import { useAIConfig } from "@/hooks/useAIConfig";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, FolderOpen, ShieldAlert, Brain } from "lucide-react";
+import {
+  Info,
+  FolderOpen,
+  ShieldAlert,
+  Brain,
+  Scale,
+  Heart,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { useDataProvider } from "@/context/DataProviderContext";
 import { AIProvider } from "@/types/dataProvider";
 import { useTranslation } from "react-i18next";
@@ -107,7 +115,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pt-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ThemedCard className="tour-settings-currency">
           <ThemedCardHeader>
             <ThemedCardTitle>
@@ -161,7 +169,7 @@ const SettingsPage = () => {
           <ThemedCardContent className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => setIsManageLedgerOpen(true)}
-              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm bg-primary text-primary-foreground"
+              className="h-9 w-full px-2 text-xs sm:text-sm bg-primary text-primary-foreground"
             >
               {t("settings.cards.ledger.edit", {
                 defaultValue: "Edit Current Ledger",
@@ -170,7 +178,7 @@ const SettingsPage = () => {
             <Button
               onClick={() => setIsCreateLedgerOpen(true)}
               variant="outline"
-              className="h-9 w-full justify-center whitespace-nowrap px-2 text-xs sm:text-sm"
+              className="h-9 w-full px-2 text-xs sm:text-sm"
             >
               {t("settings.cards.ledger.create", {
                 defaultValue: "Create New Ledger",
@@ -364,7 +372,7 @@ const SettingsPage = () => {
                     </p>
                   </div>
 
-                  <Alert className="bg-white/50 dark:bg-black/20 border-indigo-100 dark:border-indigo-900/30">
+                  <Alert className="border-indigo-100 dark:border-indigo-900/30">
                     <Info className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     <AlertDescription className="text-xs font-mono">
                       <div className="grid grid-cols-[80px_1fr] gap-x-2">
@@ -476,6 +484,38 @@ const SettingsPage = () => {
                 </div>
               </div>
             )}
+          </ThemedCardContent>
+        </ThemedCard>
+      </div>
+
+      {/* About section */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <ThemedCard className="md:col-span-2 lg:col-span-3">
+          <ThemedCardHeader>
+            <ThemedCardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-muted-foreground" />
+              About
+            </ThemedCardTitle>
+          </ThemedCardHeader>
+          <ThemedCardContent>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/acknowledgments"
+                className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
+              >
+                <Scale className="h-4 w-4 text-muted-foreground" />
+                Open Source Licenses
+              </Link>
+              {!Capacitor.isNativePlatform() && (
+                <Link
+                  to="/donate"
+                  className="flex items-center gap-2 rounded-lg border px-4 py-3 text-sm hover:bg-accent transition-colors"
+                >
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  Support Development
+                </Link>
+              )}
+            </div>
           </ThemedCardContent>
         </ThemedCard>
       </div>
