@@ -41,14 +41,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Trash2 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -58,6 +50,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ConfirmationDialog from "@/components/dialogs/ConfirmationDialog";
 import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
@@ -490,8 +489,9 @@ const LedgerEntryPage = () => {
         isHomepageMobilePreview && "h-screen overflow-hidden",
       )}
     >
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90">
-        <div className="mx-auto flex min-h-16 w-full max-w-3xl items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 flex min-h-16 items-center justify-end border-b border-border/60 bg-gray-50/90 px-4 pt-[env(safe-area-inset-top)] backdrop-blur dark:bg-gray-900/90 sm:px-6">
+        {/* ── Desktop icon row ── */}
+        <div className="hidden items-center gap-2 sm:flex">
           {isHomepageMobilePreview ? (
             <Button
               type="button"
@@ -523,81 +523,103 @@ const LedgerEntryPage = () => {
               </Link>
             </Button>
           )}
-
-          <div className="tour-theme-toggle hidden items-center gap-2 sm:flex">
-            <LanguageSwitcher />
-            {hasTourForCurrentRoute && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-                onClick={startTour}
-                aria-label={t("helpTour.start")}
-              >
-                <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-                <span className="sr-only">{t("helpTour.start")}</span>
-              </Button>
-            )}
+          <LanguageSwitcher />
+          {hasTourForCurrentRoute && (
             <Button
               variant="ghost"
               size="icon"
               className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-              onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-              }
-              aria-label={t("layout.toggleTheme", {
-                defaultValue: "Toggle theme",
-              })}
+              onClick={startTour}
+              aria-label={t("helpTour.start")}
             >
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-5 w-5 text-amber-400" />
-              ) : (
-                <Moon className="h-5 w-5 text-slate-600" />
-              )}
+              <HelpCircle className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+              <span className="sr-only">{t("helpTour.start")}</span>
             </Button>
-            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
-          </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+            onClick={() =>
+              setTheme(resolvedTheme === "dark" ? "light" : "dark")
+            }
+            aria-label={t("layout.toggleTheme", {
+              defaultValue: "Toggle theme",
+            })}
+          >
+            {resolvedTheme === "dark" ? (
+              <Sun className="h-5 w-5 text-amber-400" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-600" />
+            )}
+          </Button>
+          <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+        </div>
 
-          <div className="flex items-center gap-2 sm:hidden">
-            <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
-                  aria-label="More actions"
-                >
-                  <MoreHorizontal className="h-5 w-5 text-slate-600 dark:text-gray-300" />
-                  <span className="sr-only">More actions</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-[min(100vw-2rem,16rem)]"
+        {/* ── Mobile overflow menu (matches Layout's MobileHeaderActionsMenu) ── */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <LanguageSwitcher />
+          <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                aria-label="More actions"
               >
-                <DropdownMenuLabel>Ledger actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/language">
-                    {t("layout.nav.languages", { defaultValue: "Languages" })}
+                <MoreHorizontal className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">More actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-[min(100vw-1.5rem,20rem)] rounded-2xl p-2 shadow-xl"
+            >
+              <div className="rounded-xl px-3 py-3">
+                <p className="text-sm text-muted-foreground">
+                  {t("ledgerEntry.quickActions", {
+                    defaultValue: "Quick actions",
+                  })}
+                </p>
+              </div>
+              <DropdownMenuSeparator className="mx-1" />
+              {!isHomepageMobilePreview && (
+                <DropdownMenuItem
+                  asChild
+                  className="min-h-14 rounded-xl px-4 py-3 text-[1.05rem] font-medium text-foreground gap-3"
+                >
+                  <Link to="/">
+                    <Home className="h-5 w-5" />
+                    {t("home.actions.home", { defaultValue: "Home" })}
                   </Link>
                 </DropdownMenuItem>
-                {hasTourForCurrentRoute && (
-                  <DropdownMenuItem onClick={startTour}>
-                    {t("helpTour.start", { defaultValue: "Start tour" })}
-                  </DropdownMenuItem>
-                )}
+              )}
+              {hasTourForCurrentRoute && (
                 <DropdownMenuItem
-                  onClick={() =>
-                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                  }
+                  onClick={startTour}
+                  className="min-h-14 rounded-xl px-4 py-3 text-[1.05rem] font-medium text-foreground gap-3"
                 >
-                  {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+                  <HelpCircle className="h-5 w-5" />
+                  {t("helpTour.start", { defaultValue: "Start help tour" })}
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              )}
+              <DropdownMenuItem
+                onClick={() =>
+                  setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                }
+                className="min-h-14 rounded-xl px-4 py-3 text-[1.05rem] font-medium text-foreground gap-3"
+              >
+                {resolvedTheme === "dark" ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+                {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
       <div

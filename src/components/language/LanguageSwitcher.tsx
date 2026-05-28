@@ -47,7 +47,13 @@ const getBuiltInLanguageLabel = (
   return `${language.nativeName} (${translatedName})`;
 };
 
-export const LanguageSwitcher = () => {
+interface LanguageSwitcherProps {
+  showLanguageSettings?: boolean;
+}
+
+export const LanguageSwitcher = ({
+  showLanguageSettings = false,
+}: LanguageSwitcherProps) => {
   const { t, i18n: i18nInstance } = useTranslation();
   const [, bumpLanguageListVersion] = React.useReducer(
     (value: number) => value + 1,
@@ -181,14 +187,18 @@ export const LanguageSwitcher = () => {
             );
           })}
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="cursor-pointer">
-          <Link to="/language">
-            {t("language.openLanguageSettings", {
-              defaultValue: "Language settings",
-            })}
-          </Link>
-        </DropdownMenuItem>
+        {showLanguageSettings && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/language">
+                {t("language.openLanguageSettings", {
+                  defaultValue: "Language settings",
+                })}
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -37,16 +37,19 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
           </span>
         </div>
 
-        <div className="flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+        <div className="flex max-w-full flex-col items-center gap-1 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-2">
           <Link to="/privacy" className={footerLinkClassName}>
             {t("layout.footer.privacyPolicy", {
               defaultValue: "Privacy Policy",
             })}
           </Link>
-          <span className="text-muted-foreground/30" aria-hidden="true">
+          <span
+            className="hidden text-muted-foreground/30 sm:inline"
+            aria-hidden="true"
+          >
             |
           </span>
-          <span>
+          <span className="hidden sm:inline">
             {t("layout.footer.madeBy", { defaultValue: "Made by " })}
             <a
               href="https://imaginest.nl"
@@ -58,6 +61,34 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
             </a>
             {t("layout.footer.withHeart", {
               defaultValue: " with ❤️ for your financial ",
+            })}
+            <a
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={footerLinkClassName}
+              aria-label={t("layout.footer.githubAria", {
+                defaultValue: "Open Vaulted Money on GitHub",
+              })}
+            >
+              {t("layout.footer.freedom", { defaultValue: "freedom" })}
+            </a>
+          </span>
+          <span className="sm:hidden">
+            {t("layout.footer.madeBy", { defaultValue: "Made by " })}
+            <a
+              href="https://imaginest.nl"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={footerLinkClassName}
+            >
+              Imaginest
+            </a>
+            {" with ❤️"}
+          </span>
+          <span className="sm:hidden">
+            {t("layout.footer.forYourFinancial", {
+              defaultValue: "For your financial ",
             })}
             <a
               href={GITHUB_REPO_URL}

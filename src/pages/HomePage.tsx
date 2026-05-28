@@ -354,7 +354,7 @@ const HomePage = () => {
   return (
     <main className="min-h-screen overflow-x-hidden bg-background pt-16 text-foreground sm:pt-24">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/70 bg-white/90 px-3 shadow-sm backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/90 sm:px-4">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 sm:h-24">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3">
           <Link
             to="/"
             className="flex shrink-0 items-center"
@@ -391,9 +391,7 @@ const HomePage = () => {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
+            <LanguageSwitcher />
             <Button
               variant="ghost"
               size="icon"
@@ -470,9 +468,6 @@ const HomePage = () => {
                   ))}
                 </nav>
                 <div className="mt-auto border-t border-slate-200/60 px-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 dark:border-slate-800/60">
-                  <div className="mb-3 px-1">
-                    <LanguageSwitcher />
-                  </div>
                   <Button
                     asChild
                     className="h-11 w-full rounded-lg bg-[hsl(var(--brand-accent))] text-[0.95rem] font-semibold text-white hover:bg-[hsl(var(--brand-accent-strong))]"
