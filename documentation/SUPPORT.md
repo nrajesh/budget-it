@@ -7,7 +7,7 @@ This project uses GitHub issues to track bugs and feature requests. Please searc
 For help or questions about using this project, please:
 
 - Open a [GitHub issue](https://github.com/nrajesh/vaulted.money/issues/new) for bug reports, feature requests, or questions.
-- Check the [Spec-Driven Development Guide](./SPEC_DRIVEN_DEVELOPMENT.md) for detailed documentation on the workflow.
+- Review the [Developer Guide](./DEVELOPER_GUIDE.md) for project structure and contribution details.
 - Review the [README](../README.md) for getting started instructions and troubleshooting tips.
 
 ## Project Status

@@ -29,8 +29,14 @@ release
 *.xcodeproj/xcuserdata/
 *.swiftpm/xcode/xcuserdata/
 
-# Dyad-specific files
+# AI agent config folders
+.Jules/
+.agent/
+.agents/
+.specify/
+scheduled-agents/
 AI_RULES.md
+
 .env
 
 # Lint output artifacts

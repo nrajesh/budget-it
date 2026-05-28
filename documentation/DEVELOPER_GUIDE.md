@@ -33,7 +33,6 @@ vaulted.money/
 ├── ios/                       # Capacitor iOS project
 ├── documentation/             # Project docs
 ├── specs/                     # Feature specifications
-├── scheduled-agents/          # AI agent rulesets
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
@@ -63,35 +62,8 @@ pnpm validate
 | --- | --- |
 | [DESIGN.md](DESIGN.md) | Brand identity, logo geometry, and color strategy. |
 | [WHY_VAULTED_MONEY.md](WHY_VAULTED_MONEY.md) | Motivation and privacy philosophy. |
-| [SPEC_DRIVEN_DEVELOPMENT.md](SPEC_DRIVEN_DEVELOPMENT.md) | Feature planning workflow. |
-| [AGENTS.md](AGENTS.md) | Technical constraints for AI agents. |
 | [SUPPORT.md](SUPPORT.md) | How to get help. |
 | [UI_UX_STANDARDS.md](UI_UX_STANDARDS.md) | UI and UX expectations. |
-
-## Spec-Driven Development
-
-For the full workflow, read [Spec-Driven Development](SPEC_DRIVEN_DEVELOPMENT.md).
-
-Quick sequence:
-
-```text
-/speckit.specify "Build a new feature"
-/speckit.plan
-/speckit.tasks
-/speckit.implement
-```
-
-## AI Agent Workflows
-
-The project includes specialized AI agent rulesets in `scheduled-agents/` and workflow definitions in `.agent/workflows/`.
-
-| Command | Agent | Focus |
-| --- | --- | --- |
-| `/agent.palette` | Palette | UX, accessibility, visual polish. |
-| `/agent.bolt` | Bolt | Performance and bundle health. |
-| `/agent.sentinel` | Sentinel | Security, validation, and dependency risk. |
-
-IDEs that support the `.agent/workflows/` convention can expose these as slash commands. Otherwise, the ruleset files are plain Markdown and can be followed manually.
 
 ## AI Provider Configuration
 
