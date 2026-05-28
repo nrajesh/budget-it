@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { storeChannels } from "@/data/storeChannels";
 import {
   ThemedCard,
@@ -8,20 +9,21 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function HomeStoreLinks() {
+  const { t } = useTranslation();
   return (
     <section className="mx-auto max-w-5xl px-6 py-12">
       <h2 className="app-gradient-title text-2xl font-semibold mb-2">
-        Get Vaulted Money
+        {t("home.stores.heading", { defaultValue: "Get Vaulted Money" })}
       </h2>
       <p className="text-muted-foreground mb-6">
-        Coming soon to your favorite store. The same app is free on{" "}
+        {t("home.stores.descBefore", { defaultValue: "Coming soon to your favorite store. The same app is free on" })}{" "}
         <a
           href="https://github.com/nrajesh/vaulted.money"
           className="underline"
         >
           GitHub
         </a>
-        . Buying through a store supports continued development.
+        {t("home.stores.descAfter", { defaultValue: ". Buying through a store supports continued development." })}
       </p>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {storeChannels.map((channel) => {
@@ -39,10 +41,10 @@ export default function HomeStoreLinks() {
               </ThemedCardHeader>
               <ThemedCardContent>
                 {isActive ? (
-                  <span className="text-xs text-primary">Open store →</span>
+                  <span className="text-xs text-primary">{t("home.stores.openStore", { defaultValue: "Open store →" })}</span>
                 ) : (
                   <span className="text-xs text-muted-foreground">
-                    Coming Soon
+                    {t("home.stores.comingSoon", { defaultValue: "Coming Soon" })}
                   </span>
                 )}
               </ThemedCardContent>

@@ -492,10 +492,7 @@ const Layout = () => {
                 "group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8",
                 isHomepageMobilePreview && "h-14 w-14",
               )}
-              imageClassName={cn(
-                "group-data-[collapsible=icon]:scale-[2.35]",
-                isHomepageMobilePreview && "scale-[1.35]",
-              )}
+              imageClassName="scale-[1.35] group-data-[collapsible=icon]:scale-[2.35]"
               nameClassName="group-data-[collapsible=icon]:hidden"
             />
             <PinTrigger />

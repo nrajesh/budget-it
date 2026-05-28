@@ -30,7 +30,8 @@ const sizeStyles: Record<
   },
   sidebar: {
     wrapper: "gap-0",
-    iconWrapper: "h-12 w-12 sm:h-14 sm:w-14",
+    iconWrapper:
+      "h-12 w-12 sm:h-14 sm:w-14 rounded-xl border border-transparent",
     title: "text-[1.05rem] sm:text-[1.12rem]",
   },
   hero: {
@@ -40,7 +41,8 @@ const sizeStyles: Record<
   },
   mobile: {
     wrapper: "gap-2.5",
-    iconWrapper: "h-11 w-11",
+    iconWrapper:
+      "h-11 w-11 rounded-xl border border-transparent",
     title: "text-[1.4rem]",
   },
 };
@@ -73,7 +75,7 @@ const BrandLockup = ({
           }
           alt="Vaulted Money"
           className={cn(
-            "h-full w-full shrink-0 object-contain transition-transform",
+            "h-full w-full shrink-0 object-contain",
             imageClassName,
           )}
         />

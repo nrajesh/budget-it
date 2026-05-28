@@ -1,4 +1,5 @@
 import type { Resource } from "i18next";
+import { homeTranslations } from "./homeTranslations";
 
 export const builtInLanguageOptions = [
   {
@@ -89,6 +90,7 @@ export const resources: Resource = {
           withHeart: " with ❤️ for your financial ",
           freedom: "freedom",
           githubAria: "Open Vaulted Money on GitHub",
+          privacyPolicy: "Privacy Policy",
         },
       },
       dialogs: {
@@ -543,6 +545,7 @@ export const resources: Resource = {
           withHeart: " con ❤️ para tu libertad ",
           freedom: "financiera",
           githubAria: "Abrir Vaulted Money en GitHub",
+          privacyPolicy: "Política de privacidad",
         },
       },
       dialogs: {
@@ -913,6 +916,7 @@ export const resources: Resource = {
           withHeart: " 用 ❤️ 制作，助你实现财务 ",
           freedom: "自由",
           githubAria: "在 GitHub 上打开 Vaulted Money",
+          privacyPolicy: "隐私政策",
         },
       },
       dialogs: {
@@ -1190,6 +1194,7 @@ export const resources: Resource = {
           withHeart: " met ❤️ voor jouw financiële ",
           freedom: "vrijheid",
           githubAria: "Vaulted Money openen op GitHub",
+          privacyPolicy: "Privacybeleid",
         },
       },
       dialogs: {
@@ -1644,6 +1649,7 @@ export const resources: Resource = {
           withHeart: " (உங்கள் நிதி சுதந்திரத்திற்காக ❤️ உடன்) ",
           freedom: "நிதி சுதந்திரம்",
           githubAria: "GitHub இல் Vaulted Money ஐ திறக்கவும்",
+          privacyPolicy: "தனியுரிமைக் கொள்கை",
         },
       },
       dialogs: {
@@ -1927,6 +1933,14 @@ export const resources: Resource = {
     },
   },
 };
+
+// Merge home page translations into each language bundle at module load time
+for (const [lang, homeKeys] of Object.entries(homeTranslations)) {
+  const bundle = resources[lang];
+  if (bundle?.translation && typeof bundle.translation === "object") {
+    (bundle.translation as Record<string, unknown>).home = homeKeys;
+  }
+}
 
 export const supportedLanguages = ["en", "es", "zh", "nl", "ta"] as const;
 export type SupportedLanguage = string;

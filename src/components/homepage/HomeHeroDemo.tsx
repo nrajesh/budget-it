@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Smartphone } from "lucide-react";
 
 /**
@@ -23,6 +24,7 @@ const MAX_WIDTH = 520;
 const MIN_HEIGHT = 568;
 const MAX_HEIGHT = 932;
 const HomeHeroDemo = () => {
+  const { t } = useTranslation();
   const [deviceWidth, setDeviceWidth] = useState<number | "">(DEFAULT_WIDTH);
   const [deviceHeight, setDeviceHeight] = useState<number | "">(DEFAULT_HEIGHT);
 
@@ -46,11 +48,10 @@ const HomeHeroDemo = () => {
     <div className="mx-auto w-full max-w-[26rem]">
       <div className="mb-4 text-center">
         <div className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200">
-          Actual mobile /ledgers screen
+          {t("home.hero.demoLabel", { defaultValue: "Actual mobile /ledgers screen" })}
         </div>
         <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Rendered live from the app at real device dimensions so the homepage
-          matches the real mobile experience.
+          {t("home.hero.demoDescription", { defaultValue: "Rendered live from the app at real device dimensions so the homepage matches the real mobile experience." })}
         </p>
       </div>
 
@@ -59,7 +60,7 @@ const HomeHeroDemo = () => {
         <div className="flex items-center gap-2">
           <Smartphone className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
           <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
-            Dimensions
+            {t("home.hero.demoDimensions", { defaultValue: "Dimensions" })}
           </span>
           <input
             type="number"
