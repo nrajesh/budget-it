@@ -389,12 +389,6 @@ const MobileHeaderActionsMenu = ({
             </Link>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem asChild className={actionItemClassName}>
-          <Link to="/language">
-            <LanguageIcon className="h-5 w-5" />
-            {t("layout.nav.languages", { defaultValue: "Languages" })}
-          </Link>
-        </DropdownMenuItem>
         {hasTourForCurrentRoute && (
           <DropdownMenuItem onClick={startTour} className={actionItemClassName}>
             <HelpCircle className="h-5 w-5" />
@@ -876,7 +870,7 @@ const Layout = () => {
                 </Link>
               </Button>
             )}
-            <LanguageSwitcher />
+            <LanguageSwitcher showLanguageSettings />
             {hasTourForCurrentRoute && (
               <Button
                 variant="ghost"
@@ -910,8 +904,25 @@ const Layout = () => {
               </span>
             </Button>
             <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
+            {!isHomepageMobilePreview && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700"
+                onClick={logout}
+                aria-label={t("layout.nav.logout", {
+                  defaultValue: "Log out",
+                })}
+              >
+                <LogOut className="h-5 w-5 text-slate-600 dark:text-gray-300" />
+                <span className="sr-only">
+                  {t("layout.nav.logout", { defaultValue: "Log out" })}
+                </span>
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-2 md:hidden">
+            <LanguageSwitcher showLanguageSettings />
             <FeedbackLauncher triggerClassName="h-10 w-10 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700" />
             <MobileHeaderActionsMenu
               displayName={displayName}
