@@ -830,11 +830,7 @@ const Layout = () => {
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="h-10 w-10 rounded-full border border-gray-200 bg-white/80 shadow-sm backdrop-blur hover:bg-white dark:border-gray-700 dark:bg-gray-800/80 dark:hover:bg-gray-700 md:hidden">
               <img
-                src={
-                  resolvedTheme === "dark"
-                    ? logoDark
-                    : logoLight
-                }
+                src={resolvedTheme === "dark" ? logoDark : logoLight}
                 alt=""
                 className="h-9 w-9 scale-[1.35] object-contain"
               />

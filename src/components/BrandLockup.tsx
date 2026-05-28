@@ -43,8 +43,7 @@ const sizeStyles: Record<
   },
   mobile: {
     wrapper: "gap-2.5",
-    iconWrapper:
-      "h-11 w-11 rounded-xl border border-transparent",
+    iconWrapper: "h-11 w-11 rounded-xl border border-transparent",
     title: "text-[1.4rem]",
   },
 };
@@ -70,11 +69,7 @@ const BrandLockup = ({
         )}
       >
         <img
-          src={
-            resolvedTheme === "dark"
-              ? logoSquareDark
-              : logoSquareLight
-          }
+          src={resolvedTheme === "dark" ? logoSquareDark : logoSquareLight}
           alt="Vaulted Money"
           className={cn(
             "h-full w-full shrink-0 object-contain",

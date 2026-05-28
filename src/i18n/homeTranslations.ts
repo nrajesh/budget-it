@@ -130,22 +130,19 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
       desktop: {
         label: "Desktop",
         title: "Run the desktop app",
-        detail:
-          "Best for a local app window with desktop backup support.",
+        detail: "Best for a local app window with desktop backup support.",
       },
       android: {
         label: "Android",
         title: "Build the Android app",
-        detail:
-          "Produces a debug APK you can install on any Android device.",
+        detail: "Produces a debug APK you can install on any Android device.",
         prereq: "Requires Android Studio and Java SDK on your machine.",
       },
       ios: {
         label: "iOS",
         title: "Build the iOS app",
         detail: "Builds for the iOS Simulator (macOS only).",
-        prereq:
-          "Requires Xcode and macOS. Not available on Windows or Linux.",
+        prereq: "Requires Xcode and macOS. Not available on Windows or Linux.",
       },
     },
     usage: {
@@ -167,8 +164,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
     },
     stores: {
       heading: "Get Vaulted Money",
-      descBefore:
-        "Coming soon to your favorite store. The same app is free on",
+      descBefore: "Coming soon to your favorite store. The same app is free on",
       descAfter: ". Buying through a store supports continued development.",
       openStore: "Open store →",
       comingSoon: "Coming Soon",
@@ -320,8 +316,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
         label: "iOS",
         title: "Compilar la app iOS",
         detail: "Compila para el simulador de iOS (solo macOS).",
-        prereq:
-          "Requiere Xcode y macOS. No disponible en Windows o Linux.",
+        prereq: "Requiere Xcode y macOS. No disponible en Windows o Linux.",
       },
     },
     usage: {
@@ -406,8 +401,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
       },
       openSource: {
         title: "开源",
-        description:
-          "代码、路线图和隐私策略均可在公开仓库中审计。",
+        description: "代码、路线图和隐私策略均可在公开仓库中审计。",
         previewTitle: "可审计源码",
         previewMeta: "MIT 项目",
         previewStat: "公开",
@@ -668,8 +662,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
         label: "iOS",
         title: "De iOS-app bouwen",
         detail: "Bouwt voor de iOS-simulator (alleen macOS).",
-        prereq:
-          "Vereist Xcode en macOS. Niet beschikbaar op Windows of Linux.",
+        prereq: "Vereist Xcode en macOS. Niet beschikbaar op Windows of Linux.",
       },
     },
     usage: {
@@ -693,8 +686,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
       heading: "Verkrijg Vaulted Money",
       descBefore:
         "Binnenkort in je favoriete winkel. Dezelfde app is gratis op",
-      descAfter:
-        ". Kopen via een winkel ondersteunt verdere ontwikkeling.",
+      descAfter: ". Kopen via een winkel ondersteunt verdere ontwikkeling.",
       openStore: "Winkel openen →",
       comingSoon: "Binnenkort",
     },
@@ -839,8 +831,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
         title: "Android பயன்பாட்டை உருவாக்கு",
         detail:
           "எந்த Android சாதனத்திலும் நிறுவக்கூடிய டீபக் APK ஐ உருவாக்குகிறது.",
-        prereq:
-          "உங்கள் கணினியில் Android Studio மற்றும் Java SDK தேவை.",
+        prereq: "உங்கள் கணினியில் Android Studio மற்றும் Java SDK தேவை.",
       },
       ios: {
         label: "iOS",
@@ -869,8 +860,7 @@ export const homeTranslations: Record<string, Record<string, unknown>> = {
     },
     stores: {
       heading: "Vaulted Money பெறுங்கள்",
-      descBefore:
-        "உங்கள் விருப்பமான கடையில் விரைவில் கிடைக்கும். அதே பயன்பாடு",
+      descBefore: "உங்கள் விருப்பமான கடையில் விரைவில் கிடைக்கும். அதே பயன்பாடு",
       descAfter:
         " இல் இலவசமாக கிடைக்கிறது. கடையில் வாங்குவது தொடர்ந்த மேம்பாட்டை ஆதரிக்கிறது.",
       openStore: "கடையைத் திற →",

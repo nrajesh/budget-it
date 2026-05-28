@@ -273,7 +273,6 @@
 }
 
 @layer components {
-
   .app-accent-strong-text {
     color: hsl(var(--brand-accent-strong));
   }

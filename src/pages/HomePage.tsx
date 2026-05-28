@@ -28,11 +28,7 @@ import {
   Wallet,
 } from "lucide-react-motion";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LanguageSwitcher } from "@/components/language/LanguageSwitcher";
 import { GITHUB_REPO_URL } from "@/utils/feedbackLinks";
@@ -135,18 +131,50 @@ const HomePage = () => {
   ];
 
   const moneyTools = [
-    { icon: BookOpen, label: t("home.tools.multiLedger", { defaultValue: "Multi-ledger tracking" }) },
-    { icon: Coins, label: t("home.tools.multiCurrency", { defaultValue: "Multi-currency balances" }) },
-    { icon: Users, label: t("home.tools.accountScopes", { defaultValue: "Account scopes for different people" }) },
-    { icon: Receipt, label: t("home.tools.csvImports", { defaultValue: "CSV transaction imports" }) },
-    { icon: Wallet, label: t("home.tools.accountsVendors", { defaultValue: "Accounts, vendors, categories" }) },
-    { icon: Lock, label: t("home.tools.encryptedBackup", { defaultValue: "Encrypted backup options" }) },
+    {
+      icon: BookOpen,
+      label: t("home.tools.multiLedger", {
+        defaultValue: "Multi-ledger tracking",
+      }),
+    },
+    {
+      icon: Coins,
+      label: t("home.tools.multiCurrency", {
+        defaultValue: "Multi-currency balances",
+      }),
+    },
+    {
+      icon: Users,
+      label: t("home.tools.accountScopes", {
+        defaultValue: "Account scopes for different people",
+      }),
+    },
+    {
+      icon: Receipt,
+      label: t("home.tools.csvImports", {
+        defaultValue: "CSV transaction imports",
+      }),
+    },
+    {
+      icon: Wallet,
+      label: t("home.tools.accountsVendors", {
+        defaultValue: "Accounts, vendors, categories",
+      }),
+    },
+    {
+      icon: Lock,
+      label: t("home.tools.encryptedBackup", {
+        defaultValue: "Encrypted backup options",
+      }),
+    },
   ];
 
   const usageFundamentals = [
     {
       icon: Upload,
-      title: t("home.usage.csv.title", { defaultValue: "Bring your history with CSV" }),
+      title: t("home.usage.csv.title", {
+        defaultValue: "Bring your history with CSV",
+      }),
       description: t("home.usage.csv.description", {
         defaultValue:
           "Start with a ledger, then import bank exports from the Transactions screen. Mapping columns once makes future imports faster.",
@@ -154,7 +182,9 @@ const HomePage = () => {
     },
     {
       icon: Archive,
-      title: t("home.usage.backup.title", { defaultValue: "Back up before you rely on the browser" }),
+      title: t("home.usage.backup.title", {
+        defaultValue: "Back up before you rely on the browser",
+      }),
       description: t("home.usage.backup.description", {
         defaultValue:
           "Local-first means your data is yours, but private windows, browser resets, or clearing site data can erase local storage.",
@@ -162,7 +192,9 @@ const HomePage = () => {
     },
     {
       icon: Download,
-      title: t("home.usage.automate.title", { defaultValue: "Automate a backup rhythm" }),
+      title: t("home.usage.automate.title", {
+        defaultValue: "Automate a backup rhythm",
+      }),
       description: t("home.usage.automate.description", {
         defaultValue:
           "Use encrypted or plain JSON exports, and enable automated backups when your browser or desktop platform supports it.",
@@ -175,40 +207,65 @@ const HomePage = () => {
       id: "web",
       label: t("home.commands.web.label", { defaultValue: "Web" }),
       title: t("home.commands.web.title", { defaultValue: "Run the web app" }),
-      detail: t("home.commands.web.detail", { defaultValue: "Best for trying Vaulted Money in a browser." }),
+      detail: t("home.commands.web.detail", {
+        defaultValue: "Best for trying Vaulted Money in a browser.",
+      }),
       prereq: "",
       command: webInstallCommand,
     },
     {
       id: "desktop",
       label: t("home.commands.desktop.label", { defaultValue: "Desktop" }),
-      title: t("home.commands.desktop.title", { defaultValue: "Run the desktop app" }),
-      detail: t("home.commands.desktop.detail", { defaultValue: "Best for a local app window with desktop backup support." }),
+      title: t("home.commands.desktop.title", {
+        defaultValue: "Run the desktop app",
+      }),
+      detail: t("home.commands.desktop.detail", {
+        defaultValue:
+          "Best for a local app window with desktop backup support.",
+      }),
       prereq: "",
       command: desktopInstallCommand,
     },
     {
       id: "android",
       label: t("home.commands.android.label", { defaultValue: "Android" }),
-      title: t("home.commands.android.title", { defaultValue: "Build the Android app" }),
-      detail: t("home.commands.android.detail", { defaultValue: "Produces a debug APK you can install on any Android device." }),
-      prereq: t("home.commands.android.prereq", { defaultValue: "Requires Android Studio and Java SDK on your machine." }),
+      title: t("home.commands.android.title", {
+        defaultValue: "Build the Android app",
+      }),
+      detail: t("home.commands.android.detail", {
+        defaultValue:
+          "Produces a debug APK you can install on any Android device.",
+      }),
+      prereq: t("home.commands.android.prereq", {
+        defaultValue: "Requires Android Studio and Java SDK on your machine.",
+      }),
       command: androidInstallCommand,
     },
     {
       id: "ios",
       label: t("home.commands.ios.label", { defaultValue: "iOS" }),
-      title: t("home.commands.ios.title", { defaultValue: "Build the iOS app" }),
-      detail: t("home.commands.ios.detail", { defaultValue: "Builds for the iOS Simulator (macOS only)." }),
-      prereq: t("home.commands.ios.prereq", { defaultValue: "Requires Xcode and macOS. Not available on Windows or Linux." }),
+      title: t("home.commands.ios.title", {
+        defaultValue: "Build the iOS app",
+      }),
+      detail: t("home.commands.ios.detail", {
+        defaultValue: "Builds for the iOS Simulator (macOS only).",
+      }),
+      prereq: t("home.commands.ios.prereq", {
+        defaultValue:
+          "Requires Xcode and macOS. Not available on Windows or Linux.",
+      }),
       command: iosInstallCommand,
     },
   ];
 
   const roadmapMilestones = [
     {
-      window: t("home.milestones.nativeApps.window", { defaultValue: "August-September 2026" }),
-      title: t("home.milestones.nativeApps.title", { defaultValue: "Native iOS and Android apps" }),
+      window: t("home.milestones.nativeApps.window", {
+        defaultValue: "August-September 2026",
+      }),
+      title: t("home.milestones.nativeApps.title", {
+        defaultValue: "Native iOS and Android apps",
+      }),
       summary: t("home.milestones.nativeApps.summary", {
         defaultValue:
           "Planned mobile releases will bring Vaulted Money into dedicated iPhone and Android app experiences while keeping the local-first model intact.",
@@ -218,8 +275,12 @@ const HomePage = () => {
       accent: "violet",
     },
     {
-      window: t("home.milestones.privacyRefresh.window", { defaultValue: "May 2026" }),
-      title: t("home.milestones.privacyRefresh.title", { defaultValue: "Privacy and public branding refresh" }),
+      window: t("home.milestones.privacyRefresh.window", {
+        defaultValue: "May 2026",
+      }),
+      title: t("home.milestones.privacyRefresh.title", {
+        defaultValue: "Privacy and public branding refresh",
+      }),
       summary: t("home.milestones.privacyRefresh.summary", {
         defaultValue:
           "The public-facing experience expanded with a dedicated privacy page, updated branding, and sharper trust messaging for new users.",
@@ -229,8 +290,12 @@ const HomePage = () => {
       accent: "emerald",
     },
     {
-      window: t("home.milestones.brandLaunch.window", { defaultValue: "April 2026" }),
-      title: t("home.milestones.brandLaunch.title", { defaultValue: "Vaulted Money brand and public homepage launch" }),
+      window: t("home.milestones.brandLaunch.window", {
+        defaultValue: "April 2026",
+      }),
+      title: t("home.milestones.brandLaunch.title", {
+        defaultValue: "Vaulted Money brand and public homepage launch",
+      }),
       summary: t("home.milestones.brandLaunch.summary", {
         defaultValue:
           "The app was renamed to Vaulted Money, the public homepage landed, and the install story became much clearer for web and desktop users.",
@@ -240,8 +305,12 @@ const HomePage = () => {
       accent: "orange",
     },
     {
-      window: t("home.milestones.languageRollout.window", { defaultValue: "March 2026" }),
-      title: t("home.milestones.languageRollout.title", { defaultValue: "Language management and localization rollout" }),
+      window: t("home.milestones.languageRollout.window", {
+        defaultValue: "March 2026",
+      }),
+      title: t("home.milestones.languageRollout.title", {
+        defaultValue: "Language management and localization rollout",
+      }),
       summary: t("home.milestones.languageRollout.summary", {
         defaultValue:
           "Multi-language support, language management UX, and broader translation coverage shipped as a major usability milestone.",
@@ -251,8 +320,12 @@ const HomePage = () => {
       accent: "red",
     },
     {
-      window: t("home.milestones.coreRelease.window", { defaultValue: "January 2026" }),
-      title: t("home.milestones.coreRelease.title", { defaultValue: "Core local-first ledger release" }),
+      window: t("home.milestones.coreRelease.window", {
+        defaultValue: "January 2026",
+      }),
+      title: t("home.milestones.coreRelease.title", {
+        defaultValue: "Core local-first ledger release",
+      }),
       summary: t("home.milestones.coreRelease.summary", {
         defaultValue:
           "The first tagged release established the web app foundation for ledgers, transactions, categories, budgets, and local data ownership.",
@@ -367,10 +440,24 @@ const HomePage = () => {
                 </div>
                 <nav className="flex flex-col gap-0.5 border-t border-slate-200/60 px-3 pt-3 dark:border-slate-800/60">
                   {[
-                    { href: "#trust", label: t("home.nav.trust", { defaultValue: "Trust" }) },
-                    { href: "#workflow", label: t("home.nav.workflow", { defaultValue: "Workflow" }) },
-                    { href: "#roadmap", label: t("home.nav.roadmap", { defaultValue: "Roadmap" }) },
-                    { href: "#install", label: t("home.nav.install", { defaultValue: "Install" }) },
+                    {
+                      href: "#trust",
+                      label: t("home.nav.trust", { defaultValue: "Trust" }),
+                    },
+                    {
+                      href: "#workflow",
+                      label: t("home.nav.workflow", {
+                        defaultValue: "Workflow",
+                      }),
+                    },
+                    {
+                      href: "#roadmap",
+                      label: t("home.nav.roadmap", { defaultValue: "Roadmap" }),
+                    },
+                    {
+                      href: "#install",
+                      label: t("home.nav.install", { defaultValue: "Install" }),
+                    },
                   ].map((item) => (
                     <a
                       key={item.href}
@@ -612,7 +699,9 @@ const HomePage = () => {
                 {t("home.roadmap.snapshot", { defaultValue: "Snapshot" })}
               </p>
               <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-50">
-                {t("home.roadmap.milestoneCount", { defaultValue: "5 milestones" })}
+                {t("home.roadmap.milestoneCount", {
+                  defaultValue: "5 milestones",
+                })}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {t("home.roadmap.milestoneShipped", {

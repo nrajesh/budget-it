@@ -39,7 +39,9 @@ const SiteFooter = ({ extraLinks = [] }: SiteFooterProps) => {
 
         <div className="flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <Link to="/privacy" className={footerLinkClassName}>
-            {t("layout.footer.privacyPolicy", { defaultValue: "Privacy Policy" })}
+            {t("layout.footer.privacyPolicy", {
+              defaultValue: "Privacy Policy",
+            })}
           </Link>
           <span className="text-muted-foreground/30" aria-hidden="true">
             |
