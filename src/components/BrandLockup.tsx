@@ -1,5 +1,7 @@
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import logoSquareDark from "@/assets/logo-square-dark.png";
+import logoSquareLight from "@/assets/logo-square-light.png";
 
 type BrandLockupSize = "header" | "sidebar" | "hero" | "mobile";
 
@@ -70,8 +72,8 @@ const BrandLockup = ({
         <img
           src={
             resolvedTheme === "dark"
-              ? "/logo-square-dark.png"
-              : "/logo-square-light.png"
+              ? logoSquareDark
+              : logoSquareLight
           }
           alt="Vaulted Money"
           className={cn(

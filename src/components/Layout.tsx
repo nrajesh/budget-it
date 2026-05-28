@@ -3,6 +3,8 @@ import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 import {
   LayoutGrid,
   BarChart3,
@@ -830,8 +832,8 @@ const Layout = () => {
               <img
                 src={
                   resolvedTheme === "dark"
-                    ? "/logo-dark.png"
-                    : "/logo-light.png"
+                    ? logoDark
+                    : logoLight
                 }
                 alt=""
                 className="h-9 w-9 scale-[1.35] object-contain"
