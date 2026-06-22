@@ -29,7 +29,7 @@
     "release:local": "cross-env ELECTRON_BUILDER_CACHE=.cache/electron-builder pnpm run electron:build && pnpm run android:build:apk && pnpm run ios:build:simulator"
   },
   "dependencies": {
-    "@capacitor/core": "^8.4.0",
+    "@capacitor/core": "^8.4.1",
     "@capacitor/filesystem": "^8.1.2",
     "@capawesome/capacitor-file-picker": "^8.0.2",
     "@hookform/resolvers": "^5.4.0",
