@@ -155,13 +155,7 @@ workflows:
   build-test-deploy:
     jobs:
       - lint-and-typecheck
-      - security-audit:
-          filters:
-            branches:
-              only:
-                - main
-                - develop
-                - pre-prod
+      - security-audit
       - test:
           requires:
             - lint-and-typecheck
