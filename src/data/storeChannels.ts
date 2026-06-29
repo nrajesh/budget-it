@@ -1,8 +1,5 @@
 export type StoreChannelKey =
-  | "appStore"
-  | "playStore"
-  | "lemonSqueezy"
-  | "polarSh";
+  "appStore" | "playStore" | "lemonSqueezy" | "polarSh";
 
 export interface StoreChannel {
   key: StoreChannelKey;
