@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { showError, showSuccess } from "@/utils/toast";
 import CategoryDeduplicationDialog from "@/components/management/CategoryDeduplicationDialog";
+import AddCategoryDialog from "@/components/dialogs/AddCategoryDialog";
 
 import CleanupEntitiesDialog from "@/components/management/CleanupEntitiesDialog";
 
@@ -189,6 +190,16 @@ const CategoriesPage = () => {
         data={managementProps.categories}
         isLoading={managementProps.isLoadingCategories}
         columns={columns}
+        AddEditDialogComponent={(props) => (
+          <AddCategoryDialog
+            isOpen={props.isOpen}
+            onOpenChange={props.onOpenChange}
+            onSubmit={(name) =>
+              managementProps.addCategoryMutation.mutate(name)
+            }
+            isSubmitting={managementProps.addCategoryMutation.isPending}
+          />
+        )}
         isDeletable={(item) => item.name !== "Others"}
         customEditHandler={startEditing}
         isEditing={(id) => editingCategoryId === id}
