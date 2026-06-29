@@ -52,11 +52,7 @@ export interface Vendor {
 }
 
 export type AccountType =
-  | "Checking"
-  | "Savings"
-  | "Credit Card"
-  | "Investment"
-  | "Other";
+  "Checking" | "Savings" | "Credit Card" | "Investment" | "Other";
 
 export interface Account {
   id: string;

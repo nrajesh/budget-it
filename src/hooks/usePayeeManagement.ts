@@ -1,18 +1,29 @@
 import * as React from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useEntityManagement } from "./useEntityManagement";
 import { useTransactions } from "@/contexts/TransactionsContext";
+import { useDataProvider } from "@/context/DataProviderContext";
 import { Payee } from "@/components/dialogs/AddEditPayeeDialog";
 import Papa from "papaparse";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { useNavigate } from "react-router-dom";
 import { saveFile } from "@/utils/backupUtils";
 
 import { useLedger } from "@/contexts/LedgerContext";
 import { slugify } from "@/lib/utils";
 
+/** A single row parsed from a payee/account CSV import. */
+interface PayeeImportRow {
+  name?: string;
+  currency?: string;
+  starting_balance?: number;
+  remarks?: string;
+}
+
 export const usePayeeManagement = (isAccount: boolean) => {
   const { invalidateAllData, deleteEntity } = useTransactions();
   const { activeLedger } = useLedger();
+  const dataProvider = useDataProvider();
   const navigate = useNavigate();
 
   const entityName = isAccount ? "Account" : "Vendor";
@@ -33,10 +44,38 @@ export const usePayeeManagement = (isAccount: boolean) => {
       deleteEntity(isAccount ? "account" : "vendor", ids),
   });
 
+  // Persist imported payees/accounts to the local data store.
+  // The generic `useEntityManagement.batchUpsertMutation` is a no-op stub, so
+  // payee imports must go through the data provider directly (mirroring the
+  // category import in useCategoryManagement) to actually save anything.
+  const batchUpsertPayeesMutation = useMutation({
+    mutationFn: async (rows: PayeeImportRow[]) => {
+      if (!activeLedger?.id) throw new Error("No active ledger.");
+      for (const row of rows) {
+        const name = row.name?.trim();
+        if (!name) continue;
+        await dataProvider.ensurePayeeExists(name, isAccount, activeLedger.id, {
+          currency: row.currency,
+          startingBalance: row.starting_balance,
+          remarks: row.remarks,
+        });
+      }
+    },
+    onSuccess: async (_data, rows) => {
+      showSuccess(`${rows.length} ${entityNamePlural} imported successfully!`);
+      await invalidateAllData();
+      if (managementProps.fileInputRef.current)
+        managementProps.fileInputRef.current.value = "";
+    },
+    onError: (error: unknown) =>
+      showError(`Import failed: ${(error as Error).message}`),
+    onSettled: () => managementProps.setIsImporting(false),
+  });
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    managementProps.batchUpsertMutation.reset(); // Reset mutation state
+    batchUpsertPayeesMutation.reset(); // Reset mutation state
     const { setIsImporting } = managementProps;
     setIsImporting(true);
 
@@ -81,7 +120,7 @@ export const usePayeeManagement = (isAccount: boolean) => {
           setIsImporting(false);
           return;
         }
-        managementProps.batchUpsertMutation.mutate(dataToUpsert);
+        batchUpsertPayeesMutation.mutate(dataToUpsert);
       },
       error: (error: unknown) => {
         showError(`CSV parsing error: ${(error as Error).message}`);
@@ -143,6 +182,9 @@ export const usePayeeManagement = (isAccount: boolean) => {
     handleFileChange,
     handleExportClick,
     handlePayeeNameClick,
+    batchUpsertPayeesMutation,
     selectedPayee: managementProps.selectedEntity,
+    isLoadingMutation:
+      managementProps.isLoadingMutation || batchUpsertPayeesMutation.isPending,
   };
 };

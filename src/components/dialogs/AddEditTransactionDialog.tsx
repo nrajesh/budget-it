@@ -443,12 +443,7 @@ const AddEditTransactionDialog: React.FC<AddEditTransactionDialogProps> = ({
             amount: values.amount,
             remarks: values.remarks || null,
             frequency: values.recurrenceFrequency as
-              | "None"
-              | "Daily"
-              | "Weekly"
-              | "Monthly"
-              | "Quarterly"
-              | "Yearly",
+              "None" | "Daily" | "Weekly" | "Monthly" | "Quarterly" | "Yearly",
             end_date: values.recurrenceEndDate || null,
           });
         }
