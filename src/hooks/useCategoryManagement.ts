@@ -46,6 +46,7 @@ export const useCategoryManagement = () => {
     },
     onSuccess: async () => {
       showSuccess("Category added successfully!");
+      managementProps.setIsDialogOpen(false);
       await refetchCategories();
     },
     onError: (error: unknown) =>
@@ -154,13 +155,6 @@ export const useCategoryManagement = () => {
     onError: (error: unknown) =>
       showError(`Failed to delete sub-category: ${(error as Error).message}`),
   });
-
-  const handleAddClick = () => {
-    const newCategoryName = prompt("Enter new category name:");
-    if (newCategoryName?.trim()) {
-      addCategoryMutation.mutate(newCategoryName);
-    }
-  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -301,7 +295,6 @@ export const useCategoryManagement = () => {
     refetchCategories,
     addCategoryMutation,
     deleteCategoriesMutation: managementProps.deleteMutation,
-    handleAddClick,
     handleFileChange,
     handleExportClick,
     handleCategoryNameClick,
