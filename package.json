@@ -112,7 +112,7 @@
     "postcss": "^8.4.47",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.1.18",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript": "5.9.2",
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.0",
