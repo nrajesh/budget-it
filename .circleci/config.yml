@@ -20,7 +20,7 @@ commands:
             echo "Checked-out revision: $(git rev-parse HEAD)"
             git log -1 --oneline
             test "$(git rev-parse HEAD)" = "${CIRCLE_SHA1}"
-            test "$(node -p \"JSON.parse(require('fs').readFileSync('package.json', 'utf8')).devDependencies.typescript\")" = "5.9.3"
+            test "$(node -e 'process.stdout.write(require("./package.json").devDependencies.typescript)')" = "5.9.3"
       - run:
           name: Upgrade and Enable Corepack
           command: |
