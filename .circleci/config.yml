@@ -14,6 +14,14 @@ commands:
     steps:
       - checkout
       - run:
+          name: Verify Checked-out Revision
+          command: |
+            echo "CircleCI revision: ${CIRCLE_SHA1}"
+            echo "Checked-out revision: $(git rev-parse HEAD)"
+            git log -1 --oneline
+            test "$(git rev-parse HEAD)" = "${CIRCLE_SHA1}"
+            test "$(node -e 'process.stdout.write(require("./package.json").devDependencies.typescript)')" = "5.9.3"
+      - run:
           name: Upgrade and Enable Corepack
           command: |
             sudo npm install -g corepack@latest
@@ -21,17 +29,21 @@ commands:
       - restore_cache:
           name: Restore pnpm Store Cache
           keys:
-            - v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-            - v2-pnpm-store-
+            - v3-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
       - run:
           name: Install Dependencies
-          command: pnpm install --frozen-lockfile
+          command: pnpm install --frozen-lockfile --force
       - save_cache:
           name: Save pnpm Store Cache
-          key: v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
+          key: v3-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
           paths:
             - ~/.local/share/pnpm/store
-            - node_modules
+      - run:
+          name: Verify Toolchain Versions
+          command: |
+            pnpm exec tsc --version
+            pnpm exec node -p "require('typescript').version"
+            pnpm list --depth 0 typescript typescript-eslint eslint
 
 jobs:
   lint-and-typecheck:
@@ -128,11 +140,10 @@ jobs:
       - restore_cache:
           name: Restore pnpm Store Cache
           keys:
-            - v2-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
-            - v2-pnpm-store-
+            - v3-pnpm-store-{{ checksum "pnpm-lock.yaml" }}
       - run:
           name: Install Dependencies
-          command: pnpm install --frozen-lockfile
+          command: pnpm install --frozen-lockfile --force
       - run:
           name: Analyze Bundle Size
           command: |
@@ -149,7 +160,6 @@ jobs:
       - run:
           name: Security Audit
           command: pnpm audit --audit-level=moderate
-
 
 workflows:
   build-test-deploy:
