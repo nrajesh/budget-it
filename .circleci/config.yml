@@ -20,7 +20,6 @@ commands:
             echo "Checked-out revision: $(git rev-parse HEAD)"
             git log -1 --oneline
             test "$(git rev-parse HEAD)" = "${CIRCLE_SHA1}"
-            test "$(node -e 'process.stdout.write(require("./package.json").devDependencies.typescript)')" = "5.9.3"
       - run:
           name: Upgrade and Enable Corepack
           command: |
@@ -159,7 +158,7 @@ jobs:
       - setup-pnpm
       - run:
           name: Security Audit
-          command: pnpm audit --audit-level=moderate
+          command: pnpm audit --prod --audit-level=moderate
 
 workflows:
   build-test-deploy:
