@@ -18,3 +18,14 @@ updates:
       all-dependencies:
         patterns:
           - "*"
+    ignore:
+      # typescript-eslint declares `typescript: ">=4.8.4 <6.1.0"` and hard-errors
+      # ("typescript-eslint does not support TS 7.0") on anything newer, which
+      # fails `pnpm lint` in CI. Hold TypeScript on 6.0.x — patch updates only —
+      # until typescript-eslint ships TS >=6.1 support.
+      # Tracking: https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      # Remove this block once typescript-eslint's peer range covers the new major.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
