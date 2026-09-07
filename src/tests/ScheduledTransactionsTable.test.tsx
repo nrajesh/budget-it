@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import "@testing-library/jest-dom"; // Ensure jest-dom matchers are available
+import "@testing-library/jest-dom/vitest"; // Ensure jest-dom matchers are available
 import { ScheduledTransactionsTable } from "@/components/scheduled-transactions/ScheduledTransactionsTable";
 import { BrowserRouter } from "react-router-dom";
 import { ScheduledTransaction } from "@/types/dataProvider";
